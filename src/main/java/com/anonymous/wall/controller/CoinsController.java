@@ -1,4 +1,4 @@
 package com.anonymous.wall.controller;
 
-public class CoinsControler {
+public class CoinsController {
 }
