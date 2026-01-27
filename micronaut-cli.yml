@@ -1,0 +1,6 @@
+applicationType: default
+defaultPackage: com.anonymous.wall
+testFramework: junit
+sourceLanguage: java
+buildTool: maven
+features: [ app-name, data, data-jdbc, email-javamail, graalvm, guice, http-client, java, java-application, jdbc-hikari, jms-core, jul-to-slf4j, junit, liquibase, log4j2, management, maven, maven-enforcer-plugin, micronaut-aot, micronaut-http-validation, micronaut-processing-compiler-args, mockito, mysql, netty-server, openapi, properties, reactor, reactor-http-client, readme, redis-lettuce, security-annotations, security-jwt, serialization-jackson, shade, static-resources, test-resources, validation ]

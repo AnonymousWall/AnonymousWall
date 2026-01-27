@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="warn">
+    <Appenders>
+        <Console name="Console" target="SYSTEM_OUT">
+            <PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
+        </Console>
+    </Appenders>
+
+    <Loggers>
+        <Logger name="io.micronaut.runtime" level="info" additivity="false">
+            <AppenderRef ref="Console"/>
+        </Logger>
+        <!-- Your application logs: controllers, services, repositories -->
+        <Logger name="com.anonymous.wall" level="debug" additivity="false">
+            <AppenderRef ref="Console"/>
+        </Logger>
+
+        <!-- Micronaut HTTP: useful for seeing request/response -->
+        <Logger name="io.micronaut.http" level="info" additivity="false">
+            <AppenderRef ref="Console"/>
+        </Logger>
+
+        <!-- Micronaut Data / JPA: SQL queries without parameters -->
+        <Logger name="io.micronaut.data" level="debug" additivity="false">
+            <AppenderRef ref="Console"/>
+        </Logger>
+
+        <!-- Root logger: warnings and errors from libraries -->
+        <Root level="warn">
+            <AppenderRef ref="Console"/>
+        </Root>
+    </Loggers>
+</Configuration>
