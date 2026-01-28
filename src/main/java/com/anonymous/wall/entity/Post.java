@@ -10,7 +10,7 @@ import java.util.UUID;
 public class Post {
 
     @Id
-    @AutoPopulated
+    @GeneratedValue
     private Long id;
 
     @MappedProperty("user_id")

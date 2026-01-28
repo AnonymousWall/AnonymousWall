@@ -7,16 +7,19 @@ import com.anonymous.wall.service.PostsService;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
 import io.micronaut.http.HttpResponse;
+import io.micronaut.http.HttpRequest;
 import io.micronaut.http.annotation.*;
 import io.micronaut.security.annotation.Secured;
 import io.micronaut.security.rules.SecurityRule;
 import jakarta.inject.Inject;
+import java.security.Principal;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -28,20 +31,33 @@ public class PostsController {
     @Inject
     private PostsService postsService;
 
+    // Helper to extract user ID from Principal
+    private UUID getUserIdFromRequest(HttpRequest<?> request) {
+        Optional<Principal> principalOpt = request.getUserPrincipal();
+
+        if (principalOpt.isEmpty()) {
+            throw new IllegalArgumentException("User not authenticated");
+        }
+
+        String principalName = principalOpt.get().getName();
+        try {
+            return UUID.fromString(principalName);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Invalid user ID format in security context: " + principalName, e);
+        }
+    }
+
     /**
      * POST /posts
      * Create a new post
      */
     @io.micronaut.http.annotation.Post
     @Secured(SecurityRule.IS_AUTHENTICATED)
-    public HttpResponse<Object> createPost(@Body CreatePostRequest request) {
+    public HttpResponse<Object> createPost(@Body CreatePostRequest request, HttpRequest<?> httpRequest) {
         try {
-            // Get current user from security context
-            UUID userId = getCurrentUserId();
-
+            UUID userId = getUserIdFromRequest(httpRequest);
             Post post = postsService.createPost(request, userId);
             PostDTO dto = mapPostToDTO(post);
-
             return HttpResponse.created(dto);
         } catch (IllegalArgumentException e) {
             return HttpResponse.badRequest(error(e.getMessage()));
@@ -60,14 +76,13 @@ public class PostsController {
     public HttpResponse<Object> listPosts(
             @QueryValue(defaultValue = "campus") String wall,
             @QueryValue(defaultValue = "1") int page,
-            @QueryValue(defaultValue = "20") int limit) {
+            @QueryValue(defaultValue = "20") int limit,
+            HttpRequest<?> httpRequest) {
         try {
-            // Validate pagination parameters
             if (page < 1) page = 1;
             if (limit < 1 || limit > 100) limit = 20;
 
-            UUID userId = getCurrentUserId();
-
+            UUID userId = getUserIdFromRequest(httpRequest);
             Pageable pageable = Pageable.from(page - 1, limit);
             Page<Post> posts = postsService.getPostsByWall(wall, pageable, userId);
 
@@ -96,13 +111,12 @@ public class PostsController {
     @Secured(SecurityRule.IS_AUTHENTICATED)
     public HttpResponse<Object> addComment(
             @PathVariable Long postId,
-            @Body CreateCommentRequest request) {
+            @Body CreateCommentRequest request,
+            HttpRequest<?> httpRequest) {
         try {
-            UUID userId = getCurrentUserId();
-
+            UUID userId = getUserIdFromRequest(httpRequest);
             Comment comment = postsService.addComment(postId, request, userId);
             CommentDTO dto = mapCommentToDTO(comment);
-
             return HttpResponse.created(dto);
         } catch (IllegalArgumentException e) {
             if (e.getMessage().contains("not found")) {
@@ -145,10 +159,9 @@ public class PostsController {
      */
     @io.micronaut.http.annotation.Post("/{postId}/likes")
     @Secured(SecurityRule.IS_AUTHENTICATED)
-    public HttpResponse<Object> likePost(@PathVariable Long postId) {
+    public HttpResponse<Object> likePost(@PathVariable Long postId, HttpRequest<?> httpRequest) {
         try {
-            UUID userId = getCurrentUserId();
-
+            UUID userId = getUserIdFromRequest(httpRequest);
             boolean isNowLiked = postsService.toggleLike(postId, userId);
 
             Map<String, Object> response = new HashMap<>();
@@ -166,13 +179,7 @@ public class PostsController {
         }
     }
 
-    // ================= Helper Methods =================
-
-    private UUID getCurrentUserId() {
-        // This will be set by security context in actual implementation
-        // For now, returning a dummy UUID - should be replaced with actual security context
-        return UUID.fromString("550e8400-e29b-41d4-a716-446655440000");
-    }
+    // ================= DTO Mapping Methods =================
 
     private PostDTO mapPostToDTO(Post post) {
         PostDTO dto = new PostDTO();

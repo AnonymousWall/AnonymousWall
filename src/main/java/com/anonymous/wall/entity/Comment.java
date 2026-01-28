@@ -10,7 +10,7 @@ import java.util.UUID;
 public class Comment {
 
     @Id
-    @AutoPopulated
+    @GeneratedValue
     private Long id;
 
     @MappedProperty("post_id")

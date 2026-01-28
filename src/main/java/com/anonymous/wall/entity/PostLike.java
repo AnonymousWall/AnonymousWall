@@ -10,7 +10,7 @@ import java.util.UUID;
 public class PostLike {
 
     @Id
-    @AutoPopulated
+    @GeneratedValue
     private Long id;
 
     @MappedProperty("post_id")
