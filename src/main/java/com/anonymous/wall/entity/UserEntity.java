@@ -16,6 +16,9 @@ public class UserEntity {
     @MappedProperty("email")
     private String email;
 
+    @MappedProperty("school_domain")
+    private String schoolDomain;
+
     @MappedProperty("password_hash")
     private String passwordHash;
 
@@ -35,6 +38,9 @@ public class UserEntity {
 
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }
+
+    public String getSchoolDomain() { return schoolDomain; }
+    public void setSchoolDomain(String schoolDomain) { this.schoolDomain = schoolDomain; }
 
     public String getPasswordHash() { return passwordHash; }
     public void setPasswordHash(String passwordHash) { this.passwordHash = passwordHash; }

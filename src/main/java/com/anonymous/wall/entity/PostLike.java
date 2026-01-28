@@ -6,8 +6,8 @@ import io.micronaut.data.model.naming.NamingStrategies;
 import java.time.ZonedDateTime;
 import java.util.UUID;
 
-@MappedEntity(value = "comments", namingStrategy = NamingStrategies.Raw.class)
-public class Comment {
+@MappedEntity(value = "post_likes", namingStrategy = NamingStrategies.Raw.class)
+public class PostLike {
 
     @Id
     @AutoPopulated
@@ -19,21 +19,17 @@ public class Comment {
     @MappedProperty("user_id")
     private UUID userId;
 
-    @MappedProperty("text")
-    private String text;
-
     @MappedProperty("created_at")
     private ZonedDateTime createdAt = ZonedDateTime.now();
 
     // ================= Constructors =================
 
-    public Comment() {
+    public PostLike() {
     }
 
-    public Comment(Long postId, UUID userId, String text) {
+    public PostLike(Long postId, UUID userId) {
         this.postId = postId;
         this.userId = userId;
-        this.text = text;
         this.createdAt = ZonedDateTime.now();
     }
 
@@ -47,9 +43,6 @@ public class Comment {
 
     public UUID getUserId() { return userId; }
     public void setUserId(UUID userId) { this.userId = userId; }
-
-    public String getText() { return text; }
-    public void setText(String text) { this.text = text; }
 
     public ZonedDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(ZonedDateTime createdAt) { this.createdAt = createdAt; }

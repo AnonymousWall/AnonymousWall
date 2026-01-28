@@ -8,6 +8,7 @@ import com.anonymous.wall.repository.EmailVerificationCodeRepository;
 import com.anonymous.wall.util.PasswordUtil;
 import com.anonymous.wall.util.CodeGenerator;
 import com.anonymous.wall.util.EmailUtil;
+import com.anonymous.wall.util.EmailValidator;
 
 import jakarta.inject.Singleton;
 import jakarta.inject.Inject;
@@ -55,6 +56,11 @@ public class AuthServiceImpl implements AuthService {
      */
     @Override
     public UserEntity registerWithEmail(RegisterEmailRequest request) {
+        // Validate school email
+        if (!EmailValidator.isValidSchoolEmail(request.getEmail())) {
+            throw new IllegalArgumentException("Only school/educational email addresses are allowed for registration");
+        }
+
         // Check if email already exists
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
             throw new IllegalArgumentException("Email already registered");
@@ -76,6 +82,7 @@ public class AuthServiceImpl implements AuthService {
         // Create new user
         UserEntity user = new UserEntity();
         user.setEmail(request.getEmail());
+        user.setSchoolDomain(EmailValidator.extractSchoolDomain(request.getEmail()));
         user.setVerified(true);
         user.setPasswordSet(false);
         user.setCreatedAt(ZonedDateTime.now());
