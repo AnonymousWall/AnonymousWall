@@ -109,14 +109,28 @@
                 <constraints primaryKey="true"/>
             </column>
             <column name="user_id" type="CHAR(36)"/>
-            <column name="company" type="VARCHAR(255)"/>
-            <column name="role" type="VARCHAR(255)"/>
+            <column name="company" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="role" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
             <column name="salary" type="VARCHAR(50)"/>
+            <column name="location" type="VARCHAR(255)"/>
+            <column name="description" type="TEXT"/>
+            <column name="deadline" type="DATE"/>
             <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP"/>
+            <column name="updated_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP"/>
         </createTable>
         <addForeignKeyConstraint baseTableName="internships" baseColumnNames="user_id"
                                  constraintName="fk_internships_user"
                                  referencedTableName="users" referencedColumnNames="id"/>
+        <createIndex tableName="internships" indexName="idx_internships_company">
+            <column name="company"/>
+        </createIndex>
+        <createIndex tableName="internships" indexName="idx_internships_created_at">
+            <column name="created_at"/>
+        </createIndex>
     </changeSet>
 
     <!-- ================= Marketplace Items ================= -->
@@ -126,14 +140,27 @@
                 <constraints primaryKey="true"/>
             </column>
             <column name="user_id" type="CHAR(36)"/>
-            <column name="title" type="VARCHAR(255)"/>
+            <column name="title" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
             <column name="description" type="TEXT"/>
-            <column name="price" type="DECIMAL(10,2)"/>
+            <column name="price" type="DECIMAL(10,2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="category" type="VARCHAR(100)"/>
+            <column name="condition" type="VARCHAR(20)"/>
             <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP"/>
+            <column name="updated_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP"/>
         </createTable>
         <addForeignKeyConstraint baseTableName="marketplace_items" baseColumnNames="user_id"
                                  constraintName="fk_marketplace_user"
                                  referencedTableName="users" referencedColumnNames="id"/>
+        <createIndex tableName="marketplace_items" indexName="idx_marketplace_created_at">
+            <column name="created_at"/>
+        </createIndex>
+        <createIndex tableName="marketplace_items" indexName="idx_marketplace_price">
+            <column name="price"/>
+        </createIndex>
     </changeSet>
 
     <!-- ================= Coins ================= -->
@@ -142,13 +169,60 @@
             <column name="id" type="BIGINT" autoIncrement="true">
                 <constraints primaryKey="true"/>
             </column>
-            <column name="user_id" type="CHAR(36)"/>
+            <column name="user_id" type="CHAR(36)">
+                <constraints nullable="false" unique="true"/>
+            </column>
             <column name="balance" type="INT" defaultValueNumeric="0"/>
+            <column name="last_claim_date" type="DATE"/>
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP"/>
             <column name="updated_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP"/>
         </createTable>
         <addForeignKeyConstraint baseTableName="coins" baseColumnNames="user_id"
                                  constraintName="fk_coins_user"
                                  referencedTableName="users" referencedColumnNames="id"/>
+    </changeSet>
+
+    <!-- ================= Indexes for Performance ================= -->
+    <changeSet id="9-add-performance-indexes" author="ziyihuang">
+        <!-- Posts indexes -->
+        <createIndex tableName="posts" indexName="idx_posts_wall">
+            <column name="wall"/>
+        </createIndex>
+        <createIndex tableName="posts" indexName="idx_posts_user_id">
+            <column name="user_id"/>
+        </createIndex>
+        <createIndex tableName="posts" indexName="idx_posts_wall_created_at">
+            <column name="wall"/>
+            <column name="created_at"/>
+        </createIndex>
+
+        <!-- Comments indexes -->
+        <createIndex tableName="comments" indexName="idx_comments_post_id">
+            <column name="post_id"/>
+        </createIndex>
+        <createIndex tableName="comments" indexName="idx_comments_user_id">
+            <column name="user_id"/>
+        </createIndex>
+
+        <!-- Email verification codes indexes -->
+        <createIndex tableName="email_verification_codes" indexName="idx_email_expires_at">
+            <column name="expires_at"/>
+        </createIndex>
+
+        <!-- Post likes indexes -->
+        <createIndex tableName="post_likes" indexName="idx_post_likes_user_id">
+            <column name="user_id"/>
+        </createIndex>
+
+        <!-- Marketplace indexes -->
+        <createIndex tableName="marketplace_items" indexName="idx_marketplace_user_id">
+            <column name="user_id"/>
+        </createIndex>
+
+        <!-- Internships indexes -->
+        <createIndex tableName="internships" indexName="idx_internships_user_id">
+            <column name="user_id"/>
+        </createIndex>
     </changeSet>
 
 </databaseChangeLog>

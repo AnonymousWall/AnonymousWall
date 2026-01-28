@@ -18,10 +18,13 @@ tags:
 paths:
 
   # =================== Auth ===================
-  /auth/email/code:
+
+  # Email Verification Code Endpoints
+  /auth/email/send-code:
     post:
       tags: [auth]
       summary: Send email verification code
+      description: Send a 6-digit verification code to the user's email for registration, login, or password reset
       operationId: sendEmailCode
       requestBody:
         required: true
@@ -31,22 +34,34 @@ paths:
               $ref: "#/components/schemas/SendEmailCodeRequest"
       responses:
         "200":
-          description: Verification code sent
+          description: Verification code sent successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Verification code sent to email"
+        "400":
+          description: Invalid email or request
 
-  /auth/email/verify:
+  # Registration Flow - Email Code Based
+  /auth/register/email:
     post:
       tags: [auth]
-      summary: Verify email code and authenticate user
-      operationId: verifyEmailCode
+      summary: Register account with email verification code
+      description: Create a new account using email and verification code. Password setup is optional initially.
+      operationId: registerWithEmail
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/VerifyEmailCodeRequest"
+              $ref: "#/components/schemas/RegisterEmailRequest"
       responses:
-        "200":
-          description: Email verified / user authenticated
+        "201":
+          description: Account registered successfully
           content:
             application/json:
               schema:
@@ -54,13 +69,82 @@ paths:
                 properties:
                   accessToken:
                     type: string
+                    description: JWT access token for authenticated requests
                   user:
                     $ref: "#/components/schemas/UserDTO"
+        "400":
+          description: Invalid code, email already exists, or invalid request
+        "409":
+          description: Email already registered
 
-  /auth/password:
+  # Login Flow - Email Code Based
+  /auth/login/email:
     post:
       tags: [auth]
-      summary: Set or change password
+      summary: Login with email verification code
+      description: Authenticate user with email and verification code (password-less login)
+      operationId: loginWithEmail
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginEmailRequest"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accessToken:
+                    type: string
+                    description: JWT access token for authenticated requests
+                  user:
+                    $ref: "#/components/schemas/UserDTO"
+        "400":
+          description: Invalid code or email
+        "401":
+          description: Authentication failed
+
+  # Login Flow - Password Based
+  /auth/login/password:
+    post:
+      tags: [auth]
+      summary: Login with email and password
+      description: Authenticate user with email and password (if password is set)
+      operationId: loginWithPassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PasswordLoginRequest"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accessToken:
+                    type: string
+                    description: JWT access token for authenticated requests
+                  user:
+                    $ref: "#/components/schemas/UserDTO"
+        "400":
+          description: Invalid email or password
+        "401":
+          description: Authentication failed
+
+  # Password Management - Set Initial Password
+  /auth/password/set:
+    post:
+      tags: [auth]
+      summary: Set password for the first time
+      description: Set an initial password after registration with email code. Requires authentication.
       operationId: setPassword
       security:
         - bearerAuth: []
@@ -72,26 +156,88 @@ paths:
               $ref: "#/components/schemas/SetPasswordRequest"
       responses:
         "200":
-          description: Password updated
+          description: Password set successfully
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/UserDTO"
+        "400":
+          description: Invalid password or request
+        "401":
+          description: Unauthorized - authentication required
 
-  /auth/login/password:
+  # Password Management - Change Password (Authenticated)
+  /auth/password/change:
     post:
       tags: [auth]
-      summary: Login with email and password
-      operationId: loginWithPassword
+      summary: Change password (when already logged in)
+      description: Change current password. Requires authentication and verification of old password.
+      operationId: changePassword
+      security:
+        - bearerAuth: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/PasswordLoginRequest"
+              $ref: "#/components/schemas/ChangePasswordRequest"
       responses:
         "200":
-          description: Login success
+          description: Password changed successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserDTO"
+        "400":
+          description: Invalid old password or invalid new password
+        "401":
+          description: Unauthorized - authentication required
+
+  # Password Management - Forgot Password Request
+  /auth/password/reset-request:
+    post:
+      tags: [auth]
+      summary: Request password reset (forgot password)
+      description: Request a password reset by sending a verification code to the email
+      operationId: requestPasswordReset
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PasswordResetRequestRequest"
+      responses:
+        "200":
+          description: Verification code sent for password reset
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Password reset code sent to email"
+        "400":
+          description: Invalid email
+        "404":
+          description: Email not found
+
+  # Password Management - Reset Password with Code
+  /auth/password/reset:
+    post:
+      tags: [auth]
+      summary: Reset password with verification code (forgot password flow)
+      description: Complete password reset using email and verification code
+      operationId: resetPassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResetPasswordRequest"
+      responses:
+        "200":
+          description: Password reset successfully
           content:
             application/json:
               schema:
@@ -99,13 +245,20 @@ paths:
                 properties:
                   accessToken:
                     type: string
+                    description: JWT access token for authenticated requests
                   user:
                     $ref: "#/components/schemas/UserDTO"
+        "400":
+          description: Invalid code, email, or password
+        "401":
+          description: Verification failed
 
   # =================== Posts ===================
   /posts:
     post:
       tags: [posts]
+      summary: Create a new post
+      description: Create a new anonymous post on the wall
       operationId: createPost
       security:
         - bearerAuth: []
@@ -117,35 +270,66 @@ paths:
               $ref: "#/components/schemas/CreatePostRequest"
       responses:
         "201":
-          description: Created
+          description: Post created successfully
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/PostDTO"
+        "400":
+          description: Invalid request data
+        "401":
+          description: Unauthorized - authentication required
     get:
       tags: [posts]
+      summary: List posts
+      description: Retrieve posts from campus or national wall with optional pagination
       operationId: listPosts
       security:
         - bearerAuth: []
       parameters:
         - in: query
           name: wall
+          required: false
           schema:
             type: string
             enum: [campus, national]
+            default: campus
+          description: Wall filter (campus or national)
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+          description: Page number for pagination
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+          description: Number of posts per page
       responses:
         "200":
-          description: OK
+          description: Posts retrieved successfully
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/PostDTO"
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/PostDTO"
+                  pagination:
+                    $ref: "#/components/schemas/PaginationInfo"
+        "401":
+          description: Unauthorized - authentication required
 
   /posts/{postId}/comments:
     post:
       tags: [posts]
+      summary: Add comment to post
+      description: Add a comment to an existing post
       operationId: addComment
       security:
         - bearerAuth: []
@@ -155,6 +339,7 @@ paths:
           required: true
           schema:
             type: string
+          description: ID of the post to comment on
       requestBody:
         required: true
         content:
@@ -163,11 +348,23 @@ paths:
               $ref: "#/components/schemas/CreateCommentRequest"
       responses:
         "201":
-          description: Comment added
+          description: Comment added successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommentDTO"
+        "400":
+          description: Invalid request data
+        "401":
+          description: Unauthorized - authentication required
+        "404":
+          description: Post not found
 
   /posts/{postId}/likes:
     post:
       tags: [posts]
+      summary: Like a post
+      description: Add a like to a post (toggle-like behavior)
       operationId: likePost
       security:
         - bearerAuth: []
@@ -177,45 +374,108 @@ paths:
           required: true
           schema:
             type: string
+          description: ID of the post to like
       responses:
         "200":
-          description: Liked
+          description: Like added/removed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  liked:
+                    type: boolean
+                    description: true if post is now liked, false if unliked
+        "401":
+          description: Unauthorized - authentication required
+        "404":
+          description: Post not found
 
   # =================== Walls ===================
   /walls/campus:
     get:
       tags: [walls]
+      summary: Get campus wall
+      description: Retrieve posts from the campus wall with optional pagination. Campus-specific content visible only to authenticated users.
       operationId: getCampusWall
       security:
         - bearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+          description: Page number for pagination
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+          description: Number of posts per page
       responses:
         "200":
-          description: OK
+          description: Campus wall posts retrieved successfully
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/PostDTO"
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/PostDTO"
+                  pagination:
+                    $ref: "#/components/schemas/PaginationInfo"
+        "401":
+          description: Unauthorized - authentication required
 
   /walls/national:
     get:
       tags: [walls]
+      summary: Get national wall
+      description: Retrieve posts from the national wall with optional pagination. Requires authentication.
       operationId: getNationalWall
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+          description: Page number for pagination
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+          description: Number of posts per page
       responses:
         "200":
-          description: OK
+          description: National wall posts retrieved successfully
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/PostDTO"
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/PostDTO"
+                  pagination:
+                    $ref: "#/components/schemas/PaginationInfo"
+        "401":
+          description: Unauthorized - authentication required
 
   # =================== Internships ===================
   /internships:
     post:
       tags: [internships]
+      summary: Create internship posting
+      description: Create a new internship opportunity posting
       operationId: createInternship
       security:
         - bearerAuth: []
@@ -227,20 +487,64 @@ paths:
               $ref: "#/components/schemas/CreateInternshipRequest"
       responses:
         "201":
-          description: Created
+          description: Internship posting created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InternshipDTO"
+        "400":
+          description: Invalid request data
+        "401":
+          description: Unauthorized - authentication required
     get:
       tags: [internships]
+      summary: List internship postings
+      description: Retrieve available internship postings with optional pagination and filtering
       operationId: listInternships
       security:
         - bearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+          description: Page number for pagination
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+          description: Number of postings per page
+        - in: query
+          name: company
+          schema:
+            type: string
+          description: Filter by company name
       responses:
         "200":
-          description: OK
+          description: Internship postings retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/InternshipDTO"
+                  pagination:
+                    $ref: "#/components/schemas/PaginationInfo"
+        "401":
+          description: Unauthorized - authentication required
 
   # =================== Marketplace ===================
   /marketplace:
     post:
       tags: [marketplace]
+      summary: Create marketplace item
+      description: List an item for sale in the marketplace
       operationId: createItem
       security:
         - bearerAuth: []
@@ -252,39 +556,105 @@ paths:
               $ref: "#/components/schemas/CreateItemRequest"
       responses:
         "201":
-          description: Created
+          description: Item created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ItemDTO"
+        "400":
+          description: Invalid request data
+        "401":
+          description: Unauthorized - authentication required
     get:
       tags: [marketplace]
+      summary: List marketplace items
+      description: Browse available items in the marketplace with optional pagination and filtering
       operationId: listItems
       security:
         - bearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+          description: Page number for pagination
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+          description: Number of items per page
+        - in: query
+          name: sortBy
+          schema:
+            type: string
+            enum: [newest, price-asc, price-desc]
+            default: newest
+          description: Sort order for items
       responses:
         "200":
-          description: OK
+          description: Marketplace items retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ItemDTO"
+                  pagination:
+                    $ref: "#/components/schemas/PaginationInfo"
+        "401":
+          description: Unauthorized - authentication required
 
   # =================== Coins ===================
   /coins/claim:
     post:
       tags: [coins]
+      summary: Claim daily coins
+      description: Claim the daily coin allowance for the user
       operationId: claimCoins
       security:
         - bearerAuth: []
       responses:
         "200":
-          description: Claimed
+          description: Coins claimed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  amount:
+                    type: integer
+                    description: Number of coins claimed
+                  totalBalance:
+                    type: integer
+                    description: Updated total coin balance
+        "400":
+          description: Already claimed today or invalid request
+        "401":
+          description: Unauthorized - authentication required
+
   /coins/balance:
     get:
       tags: [coins]
+      summary: Get coin balance
+      description: Retrieve the current coin balance for the authenticated user
       operationId: getBalance
       security:
         - bearerAuth: []
       responses:
         "200":
-          description: OK
+          description: Coin balance retrieved successfully
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/CoinBalanceDTO"
+        "401":
+          description: Unauthorized - authentication required
 
 components:
   schemas:
@@ -307,6 +677,7 @@ components:
           type: string
           format: date-time
 
+    # ----- Auth Requests/Responses -----
     SendEmailCodeRequest:
       type: object
       required: [email, purpose]
@@ -317,8 +688,9 @@ components:
         purpose:
           type: string
           enum: [register, login, reset_password]
+          description: The purpose of the verification code
 
-    VerifyEmailCodeRequest:
+    RegisterEmailRequest:
       type: object
       required: [email, code]
       properties:
@@ -327,18 +699,24 @@ components:
           format: email
         code:
           type: string
+          minLength: 6
+          maxLength: 6
+          description: 6-digit verification code sent to email
           example: "839214"
 
-    SetPasswordRequest:
+    LoginEmailRequest:
       type: object
-      required: [password]
+      required: [email, code]
       properties:
-        oldPassword:
+        email:
           type: string
-          description: Required if changing existing password
-        password:
+          format: email
+        code:
           type: string
-          minLength: 8
+          minLength: 6
+          maxLength: 6
+          description: 6-digit verification code sent to email
+          example: "839214"
 
     PasswordLoginRequest:
       type: object
@@ -349,6 +727,55 @@ components:
           format: email
         password:
           type: string
+          description: User's password
+
+    SetPasswordRequest:
+      type: object
+      required: [password]
+      properties:
+        password:
+          type: string
+          minLength: 8
+          description: New password (minimum 8 characters)
+
+    ChangePasswordRequest:
+      type: object
+      required: [oldPassword, newPassword]
+      properties:
+        oldPassword:
+          type: string
+          description: Current password for verification
+        newPassword:
+          type: string
+          minLength: 8
+          description: New password (minimum 8 characters)
+
+    PasswordResetRequestRequest:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+          format: email
+          description: Email address of the account
+
+    ResetPasswordRequest:
+      type: object
+      required: [email, code, newPassword]
+      properties:
+        email:
+          type: string
+          format: email
+        code:
+          type: string
+          minLength: 6
+          maxLength: 6
+          description: 6-digit verification code sent to email
+          example: "839214"
+        newPassword:
+          type: string
+          minLength: 8
+          description: New password (minimum 8 characters)
 
     # ----- Posts -----
     CreatePostRequest:
@@ -357,6 +784,14 @@ components:
       properties:
         content:
           type: string
+          minLength: 1
+          maxLength: 5000
+          description: Post content text
+        wall:
+          type: string
+          enum: [campus, national]
+          default: campus
+          description: Which wall to post to
 
     PostDTO:
       type: object
@@ -365,7 +800,31 @@ components:
           type: string
         content:
           type: string
+        wall:
+          type: string
+          enum: [campus, national]
+          description: Which wall the post is on
+        author:
+          type: object
+          properties:
+            id:
+              type: string
+            isAnonymous:
+              type: boolean
+              description: Whether author is anonymous
+        likes:
+          type: integer
+          description: Number of likes
+        comments:
+          type: integer
+          description: Number of comments
+        liked:
+          type: boolean
+          description: Whether current user has liked this post
         createdAt:
+          type: string
+          format: date-time
+        updatedAt:
           type: string
           format: date-time
 
@@ -375,22 +834,112 @@ components:
       properties:
         text:
           type: string
+          minLength: 1
+          description: Comment text content
+
+    CommentDTO:
+      type: object
+      properties:
+        id:
+          type: string
+        postId:
+          type: string
+        text:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        author:
+          type: object
+          properties:
+            id:
+              type: string
+            isAnonymous:
+              type: boolean
 
     # ----- Internships -----
     CreateInternshipRequest:
       type: object
+      required: [company, role]
       properties:
+        company:
+          type: string
+          description: Company name
+        role:
+          type: string
+          description: Internship role/title
+        salary:
+          type: string
+          description: Salary or stipend information
+        location:
+          type: string
+          description: Job location
+        description:
+          type: string
+          description: Detailed job description
+        deadline:
+          type: string
+          format: date
+          description: Application deadline
+
+    InternshipDTO:
+      type: object
+      properties:
+        id:
+          type: string
         company:
           type: string
         role:
           type: string
         salary:
           type: string
+        location:
+          type: string
+        description:
+          type: string
+        deadline:
+          type: string
+          format: date
+        author:
+          type: object
+          properties:
+            id:
+              type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
 
     # ----- Marketplace -----
     CreateItemRequest:
       type: object
+      required: [title, price]
       properties:
+        title:
+          type: string
+          description: Item title
+        description:
+          type: string
+          description: Item description
+        price:
+          type: number
+          format: float
+          description: Item price
+        category:
+          type: string
+          description: Item category (e.g., books, electronics, furniture)
+        condition:
+          type: string
+          enum: [new, like-new, good, fair]
+          description: Condition of the item
+
+    ItemDTO:
+      type: object
+      properties:
+        id:
+          type: string
         title:
           type: string
         description:
@@ -398,6 +947,25 @@ components:
         price:
           type: number
           format: float
+        category:
+          type: string
+        condition:
+          type: string
+          enum: [new, like-new, good, fair]
+        seller:
+          type: object
+          properties:
+            id:
+              type: string
+            email:
+              type: string
+              format: email
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
 
     # ----- Coins -----
     CoinBalanceDTO:
@@ -405,6 +973,23 @@ components:
       properties:
         balance:
           type: integer
+
+    # ----- Pagination -----
+    PaginationInfo:
+      type: object
+      properties:
+        page:
+          type: integer
+          description: Current page number
+        limit:
+          type: integer
+          description: Number of items per page
+        total:
+          type: integer
+          description: Total number of items
+        totalPages:
+          type: integer
+          description: Total number of pages
 
   securitySchemes:
     bearerAuth:

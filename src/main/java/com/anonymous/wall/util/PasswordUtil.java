@@ -1,24 +1,23 @@
 package com.anonymous.wall.util;
 
+import at.favre.lib.crypto.bcrypt.BCrypt;
+
 /**
- * 密码加密工具类
+ * Password encryption utility class
  */
 public class PasswordUtil {
 
     /**
-     * 加密密码
+     * Hash a password using BCrypt
      */
-    public static String hashPassword(String plainPassword) {
-        return plainPassword;
+    public static String hashPassword(String password) {
+        return BCrypt.withDefaults().hashToString(12, password.toCharArray());
     }
 
     /**
-     * 验证密码
+     * Check if a password matches its hash
      */
-    public static boolean checkPassword(String plainPassword, String hashedPassword) {
-        if (hashedPassword == null || hashedPassword.isEmpty()) {
-            return false;
-        }
-        return plainPassword.equals(hashedPassword);
+    public static boolean checkPassword(String password, String hash) {
+        return BCrypt.verifyer().verify(password.toCharArray(), hash).verified;
     }
 }
