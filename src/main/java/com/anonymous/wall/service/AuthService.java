@@ -5,7 +5,11 @@ import com.anonymous.wall.model.*;
 
 public interface AuthService {
     void sendEmailCode(SendEmailCodeRequest request);
-    UserEntity verifyEmailCode(VerifyEmailCodeRequest request);
-    void setPassword(SetPasswordRequest request, UserEntity currentUser);
+    UserEntity registerWithEmail(RegisterEmailRequest request);
+    UserEntity loginWithEmail(LoginEmailRequest request);
     UserEntity loginWithPassword(PasswordLoginRequest request);
+    UserEntity setPassword(SetPasswordRequest request, UserEntity currentUser);
+    UserEntity changePassword(ChangePasswordRequest request, UserEntity currentUser);
+    UserEntity requestPasswordReset(PasswordResetRequestRequest request);
+    UserEntity resetPassword(ResetPasswordRequest request);
 }
