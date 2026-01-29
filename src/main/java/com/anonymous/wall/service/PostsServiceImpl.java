@@ -3,11 +3,13 @@ package com.anonymous.wall.service;
 import com.anonymous.wall.entity.Post;
 import com.anonymous.wall.entity.Comment;
 import com.anonymous.wall.entity.PostLike;
+import com.anonymous.wall.entity.UserEntity;
 import com.anonymous.wall.model.CreatePostRequest;
 import com.anonymous.wall.model.CreateCommentRequest;
 import com.anonymous.wall.repository.PostRepository;
 import com.anonymous.wall.repository.CommentRepository;
 import com.anonymous.wall.repository.PostLikeRepository;
+import com.anonymous.wall.repository.UserRepository;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
 import jakarta.inject.Inject;
@@ -33,6 +35,9 @@ public class PostsServiceImpl implements PostsService {
     @Inject
     private PostLikeRepository postLikeRepository;
 
+    @Inject
+    private UserRepository userRepository;
+
     /**
      * Create a new post
      */
@@ -56,15 +61,34 @@ public class PostsServiceImpl implements PostsService {
             throw new IllegalArgumentException("Wall must be 'campus' or 'national'");
         }
 
-        Post post = new Post(userId, request.getContent(), wall);
+        // Fetch user's school domain
+        Optional<UserEntity> userOpt = userRepository.findById(userId);
+        if (userOpt.isEmpty()) {
+            throw new IllegalArgumentException("User not found");
+        }
+
+        UserEntity user = userOpt.get();
+        String schoolDomain = null;
+
+        // For campus posts, school_domain must be set
+        if (wall.equals("campus")) {
+            schoolDomain = user.getSchoolDomain();
+            if (schoolDomain == null || schoolDomain.trim().isEmpty()) {
+                throw new IllegalArgumentException("Cannot post to campus wall without school domain");
+            }
+        }
+
+        Post post = new Post(userId, request.getContent(), wall, schoolDomain);
         Post savedPost = postRepository.save(post);
 
-        log.info("Post created: id={}, wall={}, user={}", savedPost.getId(), wall, userId);
+        log.info("Post created: id={}, wall={}, schoolDomain={}, user={}", savedPost.getId(), wall, schoolDomain, userId);
         return savedPost;
     }
 
     /**
      * Get posts by wall type with pagination
+     * Campus posts: only visible to users with the same school domain
+     * National posts: visible to all users
      */
     @Override
     public Page<Post> getPostsByWall(String wall, Pageable pageable, UUID currentUserId) {
@@ -72,7 +96,28 @@ public class PostsServiceImpl implements PostsService {
             throw new IllegalArgumentException("Wall must be 'campus' or 'national'");
         }
 
-        Page<Post> posts = postRepository.findByWall(wall, pageable);
+        // Fetch current user to get their school domain
+        Optional<UserEntity> userOpt = userRepository.findById(currentUserId);
+        if (userOpt.isEmpty()) {
+            throw new IllegalArgumentException("User not found");
+        }
+
+        UserEntity currentUser = userOpt.get();
+        Page<Post> posts;
+
+        if (wall.equals("national")) {
+            // National posts are visible to all users
+            posts = postRepository.findByWall("national", pageable);
+        } else {
+            // Campus posts: only visible to users from the same school
+            String userSchoolDomain = currentUser.getSchoolDomain();
+            if (userSchoolDomain == null || userSchoolDomain.trim().isEmpty()) {
+                // User has no school domain, cannot see campus posts
+                posts = Page.empty();
+            } else {
+                posts = postRepository.findByWallAndSchoolDomain("campus", userSchoolDomain, pageable);
+            }
+        }
 
         // Enrich posts with like/comment counts and check if current user liked
         posts.getContent().forEach(post -> enrichPost(post, currentUserId));
@@ -82,6 +127,8 @@ public class PostsServiceImpl implements PostsService {
 
     /**
      * Add a comment to a post
+     * For campus posts: only users from the same school can comment
+     * For national posts: all authenticated users can comment
      */
     @Override
     public Comment addComment(Long postId, CreateCommentRequest request, UUID userId) {
@@ -90,6 +137,11 @@ public class PostsServiceImpl implements PostsService {
         if (postOpt.isEmpty()) {
             throw new IllegalArgumentException("Post not found");
         }
+
+        Post post = postOpt.get();
+
+        // Validate visibility and permission
+        validatePostVisibility(post, userId);
 
         if (request.getText() == null || request.getText().trim().isEmpty()) {
             throw new IllegalArgumentException("Comment text cannot be empty");
@@ -112,6 +164,8 @@ public class PostsServiceImpl implements PostsService {
 
     /**
      * Toggle like on a post
+     * For campus posts: only users from the same school can like
+     * For national posts: all authenticated users can like
      * Returns true if post is now liked, false if unliked
      */
     @Override
@@ -121,6 +175,11 @@ public class PostsServiceImpl implements PostsService {
         if (postOpt.isEmpty()) {
             throw new IllegalArgumentException("Post not found");
         }
+
+        Post post = postOpt.get();
+
+        // Validate visibility and permission
+        validatePostVisibility(post, userId);
 
         Optional<PostLike> existingLike = postLikeRepository.findByPostIdAndUserId(postId, userId);
 
@@ -140,6 +199,7 @@ public class PostsServiceImpl implements PostsService {
 
     /**
      * Get a single post with like/comment counts
+     * Validates that the user has permission to view the post
      */
     @Override
     public Post getPost(Long postId, UUID currentUserId) {
@@ -149,8 +209,35 @@ public class PostsServiceImpl implements PostsService {
         }
 
         Post post = postOpt.get();
+        validatePostVisibility(post, currentUserId);
+
         enrichPost(post, currentUserId);
         return post;
+    }
+
+    /**
+     * Validate that a user has visibility/permission for a post
+     * Campus posts: only visible/actionable by users from the same school
+     * National posts: visible/actionable by all users
+     */
+    private void validatePostVisibility(Post post, UUID userId) {
+        if (post.getWall().equals("national")) {
+            return;
+        }
+        if (post.getWall().equals("campus")) {
+            Optional<UserEntity> userOpt = userRepository.findById(userId);
+            if (userOpt.isEmpty()) {
+                throw new IllegalArgumentException("User not found");
+            }
+            UserEntity user = userOpt.get();
+            String userSchoolDomain = user.getSchoolDomain();
+            if (userSchoolDomain == null || userSchoolDomain.trim().isEmpty()) {
+                throw new IllegalArgumentException("You do not have access to campus posts");
+            }
+            if (!userSchoolDomain.equals(post.getSchoolDomain())) {
+                throw new IllegalArgumentException("You do not have access to posts from other schools");
+            }
+        }
     }
 
     /**

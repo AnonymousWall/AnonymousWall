@@ -20,14 +20,29 @@ public interface PostRepository extends CrudRepository<Post, Long> {
     Page<Post> findByWall(String wall, Pageable pageable);
 
     /**
+     * Find national posts with pagination
+     */
+    Page<Post> findByWallOrderByCreatedAtDesc(String wall, Pageable pageable);
+
+    /**
+     * Find campus posts by school domain with pagination
+     */
+    Page<Post> findByWallAndSchoolDomain(String wall, String schoolDomain, Pageable pageable);
+
+    /**
      * Count posts by wall type
      */
     long countByWall(String wall);
 
     /**
+     * Count campus posts by school domain
+     */
+    long countByWallAndSchoolDomain(String wall, String schoolDomain);
+
+    /**
      * Find all posts by user ID
      */
-    List<Post> findByUserId(UUID userId);
+    List<Post> findByUserId(java.util.UUID userId);
 
     /**
      * Find post by ID and eager load counts

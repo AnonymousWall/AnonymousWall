@@ -122,6 +122,9 @@ public class PostsController {
             if (e.getMessage().contains("not found")) {
                 return HttpResponse.notFound();
             }
+            if (e.getMessage().contains("do not have access")) {
+                return HttpResponse.<Object>status(io.micronaut.http.HttpStatus.FORBIDDEN).body(error(e.getMessage()));
+            }
             return HttpResponse.badRequest(error(e.getMessage()));
         } catch (Exception e) {
             log.error("Error adding comment", e);
@@ -135,8 +138,11 @@ public class PostsController {
      */
     @Get("/{postId}/comments")
     @Secured(SecurityRule.IS_AUTHENTICATED)
-    public HttpResponse<Object> getComments(@PathVariable Long postId) {
+    public HttpResponse<Object> getComments(@PathVariable Long postId, HttpRequest<?> httpRequest) {
         try {
+            UUID userId = getUserIdFromRequest(httpRequest);
+            // This will validate visibility and throw if user doesn't have access
+            postsService.getPost(postId, userId);
             List<Comment> comments = postsService.getComments(postId);
             List<CommentDTO> dtos = comments.stream()
                     .map(this::mapCommentToDTO)
@@ -147,6 +153,14 @@ public class PostsController {
             response.put("total", dtos.size());
 
             return HttpResponse.ok(response);
+        } catch (IllegalArgumentException e) {
+            if (e.getMessage().contains("not found")) {
+                return HttpResponse.notFound();
+            }
+            if (e.getMessage().contains("do not have access")) {
+                return HttpResponse.<Object>status(io.micronaut.http.HttpStatus.FORBIDDEN).body(error(e.getMessage()));
+            }
+            return HttpResponse.badRequest(error(e.getMessage()));
         } catch (Exception e) {
             log.error("Error getting comments", e);
             return HttpResponse.badRequest(error("Failed to get comments"));
@@ -171,6 +185,9 @@ public class PostsController {
         } catch (IllegalArgumentException e) {
             if (e.getMessage().contains("not found")) {
                 return HttpResponse.notFound();
+            }
+            if (e.getMessage().contains("do not have access")) {
+                return HttpResponse.<Object>status(io.micronaut.http.HttpStatus.FORBIDDEN).body(error(e.getMessage()));
             }
             return HttpResponse.badRequest(error(e.getMessage()));
         } catch (Exception e) {

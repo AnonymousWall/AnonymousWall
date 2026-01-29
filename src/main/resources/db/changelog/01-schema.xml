@@ -54,6 +54,7 @@
             <column name="user_id" type="CHAR(36)"/>
             <column name="content" type="TEXT"/>
             <column name="wall" type="VARCHAR(20)" defaultValue="campus"/>
+            <column name="school_domain" type="VARCHAR(255)"/>
             <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP"/>
             <column name="updated_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP"/>
         </createTable>

@@ -22,6 +22,9 @@ public class Post {
     @MappedProperty("wall")
     private String wall = "campus"; // "campus" or "national"
 
+    @MappedProperty("school_domain")
+    private String schoolDomain; // School domain for campus posts
+
     @MappedProperty("created_at")
     private ZonedDateTime createdAt = ZonedDateTime.now();
 
@@ -43,10 +46,11 @@ public class Post {
     public Post() {
     }
 
-    public Post(UUID userId, String content, String wall) {
+    public Post(UUID userId, String content, String wall, String schoolDomain) {
         this.userId = userId;
         this.content = content;
         this.wall = wall != null ? wall : "campus";
+        this.schoolDomain = schoolDomain;
         this.createdAt = ZonedDateTime.now();
         this.updatedAt = ZonedDateTime.now();
     }
@@ -64,6 +68,9 @@ public class Post {
 
     public String getWall() { return wall; }
     public void setWall(String wall) { this.wall = wall; }
+
+    public String getSchoolDomain() { return schoolDomain; }
+    public void setSchoolDomain(String schoolDomain) { this.schoolDomain = schoolDomain; }
 
     public ZonedDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(ZonedDateTime createdAt) { this.createdAt = createdAt; }
