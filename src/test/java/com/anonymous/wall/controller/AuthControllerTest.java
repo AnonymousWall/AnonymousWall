@@ -879,8 +879,60 @@ class AuthControllerTest {
     class SetPasswordTests {
 
         @Test
+        @DisplayName("Positive: Should set password with proper JWT authentication")
+        void shouldSetPasswordWithAuthentication() {
+            // Arrange: Register user via email first to get JWT token
+            String testEmail = "setpw" + System.currentTimeMillis() + "@test.com";
+            String code = "123456";
+
+            // Create verification code for registration
+            EmailVerificationCode verificationCode = new EmailVerificationCode(
+                testEmail, code, "register", ZonedDateTime.now().plusMinutes(15)
+            );
+            emailCodeRepository.save(verificationCode);
+
+            RegisterEmailRequest registerRequest = new RegisterEmailRequest(testEmail, code);
+
+            // Register to get a token
+            HttpResponse<Map> registerResponse = client.toBlocking().exchange(
+                HttpRequest.POST(BASE_PATH + "/register/email", registerRequest),
+                Map.class
+            );
+
+            @SuppressWarnings("unchecked")
+            Map<String, Object> registerBody = registerResponse.body();
+            String token = (String) registerBody.get("accessToken");
+
+            @SuppressWarnings("unchecked")
+            Map<String, Object> userMap = (Map<String, Object>) registerBody.get("user");
+            String userId = (String) userMap.get("id");
+
+            SetPasswordRequest request = new SetPasswordRequest("NewPassword123!");
+
+            // Act
+            HttpResponse<Map> response = client.toBlocking().exchange(
+                HttpRequest.POST(BASE_PATH + "/password/set", request)
+                    .header("Authorization", "Bearer " + token)
+                    .header("X-User-Id", userId),
+                Map.class
+            );
+
+            // Assert
+            assertEquals(HttpStatus.OK, response.getStatus());
+            Map<String, Object> body = response.body();
+            assertNotNull(body);
+            assertTrue(body.containsKey("email") || body.containsKey("id"));
+
+            // Verify password was actually set in database
+            Optional<UserEntity> updatedUser = userRepository.findByEmail(testEmail);
+            assertTrue(updatedUser.isPresent());
+            assertTrue(updatedUser.get().isPasswordSet());
+            assertNotNull(updatedUser.get().getPasswordHash());
+        }
+
+        @Test
         @DisplayName("Negative: Should fail without proper authentication")
-        void shouldFailWithoutAuthentication() {
+        void shouldFailWithoutProperAuthentication() {
             // Arrange
             String testEmail = "setpw" + System.currentTimeMillis() + "@test.com";
             UserEntity user = new UserEntity();
@@ -942,6 +994,79 @@ class AuthControllerTest {
     class ChangePasswordTests {
 
         @Test
+        @DisplayName("Positive: Should change password with proper JWT authentication")
+        void shouldChangePasswordWithAuthentication() {
+            // Arrange: Register user, set password, then get JWT to change password
+            String testEmail = "changepw" + System.currentTimeMillis() + "@test.com";
+            String initialPassword = "InitialPassword123!";
+            String newPassword = "NewPassword456!";
+
+            // Step 1: Register user
+            String registerCode = "123456";
+            EmailVerificationCode verificationCode = new EmailVerificationCode(
+                testEmail, registerCode, "register", ZonedDateTime.now().plusMinutes(15)
+            );
+            emailCodeRepository.save(verificationCode);
+
+            RegisterEmailRequest registerRequest = new RegisterEmailRequest(testEmail, registerCode);
+            HttpResponse<Map> registerResponse = client.toBlocking().exchange(
+                HttpRequest.POST(BASE_PATH + "/register/email", registerRequest),
+                Map.class
+            );
+
+            @SuppressWarnings("unchecked")
+            Map<String, Object> registerBody = registerResponse.body();
+            String registerToken = (String) registerBody.get("accessToken");
+
+            @SuppressWarnings("unchecked")
+            Map<String, Object> userMap = (Map<String, Object>) registerBody.get("user");
+            String userId = (String) userMap.get("id");
+
+            // Step 2: Set initial password
+            SetPasswordRequest setPasswordRequest = new SetPasswordRequest(initialPassword);
+            client.toBlocking().exchange(
+                HttpRequest.POST(BASE_PATH + "/password/set", setPasswordRequest)
+                    .header("Authorization", "Bearer " + registerToken)
+                    .header("X-User-Id", userId)
+            );
+
+            // Step 3: Login with password to get new JWT
+            PasswordLoginRequest loginRequest = new PasswordLoginRequest(testEmail, initialPassword);
+            HttpResponse<Map> loginResponse = client.toBlocking().exchange(
+                HttpRequest.POST(BASE_PATH + "/login/password", loginRequest),
+                Map.class
+            );
+
+            @SuppressWarnings("unchecked")
+            Map<String, Object> loginBody = loginResponse.body();
+            String loginToken = (String) loginBody.get("accessToken");
+
+            // Step 4: Change password
+            ChangePasswordRequest changeRequest = new ChangePasswordRequest(initialPassword, newPassword);
+
+            // Act
+            HttpResponse<Map> response = client.toBlocking().exchange(
+                HttpRequest.POST(BASE_PATH + "/password/change", changeRequest)
+                    .header("Authorization", "Bearer " + loginToken)
+                    .header("X-User-Id", userId),
+                Map.class
+            );
+
+            // Assert
+            assertEquals(HttpStatus.OK, response.getStatus());
+            Map<String, Object> body = response.body();
+            assertNotNull(body);
+
+            // Verify new password can be used to login
+            PasswordLoginRequest newLoginRequest = new PasswordLoginRequest(testEmail, newPassword);
+            HttpResponse<Map> newLoginResponse = client.toBlocking().exchange(
+                HttpRequest.POST(BASE_PATH + "/login/password", newLoginRequest),
+                Map.class
+            );
+            assertEquals(HttpStatus.OK, newLoginResponse.getStatus());
+        }
+
+        @Test
         @DisplayName("Negative: Should fail without proper authentication")
         void shouldFailWithoutProperAuthentication() {
             // Arrange
@@ -968,26 +1093,63 @@ class AuthControllerTest {
         @Test
         @DisplayName("Negative: Should fail with wrong old password (when authenticated)")
         void shouldFailWithWrongOldPassword() {
-            // Arrange
+            // Arrange: Create registered user with password and get JWT
             String testEmail = "changepw2" + System.currentTimeMillis() + "@test.com";
-            UserEntity user = new UserEntity();
-            user.setEmail(testEmail);
-            user.setPasswordSet(true);
-            user.setPasswordHash(PasswordUtil.hashPassword("MyPassword123!"));
-            user = userRepository.save(user);
+            String correctPassword = "CorrectPassword123!";
 
+            // Register and set password
+            String registerCode = "234567";
+            EmailVerificationCode verificationCode = new EmailVerificationCode(
+                testEmail, registerCode, "register", ZonedDateTime.now().plusMinutes(15)
+            );
+            emailCodeRepository.save(verificationCode);
+
+            RegisterEmailRequest registerRequest = new RegisterEmailRequest(testEmail, registerCode);
+            HttpResponse<Map> registerResponse = client.toBlocking().exchange(
+                HttpRequest.POST(BASE_PATH + "/register/email", registerRequest),
+                Map.class
+            );
+
+            @SuppressWarnings("unchecked")
+            Map<String, Object> registerBody = registerResponse.body();
+            String registerToken = (String) registerBody.get("accessToken");
+
+            @SuppressWarnings("unchecked")
+            Map<String, Object> userMap = (Map<String, Object>) registerBody.get("user");
+            String userId = (String) userMap.get("id");
+
+            // Set password
+            SetPasswordRequest setPasswordRequest = new SetPasswordRequest(correctPassword);
+            client.toBlocking().exchange(
+                HttpRequest.POST(BASE_PATH + "/password/set", setPasswordRequest)
+                    .header("Authorization", "Bearer " + registerToken)
+                    .header("X-User-Id", userId)
+            );
+
+            // Login to get JWT
+            PasswordLoginRequest loginRequest = new PasswordLoginRequest(testEmail, correctPassword);
+            HttpResponse<Map> loginResponse = client.toBlocking().exchange(
+                HttpRequest.POST(BASE_PATH + "/login/password", loginRequest),
+                Map.class
+            );
+
+            @SuppressWarnings("unchecked")
+            Map<String, Object> loginBody = loginResponse.body();
+            String loginToken = (String) loginBody.get("accessToken");
+
+            // Try to change with wrong password
             ChangePasswordRequest request = new ChangePasswordRequest("WrongPassword", "NewPassword456!");
-            final UUID userId = user.getId();
 
-            // Act & Assert - Expect UNAUTHORIZED because no proper JWT authentication
+            // Act & Assert - Should fail because old password is incorrect
             HttpClientResponseException exception = assertThrows(
                 HttpClientResponseException.class,
                 () -> client.toBlocking().exchange(
                     HttpRequest.POST(BASE_PATH + "/password/change", request)
-                        .header("X-User-Id", userId.toString())
+                        .header("Authorization", "Bearer " + loginToken)
+                        .header("X-User-Id", userId)
                 )
             );
-            assertEquals(HttpStatus.UNAUTHORIZED, exception.getStatus());
+            assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
         }
 
         @Test
