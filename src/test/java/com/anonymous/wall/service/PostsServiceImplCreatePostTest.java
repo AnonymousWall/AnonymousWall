@@ -3,6 +3,8 @@ package com.anonymous.wall.service;
 import com.anonymous.wall.entity.Post;
 import com.anonymous.wall.entity.UserEntity;
 import com.anonymous.wall.model.CreatePostRequest;
+import com.anonymous.wall.repository.CommentRepository;
+import com.anonymous.wall.repository.PostLikeRepository;
 import com.anonymous.wall.repository.PostRepository;
 import com.anonymous.wall.repository.UserRepository;
 import io.micronaut.test.extensions.junit5.annotation.MicronautTest;
@@ -27,11 +29,22 @@ class PostsServiceImplCreatePostTest {
     @Inject
     private UserRepository userRepository;
 
+    @Inject
+    private CommentRepository commentRepository;
+
+    @Inject
+    private PostLikeRepository postLikeRepository;
+
     private UserEntity testUserHarvard;
     private UserEntity testUserMIT;
 
     @BeforeEach
     void setUp() {
+        // Clean up any leftover data
+        postLikeRepository.deleteAll();
+        commentRepository.deleteAll();
+        postRepository.deleteAll();
+
         // Create Harvard user
         testUserHarvard = new UserEntity();
         testUserHarvard.setEmail("student" + System.currentTimeMillis() + "@harvard.edu");
@@ -53,6 +66,9 @@ class PostsServiceImplCreatePostTest {
 
     @AfterEach
     void tearDown() {
+        // Must delete in order: likes, comments, then posts
+        postLikeRepository.deleteAll();
+        commentRepository.deleteAll();
         postRepository.deleteAll();
     }
 
