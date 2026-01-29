@@ -54,7 +54,7 @@ class AuthServiceImplTest {
         @DisplayName("Positive: Should send verification code for registration")
         void shouldSendCodeForRegistration() {
             // Arrange
-            SendEmailCodeRequest request = new SendEmailCodeRequest("test@example.com", SendEmailCodeRequestPurpose.REGISTER);
+            SendEmailCodeRequest request = new SendEmailCodeRequest("test@harvard.edu", SendEmailCodeRequestPurpose.REGISTER);
 
             ArgumentCaptor<EmailVerificationCode> captor = ArgumentCaptor.forClass(EmailVerificationCode.class);
 
@@ -64,7 +64,7 @@ class AuthServiceImplTest {
             // Assert
             verify(emailCodeRepository, times(1)).save(captor.capture());
             EmailVerificationCode savedCode = captor.getValue();
-            assertEquals("test@example.com", savedCode.getEmail());
+            assertEquals("test@harvard.edu", savedCode.getEmail());
             assertEquals("register", savedCode.getPurpose());
             assertNotNull(savedCode.getCode());
             assertEquals(6, savedCode.getCode().length());
@@ -75,7 +75,7 @@ class AuthServiceImplTest {
         @DisplayName("Positive: Should send verification code for login")
         void shouldSendCodeForLogin() {
             // Arrange
-            SendEmailCodeRequest request = new SendEmailCodeRequest("user@test.com", SendEmailCodeRequestPurpose.LOGIN);
+            SendEmailCodeRequest request = new SendEmailCodeRequest("user@harvard.edu", SendEmailCodeRequestPurpose.LOGIN);
 
             // Act
             authService.sendEmailCode(request);
@@ -88,7 +88,7 @@ class AuthServiceImplTest {
         @DisplayName("Positive: Should send verification code for password reset")
         void shouldSendCodeForPasswordReset() {
             // Arrange
-            SendEmailCodeRequest request = new SendEmailCodeRequest("reset@test.com", SendEmailCodeRequestPurpose.RESET_PASSWORD);
+            SendEmailCodeRequest request = new SendEmailCodeRequest("reset@harvard.edu", SendEmailCodeRequestPurpose.RESET_PASSWORD);
 
             // Act
             authService.sendEmailCode(request);
@@ -106,7 +106,7 @@ class AuthServiceImplTest {
         @DisplayName("Positive: Should register new user with valid code")
         void shouldRegisterNewUser() {
             // Arrange
-            String email = "newuser@test.com";
+            String email = "newuser@harvard.edu";
             String code = "123456";
 
             RegisterEmailRequest request = new RegisterEmailRequest(email, code);
@@ -137,10 +137,42 @@ class AuthServiceImplTest {
         }
 
         @Test
+        @DisplayName("Positive: Should mark user verified after registration")
+        void shouldMarkUserVerifiedAfterRegistration() {
+            // Arrange
+            String email = "newverified@harvard.edu";
+            String code = "123456";
+
+            RegisterEmailRequest request = new RegisterEmailRequest(email, code);
+
+            EmailVerificationCode verificationCode = new EmailVerificationCode(
+                email, code, "register", ZonedDateTime.now().plusMinutes(15)
+            );
+
+            UserEntity createdUser = new UserEntity();
+            createdUser.setId(UUID.randomUUID());
+            createdUser.setEmail(email);
+            createdUser.setVerified(true);
+            createdUser.setPasswordSet(false);
+
+            when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
+            when(emailCodeRepository.findByEmailAndCodeAndPurpose(email, code, "register"))
+                .thenReturn(Optional.of(verificationCode));
+            when(userRepository.save(any(UserEntity.class))).thenReturn(createdUser);
+
+            // Act
+            UserEntity result = authService.registerWithEmail(request);
+
+            // Assert
+            assertTrue(result.isVerified());
+            assertFalse(result.isPasswordSet());
+        }
+
+        @Test
         @DisplayName("Negative: Should fail when email already exists")
         void shouldFailWhenEmailExists() {
             // Arrange
-            String email = "existing@test.com";
+            String email = "existing@harvard.edu";
             RegisterEmailRequest request = new RegisterEmailRequest(email, "123456");
 
             UserEntity existingUser = new UserEntity();
@@ -160,7 +192,7 @@ class AuthServiceImplTest {
         @DisplayName("Negative: Should fail with invalid code")
         void shouldFailWithInvalidCode() {
             // Arrange
-            String email = "test@example.com";
+            String email = "test@harvard.edu";
             RegisterEmailRequest request = new RegisterEmailRequest(email, "wrong_code");
 
             when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
@@ -179,7 +211,7 @@ class AuthServiceImplTest {
         @DisplayName("Negative: Should fail with expired code")
         void shouldFailWithExpiredCode() {
             // Arrange
-            String email = "test@example.com";
+            String email = "test@harvard.edu";
             String code = "123456";
             RegisterEmailRequest request = new RegisterEmailRequest(email, code);
 
@@ -208,7 +240,7 @@ class AuthServiceImplTest {
         @DisplayName("Positive: Should login existing user with valid code")
         void shouldLoginExistingUser() {
             // Arrange
-            String email = "user@test.com";
+            String email = "user@harvard.edu";
             String code = "654321";
 
             LoginEmailRequest request = new LoginEmailRequest(email, code);
@@ -238,7 +270,7 @@ class AuthServiceImplTest {
         @DisplayName("Positive: Should auto-create user if not exists")
         void shouldAutoCreateUserIfNotExists() {
             // Arrange
-            String email = "newuser@test.com";
+            String email = "newuser@harvard.edu";
             String code = "654321";
 
             LoginEmailRequest request = new LoginEmailRequest(email, code);
@@ -270,7 +302,7 @@ class AuthServiceImplTest {
         @DisplayName("Negative: Should fail with invalid code")
         void shouldFailWithInvalidCode() {
             // Arrange
-            String email = "user@test.com";
+            String email = "user@harvard.edu";
             LoginEmailRequest request = new LoginEmailRequest(email, "invalid");
 
             when(emailCodeRepository.findByEmailAndCodeAndPurpose(email, "invalid", "login"))
@@ -288,7 +320,7 @@ class AuthServiceImplTest {
         @DisplayName("Negative: Should fail with expired code")
         void shouldFailWithExpiredCode() {
             // Arrange
-            String email = "user@test.com";
+            String email = "user@harvard.edu";
             String code = "123456";
             LoginEmailRequest request = new LoginEmailRequest(email, code);
 
@@ -316,7 +348,7 @@ class AuthServiceImplTest {
         @DisplayName("Positive: Should login with correct password")
         void shouldLoginWithCorrectPassword() {
             // Arrange
-            String email = "user@test.com";
+            String email = "user@harvard.edu";
             String password = "MyPassword123!";
 
             PasswordLoginRequest request = new PasswordLoginRequest(email, password);
@@ -342,7 +374,7 @@ class AuthServiceImplTest {
         @DisplayName("Negative: Should fail with wrong password")
         void shouldFailWithWrongPassword() {
             // Arrange
-            String email = "user@test.com";
+            String email = "user@harvard.edu";
             PasswordLoginRequest request = new PasswordLoginRequest(email, "WrongPassword");
 
             UserEntity user = new UserEntity();
@@ -364,9 +396,9 @@ class AuthServiceImplTest {
         @DisplayName("Negative: Should fail when user not found")
         void shouldFailWhenUserNotFound() {
             // Arrange
-            PasswordLoginRequest request = new PasswordLoginRequest("nonexistent@test.com", "password");
+            PasswordLoginRequest request = new PasswordLoginRequest("nonexistent@harvard.edu", "password");
 
-            when(userRepository.findByEmail("nonexistent@test.com")).thenReturn(Optional.empty());
+            when(userRepository.findByEmail("nonexistent@harvard.edu")).thenReturn(Optional.empty());
 
             // Act & Assert
             IllegalArgumentException exception = assertThrows(
@@ -380,7 +412,7 @@ class AuthServiceImplTest {
         @DisplayName("Negative: Should fail when password not set")
         void shouldFailWhenPasswordNotSet() {
             // Arrange
-            String email = "nopassword@test.com";
+            String email = "nopassword@harvard.edu";
             PasswordLoginRequest request = new PasswordLoginRequest(email, "password");
 
             UserEntity user = new UserEntity();
@@ -401,7 +433,7 @@ class AuthServiceImplTest {
         @DisplayName("Edge: Should handle null password hash")
         void shouldHandleNullPasswordHash() {
             // Arrange
-            String email = "user@test.com";
+            String email = "user@harvard.edu";
             PasswordLoginRequest request = new PasswordLoginRequest(email, "password");
 
             UserEntity user = new UserEntity();
@@ -432,7 +464,7 @@ class AuthServiceImplTest {
 
             UserEntity currentUser = new UserEntity();
             currentUser.setId(UUID.randomUUID());
-            currentUser.setEmail("user@test.com");
+            currentUser.setEmail("user@harvard.edu");
             currentUser.setPasswordSet(false);
 
             UserEntity updatedUser = new UserEntity();
@@ -482,7 +514,7 @@ class AuthServiceImplTest {
 
             UserEntity currentUser = new UserEntity();
             currentUser.setId(UUID.randomUUID());
-            currentUser.setEmail("user@test.com");
+            currentUser.setEmail("user@harvard.edu");
             currentUser.setPasswordSet(true);
             // Generate proper hash for old password
             currentUser.setPasswordHash(PasswordUtil.hashPassword(oldPassword));
@@ -575,7 +607,7 @@ class AuthServiceImplTest {
         @DisplayName("Positive: Should send reset code for existing user")
         void shouldSendResetCode() {
             // Arrange
-            String email = "user@test.com";
+            String email = "user@harvard.edu";
             PasswordResetRequestRequest request = new PasswordResetRequestRequest(email);
 
             UserEntity user = new UserEntity();
@@ -597,9 +629,9 @@ class AuthServiceImplTest {
         @DisplayName("Negative: Should fail when email not found")
         void shouldFailWhenEmailNotFound() {
             // Arrange
-            PasswordResetRequestRequest request = new PasswordResetRequestRequest("nonexistent@test.com");
+            PasswordResetRequestRequest request = new PasswordResetRequestRequest("nonexistent@harvard.edu");
 
-            when(userRepository.findByEmail("nonexistent@test.com")).thenReturn(Optional.empty());
+            when(userRepository.findByEmail("nonexistent@harvard.edu")).thenReturn(Optional.empty());
 
             // Act & Assert
             IllegalArgumentException exception = assertThrows(
@@ -618,7 +650,7 @@ class AuthServiceImplTest {
         @DisplayName("Positive: Should reset password with valid code")
         void shouldResetPassword() {
             // Arrange
-            String email = "user@test.com";
+            String email = "user@harvard.edu";
             String code = "999888";
             String newPassword = "NewResetPassword123!";
 
@@ -656,9 +688,9 @@ class AuthServiceImplTest {
         @DisplayName("Negative: Should fail when user not found")
         void shouldFailWhenUserNotFound() {
             // Arrange
-            ResetPasswordRequest request = new ResetPasswordRequest("nonexistent@test.com", "123456", "password");
+            ResetPasswordRequest request = new ResetPasswordRequest("nonexistent@harvard.edu", "123456", "password");
 
-            when(userRepository.findByEmail("nonexistent@test.com")).thenReturn(Optional.empty());
+            when(userRepository.findByEmail("nonexistent@harvard.edu")).thenReturn(Optional.empty());
 
             // Act & Assert
             IllegalArgumentException exception = assertThrows(
@@ -672,7 +704,7 @@ class AuthServiceImplTest {
         @DisplayName("Negative: Should fail with invalid reset code")
         void shouldFailWithInvalidCode() {
             // Arrange
-            String email = "user@test.com";
+            String email = "user@harvard.edu";
             ResetPasswordRequest request = new ResetPasswordRequest(email, "invalid", "password");
 
             UserEntity user = new UserEntity();
@@ -694,7 +726,7 @@ class AuthServiceImplTest {
         @DisplayName("Negative: Should fail with expired reset code")
         void shouldFailWithExpiredCode() {
             // Arrange
-            String email = "user@test.com";
+            String email = "user@harvard.edu";
             String code = "123456";
             ResetPasswordRequest request = new ResetPasswordRequest(email, code, "password");
 
@@ -721,7 +753,7 @@ class AuthServiceImplTest {
         @DisplayName("Edge: Should work even if password was already set")
         void shouldResetEvenIfPasswordAlreadySet() {
             // Arrange
-            String email = "user@test.com";
+            String email = "user@harvard.edu";
             String code = "123456";
             ResetPasswordRequest request = new ResetPasswordRequest(email, code, "NewPassword");
 
@@ -756,8 +788,8 @@ class AuthServiceImplTest {
         @DisplayName("Positive: Should generate unique codes for multiple requests")
         void shouldGenerateUniqueCodes() {
             // Arrange
-            SendEmailCodeRequest request1 = new SendEmailCodeRequest("user1@test.com", SendEmailCodeRequestPurpose.LOGIN);
-            SendEmailCodeRequest request2 = new SendEmailCodeRequest("user2@test.com", SendEmailCodeRequestPurpose.LOGIN);
+            SendEmailCodeRequest request1 = new SendEmailCodeRequest("user1@harvard.edu", SendEmailCodeRequestPurpose.LOGIN);
+            SendEmailCodeRequest request2 = new SendEmailCodeRequest("user2@harvard.edu", SendEmailCodeRequestPurpose.LOGIN);
 
             ArgumentCaptor<EmailVerificationCode> captor = ArgumentCaptor.forClass(EmailVerificationCode.class);
 
@@ -775,7 +807,7 @@ class AuthServiceImplTest {
         @DisplayName("Positive: Should set expiration time correctly")
         void shouldSetExpirationTimeCorrectly() {
             // Arrange
-            SendEmailCodeRequest request = new SendEmailCodeRequest("test@test.com", SendEmailCodeRequestPurpose.REGISTER);
+            SendEmailCodeRequest request = new SendEmailCodeRequest("test@harvard.edu", SendEmailCodeRequestPurpose.REGISTER);
             ZonedDateTime beforeTime = ZonedDateTime.now();
 
             ArgumentCaptor<EmailVerificationCode> captor = ArgumentCaptor.forClass(EmailVerificationCode.class);
@@ -801,7 +833,7 @@ class AuthServiceImplTest {
         @DisplayName("Positive: Should register and then login with password")
         void shouldRegisterAndLoginWithPassword() {
             // Arrange - Register phase
-            String email = "fullflow@test.com";
+            String email = "fullflow@harvard.edu";
             String code = "123456";
             String newPassword = "SecurePassword123!";
 
@@ -851,7 +883,7 @@ class AuthServiceImplTest {
         @DisplayName("Positive: Should handle password change after setting password")
         void shouldHandlePasswordChangeFlow() {
             // Arrange
-            String email = "changeflow@test.com";
+            String email = "changeflow@harvard.edu";
             String oldPassword = "OldPassword123!";
             String newPassword = "NewPassword456!";
 
@@ -882,7 +914,7 @@ class AuthServiceImplTest {
         @DisplayName("Edge: Should prevent reusing same code for different purposes")
         void shouldPreventCodeReuseDifferentPurposes() {
             // Arrange
-            String email = "codereuse@test.com";
+            String email = "codereuse@harvard.edu";
             String code = "123456";
 
             // Register with code
@@ -933,7 +965,7 @@ class AuthServiceImplTest {
 
             UserEntity user = new UserEntity();
             user.setId(UUID.randomUUID());
-            user.setEmail("secure@test.com");
+            user.setEmail("secure@harvard.edu");
             user.setPasswordSet(false);
 
             when(userRepository.update(any(UserEntity.class))).thenReturn(user);
@@ -960,7 +992,7 @@ class AuthServiceImplTest {
 
             UserEntity user = new UserEntity();
             user.setId(UUID.randomUUID());
-            user.setEmail("secure@test.com");
+            user.setEmail("secure@harvard.edu");
 
             // This should ideally fail at validation layer, but if service accepts it
             when(userRepository.update(any(UserEntity.class))).thenReturn(user);
@@ -981,7 +1013,7 @@ class AuthServiceImplTest {
 
             UserEntity user = new UserEntity();
             user.setId(UUID.randomUUID());
-            user.setEmail("special@test.com");
+            user.setEmail("special@harvard.edu");
             user.setPasswordSet(false);
 
             UserEntity updatedUser = new UserEntity();
@@ -1003,7 +1035,7 @@ class AuthServiceImplTest {
         @DisplayName("Positive: Should verify user is marked as verified after registration")
         void shouldMarkUserVerifiedAfterRegistration() {
             // Arrange
-            String email = "newverified@test.com";
+            String email = "newverified@harvard.edu";
             String code = "123456";
 
             RegisterEmailRequest request = new RegisterEmailRequest(email, code);

@@ -1,38 +1,16 @@
 package com.anonymous.wall.util;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
-
 /**
  * Utility class for validating school/educational email addresses
+ * Uses SchoolDomainWhitelist to ensure only legitimate school domains are allowed
  */
 public class EmailValidator {
-
-    // Allowed school email domains/patterns
-    // Add more domains or patterns as needed
-    private static final Set<String> ALLOWED_DOMAINS = new HashSet<>(Arrays.asList(
-        ".edu",                    // All .edu domains
-        ".ac.uk",                  // UK academic institutions
-        ".ac.jp",                  // Japanese academic institutions
-        ".edu.au",                 // Australian educational institutions
-        ".ac.nz"                   // New Zealand academic institutions
-    ));
-
-    // Specific whitelisted institutional domains
-    private static final Set<String> WHITELISTED_DOMAINS = new HashSet<>(Arrays.asList(
-        // Add specific school domains here if needed
-        // Example: "harvard.edu", "mit.edu", "stanford.edu"
-        // Test domains
-        "test.com",
-        "example.com"
-    ));
 
     /**
      * Validates if an email is a valid school/educational email
      *
      * @param email The email address to validate
-     * @return true if the email is from an allowed school domain, false otherwise
+     * @return true if the email is from an approved school domain, false otherwise
      */
     public static boolean isValidSchoolEmail(String email) {
         if (email == null || email.trim().isEmpty()) {
@@ -41,21 +19,33 @@ public class EmailValidator {
 
         email = email.toLowerCase().trim();
 
-        // Check if it's in the whitelisted domains
-        for (String domain : WHITELISTED_DOMAINS) {
-            if (email.endsWith("@" + domain)) {
-                return true;
-            }
+        // Check if email is from a personal domain (reject immediately)
+        if (isPersonalEmail(email)) {
+            return false;
         }
 
-        // Check if it matches allowed domain patterns
-        for (String pattern : ALLOWED_DOMAINS) {
-            if (email.endsWith(pattern)) {
-                return true;
-            }
+        // Check if domain is in school whitelist
+        String domain = extractSchoolDomain(email);
+        if (domain == null) {
+            return false;
         }
 
-        return false;
+        return SchoolDomainWhitelist.isEmailAllowed(email);
+    }
+
+    /**
+     * Check if email is from a personal provider
+     *
+     * @param email The email address
+     * @return true if personal email domain, false otherwise
+     */
+    private static boolean isPersonalEmail(String email) {
+        if (email == null || !email.contains("@")) {
+            return false;
+        }
+
+        String domain = email.substring(email.lastIndexOf("@") + 1).toLowerCase();
+        return SchoolDomainWhitelist.isPersonalEmailDomain(domain);
     }
 
     /**
@@ -75,16 +65,5 @@ public class EmailValidator {
         }
 
         return null;
-    }
-
-    /**
-     * Add a custom allowed domain to the whitelist
-     *
-     * @param domain The domain to add (without @), e.g., "myuniversity.edu"
-     */
-    public static void addWhitelistedDomain(String domain) {
-        if (domain != null && !domain.isEmpty()) {
-            WHITELISTED_DOMAINS.add(domain.toLowerCase());
-        }
     }
 }

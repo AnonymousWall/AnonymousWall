@@ -55,6 +55,9 @@
             <column name="content" type="TEXT"/>
             <column name="wall" type="VARCHAR(20)" defaultValue="campus"/>
             <column name="school_domain" type="VARCHAR(255)"/>
+            <column name="like_count" type="INT" defaultValueNumeric="0"/>
+            <column name="comment_count" type="INT" defaultValueNumeric="0"/>
+            <column name="version" type="BIGINT" defaultValueNumeric="0"/>
             <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP"/>
             <column name="updated_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP"/>
         </createTable>
@@ -74,6 +77,7 @@
             </column>
             <column name="user_id" type="CHAR(36)"/>
             <column name="text" type="TEXT"/>
+            <column name="version" type="BIGINT" defaultValueNumeric="0"/>
             <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP"/>
         </createTable>
         <addForeignKeyConstraint baseTableName="comments" baseColumnNames="post_id"
@@ -190,6 +194,9 @@
         <createIndex tableName="posts" indexName="idx_posts_wall">
             <column name="wall"/>
         </createIndex>
+        <createIndex tableName="posts" indexName="idx_posts_school_domain">
+            <column name="school_domain"/>
+        </createIndex>
         <createIndex tableName="posts" indexName="idx_posts_user_id">
             <column name="user_id"/>
         </createIndex>
@@ -214,6 +221,9 @@
         <!-- Post likes indexes -->
         <createIndex tableName="post_likes" indexName="idx_post_likes_user_id">
             <column name="user_id"/>
+        </createIndex>
+        <createIndex tableName="post_likes" indexName="idx_post_likes_post_id">
+            <column name="post_id"/>
         </createIndex>
 
         <!-- Marketplace indexes -->

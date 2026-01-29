@@ -25,6 +25,10 @@ public class Comment {
     @MappedProperty("created_at")
     private ZonedDateTime createdAt = ZonedDateTime.now();
 
+    @Version
+    @MappedProperty("version")
+    private Long version = 0L; // Optimistic locking version
+
     // ================= Constructors =================
 
     public Comment() {
@@ -35,6 +39,7 @@ public class Comment {
         this.userId = userId;
         this.text = text;
         this.createdAt = ZonedDateTime.now();
+        this.version = 0L;
     }
 
     // ================= Getters & Setters =================
@@ -53,4 +58,7 @@ public class Comment {
 
     public ZonedDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(ZonedDateTime createdAt) { this.createdAt = createdAt; }
+
+    public Long getVersion() { return version; }
+    public void setVersion(Long version) { this.version = version; }
 }

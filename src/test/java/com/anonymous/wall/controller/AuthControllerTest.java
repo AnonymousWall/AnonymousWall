@@ -60,7 +60,7 @@ class AuthControllerTest {
         @DisplayName("Positive: Should send code for registration")
         void shouldSendCodeForRegistration() {
             // Arrange
-            String testEmail = "newreg" + System.currentTimeMillis() + "@test.com";
+            String testEmail = "newreg" + System.currentTimeMillis() + "@harvard.edu";
             SendEmailCodeRequest request = new SendEmailCodeRequest(testEmail, SendEmailCodeRequestPurpose.REGISTER);
 
             // Act
@@ -81,7 +81,7 @@ class AuthControllerTest {
         @DisplayName("Positive: Should send code for login")
         void shouldSendCodeForLogin() {
             // Arrange
-            String testEmail = "existinguser" + System.currentTimeMillis() + "@test.com";
+            String testEmail = "existinguser" + System.currentTimeMillis() + "@harvard.edu";
             UserEntity user = new UserEntity();
             user.setEmail(testEmail);
             user.setVerified(true);
@@ -102,7 +102,7 @@ class AuthControllerTest {
         @DisplayName("Positive: Should send code for password reset")
         void shouldSendCodeForPasswordReset() {
             // Arrange
-            String testEmail = "resetuser" + System.currentTimeMillis() + "@test.com";
+            String testEmail = "resetuser" + System.currentTimeMillis() + "@harvard.edu";
             UserEntity user = new UserEntity();
             user.setEmail(testEmail);
             user.setVerified(true);
@@ -189,7 +189,7 @@ class AuthControllerTest {
         @DisplayName("Negative: Should return conflict when registering with existing email")
         void shouldRejectExistingEmailForRegistration() {
             // Arrange
-            String existingEmail = "existing" + System.currentTimeMillis() + "@test.com";
+            String existingEmail = "existing" + System.currentTimeMillis() + "@harvard.edu";
             UserEntity existingUser = new UserEntity();
             existingUser.setEmail(existingEmail);
             userRepository.save(existingUser);
@@ -208,7 +208,7 @@ class AuthControllerTest {
         @DisplayName("Negative: Should fail when email not found for login")
         void shouldFailWhenEmailNotFoundForLogin() {
             // Arrange
-            SendEmailCodeRequest request = new SendEmailCodeRequest("nonexistent@test.com", SendEmailCodeRequestPurpose.LOGIN);
+            SendEmailCodeRequest request = new SendEmailCodeRequest("nonexistent@harvard.edu", SendEmailCodeRequestPurpose.LOGIN);
 
             // Act & Assert
             HttpClientResponseException exception = assertThrows(
@@ -222,7 +222,7 @@ class AuthControllerTest {
         @DisplayName("Negative: Should fail when email not found for password reset")
         void shouldFailWhenEmailNotFoundForPasswordReset() {
             // Arrange
-            SendEmailCodeRequest request = new SendEmailCodeRequest("nonexistent@test.com", SendEmailCodeRequestPurpose.RESET_PASSWORD);
+            SendEmailCodeRequest request = new SendEmailCodeRequest("nonexistent@harvard.edu", SendEmailCodeRequestPurpose.RESET_PASSWORD);
 
             // Act & Assert
             HttpClientResponseException exception = assertThrows(
@@ -236,7 +236,7 @@ class AuthControllerTest {
         @DisplayName("Edge: Should handle case-insensitive email matching")
         void shouldHandleCaseInsensitiveEmail() {
             // Arrange
-            String testEmail = "casetest" + System.currentTimeMillis() + "@test.com";
+            String testEmail = "casetest" + System.currentTimeMillis() + "@harvard.edu";
             UserEntity user = new UserEntity();
             user.setEmail(testEmail);
             user.setVerified(true);
@@ -262,7 +262,7 @@ class AuthControllerTest {
         @DisplayName("Positive: Should register new user with valid code")
         void shouldRegisterNewUser() {
             // Arrange
-            String testEmail = "newuser" + System.currentTimeMillis() + "@test.com";
+            String testEmail = "newuser" + System.currentTimeMillis() + "@harvard.edu";
             String code = "123456";
 
             // Create verification code
@@ -297,7 +297,7 @@ class AuthControllerTest {
         @DisplayName("Positive: Should generate valid JWT token on registration")
         void shouldGenerateValidTokenOnRegistration() {
             // Arrange
-            String testEmail = "tokentest" + System.currentTimeMillis() + "@test.com";
+            String testEmail = "tokentest" + System.currentTimeMillis() + "@harvard.edu";
             String code = "123456";
 
             EmailVerificationCode verificationCode = new EmailVerificationCode(
@@ -326,7 +326,7 @@ class AuthControllerTest {
         @DisplayName("Negative: Should fail with invalid code")
         void shouldFailWithInvalidCode() {
             // Arrange
-            String testEmail = "test" + System.currentTimeMillis() + "@test.com";
+            String testEmail = "test" + System.currentTimeMillis() + "@harvard.edu";
             RegisterEmailRequest request = new RegisterEmailRequest(testEmail, "wrong_code");
 
             // Act & Assert
@@ -343,7 +343,7 @@ class AuthControllerTest {
         @DisplayName("Negative: Should fail with null code")
         void shouldFailWithNullCode() {
             // Arrange
-            String testEmail = "test" + System.currentTimeMillis() + "@test.com";
+            String testEmail = "test" + System.currentTimeMillis() + "@harvard.edu";
             RegisterEmailRequest request = new RegisterEmailRequest(testEmail, null);
 
             // Act & Assert
@@ -360,7 +360,7 @@ class AuthControllerTest {
         @DisplayName("Negative: Should fail with code too short")
         void shouldFailWithCodeTooShort() {
             // Arrange
-            String testEmail = "test" + System.currentTimeMillis() + "@test.com";
+            String testEmail = "test" + System.currentTimeMillis() + "@harvard.edu";
             RegisterEmailRequest request = new RegisterEmailRequest(testEmail, "12345");
 
             // Act & Assert
@@ -377,7 +377,7 @@ class AuthControllerTest {
         @DisplayName("Negative: Should fail with code too long")
         void shouldFailWithCodeTooLong() {
             // Arrange
-            String testEmail = "test" + System.currentTimeMillis() + "@test.com";
+            String testEmail = "test" + System.currentTimeMillis() + "@harvard.edu";
             RegisterEmailRequest request = new RegisterEmailRequest(testEmail, "1234567");
 
             // Act & Assert
@@ -394,7 +394,7 @@ class AuthControllerTest {
         @DisplayName("Negative: Should fail when email already registered")
         void shouldFailWhenEmailAlreadyRegistered() {
             // Arrange
-            String existingEmail = "existing" + System.currentTimeMillis() + "@test.com";
+            String existingEmail = "existing" + System.currentTimeMillis() + "@harvard.edu";
             UserEntity existingUser = new UserEntity();
             existingUser.setEmail(existingEmail);
             userRepository.save(existingUser);
@@ -421,7 +421,7 @@ class AuthControllerTest {
         @DisplayName("Edge: Should fail with expired code")
         void shouldFailWithExpiredCode() {
             // Arrange
-            String testEmail = "test" + System.currentTimeMillis() + "@test.com";
+            String testEmail = "test" + System.currentTimeMillis() + "@harvard.edu";
             String code = "999999";
 
             EmailVerificationCode expiredCode = new EmailVerificationCode(
@@ -445,7 +445,7 @@ class AuthControllerTest {
         @DisplayName("Edge: Should fail with code at exact expiration boundary")
         void shouldFailWithCodeAtExpirationBoundary() {
             // Arrange
-            String testEmail = "test" + System.currentTimeMillis() + "@test.com";
+            String testEmail = "test" + System.currentTimeMillis() + "@harvard.edu";
             String code = "888888";
 
             // Create code with very near expiration (1 millisecond before)
@@ -481,7 +481,7 @@ class AuthControllerTest {
         @DisplayName("Positive: Should login existing user")
         void shouldLoginExistingUser() {
             // Arrange
-            String testEmail = "loginuser" + System.currentTimeMillis() + "@test.com";
+            String testEmail = "loginuser" + System.currentTimeMillis() + "@harvard.edu";
             UserEntity user = new UserEntity();
             user.setEmail(testEmail);
             user.setVerified(true);
@@ -513,7 +513,7 @@ class AuthControllerTest {
         @DisplayName("Positive: Should auto-create user if not exists")
         void shouldAutoCreateUser() {
             // Arrange
-            String testEmail = "newlogin" + System.currentTimeMillis() + "@test.com";
+            String testEmail = "newlogin" + System.currentTimeMillis() + "@harvard.edu";
             String code = "111111";
 
             EmailVerificationCode verificationCode = new EmailVerificationCode(
@@ -541,7 +541,7 @@ class AuthControllerTest {
         @DisplayName("Negative: Should fail with invalid code")
         void shouldFailWithInvalidCode() {
             // Arrange
-            String testEmail = "test" + System.currentTimeMillis() + "@test.com";
+            String testEmail = "test" + System.currentTimeMillis() + "@harvard.edu";
             LoginEmailRequest request = new LoginEmailRequest(testEmail, "invalid");
 
             // Act & Assert
@@ -558,7 +558,7 @@ class AuthControllerTest {
         @DisplayName("Positive: Should generate valid token on email login")
         void shouldGenerateValidTokenOnEmailLogin() {
             // Arrange
-            String testEmail = "tokenlogin" + System.currentTimeMillis() + "@test.com";
+            String testEmail = "tokenlogin" + System.currentTimeMillis() + "@harvard.edu";
             UserEntity user = new UserEntity();
             user.setEmail(testEmail);
             user.setVerified(true);
@@ -590,7 +590,7 @@ class AuthControllerTest {
         @DisplayName("Negative: Should fail with null code")
         void shouldFailWithNullCode() {
             // Arrange
-            String testEmail = "test" + System.currentTimeMillis() + "@test.com";
+            String testEmail = "test" + System.currentTimeMillis() + "@harvard.edu";
             LoginEmailRequest request = new LoginEmailRequest(testEmail, null);
 
             // Act & Assert
@@ -607,7 +607,7 @@ class AuthControllerTest {
         @DisplayName("Negative: Should fail with empty code")
         void shouldFailWithEmptyCode() {
             // Arrange
-            String testEmail = "test" + System.currentTimeMillis() + "@test.com";
+            String testEmail = "test" + System.currentTimeMillis() + "@harvard.edu";
             LoginEmailRequest request = new LoginEmailRequest(testEmail, "");
 
             // Act & Assert
@@ -624,7 +624,7 @@ class AuthControllerTest {
         @DisplayName("Edge: Should fail with expired code")
         void shouldFailWithExpiredCode() {
             // Arrange
-            String testEmail = "test" + System.currentTimeMillis() + "@test.com";
+            String testEmail = "test" + System.currentTimeMillis() + "@harvard.edu";
             String code = "777777";
 
             EmailVerificationCode expiredCode = new EmailVerificationCode(
@@ -648,7 +648,7 @@ class AuthControllerTest {
         @DisplayName("Edge: Should use code from different purpose")
         void shouldFailWithCodeFromDifferentPurpose() {
             // Arrange
-            String testEmail = "test" + System.currentTimeMillis() + "@test.com";
+            String testEmail = "test" + System.currentTimeMillis() + "@harvard.edu";
             String code = "666666";
 
             // Create code for 'register' purpose
@@ -678,7 +678,7 @@ class AuthControllerTest {
         @DisplayName("Positive: Should login with correct password")
         void shouldLoginWithCorrectPassword() {
             // Arrange
-            String testEmail = "pwuser" + System.currentTimeMillis() + "@test.com";
+            String testEmail = "pwuser" + System.currentTimeMillis() + "@harvard.edu";
             String password = "MyPassword123!";
             UserEntity user = new UserEntity();
             user.setEmail(testEmail);
@@ -705,7 +705,7 @@ class AuthControllerTest {
         @DisplayName("Negative: Should fail with wrong password")
         void shouldFailWithWrongPassword() {
             // Arrange
-            String testEmail = "pwuser2" + System.currentTimeMillis() + "@test.com";
+            String testEmail = "pwuser2" + System.currentTimeMillis() + "@harvard.edu";
             UserEntity user = new UserEntity();
             user.setEmail(testEmail);
             user.setPasswordSet(true);
@@ -728,7 +728,7 @@ class AuthControllerTest {
         @DisplayName("Negative: Should fail when user not found")
         void shouldFailWhenUserNotFound() {
             // Arrange
-            PasswordLoginRequest request = new PasswordLoginRequest("nonexistent@test.com", "password");
+            PasswordLoginRequest request = new PasswordLoginRequest("nonexistent@harvard.edu", "password");
 
             // Act & Assert
             HttpClientResponseException exception = assertThrows(
@@ -744,7 +744,7 @@ class AuthControllerTest {
         @DisplayName("Negative: Should fail when password not set")
         void shouldFailWhenPasswordNotSet() {
             // Arrange
-            String testEmail = "nopassword" + System.currentTimeMillis() + "@test.com";
+            String testEmail = "nopassword" + System.currentTimeMillis() + "@harvard.edu";
             UserEntity user = new UserEntity();
             user.setEmail(testEmail);
             user.setPasswordSet(false);
@@ -766,7 +766,7 @@ class AuthControllerTest {
         @DisplayName("Positive: Should generate valid token on password login")
         void shouldGenerateValidTokenOnPasswordLogin() {
             // Arrange
-            String testEmail = "pwtoken" + System.currentTimeMillis() + "@test.com";
+            String testEmail = "pwtoken" + System.currentTimeMillis() + "@harvard.edu";
             String password = "MyPassword123!";
             UserEntity user = new UserEntity();
             user.setEmail(testEmail);
@@ -795,7 +795,7 @@ class AuthControllerTest {
         @DisplayName("Negative: Should fail with null password")
         void shouldFailWithNullPassword() {
             // Arrange
-            String testEmail = "test" + System.currentTimeMillis() + "@test.com";
+            String testEmail = "test" + System.currentTimeMillis() + "@harvard.edu";
             PasswordLoginRequest request = new PasswordLoginRequest(testEmail, null);
 
             // Act & Assert
@@ -812,7 +812,7 @@ class AuthControllerTest {
         @DisplayName("Negative: Should fail with empty password")
         void shouldFailWithEmptyPassword() {
             // Arrange
-            String testEmail = "test" + System.currentTimeMillis() + "@test.com";
+            String testEmail = "test" + System.currentTimeMillis() + "@harvard.edu";
             PasswordLoginRequest request = new PasswordLoginRequest(testEmail, "");
 
             // Act & Assert
@@ -829,7 +829,7 @@ class AuthControllerTest {
         @DisplayName("Edge: Should be case-sensitive for password")
         void shouldBeCaseSensitiveForPassword() {
             // Arrange
-            String testEmail = "pwcase" + System.currentTimeMillis() + "@test.com";
+            String testEmail = "pwcase" + System.currentTimeMillis() + "@harvard.edu";
             String password = "MyPassword123!";
             UserEntity user = new UserEntity();
             user.setEmail(testEmail);
@@ -853,7 +853,7 @@ class AuthControllerTest {
         @DisplayName("Edge: Should handle long password within bcrypt limit")
         void shouldHandleVeryLongPassword() {
             // Arrange - bcrypt has a 72-byte limit, use a long but valid password
-            String testEmail = "longpw" + System.currentTimeMillis() + "@test.com";
+            String testEmail = "longpw" + System.currentTimeMillis() + "@harvard.edu";
             String longPassword = "A".repeat(70) + "1!";  // 72 bytes exactly
             UserEntity user = new UserEntity();
             user.setEmail(testEmail);
@@ -882,7 +882,7 @@ class AuthControllerTest {
         @DisplayName("Positive: Should set password with proper JWT authentication")
         void shouldSetPasswordWithAuthentication() {
             // Arrange: Register user via email first to get JWT token
-            String testEmail = "setpw" + System.currentTimeMillis() + "@test.com";
+            String testEmail = "setpw" + System.currentTimeMillis() + "@harvard.edu";
             String code = "123456";
 
             // Create verification code for registration
@@ -934,7 +934,7 @@ class AuthControllerTest {
         @DisplayName("Negative: Should fail without proper authentication")
         void shouldFailWithoutProperAuthentication() {
             // Arrange
-            String testEmail = "setpw" + System.currentTimeMillis() + "@test.com";
+            String testEmail = "setpw" + System.currentTimeMillis() + "@harvard.edu";
             UserEntity user = new UserEntity();
             user.setEmail(testEmail);
             user.setPasswordSet(false);
@@ -997,7 +997,7 @@ class AuthControllerTest {
         @DisplayName("Positive: Should change password with proper JWT authentication")
         void shouldChangePasswordWithAuthentication() {
             // Arrange: Register user, set password, then get JWT to change password
-            String testEmail = "changepw" + System.currentTimeMillis() + "@test.com";
+            String testEmail = "changepw" + System.currentTimeMillis() + "@harvard.edu";
             String initialPassword = "InitialPassword123!";
             String newPassword = "NewPassword456!";
 
@@ -1070,7 +1070,7 @@ class AuthControllerTest {
         @DisplayName("Negative: Should fail without proper authentication")
         void shouldFailWithoutProperAuthentication() {
             // Arrange
-            String testEmail = "changepw" + System.currentTimeMillis() + "@test.com";
+            String testEmail = "changepw" + System.currentTimeMillis() + "@harvard.edu";
             UserEntity user = new UserEntity();
             user.setEmail(testEmail);
             user.setPasswordSet(true);
@@ -1094,7 +1094,7 @@ class AuthControllerTest {
         @DisplayName("Negative: Should fail with wrong old password (when authenticated)")
         void shouldFailWithWrongOldPassword() {
             // Arrange: Create registered user with password and get JWT
-            String testEmail = "changepw2" + System.currentTimeMillis() + "@test.com";
+            String testEmail = "changepw2" + System.currentTimeMillis() + "@harvard.edu";
             String correctPassword = "CorrectPassword123!";
 
             // Register and set password
@@ -1177,7 +1177,7 @@ class AuthControllerTest {
         @DisplayName("Positive: Should complete full password reset flow")
         void shouldCompletePasswordResetFlow() {
             // Arrange - Create user
-            String testEmail = "resetpw" + System.currentTimeMillis() + "@test.com";
+            String testEmail = "resetpw" + System.currentTimeMillis() + "@harvard.edu";
             UserEntity user = new UserEntity();
             user.setEmail(testEmail);
             user.setPasswordSet(true);
@@ -1215,7 +1215,7 @@ class AuthControllerTest {
         @DisplayName("Negative: Should fail reset request for non-existent email")
         void shouldFailResetRequestForNonExistentEmail() {
             // Arrange
-            PasswordResetRequestRequest request = new PasswordResetRequestRequest("nonexistent@test.com");
+            PasswordResetRequestRequest request = new PasswordResetRequestRequest("nonexistent@harvard.edu");
 
             // Act & Assert
             HttpClientResponseException exception = assertThrows(
@@ -1231,7 +1231,7 @@ class AuthControllerTest {
         @DisplayName("Negative: Should fail reset with invalid code")
         void shouldFailResetWithInvalidCode() {
             // Arrange
-            String testEmail = "reset2" + System.currentTimeMillis() + "@test.com";
+            String testEmail = "reset2" + System.currentTimeMillis() + "@harvard.edu";
             UserEntity user = new UserEntity();
             user.setEmail(testEmail);
             userRepository.save(user);
@@ -1252,7 +1252,7 @@ class AuthControllerTest {
         @DisplayName("Edge: Should fail reset with expired code")
         void shouldFailResetWithExpiredCode() {
             // Arrange
-            String testEmail = "reset3" + System.currentTimeMillis() + "@test.com";
+            String testEmail = "reset3" + System.currentTimeMillis() + "@harvard.edu";
             UserEntity user = new UserEntity();
             user.setEmail(testEmail);
             userRepository.save(user);
