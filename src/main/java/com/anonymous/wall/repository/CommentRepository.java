@@ -8,6 +8,7 @@ import io.micronaut.data.model.query.builder.sql.Dialect;
 import io.micronaut.data.repository.CrudRepository;
 
 import java.util.List;
+import java.util.Optional;
 
 @JdbcRepository(dialect = Dialect.MYSQL)
 public interface CommentRepository extends CrudRepository<Comment, Long> {
@@ -17,6 +18,11 @@ public interface CommentRepository extends CrudRepository<Comment, Long> {
      */
     List<Comment> findByPostId(Long postId);
 
+    /**
+     * Find all non-hidden comments for a post
+     */
+    List<Comment> findByPostIdAndHiddenFalse(Long postId);
+
     // ===== Sorting by Created Time (Default) =====
     /**
      * Find comments for a post with pagination, sorted by created time (newest first)
@@ -24,9 +30,19 @@ public interface CommentRepository extends CrudRepository<Comment, Long> {
     Page<Comment> findByPostIdOrderByCreatedAtDesc(Long postId, Pageable pageable);
 
     /**
+     * Find non-hidden comments for a post with pagination, sorted by created time (newest first)
+     */
+    Page<Comment> findByPostIdAndHiddenFalseOrderByCreatedAtDesc(Long postId, Pageable pageable);
+
+    /**
      * Find comments for a post with pagination, sorted by created time (oldest first)
      */
     Page<Comment> findByPostIdOrderByCreatedAtAsc(Long postId, Pageable pageable);
+
+    /**
+     * Find non-hidden comments for a post with pagination, sorted by created time (oldest first)
+     */
+    Page<Comment> findByPostIdAndHiddenFalseOrderByCreatedAtAsc(Long postId, Pageable pageable);
 
     /**
      * Find comments for a post with pagination (generic - for compatibility)
@@ -34,12 +50,32 @@ public interface CommentRepository extends CrudRepository<Comment, Long> {
     Page<Comment> findByPostId(Long postId, Pageable pageable);
 
     /**
+     * Find non-hidden comments for a post with pagination (generic)
+     */
+    Page<Comment> findByPostIdAndHiddenFalse(Long postId, Pageable pageable);
+
+    /**
      * Count comments for a post
      */
     long countByPostId(Long postId);
 
     /**
+     * Count non-hidden comments for a post
+     */
+    long countByPostIdAndHiddenFalse(Long postId);
+
+    /**
      * Delete all comments for a post (useful for post deletion)
      */
     long deleteByPostId(Long postId);
+
+    /**
+     * Find a comment by ID
+     */
+    Optional<Comment> findById(Long id);
+
+    /**
+     * Update a comment (used for hiding/unhiding)
+     */
+    Comment update(Comment comment);
 }

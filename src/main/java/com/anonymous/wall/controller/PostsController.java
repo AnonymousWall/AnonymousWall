@@ -222,6 +222,72 @@ public class PostsController {
         }
     }
 
+    /**
+     * PATCH /posts/{postId}/comments/{commentId}/hide
+     * Hide a comment
+     */
+    @Patch("/{postId}/comments/{commentId}/hide")
+    @Secured(SecurityRule.IS_AUTHENTICATED)
+    public HttpResponse<Object> hideComment(
+            @PathVariable Long postId,
+            @PathVariable Long commentId,
+            HttpRequest<?> httpRequest) {
+        try {
+            UUID userId = getUserIdFromRequest(httpRequest);
+            postsService.hideComment(postId, commentId, userId);
+
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "Comment hidden successfully");
+
+            return HttpResponse.ok(response);
+        } catch (IllegalArgumentException e) {
+            if (e.getMessage().contains("not found")) {
+                return HttpResponse.notFound();
+            }
+            if (e.getMessage().contains("You can only hide your own comments") ||
+                e.getMessage().contains("do not have access")) {
+                return HttpResponse.<Object>status(io.micronaut.http.HttpStatus.FORBIDDEN).body(error(e.getMessage()));
+            }
+            return HttpResponse.badRequest(error(e.getMessage()));
+        } catch (Exception e) {
+            log.error("Error hiding comment", e);
+            return HttpResponse.badRequest(error("Failed to hide comment"));
+        }
+    }
+
+    /**
+     * PATCH /posts/{postId}/comments/{commentId}/unhide
+     * Unhide a comment
+     */
+    @Patch("/{postId}/comments/{commentId}/unhide")
+    @Secured(SecurityRule.IS_AUTHENTICATED)
+    public HttpResponse<Object> unhideComment(
+            @PathVariable Long postId,
+            @PathVariable Long commentId,
+            HttpRequest<?> httpRequest) {
+        try {
+            UUID userId = getUserIdFromRequest(httpRequest);
+            postsService.unhideComment(postId, commentId, userId);
+
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "Comment unhidden successfully");
+
+            return HttpResponse.ok(response);
+        } catch (IllegalArgumentException e) {
+            if (e.getMessage().contains("not found")) {
+                return HttpResponse.notFound();
+            }
+            if (e.getMessage().contains("You can only unhide your own comments") ||
+                e.getMessage().contains("do not have access")) {
+                return HttpResponse.<Object>status(io.micronaut.http.HttpStatus.FORBIDDEN).body(error(e.getMessage()));
+            }
+            return HttpResponse.badRequest(error(e.getMessage()));
+        } catch (Exception e) {
+            log.error("Error unhiding comment", e);
+            return HttpResponse.badRequest(error("Failed to unhide comment"));
+        }
+    }
+
     // ================= DTO Mapping Methods =================
 
     private PostDTO mapPostToDTO(Post post) {

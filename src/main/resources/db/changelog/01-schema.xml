@@ -77,6 +77,7 @@
             </column>
             <column name="user_id" type="CHAR(36)"/>
             <column name="text" type="TEXT"/>
+            <column name="is_hidden" type="BOOLEAN" defaultValueBoolean="false"/>
             <column name="version" type="BIGINT" defaultValueNumeric="0"/>
             <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP"/>
         </createTable>

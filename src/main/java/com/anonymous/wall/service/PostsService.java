@@ -57,4 +57,16 @@ public interface PostsService {
      * Get a single post with like/comment counts
      */
     Post getPost(Long postId, UUID currentUserId);
+
+    /**
+     * Hide a comment (soft-delete)
+     * Only the comment author can hide their own comment
+     */
+    Comment hideComment(Long postId, Long commentId, UUID userId);
+
+    /**
+     * Unhide a comment (undo soft-delete)
+     * Only the comment author can unhide their own comment
+     */
+    Comment unhideComment(Long postId, Long commentId, UUID userId);
 }

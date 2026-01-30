@@ -243,7 +243,7 @@ public class PostsServiceImpl implements PostsService {
      */
     @Override
     public List<Comment> getComments(Long postId) {
-        return commentRepository.findByPostId(postId);
+        return commentRepository.findByPostIdAndHiddenFalse(postId);
     }
 
     /**
@@ -251,7 +251,7 @@ public class PostsServiceImpl implements PostsService {
      */
     @Override
     public Page<Comment> getCommentsWithPagination(Long postId, Pageable pageable) {
-        return commentRepository.findByPostId(postId, pageable);
+        return commentRepository.findByPostIdAndHiddenFalse(postId, pageable);
     }
 
     /**
@@ -265,8 +265,8 @@ public class PostsServiceImpl implements PostsService {
 
         // Comments only support sorting by created time
         return switch (sortBy) {
-            case NEWEST, MOST_LIKED -> commentRepository.findByPostIdOrderByCreatedAtDesc(postId, pageable);
-            case OLDEST, LEAST_LIKED -> commentRepository.findByPostIdOrderByCreatedAtAsc(postId, pageable);
+            case NEWEST, MOST_LIKED -> commentRepository.findByPostIdAndHiddenFalseOrderByCreatedAtDesc(postId, pageable);
+            case OLDEST, LEAST_LIKED -> commentRepository.findByPostIdAndHiddenFalseOrderByCreatedAtAsc(postId, pageable);
         };
     }
 
@@ -378,5 +378,97 @@ public class PostsServiceImpl implements PostsService {
             Optional<PostLike> userLike = postLikeRepository.findByPostIdAndUserId(post.getId(), currentUserId);
             post.setLiked(userLike.isPresent());
         }
+    }
+
+    /**
+     * Hide a comment (soft-delete)
+     * Only the comment author can hide their own comment
+     */
+    @Override
+    public Comment hideComment(Long postId, Long commentId, UUID userId) {
+        // Verify post exists
+        Optional<Post> postOpt = postRepository.findById(postId);
+        if (postOpt.isEmpty()) {
+            throw new IllegalArgumentException("Post not found");
+        }
+
+        Post post = postOpt.get();
+
+        // Validate visibility and permission
+        validatePostVisibility(post, userId);
+
+        // Verify comment exists and belongs to this post
+        Optional<Comment> commentOpt = commentRepository.findById(commentId);
+        if (commentOpt.isEmpty()) {
+            throw new IllegalArgumentException("Comment not found");
+        }
+
+        Comment comment = commentOpt.get();
+        if (!comment.getPostId().equals(postId)) {
+            throw new IllegalArgumentException("Comment does not belong to this post");
+        }
+
+        // Only the comment author can hide their own comment
+        if (!comment.getUserId().equals(userId)) {
+            throw new IllegalArgumentException("You can only hide your own comments");
+        }
+
+        // If already hidden, just return
+        if (comment.isHidden()) {
+            return comment;
+        }
+
+        // Hide the comment
+        comment.setHidden(true);
+        Comment updatedComment = commentRepository.update(comment);
+
+        log.info("Comment hidden: id={}, postId={}, user={}", commentId, postId, userId);
+        return updatedComment;
+    }
+
+    /**
+     * Unhide a comment (undo soft-delete)
+     * Only the comment author can unhide their own comment
+     */
+    @Override
+    public Comment unhideComment(Long postId, Long commentId, UUID userId) {
+        // Verify post exists
+        Optional<Post> postOpt = postRepository.findById(postId);
+        if (postOpt.isEmpty()) {
+            throw new IllegalArgumentException("Post not found");
+        }
+
+        Post post = postOpt.get();
+
+        // Validate visibility and permission
+        validatePostVisibility(post, userId);
+
+        // Verify comment exists and belongs to this post
+        Optional<Comment> commentOpt = commentRepository.findById(commentId);
+        if (commentOpt.isEmpty()) {
+            throw new IllegalArgumentException("Comment not found");
+        }
+
+        Comment comment = commentOpt.get();
+        if (!comment.getPostId().equals(postId)) {
+            throw new IllegalArgumentException("Comment does not belong to this post");
+        }
+
+        // Only the comment author can unhide their own comment
+        if (!comment.getUserId().equals(userId)) {
+            throw new IllegalArgumentException("You can only unhide your own comments");
+        }
+
+        // If not hidden, just return
+        if (!comment.isHidden()) {
+            return comment;
+        }
+
+        // Unhide the comment
+        comment.setHidden(false);
+        Comment updatedComment = commentRepository.update(comment);
+
+        log.info("Comment unhidden: id={}, postId={}, user={}", commentId, postId, userId);
+        return updatedComment;
     }
 }

@@ -391,6 +391,84 @@ paths:
         "404":
           description: Post not found
 
+  /posts/{postId}/comments/{commentId}/hide:
+    patch:
+      tags: [posts]
+      summary: Hide a comment
+      description: Hide a comment (soft-delete). Only the comment author can hide their own comment.
+      operationId: hideComment
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: postId
+          required: true
+          schema:
+            type: string
+          description: ID of the post
+        - in: path
+          name: commentId
+          required: true
+          schema:
+            type: string
+          description: ID of the comment to hide
+      responses:
+        "200":
+          description: Comment hidden successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Comment hidden successfully"
+        "401":
+          description: Unauthorized - authentication required
+        "403":
+          description: Forbidden - only comment author can hide their own comment
+        "404":
+          description: Post or comment not found
+
+  /posts/{postId}/comments/{commentId}/unhide:
+    patch:
+      tags: [posts]
+      summary: Unhide a comment
+      description: Unhide a previously hidden comment (undo soft-delete). Only the comment author can unhide their own comment.
+      operationId: unhideComment
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: postId
+          required: true
+          schema:
+            type: string
+          description: ID of the post
+        - in: path
+          name: commentId
+          required: true
+          schema:
+            type: string
+          description: ID of the comment to unhide
+      responses:
+        "200":
+          description: Comment unhidden successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Comment unhidden successfully"
+        "401":
+          description: Unauthorized - authentication required
+        "403":
+          description: Forbidden - only comment author can unhide their own comment
+        "404":
+          description: Post or comment not found
+
   # =================== Walls ===================
   /walls/campus:
     get:

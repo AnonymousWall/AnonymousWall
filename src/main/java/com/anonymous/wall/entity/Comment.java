@@ -22,6 +22,9 @@ public class Comment {
     @MappedProperty("text")
     private String text;
 
+    @MappedProperty("is_hidden")
+    private boolean hidden = false;
+
     @MappedProperty("created_at")
     private ZonedDateTime createdAt = ZonedDateTime.now();
 
@@ -38,6 +41,7 @@ public class Comment {
         this.postId = postId;
         this.userId = userId;
         this.text = text;
+        this.hidden = false;
         this.createdAt = ZonedDateTime.now();
         this.version = 0L;
     }
@@ -55,6 +59,9 @@ public class Comment {
 
     public String getText() { return text; }
     public void setText(String text) { this.text = text; }
+
+    public boolean isHidden() { return hidden; }
+    public void setHidden(boolean hidden) { this.hidden = hidden; }
 
     public ZonedDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(ZonedDateTime createdAt) { this.createdAt = createdAt; }
