@@ -70,12 +70,16 @@ public interface CommentRepository extends CrudRepository<Comment, Long> {
     long deleteByPostId(Long postId);
 
     /**
-     * Find a comment by ID
-     */
-    Optional<Comment> findById(Long id);
-
-    /**
      * Update a comment (used for hiding/unhiding)
      */
     Comment update(Comment comment);
+
+    /**
+     * Find all comments for a post (including hidden ones)
+     */
+    List<Comment> findAllByPostId(Long postId);
+
+    void updateByPostId(Long postId, boolean hidden);
+//    void updateHiddenTrueByPostId(Long postId);
+
 }

@@ -76,4 +76,45 @@ public interface PostRepository extends CrudRepository<Post, Long> {
      * Find post by ID
      */
     Optional<Post> findById(Long id);
+
+    // ===== Filter Hidden Posts =====
+    /**
+     * Find non-hidden posts by wall, sorted by created time (newest first)
+     */
+    Page<Post> findByWallAndHiddenFalseOrderByCreatedAtDesc(String wall, Pageable pageable);
+
+    /**
+     * Find non-hidden posts by wall, sorted by created time (oldest first)
+     */
+    Page<Post> findByWallAndHiddenFalseOrderByCreatedAtAsc(String wall, Pageable pageable);
+
+    /**
+     * Find non-hidden campus posts by wall and domain, sorted by created time (newest first)
+     */
+    Page<Post> findByWallAndSchoolDomainAndHiddenFalseOrderByCreatedAtDesc(String wall, String schoolDomain, Pageable pageable);
+
+    /**
+     * Find non-hidden campus posts by wall and domain, sorted by created time (oldest first)
+     */
+    Page<Post> findByWallAndSchoolDomainAndHiddenFalseOrderByCreatedAtAsc(String wall, String schoolDomain, Pageable pageable);
+
+    /**
+     * Find non-hidden posts by wall, sorted by like count (most liked first)
+     */
+    Page<Post> findByWallAndHiddenFalseOrderByLikeCountDesc(String wall, Pageable pageable);
+
+    /**
+     * Find non-hidden posts by wall, sorted by like count (least liked first)
+     */
+    Page<Post> findByWallAndHiddenFalseOrderByLikeCountAsc(String wall, Pageable pageable);
+
+    /**
+     * Find non-hidden campus posts by wall and domain, sorted by like count (most liked first)
+     */
+    Page<Post> findByWallAndSchoolDomainAndHiddenFalseOrderByLikeCountDesc(String wall, String schoolDomain, Pageable pageable);
+
+    /**
+     * Find non-hidden campus posts by wall and domain, sorted by like count (least liked first)
+     */
+    Page<Post> findByWallAndSchoolDomainAndHiddenFalseOrderByLikeCountAsc(String wall, String schoolDomain, Pageable pageable);
 }

@@ -57,6 +57,7 @@
             <column name="school_domain" type="VARCHAR(255)"/>
             <column name="like_count" type="INT" defaultValueNumeric="0"/>
             <column name="comment_count" type="INT" defaultValueNumeric="0"/>
+            <column name="is_hidden" type="BOOLEAN" defaultValueBoolean="false"/>
             <column name="version" type="BIGINT" defaultValueNumeric="0"/>
             <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP"/>
             <column name="updated_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP"/>

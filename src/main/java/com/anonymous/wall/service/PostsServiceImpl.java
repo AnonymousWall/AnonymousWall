@@ -108,16 +108,16 @@ public class PostsServiceImpl implements PostsService {
         Page<Post> posts;
 
         if (wall.equals("national")) {
-            // National posts are visible to all users (default sort by newest)
-            posts = postRepository.findByWallOrderByCreatedAtDesc("national", pageable);
+            // National posts are visible to all users (default sort by newest), excluding hidden posts
+            posts = postRepository.findByWallAndHiddenFalseOrderByCreatedAtDesc("national", pageable);
         } else {
-            // Campus posts: only visible to users from the same school
+            // Campus posts: only visible to users from the same school, excluding hidden posts
             String userSchoolDomain = currentUser.getSchoolDomain();
             if (userSchoolDomain == null || userSchoolDomain.trim().isEmpty()) {
                 // User has no school domain, cannot see campus posts
                 posts = Page.empty();
             } else {
-                posts = postRepository.findByWallAndSchoolDomainOrderByCreatedAtDesc("campus", userSchoolDomain, pageable);
+                posts = postRepository.findByWallAndSchoolDomainAndHiddenFalseOrderByCreatedAtDesc("campus", userSchoolDomain, pageable);
             }
         }
 
@@ -176,20 +176,20 @@ public class PostsServiceImpl implements PostsService {
      */
     private Page<Post> getPostsWithSort(String wall, String schoolDomain, Pageable pageable, SortBy sortBy) {
         if (schoolDomain == null) {
-            // National posts
+            // National posts (filter hidden)
             return switch (sortBy) {
-                case NEWEST -> postRepository.findByWallOrderByCreatedAtDesc(wall, pageable);
-                case OLDEST -> postRepository.findByWallOrderByCreatedAtAsc(wall, pageable);
-                case MOST_LIKED -> postRepository.findByWallOrderByLikeCountDesc(wall, pageable);
-                case LEAST_LIKED -> postRepository.findByWallOrderByLikeCountAsc(wall, pageable);
+                case NEWEST -> postRepository.findByWallAndHiddenFalseOrderByCreatedAtDesc(wall, pageable);
+                case OLDEST -> postRepository.findByWallAndHiddenFalseOrderByCreatedAtAsc(wall, pageable);
+                case MOST_LIKED -> postRepository.findByWallAndHiddenFalseOrderByLikeCountDesc(wall, pageable);
+                case LEAST_LIKED -> postRepository.findByWallAndHiddenFalseOrderByLikeCountAsc(wall, pageable);
             };
         } else {
-            // Campus posts
+            // Campus posts (filter hidden)
             return switch (sortBy) {
-                case NEWEST -> postRepository.findByWallAndSchoolDomainOrderByCreatedAtDesc(wall, schoolDomain, pageable);
-                case OLDEST -> postRepository.findByWallAndSchoolDomainOrderByCreatedAtAsc(wall, schoolDomain, pageable);
-                case MOST_LIKED -> postRepository.findByWallAndSchoolDomainOrderByLikeCountDesc(wall, schoolDomain, pageable);
-                case LEAST_LIKED -> postRepository.findByWallAndSchoolDomainOrderByLikeCountAsc(wall, schoolDomain, pageable);
+                case NEWEST -> postRepository.findByWallAndSchoolDomainAndHiddenFalseOrderByCreatedAtDesc(wall, schoolDomain, pageable);
+                case OLDEST -> postRepository.findByWallAndSchoolDomainAndHiddenFalseOrderByCreatedAtAsc(wall, schoolDomain, pageable);
+                case MOST_LIKED -> postRepository.findByWallAndSchoolDomainAndHiddenFalseOrderByLikeCountDesc(wall, schoolDomain, pageable);
+                case LEAST_LIKED -> postRepository.findByWallAndSchoolDomainAndHiddenFalseOrderByLikeCountAsc(wall, schoolDomain, pageable);
             };
         }
     }
@@ -485,5 +485,79 @@ public class PostsServiceImpl implements PostsService {
         log.info("Comment unhidden: id={}, postId={}, user={}, newCommentCount={}",
             commentId, postId, userId, post.getCommentCount());
         return updatedComment;
+    }
+
+    /**
+     * Hide a post (soft-delete)
+     * Only the post author can hide their own post
+     * When a post is hidden, all its comments are also hidden
+     */
+    @Override
+    @Transactional
+    public Post hidePost(Long postId, UUID userId) {
+        // Verify post exists
+        Optional<Post> postOpt = postRepository.findById(postId);
+        if (postOpt.isEmpty()) {
+            throw new IllegalArgumentException("Post not found");
+        }
+
+        Post post = postOpt.get();
+
+        // Only the post author can hide their own post
+        if (!post.getUserId().equals(userId)) {
+            throw new IllegalArgumentException("You can only hide your own posts");
+        }
+
+        // If already hidden, just return
+        if (post.isHidden()) {
+            return post;
+        }
+
+        // Hide the post
+        post.setHidden(true);
+        Post updatedPost = postRepository.update(post);
+
+        // Hide all comments associated with this post (within same transaction)
+        commentRepository.updateByPostId(postId, true);
+
+        log.info("Post hidden: id={}, user={}", postId, userId);
+        return updatedPost;
+    }
+
+    /**
+     * Unhide a post (undo soft-delete)
+     * Only the post author can unhide their own post
+     * When a post is unhidden, all its comments are restored
+     */
+    @Override
+    @Transactional
+    public Post unhidePost(Long postId, UUID userId) {
+        // Verify post exists
+        Optional<Post> postOpt = postRepository.findById(postId);
+        if (postOpt.isEmpty()) {
+            throw new IllegalArgumentException("Post not found");
+        }
+
+        Post post = postOpt.get();
+
+        // Only the post author can unhide their own post
+        if (!post.getUserId().equals(userId)) {
+            throw new IllegalArgumentException("You can only unhide your own posts");
+        }
+
+        // If not hidden, just return
+        if (!post.isHidden()) {
+            return post;
+        }
+
+        // Unhide the post
+        post.setHidden(false);
+        Post updatedPost = postRepository.update(post);
+
+        // Unhide all comments associated with this post (within same transaction)
+        commentRepository.updateByPostId(postId, false);
+
+        log.info("Post unhidden: id={}, user={}", postId, userId);
+        return updatedPost;
     }
 }

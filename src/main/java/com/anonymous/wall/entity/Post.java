@@ -31,6 +31,9 @@ public class Post {
     @MappedProperty("comment_count")
     private int commentCount = 0; // Atomic counter for comments
 
+    @MappedProperty("is_hidden")
+    private boolean hidden = false; // Soft-delete flag
+
     @MappedProperty("created_at")
     private ZonedDateTime createdAt = ZonedDateTime.now();
 
@@ -57,6 +60,7 @@ public class Post {
         this.schoolDomain = schoolDomain;
         this.likeCount = 0;
         this.commentCount = 0;
+        this.hidden = false;
         this.createdAt = ZonedDateTime.now();
         this.updatedAt = ZonedDateTime.now();
         this.version = 0L;
@@ -93,6 +97,9 @@ public class Post {
 
     public boolean isLiked() { return liked; }
     public void setLiked(boolean liked) { this.liked = liked; }
+
+    public boolean isHidden() { return hidden; }
+    public void setHidden(boolean hidden) { this.hidden = hidden; }
 
     public Long getVersion() { return version; }
     public void setVersion(Long version) { this.version = version; }

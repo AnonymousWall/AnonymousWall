@@ -469,6 +469,72 @@ paths:
         "404":
           description: Post or comment not found
 
+  /posts/{postId}/hide:
+    patch:
+      tags: [posts]
+      summary: Hide a post
+      description: Hide a post (soft-delete). Only the post author can hide their own post. When a post is hidden, all its comments are also hidden.
+      operationId: hidePost
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: postId
+          required: true
+          schema:
+            type: string
+          description: ID of the post to hide
+      responses:
+        "200":
+          description: Post hidden successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Post hidden successfully"
+        "401":
+          description: Unauthorized - authentication required
+        "403":
+          description: Forbidden - only post author can hide their own post
+        "404":
+          description: Post not found
+
+  /posts/{postId}/unhide:
+    patch:
+      tags: [posts]
+      summary: Unhide a post
+      description: Unhide a previously hidden post (undo soft-delete). Only the post author can unhide their own post. When a post is unhidden, all its comments are restored.
+      operationId: unhidePost
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: postId
+          required: true
+          schema:
+            type: string
+          description: ID of the post to unhide
+      responses:
+        "200":
+          description: Post unhidden successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Post unhidden successfully"
+        "401":
+          description: Unauthorized - authentication required
+        "403":
+          description: Forbidden - only post author can unhide their own post
+        "404":
+          description: Post not found
+
   # =================== Walls ===================
   /walls/campus:
     get:

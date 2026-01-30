@@ -69,4 +69,18 @@ public interface PostsService {
      * Only the comment author can unhide their own comment
      */
     Comment unhideComment(Long postId, Long commentId, UUID userId);
+
+    /**
+     * Hide a post (soft-delete)
+     * Only the post author can hide their own post
+     * When a post is hidden, all its comments are also hidden
+     */
+    Post hidePost(Long postId, UUID userId);
+
+    /**
+     * Unhide a post (undo soft-delete)
+     * Only the post author can unhide their own post
+     * When a post is unhidden, all its previously hidden comments are restored
+     */
+    Post unhidePost(Long postId, UUID userId);
 }

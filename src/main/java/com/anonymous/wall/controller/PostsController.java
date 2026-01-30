@@ -288,6 +288,68 @@ public class PostsController {
         }
     }
 
+    /**
+     * PATCH /posts/{postId}/hide
+     * Hide a post
+     */
+    @Patch("/{postId}/hide")
+    @Secured(SecurityRule.IS_AUTHENTICATED)
+    public HttpResponse<Object> hidePost(
+            @PathVariable Long postId,
+            HttpRequest<?> httpRequest) {
+        try {
+            UUID userId = getUserIdFromRequest(httpRequest);
+            postsService.hidePost(postId, userId);
+
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "Post hidden successfully");
+
+            return HttpResponse.ok(response);
+        } catch (IllegalArgumentException e) {
+            if (e.getMessage().contains("not found")) {
+                return HttpResponse.notFound();
+            }
+            if (e.getMessage().contains("You can only hide your own posts")) {
+                return HttpResponse.<Object>status(io.micronaut.http.HttpStatus.FORBIDDEN).body(error(e.getMessage()));
+            }
+            return HttpResponse.badRequest(error(e.getMessage()));
+        } catch (Exception e) {
+            log.error("Error hiding post", e);
+            return HttpResponse.badRequest(error("Failed to hide post"));
+        }
+    }
+
+    /**
+     * PATCH /posts/{postId}/unhide
+     * Unhide a post
+     */
+    @Patch("/{postId}/unhide")
+    @Secured(SecurityRule.IS_AUTHENTICATED)
+    public HttpResponse<Object> unhidePost(
+            @PathVariable Long postId,
+            HttpRequest<?> httpRequest) {
+        try {
+            UUID userId = getUserIdFromRequest(httpRequest);
+            postsService.unhidePost(postId, userId);
+
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "Post unhidden successfully");
+
+            return HttpResponse.ok(response);
+        } catch (IllegalArgumentException e) {
+            if (e.getMessage().contains("not found")) {
+                return HttpResponse.notFound();
+            }
+            if (e.getMessage().contains("You can only unhide your own posts")) {
+                return HttpResponse.<Object>status(io.micronaut.http.HttpStatus.FORBIDDEN).body(error(e.getMessage()));
+            }
+            return HttpResponse.badRequest(error(e.getMessage()));
+        } catch (Exception e) {
+            log.error("Error unhiding post", e);
+            return HttpResponse.badRequest(error("Failed to unhide post"));
+        }
+    }
+
     // ================= DTO Mapping Methods =================
 
     private PostDTO mapPostToDTO(Post post) {
@@ -341,5 +403,3 @@ public class PostsController {
         return response;
     }
 }
-
-
