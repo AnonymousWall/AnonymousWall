@@ -227,13 +227,7 @@ public class PostsServiceImpl implements PostsService {
 
         // Atomically increment comment count on post
         post.incrementCommentCount();
-        try {
-            postRepository.update(post);
-        } catch (Exception e) {
-            // If update fails due to version conflict or other reason, log and continue
-            // The comment was still saved, which is the important part
-            log.warn("Failed to update post comment count: {}", e.getMessage());
-        }
+        postRepository.update(post);
 
         log.info("Comment added: id={}, postId={}, user={}, newCommentCount={}",
             savedComment.getId(), postId, userId, post.getCommentCount());
@@ -299,13 +293,7 @@ public class PostsServiceImpl implements PostsService {
             // Unlike - decrement like count atomically
             postLikeRepository.deleteByPostIdAndUserId(postId, userId);
             post.decrementLikeCount();
-            try {
-                postRepository.update(post);
-            } catch (Exception e) {
-                // If update fails due to version conflict or other reason, log and continue
-                // The like was still removed, which is the important part
-                log.warn("Failed to update post like count: {}", e.getMessage());
-            }
+            postRepository.update(post);
             log.info("Post unliked: postId={}, user={}, newLikeCount={}", postId, userId, post.getLikeCount());
             return false;
         } else {
@@ -313,13 +301,7 @@ public class PostsServiceImpl implements PostsService {
             PostLike like = new PostLike(postId, userId);
             postLikeRepository.save(like);
             post.incrementLikeCount();
-            try {
-                postRepository.update(post);
-            } catch (Exception e) {
-                // If update fails due to version conflict or other reason, log and continue
-                // The like was still added, which is the important part
-                log.warn("Failed to update post like count: {}", e.getMessage());
-            }
+            postRepository.update(post);
             log.info("Post liked: postId={}, user={}, newLikeCount={}", postId, userId, post.getLikeCount());
             return true;
         }
