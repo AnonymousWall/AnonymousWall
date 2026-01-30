@@ -6,6 +6,7 @@ import com.anonymous.wall.entity.PostLike;
 import com.anonymous.wall.entity.UserEntity;
 import com.anonymous.wall.model.CreatePostRequest;
 import com.anonymous.wall.model.CreateCommentRequest;
+import com.anonymous.wall.model.SortBy;
 import com.anonymous.wall.repository.PostRepository;
 import com.anonymous.wall.repository.CommentRepository;
 import com.anonymous.wall.repository.PostLikeRepository;
@@ -106,8 +107,8 @@ public class PostsServiceImpl implements PostsService {
         Page<Post> posts;
 
         if (wall.equals("national")) {
-            // National posts are visible to all users
-            posts = postRepository.findByWall("national", pageable);
+            // National posts are visible to all users (default sort by newest)
+            posts = postRepository.findByWallOrderByCreatedAtDesc("national", pageable);
         } else {
             // Campus posts: only visible to users from the same school
             String userSchoolDomain = currentUser.getSchoolDomain();
@@ -115,7 +116,7 @@ public class PostsServiceImpl implements PostsService {
                 // User has no school domain, cannot see campus posts
                 posts = Page.empty();
             } else {
-                posts = postRepository.findByWallAndSchoolDomain("campus", userSchoolDomain, pageable);
+                posts = postRepository.findByWallAndSchoolDomainOrderByCreatedAtDesc("campus", userSchoolDomain, pageable);
             }
         }
 
@@ -123,6 +124,73 @@ public class PostsServiceImpl implements PostsService {
         posts.getContent().forEach(post -> enrichPost(post, currentUserId));
 
         return posts;
+    }
+
+    /**
+     * Get posts by wall type with pagination and sorting
+     * Campus posts: only visible to users with the same school domain
+     * National posts: visible to all users
+     */
+    @Override
+    public Page<Post> getPostsByWall(String wall, Pageable pageable, UUID currentUserId, SortBy sortBy) {
+        if (!wall.equals("campus") && !wall.equals("national")) {
+            throw new IllegalArgumentException("Wall must be 'campus' or 'national'");
+        }
+
+        if (sortBy == null) {
+            sortBy = SortBy.NEWEST; // Default sorting
+        }
+
+        // Fetch current user to get their school domain
+        Optional<UserEntity> userOpt = userRepository.findById(currentUserId);
+        if (userOpt.isEmpty()) {
+            throw new IllegalArgumentException("User not found");
+        }
+
+        UserEntity currentUser = userOpt.get();
+        Page<Post> posts;
+
+        if (wall.equals("national")) {
+            // National posts are visible to all users
+            posts = getPostsWithSort("national", null, pageable, sortBy);
+        } else {
+            // Campus posts: only visible to users from the same school
+            String userSchoolDomain = currentUser.getSchoolDomain();
+            if (userSchoolDomain == null || userSchoolDomain.trim().isEmpty()) {
+                // User has no school domain, cannot see campus posts
+                posts = Page.empty();
+            } else {
+                posts = getPostsWithSort("campus", userSchoolDomain, pageable, sortBy);
+            }
+        }
+
+        // Enrich posts with like/comment counts and check if current user liked
+        posts.getContent().forEach(post -> enrichPost(post, currentUserId));
+
+        return posts;
+    }
+
+    /**
+     * Helper method to get posts with specified sorting
+     */
+    private Page<Post> getPostsWithSort(String wall, String schoolDomain, Pageable pageable, SortBy sortBy) {
+        if (schoolDomain == null) {
+            // National posts
+            return switch (sortBy) {
+                case NEWEST -> postRepository.findByWallOrderByCreatedAtDesc(wall, pageable);
+                case OLDEST -> postRepository.findByWallOrderByCreatedAtAsc(wall, pageable);
+                case MOST_LIKED -> postRepository.findByWallOrderByLikeCountDesc(wall, pageable);
+                case LEAST_LIKED -> postRepository.findByWallOrderByLikeCountAsc(wall, pageable);
+            };
+        } else {
+            // Campus posts
+            return switch (sortBy) {
+                case NEWEST -> postRepository.findByWallAndSchoolDomainOrderByCreatedAtDesc(wall, schoolDomain, pageable);
+                case OLDEST -> postRepository.findByWallAndSchoolDomainOrderByCreatedAtAsc(wall, schoolDomain, pageable);
+                case MOST_LIKED -> postRepository.findByWallAndSchoolDomainOrderByLikeCountDesc(wall, schoolDomain, pageable);
+                case LEAST_LIKED -> postRepository.findByWallAndSchoolDomainOrderByLikeCountAsc(wall, schoolDomain, pageable);
+            };
+        }
     }
 
     /**
@@ -176,6 +244,30 @@ public class PostsServiceImpl implements PostsService {
     @Override
     public List<Comment> getComments(Long postId) {
         return commentRepository.findByPostId(postId);
+    }
+
+    /**
+     * Get comments for a post with pagination
+     */
+    @Override
+    public Page<Comment> getCommentsWithPagination(Long postId, Pageable pageable) {
+        return commentRepository.findByPostId(postId, pageable);
+    }
+
+    /**
+     * Get comments for a post with pagination and sorting
+     */
+    @Override
+    public Page<Comment> getCommentsWithPagination(Long postId, Pageable pageable, SortBy sortBy) {
+        if (sortBy == null) {
+            sortBy = SortBy.NEWEST; // Default sorting
+        }
+
+        // Comments only support sorting by created time
+        return switch (sortBy) {
+            case NEWEST, MOST_LIKED -> commentRepository.findByPostIdOrderByCreatedAtDesc(postId, pageable);
+            case OLDEST, LEAST_LIKED -> commentRepository.findByPostIdOrderByCreatedAtAsc(postId, pageable);
+        };
     }
 
     /**

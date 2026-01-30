@@ -14,21 +14,49 @@ import java.util.UUID;
 @JdbcRepository(dialect = Dialect.MYSQL)
 public interface PostRepository extends CrudRepository<Post, Long> {
 
+    // ===== Sorting by Created Time (Default) =====
     /**
-     * Find posts by wall type with pagination
-     */
-    Page<Post> findByWall(String wall, Pageable pageable);
-
-    /**
-     * Find national posts with pagination
+     * Find posts by wall, sorted by created time (newest first)
      */
     Page<Post> findByWallOrderByCreatedAtDesc(String wall, Pageable pageable);
 
     /**
-     * Find campus posts by school domain with pagination
+     * Find posts by wall, sorted by created time (oldest first)
      */
-    Page<Post> findByWallAndSchoolDomain(String wall, String schoolDomain, Pageable pageable);
+    Page<Post> findByWallOrderByCreatedAtAsc(String wall, Pageable pageable);
 
+    /**
+     * Find campus posts by wall and domain, sorted by created time (newest first)
+     */
+    Page<Post> findByWallAndSchoolDomainOrderByCreatedAtDesc(String wall, String schoolDomain, Pageable pageable);
+
+    /**
+     * Find campus posts by wall and domain, sorted by created time (oldest first)
+     */
+    Page<Post> findByWallAndSchoolDomainOrderByCreatedAtAsc(String wall, String schoolDomain, Pageable pageable);
+
+    // ===== Sorting by Like Count =====
+    /**
+     * Find posts by wall, sorted by like count (most liked first)
+     */
+    Page<Post> findByWallOrderByLikeCountDesc(String wall, Pageable pageable);
+
+    /**
+     * Find posts by wall, sorted by like count (least liked first)
+     */
+    Page<Post> findByWallOrderByLikeCountAsc(String wall, Pageable pageable);
+
+    /**
+     * Find campus posts by wall and domain, sorted by like count (most liked first)
+     */
+    Page<Post> findByWallAndSchoolDomainOrderByLikeCountDesc(String wall, String schoolDomain, Pageable pageable);
+
+    /**
+     * Find campus posts by wall and domain, sorted by like count (least liked first)
+     */
+    Page<Post> findByWallAndSchoolDomainOrderByLikeCountAsc(String wall, String schoolDomain, Pageable pageable);
+
+    // ===== Other methods =====
     /**
      * Count posts by wall type
      */
@@ -42,10 +70,10 @@ public interface PostRepository extends CrudRepository<Post, Long> {
     /**
      * Find all posts by user ID
      */
-    List<Post> findByUserId(java.util.UUID userId);
+    List<Post> findByUserId(UUID userId);
 
     /**
-     * Find post by ID and eager load counts
+     * Find post by ID
      */
     Optional<Post> findById(Long id);
 }

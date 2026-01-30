@@ -69,7 +69,9 @@ public class PostsController {
 
     /**
      * GET /posts
-     * List posts with optional wall filter and pagination
+     * List posts with optional wall filter, pagination, and sorting
+     * Query parameters: wall (default campus), page (default 1), limit (default 20), sort (default NEWEST)
+     * Sort options: NEWEST, OLDEST, MOST_LIKED, LEAST_LIKED
      */
     @Get
     @Secured(SecurityRule.IS_AUTHENTICATED)
@@ -77,6 +79,7 @@ public class PostsController {
             @QueryValue(defaultValue = "campus") String wall,
             @QueryValue(defaultValue = "1") int page,
             @QueryValue(defaultValue = "20") int limit,
+            @QueryValue(defaultValue = "NEWEST") String sort,
             HttpRequest<?> httpRequest) {
         try {
             if (page < 1) page = 1;
@@ -84,7 +87,9 @@ public class PostsController {
 
             UUID userId = getUserIdFromRequest(httpRequest);
             Pageable pageable = Pageable.from(page - 1, limit);
-            Page<Post> posts = postsService.getPostsByWall(wall, pageable, userId);
+
+            com.anonymous.wall.model.SortBy sortBy = com.anonymous.wall.model.SortBy.parse(sort);
+            Page<Post> posts = postsService.getPostsByWall(wall, pageable, userId, sortBy);
 
             List<PostDTO> dtos = posts.getContent().stream()
                     .map(this::mapPostToDTO)
@@ -134,23 +139,44 @@ public class PostsController {
 
     /**
      * GET /posts/{postId}/comments
-     * Get all comments for a post
+     * Get comments for a post with optional pagination and sorting
+     * Query parameters: page (default 1), limit (default 20), sort (default NEWEST)
+     * Sort options: NEWEST, OLDEST (comments only sort by creation time)
      */
     @Get("/{postId}/comments")
     @Secured(SecurityRule.IS_AUTHENTICATED)
-    public HttpResponse<Object> getComments(@PathVariable Long postId, HttpRequest<?> httpRequest) {
+    public HttpResponse<Object> getComments(
+            @PathVariable Long postId,
+            @QueryValue(defaultValue = "1") int page,
+            @QueryValue(defaultValue = "20") int limit,
+            @QueryValue(defaultValue = "NEWEST") String sort,
+            HttpRequest<?> httpRequest) {
         try {
+            // Validate pagination parameters
+            if (page < 1) page = 1;
+            if (limit < 1 || limit > 100) limit = 20;
+
             UUID userId = getUserIdFromRequest(httpRequest);
             // This will validate visibility and throw if user doesn't have access
             postsService.getPost(postId, userId);
-            List<Comment> comments = postsService.getComments(postId);
-            List<CommentDTO> dtos = comments.stream()
+
+            Pageable pageable = Pageable.from(page - 1, limit);
+            com.anonymous.wall.model.SortBy sortBy = com.anonymous.wall.model.SortBy.parse(sort);
+            Page<Comment> commentPage = postsService.getCommentsWithPagination(postId, pageable, sortBy);
+
+            List<CommentDTO> dtos = commentPage.getContent().stream()
                     .map(this::mapCommentToDTO)
                     .collect(Collectors.toList());
 
+            Map<String, Object> pagination = new HashMap<>();
+            pagination.put("page", page);
+            pagination.put("limit", limit);
+            pagination.put("total", commentPage.getTotalSize());
+            pagination.put("totalPages", commentPage.getTotalPages());
+
             Map<String, Object> response = new HashMap<>();
             response.put("data", dtos);
-            response.put("total", dtos.size());
+            response.put("pagination", pagination);
 
             return HttpResponse.ok(response);
         } catch (IllegalArgumentException e) {
@@ -158,7 +184,7 @@ public class PostsController {
                 return HttpResponse.notFound();
             }
             if (e.getMessage().contains("do not have access")) {
-                return HttpResponse.<Object>status(io.micronaut.http.HttpStatus.FORBIDDEN).body(error(e.getMessage()));
+                return HttpResponse.status(io.micronaut.http.HttpStatus.FORBIDDEN).body(error(e.getMessage()));
             }
             return HttpResponse.badRequest(error(e.getMessage()));
         } catch (Exception e) {
