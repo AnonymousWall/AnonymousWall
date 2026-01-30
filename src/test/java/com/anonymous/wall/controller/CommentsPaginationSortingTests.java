@@ -7,6 +7,7 @@ import com.anonymous.wall.repository.CommentRepository;
 import com.anonymous.wall.repository.PostRepository;
 import com.anonymous.wall.repository.UserRepository;
 import com.anonymous.wall.service.JwtTokenService;
+import com.anonymous.wall.service.PostsService;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.HttpStatus;
@@ -43,6 +44,9 @@ class CommentsPaginationSortingTests {
     @Inject
     private JwtTokenService jwtTokenService;
 
+    @Inject
+    private PostsService postsService;
+
     private UserEntity testUser;
     private String jwtToken;
     private Post testPost;
@@ -70,10 +74,10 @@ class CommentsPaginationSortingTests {
         testPost = new Post(testUser.getId(), "Test post for comments", "campus", "harvard.edu");
         testPost = postRepository.save(testPost);
 
-        // Create test comments (30 comments for comprehensive testing)
+        // Create test comments (30 comments for comprehensive testing) via service
         for (int i = 0; i < 30; i++) {
-            Comment comment = new Comment(testPost.getId(), testUser.getId(), "Comment " + i);
-            commentRepository.save(comment);
+            postsService.addComment(testPost.getId(),
+                new com.anonymous.wall.model.CreateCommentRequest("Comment " + i), testUser.getId());
         }
     }
 

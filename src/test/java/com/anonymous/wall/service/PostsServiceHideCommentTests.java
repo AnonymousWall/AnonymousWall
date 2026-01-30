@@ -79,11 +79,12 @@ class PostsServiceHideCommentTests {
         nationalPost = postRepository.save(nationalPost);
 
         // Create test comments
-        campusComment = new Comment(campusPost.getId(), userCampusId, "Campus comment");
-        campusComment = commentRepository.save(campusComment);
+        // Use service to ensure comment counts are properly updated
+        campusComment = postsService.addComment(campusPost.getId(),
+            new com.anonymous.wall.model.CreateCommentRequest("Campus comment"), userCampusId);
 
-        nationalComment = new Comment(nationalPost.getId(), userCampusId, "National comment");
-        nationalComment = commentRepository.save(nationalComment);
+        nationalComment = postsService.addComment(nationalPost.getId(),
+            new com.anonymous.wall.model.CreateCommentRequest("National comment"), userCampusId);
     }
 
     @AfterEach
@@ -464,8 +465,8 @@ class PostsServiceHideCommentTests {
         @DisplayName("Should handle hiding comment with special characters")
         void shouldHandleHidingCommentWithSpecialCharacters() {
             String specialText = "Comment with 🎉 emoji @mention #hashtag ñ character";
-            Comment specialComment = new Comment(campusPost.getId(), userCampusId, specialText);
-            specialComment = commentRepository.save(specialComment);
+            Comment specialComment = postsService.addComment(campusPost.getId(),
+                new com.anonymous.wall.model.CreateCommentRequest(specialText), userCampusId);
 
             Comment result = postsService.hideComment(campusPost.getId(), specialComment.getId(), userCampusId);
 
@@ -478,8 +479,8 @@ class PostsServiceHideCommentTests {
         @DisplayName("Should handle hiding comment with very long text")
         void shouldHandleHidingCommentWithVeryLongText() {
             String longText = "X".repeat(5000);
-            Comment longComment = new Comment(campusPost.getId(), userCampusId, longText);
-            longComment = commentRepository.save(longComment);
+            Comment longComment = postsService.addComment(campusPost.getId(),
+                new com.anonymous.wall.model.CreateCommentRequest(longText), userCampusId);
 
             Comment result = postsService.hideComment(campusPost.getId(), longComment.getId(), userCampusId);
 
@@ -531,21 +532,51 @@ class PostsServiceHideCommentTests {
 
         @Test
         @Order(44)
-        @DisplayName("Should maintain comment count when hiding")
-        void shouldMaintainCommentCountWhenHiding() {
-            // Add a few more comments
-            Comment comment2 = new Comment(campusPost.getId(), userCampusId, "Comment 2");
-            comment2 = commentRepository.save(comment2);
+        @DisplayName("Should decrement comment count when hiding")
+        void shouldDecrementCommentCountWhenHiding() {
+            // Add more comments via service to ensure comment counts are updated
+            postsService.addComment(campusPost.getId(),
+                new com.anonymous.wall.model.CreateCommentRequest("Comment 2"), userCampusId);
 
-            int initialCommentCount = postsService.getComments(campusPost.getId()).size();
+            Post postBefore = postRepository.findById(campusPost.getId()).get();
+            int initialCount = postBefore.getCommentCount();
 
             // Hide one comment
             postsService.hideComment(campusPost.getId(), campusComment.getId(), userCampusId);
 
-            // The post's comment_count field may not change (it tracks all comments including hidden)
-            // But the visible comments should decrease
+            // Verify comment count is decremented (soft-delete behavior)
+            Post postAfter = postRepository.findById(campusPost.getId()).get();
+            assertEquals(initialCount - 1, postAfter.getCommentCount(),
+                "Post comment count should be decremented when hiding");
+
+            // Verify visible comments also decreased
             int visibleCommentCount = postsService.getComments(campusPost.getId()).size();
-            assertEquals(initialCommentCount - 1, visibleCommentCount, "Visible comment count should decrease");
+            assertEquals(initialCount - 1, visibleCommentCount,
+                "Visible comment count should match post comment count");
+        }
+
+        @Test
+        @Order(45)
+        @DisplayName("Should increment comment count when unhiding")
+        void shouldIncrementCommentCountWhenUnhiding() {
+            // First hide a comment
+            postsService.hideComment(campusPost.getId(), campusComment.getId(), userCampusId);
+
+            Post postAfterHide = postRepository.findById(campusPost.getId()).get();
+            int countAfterHide = postAfterHide.getCommentCount();
+
+            // Then unhide it
+            postsService.unhideComment(campusPost.getId(), campusComment.getId(), userCampusId);
+
+            // Verify comment count is incremented back
+            Post postAfterUnhide = postRepository.findById(campusPost.getId()).get();
+            assertEquals(countAfterHide + 1, postAfterUnhide.getCommentCount(),
+                "Post comment count should be incremented when unhiding");
+
+            // Verify visible comments increased
+            int visibleCommentCount = postsService.getComments(campusPost.getId()).size();
+            assertEquals(countAfterHide + 1, visibleCommentCount,
+                "Visible comment count should match post comment count");
         }
 
         @Test
@@ -599,9 +630,9 @@ class PostsServiceHideCommentTests {
             Post mitPost = new Post(userDifferentSchoolId, "MIT post", "campus", "mit.edu");
             mitPost = postRepository.save(mitPost);
 
-            // Create a comment on MIT post
-            Comment mitComment = new Comment(mitPost.getId(), userDifferentSchoolId, "MIT comment");
-            mitComment = commentRepository.save(mitComment);
+            // Create a comment on MIT post via service
+            Comment mitComment = postsService.addComment(mitPost.getId(),
+                new com.anonymous.wall.model.CreateCommentRequest("MIT comment"), userDifferentSchoolId);
 
             final Long mitPostId = mitPost.getId();
             final Long mitCommentId = mitComment.getId();

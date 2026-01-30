@@ -60,10 +60,10 @@ class PostsServiceCommentsPaginationSortingTests {
         testPost = new Post(userId, "Test post for comments", "campus", "harvard.edu");
         testPost = postRepository.save(testPost);
 
-        // Create test comments (40 comments for comprehensive testing)
+        // Create test comments (40 comments for comprehensive testing) via service
         for (int i = 0; i < 40; i++) {
-            Comment comment = new Comment(testPost.getId(), userId, "Comment " + i);
-            commentRepository.save(comment);
+            postsService.addComment(testPost.getId(),
+                new com.anonymous.wall.model.CreateCommentRequest("Comment " + i), userId);
         }
     }
 

@@ -13,6 +13,7 @@ import com.anonymous.wall.repository.PostLikeRepository;
 import com.anonymous.wall.repository.UserRepository;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
+import io.micronaut.transaction.annotation.Transactional;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import org.slf4j.Logger;
@@ -383,8 +384,10 @@ public class PostsServiceImpl implements PostsService {
     /**
      * Hide a comment (soft-delete)
      * Only the comment author can hide their own comment
+     * Decrements the comment count on the post (soft-delete appears as deletion to user)
      */
     @Override
+    @Transactional
     public Comment hideComment(Long postId, Long commentId, UUID userId) {
         // Verify post exists
         Optional<Post> postOpt = postRepository.findById(postId);
@@ -422,15 +425,22 @@ public class PostsServiceImpl implements PostsService {
         comment.setHidden(true);
         Comment updatedComment = commentRepository.update(comment);
 
-        log.info("Comment hidden: id={}, postId={}, user={}", commentId, postId, userId);
+        // Atomically decrement comment count on post (within same transaction)
+        post.decrementCommentCount();
+        postRepository.update(post);
+
+        log.info("Comment hidden: id={}, postId={}, user={}, newCommentCount={}",
+            commentId, postId, userId, post.getCommentCount());
         return updatedComment;
     }
 
     /**
      * Unhide a comment (undo soft-delete)
      * Only the comment author can unhide their own comment
+     * Increments the comment count on the post (restore from deletion)
      */
     @Override
+    @Transactional
     public Comment unhideComment(Long postId, Long commentId, UUID userId) {
         // Verify post exists
         Optional<Post> postOpt = postRepository.findById(postId);
@@ -468,7 +478,12 @@ public class PostsServiceImpl implements PostsService {
         comment.setHidden(false);
         Comment updatedComment = commentRepository.update(comment);
 
-        log.info("Comment unhidden: id={}, postId={}, user={}", commentId, postId, userId);
+        // Atomically increment comment count on post (within same transaction)
+        post.incrementCommentCount();
+        postRepository.update(post);
+
+        log.info("Comment unhidden: id={}, postId={}, user={}, newCommentCount={}",
+            commentId, postId, userId, post.getCommentCount());
         return updatedComment;
     }
 }
