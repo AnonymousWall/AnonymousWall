@@ -201,6 +201,7 @@ public class PostsServiceImpl implements PostsService {
      * Uses atomic operations to increment comment count
      */
     @Override
+    @Transactional
     public Comment addComment(Long postId, CreateCommentRequest request, UUID userId) {
         // Verify post exists
         Optional<Post> postOpt = postRepository.findById(postId);
@@ -279,6 +280,7 @@ public class PostsServiceImpl implements PostsService {
      * Uses atomic operations to prevent race conditions
      */
     @Override
+    @Transactional
     public boolean toggleLike(Long postId, UUID userId) {
         // Verify post exists
         Optional<Post> postOpt = postRepository.findById(postId);

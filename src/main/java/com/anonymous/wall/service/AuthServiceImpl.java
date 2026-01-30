@@ -10,6 +10,7 @@ import com.anonymous.wall.util.CodeGenerator;
 import com.anonymous.wall.util.EmailUtil;
 import com.anonymous.wall.util.EmailValidator;
 
+import io.micronaut.transaction.annotation.Transactional;
 import jakarta.inject.Singleton;
 import jakarta.inject.Inject;
 import org.slf4j.Logger;
@@ -55,6 +56,7 @@ public class AuthServiceImpl implements AuthService {
      * Register new user with email and verification code
      */
     @Override
+    @Transactional
     public UserEntity registerWithEmail(RegisterEmailRequest request) {
         // Validate school email
         if (!EmailValidator.isValidSchoolEmail(request.getEmail())) {
@@ -100,6 +102,7 @@ public class AuthServiceImpl implements AuthService {
      * Login user with email and verification code (password-less login)
      */
     @Override
+    @Transactional
     public UserEntity loginWithEmail(LoginEmailRequest request) {
         // Verify the code
         Optional<EmailVerificationCode> codeRecord = emailCodeRepository
@@ -237,6 +240,7 @@ public class AuthServiceImpl implements AuthService {
      * Reset password with verification code (forgot password flow)
      */
     @Override
+    @Transactional
     public UserEntity resetPassword(ResetPasswordRequest request) {
         Optional<UserEntity> userOpt = userRepository.findByEmail(request.getEmail());
 
