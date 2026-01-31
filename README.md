@@ -456,50 +456,117 @@ Response: 200 OK
 ## Setup & Running
 
 ### Prerequisites
-- Java 17 or higher
+- Java 21 or higher
 - Maven 3.9.4+
-- PostgreSQL (or use H2 for development)
+- MySQL 8+ (for local development and production)
+- Redis (optional, for caching)
 
-### Configuration
+### Configuration Files
 
-Edit `src/main/resources/application.properties`:
+The application uses **environment-specific profiles**:
+
+| Profile | File | Usage | Database |
+|---------|------|-------|----------|
+| **Default** | `application.properties` | Fallback/production base | Environment variables |
+| **Development** | `application-dev.properties` | Local development | Your local MySQL (ziyihuang) |
+| **Production** | `application-prod.properties` | Production deployment | Environment variables (required) |
+| **Tests** | `src/test/resources/application.properties` | Running tests | Same as development |
+
+#### Local Development Configuration
+
+**File:** `src/main/resources/application-dev.properties`
 
 ```properties
-# Database
-datasources.default.url=jdbc:postgresql://localhost:5432/anonymous_wall
-datasources.default.username=postgres
-datasources.default.password=your_password
-datasources.default.dialect=POSTGRES
+# Your local database settings
+datasources.default.url=jdbc:mysql://localhost:3306/anonymous_wall
+datasources.default.username=ziyihuang
+datasources.default.password=HZYhzy@2014
+redis.uri=redis://localhost:6379
+```
 
-# Email (SMTP)
-mail.smtp.host=smtp.gmail.com
-mail.smtp.port=587
-mail.smtp.auth=true
-mail.smtp.from=noreply@campus.wall
+**No setup needed** - just run with the dev profile!
 
-# JWT
-jwt.secret=your-secret-key-here
-jwt.expiration=86400000  # 24 hours in ms
+#### Production Configuration
+
+**File:** `src/main/resources/application-prod.properties`
+
+For production, set **required environment variables**:
+
+```bash
+export MICRONAUT_ENVIRONMENTS=prod
+
+# Required - JWT signing key (minimum 32 characters)
+export JWT_GENERATOR_SIGNATURE_SECRET="your-secret-key-min-32-chars"
+
+# Required - Database connection
+export DATABASE_URL="jdbc:mysql://production-host:3306/anonymous_wall"
+export DATABASE_USER="prod_user"
+export DATABASE_PASSWORD="prod_password"
+
+# Required - Redis connection
+export REDIS_URI="redis://redis-host:6379"
 ```
 
 ### Build & Run
 
+#### Local Development
+
 ```bash
-# Build
-mvn clean compile
+# Option 1: Using Micronaut Maven plugin (recommended for dev)
+MICRONAUT_ENVIRONMENTS=dev ./mvnw mn:run
 
-# Run tests
-mvn test
+# Option 2: Build JAR and run
+mvn clean package
+MICRONAUT_ENVIRONMENTS=dev java -jar target/anonymouswall-0.1.jar
 
-# Run application
-mvn mn:run
+# Option 3: Just run (uses application.properties defaults)
+./mvnw mn:run
+java -jar target/anonymouswall-0.1.jar
+```
 
-# Or run JAR
+#### Running Tests
+
+```bash
+# Run all tests (uses test profile with local dev settings)
+mvn clean test
+
+# Run specific test
+mvn test -Dtest=AuthControllerTest
+
+# Run with coverage
+mvn clean test jacoco:report
+```
+
+#### Production Deployment
+
+```bash
+# Set environment variables first (see Production Configuration above)
+export MICRONAUT_ENVIRONMENTS=prod
+export JWT_GENERATOR_SIGNATURE_SECRET="..."
+export DATABASE_URL="..."
+export DATABASE_USER="..."
+export DATABASE_PASSWORD="..."
+export REDIS_URI="..."
+
+# Build and run
 mvn clean package
 java -jar target/anonymouswall-0.1.jar
 ```
 
+### Database Initialization
+
+The application uses **Liquibase** for automatic schema migrations. The schema is created automatically when the application starts.
+
+**Schema includes:**
+- Users table with school domain segregation
+- Posts table with campus/national separation
+- Comments table with soft-delete support (hidden flag)
+- Post likes tracking
+- Email verification codes with expiration
+- JWT tokens (if using token storage)
+
 ### API Documentation
+
 Once running, access Swagger UI at:
 ```
 http://localhost:8080/swagger-ui.html
@@ -508,6 +575,19 @@ http://localhost:8080/swagger-ui.html
 OpenAPI spec available at:
 ```
 http://localhost:8080/swagger/anonymouswall-0.0.yml
+```
+
+### Quick Start
+
+```bash
+# 1. Build the project
+mvn clean package
+
+# 2. Run with dev profile
+MICRONAUT_ENVIRONMENTS=dev ./mvnw mn:run
+
+# 3. Access API
+curl http://localhost:8080/health
 ```
 
 ---
@@ -533,33 +613,42 @@ http://localhost:8080/swagger/anonymouswall-0.0.yml
 **Impact**: Potential spam/abuse; email quota exhaustion  
 **Recommendation**: Implement rate limiting (e.g., max 5 requests per hour per email)
 
-### 4. **No Soft Delete for Posts/Comments**
-**Issue**: Posts and comments are permanently deleted, no audit trail  
-**Impact**: Cannot recover deleted content; no moderation history  
-**Recommendation**: Implement soft delete with `deleted_at` timestamp
+### 4. ✅ **Soft Delete for Posts/Comments** - IMPLEMENTED
+**Status**: FIXED in v0.1
+- Posts and comments support soft delete (hidden flag)
+- Uses `@Transactional` to ensure atomic operations
+- Cascade hide: hiding a post hides all its comments
+- Comments remain in DB but marked as hidden
+- See: `PostsServiceImpl.hidePost()`, `hideComment()`, `unhidePost()`, `unhideComment()`
 
-### 5. **Like Count Not Atomic**
-**Issue**: Like count is calculated on-the-fly from PostLike table  
-```java
-long likeCount = postLikeRepository.countByPostId(post.getId());
-```
-**Impact**: If many users like simultaneously, counts might be inconsistent  
-**Recommendation**: Add denormalized `like_count` column with transaction handling
+### 5. ✅ **Atomic Like Count** - IMPLEMENTED
+**Status**: FIXED in v0.1
+- Like toggle uses atomic SQL operations
+- Denormalized `like_count` in Posts table
+- Protected with `@Transactional` and `@Retryable`
+- Transaction rollback on failure
+- Comprehensive concurrency tests verify thread safety
+- See: `PostsServiceImpl.toggleLike()`, concurrency tests
 
-### 6. **Comment Count Not Atomic**
-**Issue**: Same as like count - calculated on-the-fly  
-**Impact**: Similar race condition issues  
-**Recommendation**: Denormalize comment count in Posts table
+### 6. ✅ **Atomic Comment Count** - IMPLEMENTED
+**Status**: FIXED in v0.1
+- Comment count atomic with comment save
+- Denormalized `comment_count` in Posts table
+- Protected with `@Transactional` and `@Retryable`
+- Cascade operations maintain consistency
+- Transaction tests verify atomicity
+- See: `PostsServiceImpl.addComment()`, transaction tests
 
 ### 7. **No Content Moderation**
 **Issue**: Posts and comments are not filtered for inappropriate content  
 **Impact**: Potential for harassment/spam  
 **Recommendation**: Add content filtering (e.g., keyword blocking, AI moderation)
 
-### 8. **No Pagination Limits on Comments**
-**Issue**: All comments are fetched regardless of count  
-**Impact**: Large posts with thousands of comments load slowly  
-**Recommendation**: Add pagination to comments endpoint
+### 8. ✅ **Pagination on Comments** - IMPLEMENTED
+**Status**: FIXED in v0.1
+- All endpoints support pagination and sorting
+- Default page size: 20, max: 100
+- See: `PostsController.getComments()`, `getPostsWithComments()`
 
 ### 9. **School Domain Always Stored for Campus Posts**
 **Issue**: `school_domain` field stores redundant data (can be extracted from user)  
@@ -568,7 +657,69 @@ long likeCount = postLikeRepository.countByPostId(post.getId());
 
 ### 10. **No User Profile Visibility Controls**
 **Issue**: User data exposed in API responses (though marked anonymous)  
-**Impact**: User ID is visible in every post/comment  
+
+---
+
+## Testing & Quality Assurance
+
+### Test Coverage
+
+The application includes **450+ tests** covering:
+
+#### Unit Tests (400+)
+- Controller tests (9 test classes)
+- Service layer tests (1 test class)
+- Utility function tests (1 test class)
+- Entity model tests
+- Repository tests
+
+#### Concurrency Tests (10)
+Tests verify thread safety under concurrent access:
+- Concurrent comment addition
+- Concurrent like toggling
+- Concurrent mixed operations
+- High-load scenarios
+
+#### Transaction Tests (20)
+Tests verify ACID compliance:
+- Atomicity: All-or-nothing operations
+- Consistency: Count accuracy and referential integrity
+- Isolation: No dirty reads
+- Durability: Data persistence
+
+#### Soft Delete Tests
+- Hide/unhide operations
+- Cascade hide behavior
+- Consistency after hide operations
+- Visibility filtering
+
+### Running Tests
+
+```bash
+# All tests
+mvn clean test
+
+# Concurrency tests only
+mvn test -Dtest=*Concurrency*
+
+# Transaction tests only
+mvn test -Dtest=*Transaction*
+
+# With code coverage
+mvn clean test jacoco:report
+```
+
+### Fixed Issues in v0.1
+
+✅ **Race Conditions** - Atomic SQL operations with versioning  
+✅ **Transaction Safety** - @Transactional on all service methods  
+✅ **Resilience** - @Retryable with 3 attempts, 500ms delay  
+✅ **Cascade Operations** - Foreign key constraints with CASCADE DELETE  
+✅ **Soft Delete** - Hide/unhide with data preservation  
+✅ **Consistency** - Comprehensive transaction tests verify ACID compliance  
+✅ **Test Database** - H2 in-memory with MySQL compatibility mode  
+
+---**Impact**: User ID is visible in every post/comment  
 **Recommendation**: Consider hashing/obfuscating user IDs or randomizing display
 
 ### 11. **Password Hash Algorithm Not Specified**
