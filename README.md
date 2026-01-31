@@ -465,12 +465,12 @@ Response: 200 OK
 
 The application uses **environment-specific profiles**:
 
-| Profile | File | Usage | Database |
-|---------|------|-------|----------|
-| **Default** | `application.properties` | Fallback/production base | Environment variables |
-| **Development** | `application-dev.properties` | Local development | Your local MySQL (ziyihuang) |
-| **Production** | `application-prod.properties` | Production deployment | Environment variables (required) |
-| **Tests** | `src/test/resources/application.properties` | Running tests | Same as development |
+| Profile | File | Usage | Database | Log Directory |
+|---------|------|-------|----------|---------------|
+| **Default** | `application.properties` | Fallback/production base | Environment variables | `./logs` |
+| **Development** | `application-dev.properties` | Local development | Your local MySQL (ziyihuang) | `./logs` (project root) |
+| **Production** | `application-prod.properties` | Production deployment | Environment variables (required) | `/var/log/anonymouswall` |
+| **Tests** | `src/test/resources/application.properties` | Running tests | Same as development | `./logs` |
 
 #### Local Development Configuration
 
@@ -505,7 +505,48 @@ export DATABASE_PASSWORD="prod_password"
 
 # Required - Redis connection
 export REDIS_URI="redis://redis-host:6379"
+
+# Optional - Logging directory (defaults to /var/log/anonymouswall)
+export LOG_DIR="/var/log/anonymouswall"
 ```
+
+#### Logging Configuration
+
+The application uses **Log4j2** with environment-specific log directories:
+
+**Development (application-dev.properties):**
+- Logs written to `./logs` directory in project root
+- Files: `anonymouswall.log`, `anonymouswall-error.log`, `anonymouswall-debug.log`
+- Perfect for local development and debugging
+
+**Production (application-prod.properties):**
+- Logs written to `/var/log/anonymouswall` (standard Linux log directory)
+- Can be overridden with `LOG_DIR` environment variable
+
+**Log Files Generated:**
+- `anonymouswall.log` - Main application logs (daily rotation or 10MB threshold)
+- `anonymouswall-error.log` - ERROR level logs only
+- `anonymouswall-debug.log` - DEBUG level logs only
+- Old logs are compressed (.gz) and retained: 30 days for main/error, 10 days for debug
+
+**Configuration:**
+```bash
+# Development - logs to project root
+MICRONAUT_ENVIRONMENTS=dev ./mvnw mn:run
+# Logs appear in ./logs/
+
+# Production - logs to standard location
+export MICRONAUT_ENVIRONMENTS=prod
+export LOG_DIR=/var/log/anonymouswall
+java -jar target/anonymouswall-0.1.jar
+# Logs appear in /var/log/anonymouswall/
+
+# Override with custom path
+export LOG_DIR=/custom/path/to/logs
+java -jar target/anonymouswall-0.1.jar
+```
+
+For detailed logging information, see [LOGGING_CONFIGURATION.md](LOGGING_CONFIGURATION.md).
 
 ### Build & Run
 

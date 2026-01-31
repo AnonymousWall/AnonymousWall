@@ -1,33 +1,103 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Configuration status="warn">
+<Configuration status="warn" packages="com.anonymous.wall">
+    <!-- Property to set log directory via environment variable or property -->
+    <!-- For dev: project root; for prod: /var/log/anonymouswall -->
+    <Properties>
+        <Property name="log.dir">${env:LOG_DIR:-./logs}</Property>
+        <Property name="log.pattern">%d{ISO8601} [%t] %-5level %logger{36} - %msg%n</Property>
+        <Property name="app.name">anonymouswall</Property>
+    </Properties>
+
     <Appenders>
+        <!-- Console Appender: for all environments -->
         <Console name="Console" target="SYSTEM_OUT">
-            <PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
+            <PatternLayout pattern="${log.pattern}"/>
         </Console>
+
+        <!-- File Appender: Main application logs -->
+        <RollingFile name="ApplicationFile"
+                      fileName="${log.dir}/${app.name}.log"
+                      filePattern="${log.dir}/${app.name}-%d{yyyy-MM-dd}-%i.log.gz"
+                      ignoreExceptions="false">
+            <PatternLayout pattern="${log.pattern}"/>
+            <Policies>
+                <!-- Roll over every day or when file size reaches 10MB -->
+                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+                <SizeBasedTriggeringPolicy size="10MB"/>
+            </Policies>
+            <DefaultRolloverStrategy max="30"/>
+        </RollingFile>
+
+        <!-- File Appender: Error logs only -->
+        <RollingFile name="ErrorFile"
+                      fileName="${log.dir}/${app.name}-error.log"
+                      filePattern="${log.dir}/${app.name}-error-%d{yyyy-MM-dd}-%i.log.gz"
+                      ignoreExceptions="false">
+            <PatternLayout pattern="${log.pattern}"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+                <SizeBasedTriggeringPolicy size="10MB"/>
+            </Policies>
+            <DefaultRolloverStrategy max="30"/>
+            <Filters>
+                <ThresholdFilter level="ERROR" onMatch="ACCEPT" onMismatch="DENY"/>
+            </Filters>
+        </RollingFile>
+
+        <!-- File Appender: Application debug logs -->
+        <RollingFile name="DebugFile"
+                      fileName="${log.dir}/${app.name}-debug.log"
+                      filePattern="${log.dir}/${app.name}-debug-%d{yyyy-MM-dd}-%i.log.gz"
+                      ignoreExceptions="false">
+            <PatternLayout pattern="${log.pattern}"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+                <SizeBasedTriggeringPolicy size="10MB"/>
+            </Policies>
+            <DefaultRolloverStrategy max="10"/>
+            <Filters>
+                <ThresholdFilter level="DEBUG" onMatch="ACCEPT" onMismatch="DENY"/>
+            </Filters>
+        </RollingFile>
     </Appenders>
 
     <Loggers>
+        <!-- Micronaut Framework -->
         <Logger name="io.micronaut.runtime" level="info" additivity="false">
             <AppenderRef ref="Console"/>
+            <AppenderRef ref="ApplicationFile"/>
         </Logger>
-        <!-- Your application logs: controllers, services, repositories -->
+
+        <!-- Application Logs -->
         <Logger name="com.anonymous.wall" level="debug" additivity="false">
             <AppenderRef ref="Console"/>
+            <AppenderRef ref="ApplicationFile"/>
+            <AppenderRef ref="DebugFile"/>
         </Logger>
 
-        <!-- Micronaut HTTP: useful for seeing request/response -->
+        <!-- Micronaut HTTP: request/response logging -->
         <Logger name="io.micronaut.http" level="info" additivity="false">
             <AppenderRef ref="Console"/>
+            <AppenderRef ref="ApplicationFile"/>
         </Logger>
 
-        <!-- Micronaut Data / JPA: SQL queries without parameters -->
-        <Logger name="io.micronaut.data" level="debug" additivity="false">
+        <!-- Micronaut Data / JPA: SQL queries -->
+        <Logger name="io.micronaut.data" level="info" additivity="false">
             <AppenderRef ref="Console"/>
+            <AppenderRef ref="ApplicationFile"/>
         </Logger>
 
-        <!-- Root logger: warnings and errors from libraries -->
+        <!-- Hibernate/JPA -->
+        <Logger name="org.hibernate" level="warn" additivity="false">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="ApplicationFile"/>
+        </Logger>
+
+        <!-- Root Logger: catch-all for other libraries -->
         <Root level="warn">
             <AppenderRef ref="Console"/>
+            <AppenderRef ref="ApplicationFile"/>
+            <AppenderRef ref="ErrorFile"/>
         </Root>
     </Loggers>
 </Configuration>
