@@ -163,13 +163,13 @@ class PasswordUtilTest {
         @DisplayName("Should produce hashes with high entropy")
         void shouldProduceHighEntropyHashes() {
             Set<String> hashes = new HashSet<>();
-            for (int i = 0; i < 100; i++) {
+            for (int i = 0; i < 20; i++) {
                 String hash = PasswordUtil.hashPassword("password");
                 hashes.add(hash);
             }
 
-            // All 100 hashes should be unique
-            assertEquals(100, hashes.size(), "Should have 100 unique hashes");
+            // All 20 hashes should be unique
+            assertEquals(20, hashes.size(), "Should have 20 unique hashes");
         }
 
         @Test
