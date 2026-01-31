@@ -14,6 +14,7 @@ import com.anonymous.wall.repository.UserRepository;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
 import io.micronaut.transaction.annotation.Transactional;
+import io.micronaut.retry.annotation.Retryable;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import org.slf4j.Logger;
@@ -44,6 +45,7 @@ public class PostsServiceImpl implements PostsService {
      * Create a new post
      */
     @Override
+    @Retryable(attempts = "3", delay = "500ms")
     public Post createPost(CreatePostRequest request, UUID userId) {
         if (request.getContent() == null || request.getContent().trim().isEmpty()) {
             throw new IllegalArgumentException("Post content cannot be empty");
@@ -202,6 +204,7 @@ public class PostsServiceImpl implements PostsService {
      */
     @Override
     @Transactional
+    @Retryable(attempts = "3", delay = "500ms")
     public Comment addComment(Long postId, CreateCommentRequest request, UUID userId) {
         // Verify post exists
         Optional<Post> postOpt = postRepository.findById(postId);
@@ -275,6 +278,7 @@ public class PostsServiceImpl implements PostsService {
      */
     @Override
     @Transactional
+    @Retryable(attempts = "5", delay = "100ms")
     public boolean toggleLike(Long postId, UUID userId) {
         // Verify post exists
         Optional<Post> postOpt = postRepository.findById(postId);
@@ -372,6 +376,7 @@ public class PostsServiceImpl implements PostsService {
      */
     @Override
     @Transactional
+    @Retryable(attempts = "3", delay = "500ms")
     public Comment hideComment(Long postId, Long commentId, UUID userId) {
         // Verify post exists
         Optional<Post> postOpt = postRepository.findById(postId);
@@ -425,6 +430,7 @@ public class PostsServiceImpl implements PostsService {
      */
     @Override
     @Transactional
+    @Retryable(attempts = "3", delay = "500ms")
     public Comment unhideComment(Long postId, Long commentId, UUID userId) {
         // Verify post exists
         Optional<Post> postOpt = postRepository.findById(postId);
@@ -478,6 +484,7 @@ public class PostsServiceImpl implements PostsService {
      */
     @Override
     @Transactional
+    @Retryable(attempts = "3", delay = "500ms")
     public Post hidePost(Long postId, UUID userId) {
         // Verify post exists
         Optional<Post> postOpt = postRepository.findById(postId);
@@ -515,6 +522,7 @@ public class PostsServiceImpl implements PostsService {
      */
     @Override
     @Transactional
+    @Retryable(attempts = "3", delay = "500ms")
     public Post unhidePost(Long postId, UUID userId) {
         // Verify post exists
         Optional<Post> postOpt = postRepository.findById(postId);

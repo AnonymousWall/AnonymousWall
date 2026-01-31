@@ -11,6 +11,7 @@ import com.anonymous.wall.util.EmailUtil;
 import com.anonymous.wall.util.EmailValidator;
 
 import io.micronaut.transaction.annotation.Transactional;
+import io.micronaut.retry.annotation.Retryable;
 import jakarta.inject.Singleton;
 import jakarta.inject.Inject;
 import org.slf4j.Logger;
@@ -34,6 +35,7 @@ public class AuthServiceImpl implements AuthService {
      * Send verification code to email
      */
     @Override
+    @Retryable(attempts = "3", delay = "1000ms")
     public void sendEmailCode(SendEmailCodeRequest request) {
         String code = CodeGenerator.generateCode();
         String purpose = request.getPurpose().toString().toLowerCase();
@@ -57,6 +59,7 @@ public class AuthServiceImpl implements AuthService {
      */
     @Override
     @Transactional
+    @Retryable(attempts = "3", delay = "500ms")
     public UserEntity registerWithEmail(RegisterEmailRequest request) {
         // Validate school email
         if (!EmailValidator.isValidSchoolEmail(request.getEmail())) {
@@ -103,6 +106,7 @@ public class AuthServiceImpl implements AuthService {
      */
     @Override
     @Transactional
+    @Retryable(attempts = "3", delay = "500ms")
     public UserEntity loginWithEmail(LoginEmailRequest request) {
         // Verify the code
         Optional<EmailVerificationCode> codeRecord = emailCodeRepository
@@ -241,6 +245,7 @@ public class AuthServiceImpl implements AuthService {
      */
     @Override
     @Transactional
+    @Retryable(attempts = "3", delay = "500ms")
     public UserEntity resetPassword(ResetPasswordRequest request) {
         Optional<UserEntity> userOpt = userRepository.findByEmail(request.getEmail());
 
