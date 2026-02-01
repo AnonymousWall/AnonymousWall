@@ -193,7 +193,7 @@ Content-Type: application/json
 
 {
     "email": "student@harvard.edu",
-    "purpose": "REGISTER"  // or "LOGIN", "RESET_PASSWORD"
+    "purpose": "register"  // or "login", "reset_password"
 }
 
 Response: 200 OK
@@ -209,8 +209,7 @@ Content-Type: application/json
 
 {
     "email": "student@harvard.edu",
-    "code": "123456",
-    "password": null  // Optional, can set later
+    "code": "123456"
 }
 
 Response: 201 Created
@@ -218,8 +217,7 @@ Response: 201 Created
     "user": {
         "id": "uuid",
         "email": "student@harvard.edu",
-        "schoolDomain": "harvard.edu",
-        "verified": true,
+        "isVerified": true,
         "passwordSet": false,
         "createdAt": "2026-01-28T..."
     },
@@ -264,22 +262,28 @@ Response: 200 OK
 #### 5. Set Password (Requires Authentication)
 ```http
 POST /api/v1/auth/password/set
+Header: X-User-Id: {userId}
 Authorization: Bearer {jwt-token}
 Content-Type: application/json
 
 {
-    "newPassword": "secure_password"
+    "password": "secure_password"
 }
 
 Response: 200 OK
 {
-    "message": "Password set successfully"
+    "id": "uuid",
+    "email": "student@harvard.edu",
+    "isVerified": true,
+    "passwordSet": true,
+    "createdAt": "2026-01-28T..."
 }
 ```
 
 #### 6. Change Password (Requires Authentication)
 ```http
 POST /api/v1/auth/password/change
+Header: X-User-Id: {userId}
 Authorization: Bearer {jwt-token}
 Content-Type: application/json
 
@@ -290,7 +294,11 @@ Content-Type: application/json
 
 Response: 200 OK
 {
-    "message": "Password changed successfully"
+    "id": "uuid",
+    "email": "student@harvard.edu",
+    "isVerified": true,
+    "passwordSet": true,
+    "createdAt": "2026-01-28T..."
 }
 ```
 
@@ -328,7 +336,7 @@ Response: 201 Created
 
 #### 2. List Posts
 ```http
-GET /api/v1/posts?wall=campus&page=1&limit=20
+GET /api/v1/posts?wall=campus&page=1&limit=20&sort=NEWEST
 Authorization: Bearer {jwt-token}
 
 Response: 200 OK
@@ -362,6 +370,7 @@ Response: 200 OK
 - `wall` (default: "campus") - Filter by "campus" or "national"
 - `page` (default: 1) - Page number (1-based)
 - `limit` (default: 20) - Posts per page (max: 100)
+- `sort` (default: "NEWEST") - Sort order: NEWEST, OLDEST, MOST_LIKED, LEAST_LIKED
 
 #### 3. Toggle Like on Post
 ```http
@@ -399,7 +408,7 @@ Response: 201 Created
 
 #### 5. Get Comments for Post
 ```http
-GET /api/v1/posts/{postId}/comments
+GET /api/v1/posts/{postId}/comments?page=1&limit=20&sort=NEWEST
 Authorization: Bearer {jwt-token}
 
 Response: 200 OK
@@ -416,9 +425,19 @@ Response: 200 OK
             "createdAt": "2026-01-28T..."
         }
     ],
-    "total": 5
+    "pagination": {
+        "page": 1,
+        "limit": 20,
+        "total": 5,
+        "totalPages": 1
+    }
 }
 ```
+
+**Query Parameters:**
+- `page` (default: 1) - Page number (1-based)
+- `limit` (default: 20) - Comments per page (max: 100)
+- `sort` (default: "NEWEST") - Sort order: NEWEST, OLDEST
 
 ---
 
