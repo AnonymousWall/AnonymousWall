@@ -13,3 +13,19 @@ out/
 .settings
 .classpath
 .factorypath
+
+# Environment files - never commit secrets!
+.env
+.env.local
+.env.*.local
+
+# Logs
+logs/
+*.log
+
+# Docker volumes
+mysql-data/
+redis-data/
+
+# Deployment artifacts
+anonymouswall-deploy.tar.gz

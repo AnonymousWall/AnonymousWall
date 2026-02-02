@@ -1,0 +1,99 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: anonymouswall-backend
+    ports:
+      - "8080:8080"
+    environment:
+      # Production environment
+      - MICRONAUT_ENVIRONMENTS=prod
+      
+      # JWT Secret - MUST be set in production
+      - JWT_GENERATOR_SIGNATURE_SECRET=${JWT_GENERATOR_SIGNATURE_SECRET:-pleaseChangeThisSecretForANewOne}
+      
+      # Database configuration - MUST be set in production
+      - DATABASE_URL=${DATABASE_URL:-jdbc:mysql://db:3306/anonymous_wall}
+      - DATABASE_USER=${DATABASE_USER:-anonymouswall}
+      - DATABASE_PASSWORD=${DATABASE_PASSWORD:-anonymouswall}
+      - DB_TYPE=mysql
+      - DB_DIALECT=MYSQL
+      - DB_DRIVER=com.mysql.cj.jdbc.Driver
+      
+      # Redis configuration
+      - REDIS_URI=${REDIS_URI:-redis://redis:6379}
+      
+      # Logging
+      - LOG_DIR=/app/logs
+      
+      # Email configuration (optional)
+      - SMTP_HOST=${SMTP_HOST:-}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USERNAME=${SMTP_USERNAME:-}
+      - SMTP_PASSWORD=${SMTP_PASSWORD:-}
+      
+    volumes:
+      # Persist logs
+      - ./logs:/app/logs
+    restart: unless-stopped
+    depends_on:
+      - db
+      - redis
+    networks:
+      - anonymouswall-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 60s
+
+  db:
+    image: mysql:8.0
+    container_name: anonymouswall-db
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-rootpassword}
+      - MYSQL_DATABASE=anonymous_wall
+      - MYSQL_USER=${DATABASE_USER:-anonymouswall}
+      - MYSQL_PASSWORD=${DATABASE_PASSWORD:-anonymouswall}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    restart: unless-stopped
+    networks:
+      - anonymouswall-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: anonymouswall-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+    networks:
+      - anonymouswall-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  mysql-data:
+    driver: local
+  redis-data:
+    driver: local
+
+networks:
+  anonymouswall-network:
+    driver: bridge
