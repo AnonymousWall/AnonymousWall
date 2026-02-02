@@ -1,7 +1,8 @@
 version: '3.8'
 
 # Production deployment configuration for OCI instances
-# This uses the OCI Autonomous Database instead of a local MySQL container
+# This connects to OCI Autonomous Database (ADB) - no local MySQL container
+# ADB is MySQL-compatible, so we use MySQL JDBC driver and dialect
 
 services:
   app:
@@ -16,8 +17,9 @@ services:
       # JWT Secret - MUST be set via .env file or environment
       - JWT_GENERATOR_SIGNATURE_SECRET=${JWT_GENERATOR_SIGNATURE_SECRET}
       
-      # Database configuration - Connect to OCI Autonomous Database
-      # These should be provided via .env file on the OCI instance
+      # Database configuration - Connect to OCI Autonomous Database (ADB)
+      # ADB is MySQL-compatible, uses MySQL JDBC driver
+      # Get connection details from Terraform output: adb_connection_strings
       - DATABASE_URL=${DATABASE_URL}
       - DATABASE_USER=${DATABASE_USER}
       - DATABASE_PASSWORD=${DATABASE_PASSWORD}

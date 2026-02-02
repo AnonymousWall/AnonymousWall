@@ -45,6 +45,7 @@ nano .env  # Edit with your actual values
 JWT_GENERATOR_SIGNATURE_SECRET=$(openssl rand -base64 32)
 
 # Get from Terraform output: adb_connection_strings
+# OCI Autonomous Database (ADB) is MySQL-compatible
 DATABASE_URL=jdbc:mysql://your-adb-host:3306/anonymous_wall
 DATABASE_USER=admin
 DATABASE_PASSWORD=YourDatabasePassword
@@ -172,6 +173,9 @@ DATABASE_PASSWORD=YourDatabasePassword
 REDIS_URI=redis://localhost:6379
 EOF
 
+# Note: DATABASE_URL connects to OCI Autonomous Database (ADB)
+# ADB is MySQL-compatible, so we use the MySQL JDBC driver
+
 # Secure the .env file
 chmod 600 .env
 ```
@@ -196,9 +200,11 @@ docker logs -f anonymouswall-backend
 | Variable | Description | Example |
 |----------|-------------|---------|
 | `JWT_GENERATOR_SIGNATURE_SECRET` | JWT signing key (min 32 chars) | Generate with: `openssl rand -base64 32` |
-| `DATABASE_URL` | JDBC connection string | `jdbc:mysql://host:3306/anonymous_wall` |
-| `DATABASE_USER` | Database username | `admin` |
-| `DATABASE_PASSWORD` | Database password | Complex password from Terraform |
+| `DATABASE_URL` | JDBC connection string to OCI Autonomous Database (ADB) | `jdbc:mysql://adb-host:3306/anonymous_wall` |
+| `DATABASE_USER` | ADB username | `admin` |
+| `DATABASE_PASSWORD` | ADB password | Complex password from Terraform |
+
+**Note:** OCI Autonomous Database (ADB) is MySQL-compatible, so we use the MySQL JDBC driver and protocol.
 
 ### Optional Environment Variables
 

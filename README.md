@@ -811,7 +811,7 @@ This application is designed to deploy on Oracle Cloud Infrastructure using the 
 **Architecture:**
 - Compute instances in private subnet (no public IPs)
 - Load balancer for traffic distribution
-- Autonomous Database (MySQL-compatible)
+- OCI Autonomous Database (ADB) - MySQL-compatible
 - Health checks on `/health` endpoint
 - Port 8080 for application traffic
 
