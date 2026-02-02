@@ -83,6 +83,7 @@ public class PostsServiceImpl implements PostsService {
         }
 
         Post post = new Post(userId, request.getContent(), wall, schoolDomain);
+        post.setProfileName(user.getProfileName());
         Post savedPost = postRepository.save(post);
 
         log.info("Post created: id={}, wall={}, schoolDomain={}, user={}", savedPost.getId(), wall, schoolDomain, userId);
@@ -225,7 +226,14 @@ public class PostsServiceImpl implements PostsService {
             throw new IllegalArgumentException("Comment text exceeds maximum length of 5000 characters");
         }
 
+        // Fetch user to get profile name
+        Optional<UserEntity> userOpt = userRepository.findById(userId);
+        if (userOpt.isEmpty()) {
+            throw new IllegalArgumentException("User not found");
+        }
+
         Comment comment = new Comment(postId, userId, request.getText());
+        comment.setProfileName(userOpt.get().getProfileName());
         Comment savedComment = commentRepository.save(comment);
 
         // Atomically increment comment count on post

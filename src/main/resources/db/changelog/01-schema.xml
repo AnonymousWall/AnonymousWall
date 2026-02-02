@@ -55,6 +55,7 @@
                 <constraints primaryKey="true"/>
             </column>
             <column name="user_id" type="CHAR(36)"/>
+            <column name="profile_name" type="VARCHAR(255)" defaultValue="Anonymous"/>
             <column name="content" type="TEXT"/>
             <column name="wall" type="VARCHAR(20)" defaultValue="campus"/>
             <column name="school_domain" type="VARCHAR(255)"/>
@@ -80,6 +81,7 @@
                 <constraints nullable="false"/>
             </column>
             <column name="user_id" type="CHAR(36)"/>
+            <column name="profile_name" type="VARCHAR(255)" defaultValue="Anonymous"/>
             <column name="text" type="TEXT"/>
             <column name="is_hidden" type="BOOLEAN" defaultValueBoolean="false"/>
             <column name="version" type="BIGINT" defaultValueNumeric="0"/>

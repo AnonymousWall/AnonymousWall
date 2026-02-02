@@ -16,6 +16,9 @@ public class Post {
     @MappedProperty("user_id")
     private UUID userId;
 
+    @MappedProperty("profile_name")
+    private String profileName = "Anonymous";
+
     @MappedProperty("content")
     private String content;
 
@@ -58,6 +61,7 @@ public class Post {
         this.content = content;
         this.wall = wall != null ? wall : "campus";
         this.schoolDomain = schoolDomain;
+        this.profileName = "Anonymous";
         this.likeCount = 0;
         this.commentCount = 0;
         this.hidden = false;
@@ -73,6 +77,9 @@ public class Post {
 
     public UUID getUserId() { return userId; }
     public void setUserId(UUID userId) { this.userId = userId; }
+
+    public String getProfileName() { return profileName; }
+    public void setProfileName(String profileName) { this.profileName = profileName != null ? profileName : "Anonymous"; }
 
     public String getContent() { return content; }
     public void setContent(String content) { this.content = content; }

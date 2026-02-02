@@ -993,6 +993,9 @@ components:
           properties:
             id:
               type: string
+            profileName:
+              type: string
+              description: Profile name of the post author
             isAnonymous:
               type: boolean
               description: Whether author is anonymous
@@ -1038,6 +1041,9 @@ components:
           properties:
             id:
               type: string
+            profileName:
+              type: string
+              description: Profile name of the comment author
             isAnonymous:
               type: boolean
 

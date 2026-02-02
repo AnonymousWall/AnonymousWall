@@ -356,6 +356,7 @@ Response: 201 Created
     "liked": false,
     "author": {
         "id": "uuid",
+        "profileName": "Anonymous",
         "isAnonymous": true
     },
     "createdAt": "2026-01-28T...",
@@ -380,6 +381,7 @@ Response: 200 OK
             "liked": false,
             "author": {
                 "id": "uuid",
+                "profileName": "John Doe",
                 "isAnonymous": true
             },
             "createdAt": "2026-01-28T...",
@@ -429,6 +431,7 @@ Response: 201 Created
     "text": "Great post!",
     "author": {
         "id": "uuid",
+        "profileName": "Anonymous",
         "isAnonymous": true
     },
     "createdAt": "2026-01-28T..."
@@ -449,6 +452,7 @@ Response: 200 OK
             "text": "Great post!",
             "author": {
                 "id": "uuid",
+                "profileName": "Jane Smith",
                 "isAnonymous": true
             },
             "createdAt": "2026-01-28T..."
