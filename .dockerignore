@@ -25,12 +25,14 @@ logs/
 # Test resources
 src/test/
 
-# Documentation
+# Documentation - exclude main README but keep deployment guides in container
 README.md
-*.md
-!DEPLOYMENT.md
-!DEPLOYMENT_ALTERNATIVES.md
-!QUICKREF.md
+LOGGING_CONFIGURATION.md
+
+# Deployment documentation (keep these for reference in container)
+# DEPLOYMENT.md
+# DEPLOYMENT_ALTERNATIVES.md
+# QUICKREF.md
 
 # CI/CD
 .github/

@@ -97,23 +97,29 @@ if [ $RETRY_COUNT -eq 10 ]; then
     exit 1
 fi
 
+# Determine which HTTP client is available in the container (check once)
+print_info "Checking available health check tools..."
+if docker exec anonymouswall-backend sh -c "command -v curl > /dev/null 2>&1"; then
+    HEALTH_CHECK_CMD="curl -f http://localhost:8080/health"
+    print_info "Using curl for health checks"
+elif docker exec anonymouswall-backend sh -c "command -v wget > /dev/null 2>&1"; then
+    HEALTH_CHECK_CMD="wget -q -O - http://localhost:8080/health"
+    print_info "Using wget for health checks"
+else
+    print_warning "Neither curl nor wget found in container, will check container status only"
+    HEALTH_CHECK_CMD=""
+fi
+
 # Reset counter for health check
 RETRY_COUNT=0
 while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-    # Check if curl exists in container, use wget as fallback
-    if docker exec anonymouswall-backend sh -c "command -v curl > /dev/null 2>&1"; then
-        if docker exec anonymouswall-backend curl -f http://localhost:8080/health > /dev/null 2>&1; then
-            print_info "Application is healthy!"
-            break
-        fi
-    elif docker exec anonymouswall-backend sh -c "command -v wget > /dev/null 2>&1"; then
-        if docker exec anonymouswall-backend wget -q -O - http://localhost:8080/health > /dev/null 2>&1; then
+    if [ -n "$HEALTH_CHECK_CMD" ]; then
+        if docker exec anonymouswall-backend $HEALTH_CHECK_CMD > /dev/null 2>&1; then
             print_info "Application is healthy!"
             break
         fi
     else
-        print_warning "Neither curl nor wget found in container, skipping health check"
-        print_info "Checking if container is still running..."
+        # No HTTP client available, just check if container is still running
         if docker ps | grep -q anonymouswall-backend; then
             print_info "Container is running, assuming healthy"
             break
