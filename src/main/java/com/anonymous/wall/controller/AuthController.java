@@ -239,10 +239,18 @@ public class AuthController {
      */
     @Patch("/profile/name")
     @Secured(SecurityRule.IS_AUTHENTICATED)
-    public HttpResponse<Object> updateProfileName(@Body UpdateProfileNameRequest request,
-                                                   @Header("X-User-Id") String userIdHeader) {
+    public HttpResponse<Object> updateProfileName(@Body UpdateProfileNameRequest updateProfileNameRequest,
+                                                  io.micronaut.http.HttpRequest<?> httpRequest) {
         try {
-            UUID userId = UUID.fromString(userIdHeader);
+            // Get user ID from Principal (JWT token) - same approach as PostsController
+            Optional<java.security.Principal> principalOpt = httpRequest.getUserPrincipal();
+            if (principalOpt.isEmpty()) {
+                return HttpResponse.badRequest(error("User not authenticated"));
+            }
+
+            String principalName = principalOpt.get().getName();
+            UUID userId = UUID.fromString(principalName);
+
             Optional<UserEntity> userOpt = userRepository.findById(userId);
 
             if (userOpt.isEmpty()) {
@@ -250,7 +258,7 @@ public class AuthController {
             }
 
             UserEntity user = userOpt.get();
-            String newProfileName = request.getProfileName();
+            String newProfileName = updateProfileNameRequest.getProfileName();
 
             // Validate profile name
             if (newProfileName == null || newProfileName.trim().isEmpty()) {
@@ -262,7 +270,7 @@ public class AuthController {
 
             return HttpResponse.ok(userMapper.toDTO(user));
         } catch (IllegalArgumentException e) {
-            return HttpResponse.badRequest(error(e.getMessage()));
+            return HttpResponse.badRequest(error("Invalid user ID format: " + e.getMessage()));
         } catch (Exception e) {
             log.error("Error updating profile name", e);
             return HttpResponse.badRequest(error("Failed to update profile name"));

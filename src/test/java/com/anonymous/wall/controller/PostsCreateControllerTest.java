@@ -426,4 +426,157 @@ class PostsCreateControllerTest {
             assertEquals(testUserDifferentSchool.getId(), post2.get().getUserId());
         }
     }
+
+    @Nested
+    @DisplayName("Create Post - Profile Name Tests")
+    class CreatePostProfileNameTests {
+
+        private UserEntity userWithDefaultName;
+        private UserEntity userWithCustomName;
+        private String tokenDefaultName;
+        private String tokenCustomName;
+
+        @BeforeEach
+        void setUp() {
+            // User with default profile name
+            userWithDefaultName = new UserEntity();
+            userWithDefaultName.setEmail("default" + System.currentTimeMillis() + "@harvard.edu");
+            userWithDefaultName.setSchoolDomain("harvard.edu");
+            userWithDefaultName.setProfileName("Anonymous");
+            userWithDefaultName.setVerified(true);
+            userWithDefaultName.setPasswordSet(true);
+            userWithDefaultName = userRepository.save(userWithDefaultName);
+            tokenDefaultName = jwtTokenService.generateToken(userWithDefaultName);
+
+            // User with custom profile name
+            userWithCustomName = new UserEntity();
+            userWithCustomName.setEmail("custom" + System.currentTimeMillis() + "@harvard.edu");
+            userWithCustomName.setSchoolDomain("harvard.edu");
+            userWithCustomName.setProfileName("John Doe");
+            userWithCustomName.setVerified(true);
+            userWithCustomName.setPasswordSet(true);
+            userWithCustomName = userRepository.save(userWithCustomName);
+            tokenCustomName = jwtTokenService.generateToken(userWithCustomName);
+        }
+
+        @Test
+        @DisplayName("Should capture default profile name 'Anonymous' in post")
+        void shouldCaptureDefaultProfileNameInPost() {
+            // Arrange
+            Map<String, Object> request = new HashMap<>();
+            request.put("content", "Post with default profile name");
+            request.put("wall", "campus");
+
+            // Act
+            HttpResponse<PostDTO> response = client.toBlocking().exchange(
+                HttpRequest.POST(BASE_PATH, request)
+                    .header("Authorization", "Bearer " + tokenDefaultName),
+                PostDTO.class
+            );
+
+            // Assert
+            assertEquals(HttpStatus.CREATED, response.getStatus());
+            PostDTO postDTO = response.body();
+            assertNotNull(postDTO.getAuthor());
+            assertEquals("Anonymous", postDTO.getAuthor().getProfileName());
+
+            // Verify in database
+            Optional<Post> savedPost = postRepository.findById(Long.parseLong(postDTO.getId()));
+            assertTrue(savedPost.isPresent());
+            assertEquals("Anonymous", savedPost.get().getProfileName());
+        }
+
+        @Test
+        @DisplayName("Should capture custom profile name in post")
+        void shouldCaptureCustomProfileNameInPost() {
+            // Arrange
+            Map<String, Object> request = new HashMap<>();
+            request.put("content", "Post with custom profile name");
+            request.put("wall", "campus");
+
+            // Act
+            HttpResponse<PostDTO> response = client.toBlocking().exchange(
+                HttpRequest.POST(BASE_PATH, request)
+                    .header("Authorization", "Bearer " + tokenCustomName),
+                PostDTO.class
+            );
+
+            // Assert
+            assertEquals(HttpStatus.CREATED, response.getStatus());
+            PostDTO postDTO = response.body();
+            assertNotNull(postDTO.getAuthor());
+            assertEquals("John Doe", postDTO.getAuthor().getProfileName());
+
+            // Verify in database
+            Optional<Post> savedPost = postRepository.findById(Long.parseLong(postDTO.getId()));
+            assertTrue(savedPost.isPresent());
+            assertEquals("John Doe", savedPost.get().getProfileName());
+        }
+
+        @Test
+        @DisplayName("Should preserve original profile name after user changes name")
+        void shouldPreserveOriginalProfileNameAfterUserChanges() {
+            // Arrange - Create post with initial profile name "Custom Name"
+            userWithDefaultName.setProfileName("Custom Name");
+            userRepository.update(userWithDefaultName);
+
+            Map<String, Object> request = new HashMap<>();
+            request.put("content", "Post with custom name");
+            request.put("wall", "campus");
+
+            HttpResponse<PostDTO> response = client.toBlocking().exchange(
+                HttpRequest.POST(BASE_PATH, request)
+                    .header("Authorization", "Bearer " + tokenDefaultName),
+                PostDTO.class
+            );
+
+            PostDTO postDTO = response.body();
+            assertEquals("Custom Name", postDTO.getAuthor().getProfileName());
+
+            // Now change user's profile name
+            userWithDefaultName.setProfileName("New Name");
+            userRepository.update(userWithDefaultName);
+
+            // Verify post still has original profile name
+            Optional<Post> post = postRepository.findById(Long.parseLong(postDTO.getId()));
+            assertTrue(post.isPresent());
+            assertEquals("Custom Name", post.get().getProfileName());
+
+            // But new posts should use new name
+            Map<String, Object> request2 = new HashMap<>();
+            request2.put("content", "New post");
+            request2.put("wall", "campus");
+
+            HttpResponse<PostDTO> response2 = client.toBlocking().exchange(
+                HttpRequest.POST(BASE_PATH, request2)
+                    .header("Authorization", "Bearer " + tokenDefaultName),
+                PostDTO.class
+            );
+
+            assertEquals("New Name", response2.body().getAuthor().getProfileName());
+        }
+
+        @Test
+        @DisplayName("Post author profile name should not equal user ID")
+        void postAuthorProfileNameShouldNotEqualUserId() {
+            // Arrange
+            Map<String, Object> request = new HashMap<>();
+            request.put("content", "Post content");
+            request.put("wall", "campus");
+
+            // Act
+            HttpResponse<PostDTO> response = client.toBlocking().exchange(
+                HttpRequest.POST(BASE_PATH, request)
+                    .header("Authorization", "Bearer " + tokenCustomName),
+                PostDTO.class
+            );
+
+            // Assert
+            PostDTO postDTO = response.body();
+            assertNotNull(postDTO.getAuthor());
+            assertEquals("John Doe", postDTO.getAuthor().getProfileName());
+            assertNotNull(postDTO.getAuthor().getId());
+            assertNotEquals("John Doe", postDTO.getAuthor().getId());
+        }
+    }
 }
