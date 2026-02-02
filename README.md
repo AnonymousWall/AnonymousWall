@@ -572,6 +572,7 @@ Response: 200 OK
 - Maven 3.9.4+
 - MySQL 8+ (for local development and production)
 - Redis (optional, for caching)
+- Docker and Docker Compose (for containerized deployment)
 
 ### Configuration Files
 
@@ -692,6 +693,19 @@ mvn clean test jacoco:report
 
 #### Production Deployment
 
+**Option 1: Using Docker (Recommended for OCI)**
+
+See [DEPLOYMENT.md](DEPLOYMENT.md) for complete guide on deploying to OCI instances.
+
+```bash
+# Quick start with Docker Compose
+cp .env.example .env
+# Edit .env with your configuration
+docker-compose -f docker-compose.prod.yml up -d
+```
+
+**Option 2: Direct JAR Deployment**
+
 ```bash
 # Set environment variables first (see Production Configuration above)
 export MICRONAUT_ENVIRONMENTS=prod
@@ -705,6 +719,12 @@ export REDIS_URI="..."
 mvn clean package
 java -jar target/anonymouswall-0.1.jar
 ```
+
+**For OCI Infrastructure Deployment:**
+
+This application is designed to be deployed on Oracle Cloud Infrastructure. See:
+- [DEPLOYMENT.md](DEPLOYMENT.md) - Complete deployment guide
+- [AnonymousWallInfra](https://github.com/AnonymousWall/AnonymousWallInfra) - Infrastructure as Code (Terraform)
 
 ### Database Initialization
 
@@ -732,6 +752,7 @@ http://localhost:8080/swagger/anonymouswall-0.0.yml
 
 ### Quick Start
 
+**Local Development:**
 ```bash
 # 1. Build the project
 mvn clean package
@@ -742,6 +763,71 @@ MICRONAUT_ENVIRONMENTS=dev ./mvnw mn:run
 # 3. Access API
 curl http://localhost:8080/health
 ```
+
+**Docker Deployment:**
+```bash
+# 1. Create configuration
+cp .env.example .env
+# Edit .env with your values
+
+# 2. Start with Docker Compose
+docker-compose up -d
+
+# 3. Check health
+curl http://localhost:8080/health
+```
+
+**OCI Production Deployment:**
+See [DEPLOYMENT.md](DEPLOYMENT.md) for complete instructions on deploying to Oracle Cloud Infrastructure.
+
+---
+
+## Deployment
+
+### Docker Deployment
+
+This application is containerized and ready for deployment using Docker and Docker Compose.
+
+**Quick Start:**
+```bash
+# Local testing with dependencies
+docker-compose up -d
+
+# Production deployment (uses external database)
+docker-compose -f docker-compose.prod.yml up -d
+```
+
+**Deployment Files:**
+- `Dockerfile` - Multi-stage build for optimized image
+- `docker-compose.yml` - Full stack with MySQL and Redis
+- `docker-compose.prod.yml` - Production config for OCI
+- `deploy.sh` - Automated deployment script
+- `.env.example` - Configuration template
+
+### OCI Infrastructure
+
+This application is designed to deploy on Oracle Cloud Infrastructure using the infrastructure defined in [AnonymousWallInfra](https://github.com/AnonymousWall/AnonymousWallInfra).
+
+**Architecture:**
+- Compute instances in private subnet (no public IPs)
+- Load balancer for traffic distribution
+- Autonomous Database (MySQL-compatible)
+- Health checks on `/health` endpoint
+- Port 8080 for application traffic
+
+**Deployment Guide:**
+See [DEPLOYMENT.md](DEPLOYMENT.md) for:
+- Step-by-step deployment instructions
+- Environment configuration
+- SSH access via bastion host
+- Monitoring and troubleshooting
+- Scaling and updates
+
+**Infrastructure Setup:**
+1. Deploy infrastructure: [QUICKSTART.md](https://github.com/AnonymousWall/AnonymousWallInfra/blob/main/QUICKSTART.md)
+2. Configure environment variables
+3. Deploy application using `deploy.sh`
+4. Verify health via load balancer
 
 ---
 
