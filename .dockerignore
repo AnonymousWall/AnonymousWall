@@ -28,6 +28,9 @@ src/test/
 # Documentation
 README.md
 *.md
+!DEPLOYMENT.md
+!DEPLOYMENT_ALTERNATIVES.md
+!QUICKREF.md
 
 # CI/CD
 .github/

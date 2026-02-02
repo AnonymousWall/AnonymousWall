@@ -80,10 +80,44 @@ print_info "Waiting for application to be healthy..."
 MAX_RETRIES=30
 RETRY_COUNT=0
 
-while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-    if docker exec anonymouswall-backend curl -f http://localhost:8080/health > /dev/null 2>&1; then
-        print_info "Application is healthy!"
+# First, ensure container is running
+while [ $RETRY_COUNT -lt 10 ]; do
+    if docker ps | grep -q anonymouswall-backend; then
+        print_info "Container is running"
         break
+    fi
+    RETRY_COUNT=$((RETRY_COUNT + 1))
+    echo -n "."
+    sleep 2
+done
+
+if [ $RETRY_COUNT -eq 10 ]; then
+    print_error "Container failed to start"
+    docker logs anonymouswall-backend --tail 50
+    exit 1
+fi
+
+# Reset counter for health check
+RETRY_COUNT=0
+while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+    # Check if curl exists in container, use wget as fallback
+    if docker exec anonymouswall-backend sh -c "command -v curl > /dev/null 2>&1"; then
+        if docker exec anonymouswall-backend curl -f http://localhost:8080/health > /dev/null 2>&1; then
+            print_info "Application is healthy!"
+            break
+        fi
+    elif docker exec anonymouswall-backend sh -c "command -v wget > /dev/null 2>&1"; then
+        if docker exec anonymouswall-backend wget -q -O - http://localhost:8080/health > /dev/null 2>&1; then
+            print_info "Application is healthy!"
+            break
+        fi
+    else
+        print_warning "Neither curl nor wget found in container, skipping health check"
+        print_info "Checking if container is still running..."
+        if docker ps | grep -q anonymouswall-backend; then
+            print_info "Container is running, assuming healthy"
+            break
+        fi
     fi
     RETRY_COUNT=$((RETRY_COUNT + 1))
     echo -n "."
