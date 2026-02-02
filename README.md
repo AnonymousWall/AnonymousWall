@@ -472,6 +472,66 @@ Response: 200 OK
 - `limit` (default: 20) - Comments per page (max: 100)
 - `sort` (default: "NEWEST") - Sort order: NEWEST, OLDEST
 
+#### 6. Hide Post
+```http
+PATCH /api/v1/posts/{postId}/hide
+Authorization: Bearer {jwt-token}
+
+Response: 200 OK
+{
+    "message": "Post hidden successfully"
+}
+```
+
+**Notes:**
+- Only the post author can hide their own post
+- When a post is hidden, all its comments are also hidden
+- This is a soft-delete operation; data is preserved in the database
+
+#### 7. Unhide Post
+```http
+PATCH /api/v1/posts/{postId}/unhide
+Authorization: Bearer {jwt-token}
+
+Response: 200 OK
+{
+    "message": "Post unhidden successfully"
+}
+```
+
+**Notes:**
+- Only the post author can unhide their own post
+- When a post is unhidden, all its previously hidden comments are also restored
+
+#### 8. Hide Comment
+```http
+PATCH /api/v1/posts/{postId}/comments/{commentId}/hide
+Authorization: Bearer {jwt-token}
+
+Response: 200 OK
+{
+    "message": "Comment hidden successfully"
+}
+```
+
+**Notes:**
+- Only the comment author can hide their own comment
+- This is a soft-delete operation; data is preserved in the database
+
+#### 9. Unhide Comment
+```http
+PATCH /api/v1/posts/{postId}/comments/{commentId}/unhide
+Authorization: Bearer {jwt-token}
+
+Response: 200 OK
+{
+    "message": "Comment unhidden successfully"
+}
+```
+
+**Notes:**
+- Only the comment author can unhide their own comment
+
 ---
 
 ## Authentication & Authorization
@@ -940,11 +1000,3 @@ For issues or questions, please refer to the test files and API documentation in
 
 - [Micronaut HTTP Client documentation](https://docs.micronaut.io/latest/guide/index.html#nettyHttpClient)
 
-
-| 场景                     | API                                                 | 请求/返回说明                                                         |
-| ---------------------- | --------------------------------------------------- | --------------------------------------------------------------- |
-| **1️⃣ 注册（邮箱+验证码）**     | `POST /auth/email/code` → `POST /auth/email/verify` | 用户输入邮箱，后台发送验证码；验证验证码后返回 `accessToken + UserDTO`（用户状态可标记是否已设置密码） |
-| **2️⃣ 邮箱+验证码登录（快速登录）** | `POST /auth/email/code` → `POST /auth/email/verify` | 用户之前已注册，但忘记密码或使用快捷登录，输入邮箱拿验证码即可登录，返回 `accessToken + UserDTO`    |
-| **3️⃣ 邮箱+密码登录**        | `POST /auth/login/password`                         | 用户输入邮箱+密码登录，返回 `accessToken + UserDTO`                          |
-| **4️⃣ 邮箱+验证码之后设置密码**   | `POST /auth/password`                               | 用户第一次注册后，或通过验证码登录后设置密码，返回更新后的 `UserDTO`                         |
-| **5️⃣ 登陆后修改密码**        | `POST /auth/password`（需 `bearerAuth`）               | 已登录用户修改密码，可提供 `oldPassword` 或通过 token 修改，返回更新后的 `UserDTO`       |
