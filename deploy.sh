@@ -37,6 +37,45 @@ if [ "$EUID" -eq 0 ]; then
     print_warning "Running as root. This script should be run as the 'opc' user with sudo."
 fi
 
+# Check if Docker is installed
+if ! command -v docker &> /dev/null; then
+    print_error "Docker is not installed!"
+    print_info "Please install Docker first. Run these commands:"
+    echo ""
+    echo "  sudo yum install -y yum-utils"
+    echo "  sudo yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo"
+    echo "  sudo yum install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin"
+    echo "  sudo systemctl start docker"
+    echo "  sudo systemctl enable docker"
+    echo "  sudo usermod -aG docker opc"
+    echo "  newgrp docker  # Or logout and login again"
+    echo ""
+    print_info "After installing Docker, run this script again."
+    exit 1
+fi
+
+# Check if Docker Compose is installed
+if ! command -v docker-compose &> /dev/null && ! docker compose version &> /dev/null; then
+    print_error "Docker Compose is not installed!"
+    print_info "Please install Docker Compose. Run these commands:"
+    echo ""
+    echo "  sudo curl -L \"https://github.com/docker/compose/releases/latest/download/docker-compose-\$(uname -s)-\$(uname -m)\" -o /usr/local/bin/docker-compose"
+    echo "  sudo chmod +x /usr/local/bin/docker-compose"
+    echo ""
+    print_info "Alternatively, use 'docker compose' (with space) if you have Docker Compose plugin."
+    print_info "After installing Docker Compose, run this script again."
+    exit 1
+fi
+
+# Determine which docker-compose command to use
+if command -v docker-compose &> /dev/null; then
+    DOCKER_COMPOSE_CMD="docker-compose"
+else
+    DOCKER_COMPOSE_CMD="docker compose"
+fi
+
+print_info "Using Docker Compose command: ${DOCKER_COMPOSE_CMD}"
+
 # Check if .env file exists
 if [ ! -f "${APP_DIR}/.env" ]; then
     print_error ".env file not found at ${APP_DIR}/.env"
@@ -59,7 +98,7 @@ chmod 755 ${APP_DIR}/logs
 # Stop existing containers
 print_info "Stopping existing containers..."
 cd ${APP_DIR}
-docker-compose -f ${COMPOSE_FILE} down || true
+${DOCKER_COMPOSE_CMD} -f ${COMPOSE_FILE} down || true
 
 # Pull or build the Docker image
 if [ -f "${APP_DIR}/Dockerfile" ]; then
@@ -73,6 +112,7 @@ fi
 
 # Start the application
 print_info "Starting application with docker-compose..."
+${DOCKER_COMPOSE_CMD} -f ${COMPOSE_FILE} up -d
 docker-compose -f ${COMPOSE_FILE} up -d
 
 # Wait for application to be healthy
@@ -145,7 +185,7 @@ print_info "Application is running on port 8080"
 print_info ""
 print_info "Useful commands:"
 echo "  - View logs:       docker logs -f anonymouswall-backend"
-echo "  - Check status:    docker-compose -f ${COMPOSE_FILE} ps"
-echo "  - Stop app:        docker-compose -f ${COMPOSE_FILE} down"
-echo "  - Restart app:     docker-compose -f ${COMPOSE_FILE} restart"
+echo "  - Check status:    ${DOCKER_COMPOSE_CMD} -f ${COMPOSE_FILE} ps"
+echo "  - Stop app:        ${DOCKER_COMPOSE_CMD} -f ${COMPOSE_FILE} down"
+echo "  - Restart app:     ${DOCKER_COMPOSE_CMD} -f ${COMPOSE_FILE} restart"
 echo "  - Health check:    curl http://localhost:8080/health"

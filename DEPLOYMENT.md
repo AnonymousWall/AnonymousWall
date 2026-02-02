@@ -111,6 +111,27 @@ sudo chown opc:opc /opt/anonymouswall
 cd /opt/anonymouswall
 tar xzf /tmp/anonymouswall-deploy.tar.gz
 
+# IMPORTANT: Verify Docker is installed
+# The OCI cloud-init should have installed Docker, but verify:
+docker --version
+docker-compose --version  # or: docker compose version
+
+# If Docker is NOT installed, install it:
+sudo yum install -y yum-utils
+sudo yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+sudo yum install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
+sudo systemctl start docker
+sudo systemctl enable docker
+sudo usermod -aG docker opc
+
+# Install Docker Compose (standalone) if not available:
+sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+sudo chmod +x /usr/local/bin/docker-compose
+
+# Log out and log back in for group changes to take effect
+exit
+# Then SSH back in
+
 # Run deployment script
 ./deploy.sh
 ```
@@ -149,7 +170,22 @@ curl http://$LB_IP/health
 
 If the health check fails, check these common issues:
 
-1. **Database Connection:**
+1. **Docker Not Installed:**
+   ```bash
+   # Check if Docker is installed
+   docker --version
+   docker-compose --version
+   
+   # If not installed, follow the installation steps in Step 3 above
+   # After installation, ensure Docker service is running:
+   sudo systemctl status docker
+   
+   # Add user to docker group if needed:
+   sudo usermod -aG docker $USER
+   newgrp docker  # Or logout/login
+   ```
+
+2. **Database Connection:**
    ```bash
    # Check if DATABASE_URL is correct
    docker exec anonymouswall-backend env | grep DATABASE
@@ -158,13 +194,13 @@ If the health check fails, check these common issues:
    docker logs anonymouswall-backend | grep -i "database\|connection\|sql"
    ```
 
-2. **Missing Environment Variables:**
+3. **Missing Environment Variables:**
    ```bash
    # Verify all required variables are set
    docker exec anonymouswall-backend env | grep -E "JWT_|DATABASE_|REDIS_"
    ```
 
-3. **Container Issues:**
+4. **Container Issues:**
    ```bash
    # Check container status
    docker ps -a | grep anonymouswall
@@ -369,6 +405,42 @@ docker volume prune
 ```
 
 ## Troubleshooting
+
+### Docker Not Installed
+
+If you get "docker: command not found" or "docker-compose: command not found":
+
+```bash
+# Check if Docker is installed
+docker --version
+docker-compose --version
+
+# If not installed, install Docker on Oracle Linux:
+sudo yum install -y yum-utils
+sudo yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+sudo yum install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
+
+# Start and enable Docker service
+sudo systemctl start docker
+sudo systemctl enable docker
+
+# Add your user to docker group
+sudo usermod -aG docker opc
+
+# Install Docker Compose (standalone binary)
+sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+sudo chmod +x /usr/local/bin/docker-compose
+
+# Verify installation
+docker --version
+docker-compose --version
+
+# IMPORTANT: Log out and log back in for group changes to take effect
+exit
+# Then SSH back in and run deploy.sh again
+```
+
+**Note:** The OCI cloud-init script should install Docker automatically, but if the instance was created before cloud-init completed or if there was an issue, you'll need to install it manually.
 
 ### Application Won't Start
 
