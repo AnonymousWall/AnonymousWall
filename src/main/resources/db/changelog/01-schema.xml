@@ -15,6 +15,9 @@
             <column name="email" type="VARCHAR(255)">
                 <constraints nullable="false" unique="true"/>
             </column>
+            <column name="profile_name" type="VARCHAR(255)" defaultValue="Anonymous">
+                <constraints nullable="false"/>
+            </column>
             <column name="school_domain" type="VARCHAR(255)"/>
             <column name="password_hash" type="VARCHAR(255)"/>
             <column name="is_verified" type="BOOLEAN" defaultValueBoolean="false"/>

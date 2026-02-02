@@ -11,6 +11,7 @@ import io.micronaut.http.annotation.Body;
 import io.micronaut.http.annotation.Controller;
 import io.micronaut.http.annotation.Header;
 import io.micronaut.http.annotation.Post;
+import io.micronaut.http.annotation.Patch;
 import io.micronaut.security.annotation.Secured;
 import io.micronaut.security.rules.SecurityRule;
 import io.micronaut.serde.annotation.Serdeable;
@@ -229,6 +230,42 @@ public class AuthController {
         } catch (Exception e) {
             log.error("Error resetting password", e);
             return HttpResponse.badRequest(error("Password reset failed"));
+        }
+    }
+
+    /**
+     * PATCH /auth/profile/name
+     * Update user profile name
+     */
+    @Patch("/profile/name")
+    @Secured(SecurityRule.IS_AUTHENTICATED)
+    public HttpResponse<Object> updateProfileName(@Body UpdateProfileNameRequest request,
+                                                   @Header("X-User-Id") String userIdHeader) {
+        try {
+            UUID userId = UUID.fromString(userIdHeader);
+            Optional<UserEntity> userOpt = userRepository.findById(userId);
+
+            if (userOpt.isEmpty()) {
+                return HttpResponse.badRequest(error("User not found"));
+            }
+
+            UserEntity user = userOpt.get();
+            String newProfileName = request.getProfileName();
+
+            // Validate profile name
+            if (newProfileName == null || newProfileName.trim().isEmpty()) {
+                newProfileName = "Anonymous";
+            }
+
+            user.setProfileName(newProfileName.trim());
+            userRepository.update(user);
+
+            return HttpResponse.ok(userMapper.toDTO(user));
+        } catch (IllegalArgumentException e) {
+            return HttpResponse.badRequest(error(e.getMessage()));
+        } catch (Exception e) {
+            log.error("Error updating profile name", e);
+            return HttpResponse.badRequest(error("Failed to update profile name"));
         }
     }
 

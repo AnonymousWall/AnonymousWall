@@ -253,6 +253,33 @@ paths:
         "401":
           description: Verification failed
 
+  # Profile Management - Update Profile Name
+  /auth/profile/name:
+    patch:
+      tags: [auth]
+      summary: Update profile name
+      description: Update the user's profile name (default is "Anonymous")
+      operationId: updateProfileName
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProfileNameRequest"
+      responses:
+        "200":
+          description: Profile name updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserDTO"
+        "400":
+          description: Invalid profile name
+        "401":
+          description: Unauthorized - authentication required
+
   # =================== Posts ===================
   /posts:
     post:
@@ -812,6 +839,9 @@ components:
         email:
           type: string
           format: email
+        profileName:
+          type: string
+          description: User's profile name (default "Anonymous")
         isVerified:
           type: boolean
         passwordSet:
@@ -920,6 +950,16 @@ components:
           type: string
           minLength: 8
           description: New password (minimum 8 characters)
+
+    UpdateProfileNameRequest:
+      type: object
+      required: [profileName]
+      properties:
+        profileName:
+          type: string
+          minLength: 1
+          maxLength: 255
+          description: New profile name (can be empty string to reset to "Anonymous")
 
     # ----- Posts -----
     CreatePostRequest:

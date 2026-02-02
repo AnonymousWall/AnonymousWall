@@ -217,6 +217,7 @@ Response: 201 Created
     "user": {
         "id": "uuid",
         "email": "student@harvard.edu",
+        "profileName": "Anonymous",
         "isVerified": true,
         "passwordSet": false,
         "createdAt": "2026-01-28T..."
@@ -274,6 +275,7 @@ Response: 200 OK
 {
     "id": "uuid",
     "email": "student@harvard.edu",
+    "profileName": "Anonymous",
     "isVerified": true,
     "passwordSet": true,
     "createdAt": "2026-01-28T..."
@@ -296,11 +298,38 @@ Response: 200 OK
 {
     "id": "uuid",
     "email": "student@harvard.edu",
+    "profileName": "Anonymous",
     "isVerified": true,
     "passwordSet": true,
     "createdAt": "2026-01-28T..."
 }
 ```
+
+#### 7. Update Profile Name (Requires Authentication)
+```http
+PATCH /api/v1/auth/profile/name
+Authorization: Bearer {jwt-token}
+Content-Type: application/json
+
+{
+    "profileName": "John Doe"
+}
+
+Response: 200 OK
+{
+    "id": "uuid",
+    "email": "student@harvard.edu",
+    "profileName": "John Doe",
+    "isVerified": true,
+    "passwordSet": false,
+    "createdAt": "2026-01-28T..."
+}
+```
+
+**Notes:**
+- Default profile name is "Anonymous"
+- Sending an empty string will reset the profile name to "Anonymous"
+- Profile name can be 1-255 characters
 
 ---
 
