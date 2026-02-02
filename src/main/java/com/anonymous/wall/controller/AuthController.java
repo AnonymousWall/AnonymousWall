@@ -150,9 +150,15 @@ public class AuthController {
     @Post("/password/set")
     @Secured(SecurityRule.IS_AUTHENTICATED)
     public HttpResponse<Object> setPassword(@Body SetPasswordRequest request,
-                                           @Header("X-User-Id") String userIdHeader) {
+                                           io.micronaut.http.HttpRequest<?> httpRequest) {
         try {
-            UUID userId = UUID.fromString(userIdHeader);
+            // Extract user ID from JWT Principal (secure source of truth)
+            Optional<java.security.Principal> principalOpt = httpRequest.getUserPrincipal();
+            if (principalOpt.isEmpty()) {
+                return HttpResponse.badRequest(error("User not authenticated"));
+            }
+
+            UUID userId = UUID.fromString(principalOpt.get().getName());
             Optional<UserEntity> userOpt = userRepository.findById(userId);
 
             if (userOpt.isEmpty()) {
@@ -160,7 +166,12 @@ public class AuthController {
             }
 
             UserEntity user = authService.setPassword(request, userOpt.get());
+            if (user == null) {
+                return HttpResponse.badRequest(error("Failed to set password"));
+            }
             return HttpResponse.ok(userMapper.toDTO(user));
+        } catch (IllegalArgumentException e) {
+            return HttpResponse.badRequest(error("Invalid request: " + e.getMessage()));
         } catch (Exception e) {
             log.error("Error setting password", e);
             return HttpResponse.badRequest(error(e.getMessage()));
@@ -174,9 +185,15 @@ public class AuthController {
     @Post("/password/change")
     @Secured(SecurityRule.IS_AUTHENTICATED)
     public HttpResponse<Object> changePassword(@Body ChangePasswordRequest request,
-                                              @Header("X-User-Id") String userIdHeader) {
+                                              io.micronaut.http.HttpRequest<?> httpRequest) {
         try {
-            UUID userId = UUID.fromString(userIdHeader);
+            // Extract user ID from JWT Principal (secure source of truth)
+            Optional<java.security.Principal> principalOpt = httpRequest.getUserPrincipal();
+            if (principalOpt.isEmpty()) {
+                return HttpResponse.badRequest(error("User not authenticated"));
+            }
+
+            UUID userId = UUID.fromString(principalOpt.get().getName());
             Optional<UserEntity> userOpt = userRepository.findById(userId);
 
             if (userOpt.isEmpty()) {
@@ -184,6 +201,9 @@ public class AuthController {
             }
 
             UserEntity user = authService.changePassword(request, userOpt.get());
+            if (user == null) {
+                return HttpResponse.badRequest(error("Failed to change password"));
+            }
             return HttpResponse.ok(userMapper.toDTO(user));
         } catch (IllegalArgumentException e) {
             return HttpResponse.badRequest(error(e.getMessage()));

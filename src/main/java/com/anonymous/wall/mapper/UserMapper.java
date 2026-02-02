@@ -18,6 +18,7 @@ public class UserMapper {
         dto.setProfileName(entity.getProfileName());
         dto.setIsVerified(entity.isVerified());
         dto.setCreatedAt(entity.getCreatedAt());
+        dto.setPasswordSet(entity.isPasswordSet());
         return dto;
     }
 
