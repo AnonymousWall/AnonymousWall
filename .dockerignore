@@ -1,0 +1,38 @@
+# Maven
+target/
+.mvn/wrapper/maven-wrapper.jar
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.project
+.classpath
+.settings/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+
+# Test resources
+src/test/
+
+# Documentation - exclude main README but keep deployment guides in container
+README.md
+LOGGING_CONFIGURATION.md
+
+# Deployment documentation (keep these for reference in container)
+# DEPLOYMENT.md
+# DEPLOYMENT_ALTERNATIVES.md
+# QUICKREF.md
+
+# CI/CD
+.github/

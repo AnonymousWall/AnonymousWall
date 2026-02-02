@@ -1,0 +1,62 @@
+version: '3.8'
+
+# Production deployment configuration for OCI instances
+# This connects to OCI Autonomous Database (ADB) - no local MySQL container
+# ADB is MySQL-compatible, so we use MySQL JDBC driver and dialect
+
+services:
+  app:
+    image: anonymouswall-backend:latest
+    container_name: anonymouswall-backend
+    ports:
+      - "8080:8080"
+    environment:
+      # Production environment
+      - MICRONAUT_ENVIRONMENTS=prod
+      
+      # JWT Secret - MUST be set via .env file or environment
+      - JWT_GENERATOR_SIGNATURE_SECRET=${JWT_GENERATOR_SIGNATURE_SECRET}
+      
+      # Database configuration - Connect to OCI Autonomous Database (ADB)
+      # ADB is MySQL-compatible, uses MySQL JDBC driver
+      # Get connection details from Terraform output: adb_connection_strings
+      - DATABASE_URL=${DATABASE_URL}
+      - DATABASE_USER=${DATABASE_USER}
+      - DATABASE_PASSWORD=${DATABASE_PASSWORD}
+      - DB_TYPE=mysql
+      - DB_DIALECT=MYSQL
+      - DB_DRIVER=com.mysql.cj.jdbc.Driver
+      
+      # Redis configuration (if using OCI Redis or separate Redis instance)
+      - REDIS_URI=${REDIS_URI:-redis://localhost:6379}
+      
+      # Logging
+      - LOG_DIR=/app/logs
+      
+      # Email configuration (optional)
+      - SMTP_HOST=${SMTP_HOST:-}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USERNAME=${SMTP_USERNAME:-}
+      - SMTP_PASSWORD=${SMTP_PASSWORD:-}
+      
+    volumes:
+      # Persist logs
+      - /opt/anonymouswall/logs:/app/logs
+    restart: unless-stopped
+    networks:
+      - anonymouswall-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 60s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  anonymouswall-network:
+    driver: bridge
