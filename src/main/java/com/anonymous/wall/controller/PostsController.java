@@ -366,6 +366,7 @@ public class PostsController {
         // Set author info (anonymous)
         PostDTOAuthor author = new PostDTOAuthor();
         author.setId(post.getUserId().toString());
+        author.setProfileName(post.getProfileName());
         author.setIsAnonymous(true); // All posts are anonymous
         dto.setAuthor(author);
 
@@ -382,6 +383,7 @@ public class PostsController {
         // Set author info (anonymous)
         CommentDTOAuthor author = new CommentDTOAuthor();
         author.setId(comment.getUserId().toString());
+        author.setProfileName(comment.getProfileName());
         author.setIsAnonymous(true); // All comments are anonymous
         dto.setAuthor(author);
 

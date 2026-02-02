@@ -16,6 +16,9 @@ public class UserEntity {
     @MappedProperty("email")
     private String email;
 
+    @MappedProperty("profile_name")
+    private String profileName = "Anonymous";
+
     @MappedProperty("school_domain")
     private String schoolDomain;
 
@@ -38,6 +41,9 @@ public class UserEntity {
 
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }
+
+    public String getProfileName() { return profileName; }
+    public void setProfileName(String profileName) { this.profileName = profileName != null ? profileName : "Anonymous"; }
 
     public String getSchoolDomain() { return schoolDomain; }
     public void setSchoolDomain(String schoolDomain) { this.schoolDomain = schoolDomain; }

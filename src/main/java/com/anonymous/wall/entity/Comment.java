@@ -19,6 +19,9 @@ public class Comment {
     @MappedProperty("user_id")
     private UUID userId;
 
+    @MappedProperty("profile_name")
+    private String profileName = "Anonymous";
+
     @MappedProperty("text")
     private String text;
 
@@ -41,6 +44,7 @@ public class Comment {
         this.postId = postId;
         this.userId = userId;
         this.text = text;
+        this.profileName = "Anonymous";
         this.hidden = false;
         this.createdAt = ZonedDateTime.now();
         this.version = 0L;
@@ -56,6 +60,9 @@ public class Comment {
 
     public UUID getUserId() { return userId; }
     public void setUserId(UUID userId) { this.userId = userId; }
+
+    public String getProfileName() { return profileName; }
+    public void setProfileName(String profileName) { this.profileName = profileName != null ? profileName : "Anonymous"; }
 
     public String getText() { return text; }
     public void setText(String text) { this.text = text; }

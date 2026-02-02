@@ -496,4 +496,205 @@ class PostsControllerCommentTests {
             assertTrue(updatedPost.get().getCommentCount() >= 5);
         }
     }
+
+    @Nested
+    @DisplayName("Comment Profile Name Tests")
+    class CommentProfileNameTests {
+
+        private UserEntity userWithDefaultName;
+        private UserEntity userWithCustomName;
+        private String tokenDefaultName;
+        private String tokenCustomName;
+        private Post testPost;
+
+        @BeforeEach
+        void setUp() {
+            // User with default profile name
+            userWithDefaultName = new UserEntity();
+            userWithDefaultName.setEmail("comment_default" + System.currentTimeMillis() + "@harvard.edu");
+            userWithDefaultName.setSchoolDomain("harvard.edu");
+            userWithDefaultName.setProfileName("Anonymous");
+            userWithDefaultName.setVerified(true);
+            userWithDefaultName.setPasswordSet(true);
+            userWithDefaultName = userRepository.save(userWithDefaultName);
+            tokenDefaultName = jwtTokenService.generateToken(userWithDefaultName);
+
+            // User with custom profile name
+            userWithCustomName = new UserEntity();
+            userWithCustomName.setEmail("comment_custom" + System.currentTimeMillis() + "@harvard.edu");
+            userWithCustomName.setSchoolDomain("harvard.edu");
+            userWithCustomName.setProfileName("Jane Smith");
+            userWithCustomName.setVerified(true);
+            userWithCustomName.setPasswordSet(true);
+            userWithCustomName = userRepository.save(userWithCustomName);
+            tokenCustomName = jwtTokenService.generateToken(userWithCustomName);
+
+            // Create test post (post author doesn't matter for comment tests)
+            testPost = new Post(userWithDefaultName.getId(), "Test post for comments", "campus", "harvard.edu");
+            testPost = postRepository.save(testPost);
+        }
+
+        @Test
+        @DisplayName("Should capture default profile name 'Anonymous' in comment")
+        void shouldCaptureDefaultProfileNameInComment() {
+            // Arrange
+            Map<String, Object> request = new HashMap<>();
+            request.put("text", "Comment with default profile name");
+
+            // Act
+            HttpResponse<CommentDTO> response = client.toBlocking().exchange(
+                HttpRequest.POST(BASE_PATH + "/" + testPost.getId() + "/comments", request)
+                    .header("Authorization", "Bearer " + tokenDefaultName),
+                CommentDTO.class
+            );
+
+            // Assert
+            assertEquals(HttpStatus.CREATED, response.getStatus());
+            CommentDTO commentDTO = response.body();
+            assertNotNull(commentDTO.getAuthor());
+            assertEquals("Anonymous", commentDTO.getAuthor().getProfileName());
+
+            // Verify in database
+            Optional<com.anonymous.wall.entity.Comment> savedComment =
+                commentRepository.findById(Long.parseLong(commentDTO.getId()));
+            assertTrue(savedComment.isPresent());
+            assertEquals("Anonymous", savedComment.get().getProfileName());
+        }
+
+        @Test
+        @DisplayName("Should capture custom profile name in comment")
+        void shouldCaptureCustomProfileNameInComment() {
+            // Arrange
+            Map<String, Object> request = new HashMap<>();
+            request.put("text", "Comment with custom profile name");
+
+            // Act
+            HttpResponse<CommentDTO> response = client.toBlocking().exchange(
+                HttpRequest.POST(BASE_PATH + "/" + testPost.getId() + "/comments", request)
+                    .header("Authorization", "Bearer " + tokenCustomName),
+                CommentDTO.class
+            );
+
+            // Assert
+            assertEquals(HttpStatus.CREATED, response.getStatus());
+            CommentDTO commentDTO = response.body();
+            assertNotNull(commentDTO.getAuthor());
+            assertEquals("Jane Smith", commentDTO.getAuthor().getProfileName());
+
+            // Verify in database
+            Optional<com.anonymous.wall.entity.Comment> savedComment =
+                commentRepository.findById(Long.parseLong(commentDTO.getId()));
+            assertTrue(savedComment.isPresent());
+            assertEquals("Jane Smith", savedComment.get().getProfileName());
+        }
+
+        @Test
+        @DisplayName("Should preserve original profile name after user changes name")
+        void shouldPreserveOriginalProfileNameAfterUserChanges() {
+            // Arrange - Create comment with initial profile name
+            userWithDefaultName.setProfileName("Original Name");
+            userRepository.update(userWithDefaultName);
+
+            Map<String, Object> request = new HashMap<>();
+            request.put("text", "Comment with original name");
+
+            HttpResponse<CommentDTO> response = client.toBlocking().exchange(
+                HttpRequest.POST(BASE_PATH + "/" + testPost.getId() + "/comments", request)
+                    .header("Authorization", "Bearer " + tokenDefaultName),
+                CommentDTO.class
+            );
+
+            CommentDTO commentDTO = response.body();
+            assertEquals("Original Name", commentDTO.getAuthor().getProfileName());
+
+            // Now change user's profile name
+            userWithDefaultName.setProfileName("Updated Name");
+            userRepository.update(userWithDefaultName);
+
+            // Verify comment still has original profile name
+            Optional<com.anonymous.wall.entity.Comment> comment =
+                commentRepository.findById(Long.parseLong(commentDTO.getId()));
+            assertTrue(comment.isPresent());
+            assertEquals("Original Name", comment.get().getProfileName());
+
+            // But new comments should use new name
+            Map<String, Object> request2 = new HashMap<>();
+            request2.put("text", "Another comment");
+
+            HttpResponse<CommentDTO> response2 = client.toBlocking().exchange(
+                HttpRequest.POST(BASE_PATH + "/" + testPost.getId() + "/comments", request2)
+                    .header("Authorization", "Bearer " + tokenDefaultName),
+                CommentDTO.class
+            );
+
+            assertEquals("Updated Name", response2.body().getAuthor().getProfileName());
+        }
+
+        @Test
+        @DisplayName("Comment author profile name should not equal user ID")
+        void commentAuthorProfileNameShouldNotEqualUserId() {
+            // Arrange
+            Map<String, Object> request = new HashMap<>();
+            request.put("text", "Comment text");
+
+            // Act
+            HttpResponse<CommentDTO> response = client.toBlocking().exchange(
+                HttpRequest.POST(BASE_PATH + "/" + testPost.getId() + "/comments", request)
+                    .header("Authorization", "Bearer " + tokenCustomName),
+                CommentDTO.class
+            );
+
+            // Assert
+            CommentDTO commentDTO = response.body();
+            assertNotNull(commentDTO.getAuthor());
+            assertEquals("Jane Smith", commentDTO.getAuthor().getProfileName());
+            assertNotNull(commentDTO.getAuthor().getId());
+            assertNotEquals("Jane Smith", commentDTO.getAuthor().getId());
+        }
+
+        @Test
+        @DisplayName("Multiple comments from same user should show current profile name")
+        void multipleCommentsFromSameUserWithDifferentNames() {
+            // First comment with name "First Name"
+            userWithDefaultName.setProfileName("First Name");
+            userRepository.update(userWithDefaultName);
+
+            Map<String, Object> request1 = new HashMap<>();
+            request1.put("text", "First comment");
+
+            HttpResponse<CommentDTO> response1 = client.toBlocking().exchange(
+                HttpRequest.POST(BASE_PATH + "/" + testPost.getId() + "/comments", request1)
+                    .header("Authorization", "Bearer " + tokenDefaultName),
+                CommentDTO.class
+            );
+
+            assertEquals("First Name", response1.body().getAuthor().getProfileName());
+
+            // Update name
+            userWithDefaultName.setProfileName("Second Name");
+            userRepository.update(userWithDefaultName);
+
+            Map<String, Object> request2 = new HashMap<>();
+            request2.put("text", "Second comment");
+
+            HttpResponse<CommentDTO> response2 = client.toBlocking().exchange(
+                HttpRequest.POST(BASE_PATH + "/" + testPost.getId() + "/comments", request2)
+                    .header("Authorization", "Bearer " + tokenDefaultName),
+                CommentDTO.class
+            );
+
+            assertEquals("Second Name", response2.body().getAuthor().getProfileName());
+
+            // Verify both comments have their original names in database
+            Optional<com.anonymous.wall.entity.Comment> comment1 =
+                commentRepository.findById(Long.parseLong(response1.body().getId()));
+            Optional<com.anonymous.wall.entity.Comment> comment2 =
+                commentRepository.findById(Long.parseLong(response2.body().getId()));
+
+            assertTrue(comment1.isPresent());
+            assertTrue(comment2.isPresent());
+            assertEquals("First Name", comment1.get().getProfileName());
+            assertEquals("Second Name", comment2.get().getProfileName());
+        }
+    }
 }

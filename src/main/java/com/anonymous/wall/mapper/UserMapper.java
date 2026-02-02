@@ -15,6 +15,7 @@ public class UserMapper {
         UserDTO dto = new UserDTO();
         dto.setId(entity.getId() != null ? entity.getId().toString() : null);
         dto.setEmail(entity.getEmail());
+        dto.setProfileName(entity.getProfileName());
         dto.setIsVerified(entity.isVerified());
         dto.setCreatedAt(entity.getCreatedAt());
         return dto;
