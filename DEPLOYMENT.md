@@ -22,6 +22,20 @@ The application is deployed using Docker and Docker Compose. The OCI infrastruct
 
 ## Deployment Methods
 
+### Pre-Deployment Checklist
+
+Before deploying, ensure you have:
+
+- [ ] OCI infrastructure deployed via Terraform
+- [ ] `bastion_public_ip` from Terraform output
+- [ ] `instance_private_ips` from Terraform output
+- [ ] `adb_connection_strings` from Terraform output (for DATABASE_URL)
+- [ ] ADB admin password (set during Terraform deployment)
+- [ ] SSH private key for OCI instances
+- [ ] Generated JWT secret (min 32 characters): `openssl rand -base64 32`
+- [ ] Confirmed port 8080 is open in OCI security lists
+- [ ] Confirmed `/health` endpoint is configured in load balancer
+
 ### Method 1: Automated Deployment (Recommended)
 
 #### Step 1: Prepare Deployment Package
@@ -50,8 +64,8 @@ DATABASE_URL=jdbc:mysql://your-adb-host:3306/anonymous_wall
 DATABASE_USER=admin
 DATABASE_PASSWORD=YourDatabasePassword
 
-# If using separate Redis (optional - can use default)
-REDIS_URI=redis://localhost:6379
+# Optional: Redis configuration (defaults to localhost:6379)
+# REDIS_URI=redis://localhost:6379
 ```
 
 #### Step 2: Transfer Files to OCI Instance
@@ -116,6 +130,8 @@ docker ps
 # Check health endpoint
 curl http://localhost:8080/health
 
+# Expected response: {"status":"UP"}
+
 # View logs
 docker logs -f anonymouswall-backend
 
@@ -125,7 +141,40 @@ exit  # Exit from the instance
 # Test via load balancer (get IP from terraform output)
 LB_IP=$(cd ../AnonymousWallInfra && terraform output -raw load_balancer_ip)
 curl http://$LB_IP/health
+
+# Expected response: {"status":"UP"}
 ```
+
+**Troubleshooting Failed Deployments:**
+
+If the health check fails, check these common issues:
+
+1. **Database Connection:**
+   ```bash
+   # Check if DATABASE_URL is correct
+   docker exec anonymouswall-backend env | grep DATABASE
+   
+   # Check logs for database errors
+   docker logs anonymouswall-backend | grep -i "database\|connection\|sql"
+   ```
+
+2. **Missing Environment Variables:**
+   ```bash
+   # Verify all required variables are set
+   docker exec anonymouswall-backend env | grep -E "JWT_|DATABASE_|REDIS_"
+   ```
+
+3. **Container Issues:**
+   ```bash
+   # Check container status
+   docker ps -a | grep anonymouswall
+   
+   # View full logs
+   docker logs anonymouswall-backend
+   
+   # Restart container
+   docker-compose -f docker-compose.prod.yml restart
+   ```
 
 ### Method 2: Manual Deployment
 
@@ -170,7 +219,7 @@ JWT_GENERATOR_SIGNATURE_SECRET=your-secret-key-min-32-chars
 DATABASE_URL=jdbc:mysql://your-adb-host:3306/anonymous_wall
 DATABASE_USER=admin
 DATABASE_PASSWORD=YourDatabasePassword
-REDIS_URI=redis://localhost:6379
+# REDIS_URI=redis://localhost:6379  # Optional, defaults to localhost
 EOF
 
 # Note: DATABASE_URL connects to OCI Autonomous Database (ADB)
@@ -195,6 +244,25 @@ docker logs -f anonymouswall-backend
 
 ## Configuration
 
+### Environment Variable Summary
+
+The application requires these environment variables for production deployment:
+
+**REQUIRED:**
+- `MICRONAUT_ENVIRONMENTS=prod` - Activates production profile
+- `JWT_GENERATOR_SIGNATURE_SECRET` - JWT signing key (min 32 chars)
+- `DATABASE_URL` - JDBC connection to OCI Autonomous Database
+- `DATABASE_USER` - ADB username (typically `admin`)
+- `DATABASE_PASSWORD` - ADB password (from Terraform)
+
+**OPTIONAL (with defaults):**
+- `REDIS_URI` - Redis connection (default: `redis://localhost:6379`)
+- `DB_TYPE` - Database type (default: `mysql`)
+- `DB_DIALECT` - SQL dialect (default: `MYSQL`)
+- `DB_DRIVER` - JDBC driver (default: `com.mysql.cj.jdbc.Driver`)
+- `LOG_DIR` - Log directory (default: `/app/logs`)
+- `SMTP_*` - Email configuration (optional for email verification)
+
 ### Required Environment Variables
 
 | Variable | Description | Example |
@@ -216,6 +284,8 @@ docker logs -f anonymouswall-backend
 | `SMTP_USERNAME` | Email username | - |
 | `SMTP_PASSWORD` | Email password | - |
 | `LOG_DIR` | Log directory | `/app/logs` |
+
+**Note:** Redis is optional with a sensible default. If not specified, the application will attempt to connect to Redis at `localhost:6379`.
 
 ## Updating the Application
 

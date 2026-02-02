@@ -46,7 +46,7 @@ if [ ! -f "${APP_DIR}/.env" ]; then
     echo "DATABASE_URL=jdbc:mysql://your-adb-host:3306/anonymous_wall"
     echo "DATABASE_USER=your-db-user"
     echo "DATABASE_PASSWORD=your-db-password"
-    echo "REDIS_URI=redis://your-redis-host:6379"
+    echo "# REDIS_URI=redis://localhost:6379  # Optional, defaults to localhost:6379"
     echo ""
     exit 1
 fi
