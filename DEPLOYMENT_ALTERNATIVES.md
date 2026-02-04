@@ -8,7 +8,7 @@ For those who prefer running the JAR directly without Docker.
 
 ### Prerequisites
 - Java 21 or higher installed on the system
-- MySQL and Redis running (locally or remotely)
+- Oracle ADB (production) or MySQL (development) and Redis running
 
 ### Step 1: Build the Application
 
@@ -23,8 +23,8 @@ mvn clean package -DskipTests
 cat > /opt/anonymouswall/app.env << 'EOF'
 MICRONAUT_ENVIRONMENTS=prod
 JWT_GENERATOR_SIGNATURE_SECRET=your-secret-key-min-32-chars
-DATABASE_URL=jdbc:mysql://your-db-host:3306/anonymous_wall
-DATABASE_USER=admin
+DATABASE_URL=jdbc:oracle:thin:@your-adb-connection-string
+DATABASE_USER=ADMIN
 DATABASE_PASSWORD=YourDatabasePassword
 REDIS_URI=redis://localhost:6379
 LOG_DIR=/var/log/anonymouswall
@@ -160,8 +160,8 @@ cd /opt/anonymouswall
 # Set environment variables
 export MICRONAUT_ENVIRONMENTS=prod
 export JWT_GENERATOR_SIGNATURE_SECRET="your-secret"
-export DATABASE_URL="jdbc:mysql://..."
-export DATABASE_USER="admin"
+export DATABASE_URL="jdbc:oracle:thin:@your-adb-connection-string"
+export DATABASE_USER="ADMIN"
 export DATABASE_PASSWORD="password"
 
 # Run the application
@@ -228,8 +228,8 @@ docker run -d \
   -p 8080:8080 \
   -e MICRONAUT_ENVIRONMENTS=prod \
   -e JWT_GENERATOR_SIGNATURE_SECRET="your-secret" \
-  -e DATABASE_URL="jdbc:mysql://your-db:3306/anonymous_wall" \
-  -e DATABASE_USER="admin" \
+  -e DATABASE_URL="jdbc:oracle:thin:@your-adb-connection-string" \
+  -e DATABASE_USER="ADMIN" \
   -e DATABASE_PASSWORD="password" \
   -e REDIS_URI="redis://your-redis:6379" \
   -v /opt/anonymouswall/logs:/app/logs \
@@ -355,8 +355,8 @@ metadata:
 type: Opaque
 stringData:
   jwt-secret: "your-secret-key-min-32-chars"
-  database-url: "jdbc:mysql://your-db-host:3306/anonymous_wall"
-  database-user: "admin"
+  database-url: "jdbc:oracle:thin:@your-adb-connection-string"
+  database-user: "ADMIN"
   database-password: "YourDatabasePassword"
 ```
 
@@ -366,8 +366,8 @@ stringData:
 # Create secret
 kubectl create secret generic anonymouswall-secrets \
   --from-literal=jwt-secret="your-secret" \
-  --from-literal=database-url="jdbc:mysql://..." \
-  --from-literal=database-user="admin" \
+  --from-literal=database-url="jdbc:oracle:thin:@your-adb-connection-string" \
+  --from-literal=database-user="ADMIN" \
   --from-literal=database-password="password"
 
 # Deploy application
@@ -391,8 +391,8 @@ kubectl scale deployment/anonymouswall-backend --replicas=3
 For quick testing without any service management.
 
 ```bash
-# Set environment variables
-export MICRONAUT_ENVIRONMENTS=prod
+# Set environment variables (for local development with MySQL)
+export MICRONAUT_ENVIRONMENTS=dev
 export JWT_GENERATOR_SIGNATURE_SECRET="test-secret-for-development-only"
 export DATABASE_URL="jdbc:mysql://localhost:3306/anonymous_wall"
 export DATABASE_USER="root"

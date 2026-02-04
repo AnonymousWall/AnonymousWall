@@ -34,8 +34,11 @@ WORKDIR /app
 # Copy the built JAR from builder stage
 COPY --from=builder /app/target/anonymouswall-*.jar app.jar
 
-# Create log directory
-RUN mkdir -p /app/logs && chown -R micronaut:micronaut /app
+# Create log directory with proper permissions
+RUN mkdir -p /app/logs && \
+    chmod 755 /app && \
+    chmod 777 /app/logs && \
+    chown -R micronaut:micronaut /app
 
 # Switch to non-root user
 USER micronaut
