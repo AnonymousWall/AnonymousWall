@@ -1,7 +1,8 @@
 version: '3.8'
 
 # Production deployment configuration for OCI instances
-# This connects to OCI Autonomous Database (ADB) - no local database container
+# This file is compatible with podman-compose (used in OCI) and docker-compose (local)
+# Connects to OCI Autonomous Database (ADB) - no local database container
 # ADB uses Oracle Database, so we use Oracle JDBC driver and dialect
 
 services:

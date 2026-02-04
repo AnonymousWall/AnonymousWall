@@ -1,6 +1,7 @@
 version: '3.8'
 
 # Local development stack with MySQL and Redis containers
+# Use with: docker-compose up -d (or podman-compose up -d)
 # For production on OCI, use docker-compose.prod.yml which connects to Oracle ADB (no MySQL container)
 # Note: Local development uses MySQL, but production uses Oracle Autonomous Database
 

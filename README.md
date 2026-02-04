@@ -572,7 +572,7 @@ Response: 200 OK
 - Maven 3.9.4+
 - MySQL 8+ (for local development) or Oracle Autonomous Database (for production on OCI)
 - Redis (optional, for caching)
-- Docker and Docker Compose (for containerized deployment)
+- Docker/Podman and docker-compose/podman-compose (for containerized deployment)
 
 ### Configuration Files
 
@@ -693,15 +693,15 @@ mvn clean test jacoco:report
 
 #### Production Deployment
 
-**Option 1: Using Docker (Recommended for OCI)**
+**Option 1: Using Podman (OCI Infrastructure)**
 
 See [DEPLOYMENT.md](DEPLOYMENT.md) for complete guide on deploying to OCI instances.
 
 ```bash
-# Quick start with Docker Compose
+# Quick start with podman-compose (on OCI)
 cp .env.example .env
 # Edit .env with your configuration
-docker-compose -f docker-compose.prod.yml up -d
+podman-compose -f docker-compose.prod.yml up -d
 ```
 
 **Option 2: Direct JAR Deployment**
@@ -764,14 +764,16 @@ MICRONAUT_ENVIRONMENTS=dev ./mvnw mn:run
 curl http://localhost:8080/health
 ```
 
-**Docker Deployment:**
+**Docker/Podman Deployment:**
 ```bash
 # 1. Create configuration
 cp .env.example .env
 # Edit .env with your values
 
-# 2. Start with Docker Compose
-docker-compose up -d
+# 2. Start with docker-compose (local) or podman-compose (OCI)
+docker-compose up -d  # Local development
+# or
+podman-compose up -d  # OCI production
 
 # 3. Check health
 curl http://localhost:8080/health
@@ -784,24 +786,24 @@ See [DEPLOYMENT.md](DEPLOYMENT.md) for complete instructions on deploying to Ora
 
 ## Deployment
 
-### Docker Deployment
+### Container Deployment
 
-This application is containerized and ready for deployment using Docker and Docker Compose.
+This application is containerized and ready for deployment using Docker/Podman and docker-compose/podman-compose.
 
 **Quick Start:**
 ```bash
-# Local testing with dependencies
+# Local testing with dependencies (uses Docker)
 docker-compose up -d
 
-# Production deployment (uses external database)
-docker-compose -f docker-compose.prod.yml up -d
+# Production deployment on OCI (uses Podman)
+podman-compose -f docker-compose.prod.yml up -d
 ```
 
 **Deployment Files:**
 - `Dockerfile` - Multi-stage build for optimized image
 - `docker-compose.yml` - Full stack with MySQL and Redis (local development)
 - `docker-compose.prod.yml` - Production config for OCI (Oracle ADB)
-- `deploy.sh` - Automated deployment script
+- `deploy.sh` - Automated deployment script (uses Podman)
 - `.env.example` - Configuration template
 
 ### OCI Infrastructure
