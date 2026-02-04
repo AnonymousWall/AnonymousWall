@@ -43,6 +43,8 @@ services:
     volumes:
       # Persist logs
       - /opt/anonymouswall/logs:/app/logs
+      # Oracle ADB wallet for mTLS connections (required by infrastructure)
+      - /opt/anonymouswall/wallet:/app/wallet
     restart: unless-stopped
     networks:
       - anonymouswall-network

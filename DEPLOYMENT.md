@@ -30,11 +30,14 @@ Before deploying, ensure you have:
 - [ ] `bastion_public_ip` from Terraform output
 - [ ] `instance_private_ips` from Terraform output
 - [ ] `adb_connection_strings` from Terraform output (for DATABASE_URL)
+- [ ] `adb_wallet_content` from Terraform output (ADB wallet for mTLS connections)
 - [ ] ADB admin password (set during Terraform deployment)
 - [ ] SSH private key for OCI instances
 - [ ] Generated JWT secret (min 32 characters): `openssl rand -base64 32`
 - [ ] Confirmed port 8080 is open in OCI security lists
 - [ ] Confirmed `/health` endpoint is configured in load balancer
+
+**Note:** The OCI ADB infrastructure uses mTLS (mutual TLS) connections, which require a wallet for secure database access. The wallet is available via `terraform output adb_wallet_content` (base64 encoded).
 
 ### Method 1: Automated Deployment (Recommended)
 
@@ -59,9 +62,14 @@ nano .env  # Edit with your actual values
 JWT_GENERATOR_SIGNATURE_SECRET=$(openssl rand -base64 32)
 
 # Get from Terraform output: adb_connection_strings
-# OCI Autonomous Database (ADB) uses Oracle Database
-# Connection URL format: jdbc:oracle:thin:@<connection-string>
-DATABASE_URL=jdbc:oracle:thin:@your-adb-connection-string
+# OCI Autonomous Database (ADB) uses Oracle Database with mTLS
+# Connection URL format: jdbc:oracle:thin:@<tns-alias>?TNS_ADMIN=/path/to/wallet
+#
+# To use the wallet:
+# 1. Extract wallet: terraform output -raw adb_wallet_content | base64 -d > wallet.zip
+# 2. Unzip to a directory (e.g., /opt/anonymouswall/wallet)
+# 3. Use TNS alias from the wallet's tnsnames.ora file
+DATABASE_URL=jdbc:oracle:thin:@anonwalldb_high?TNS_ADMIN=/opt/anonymouswall/wallet
 DATABASE_USER=ADMIN
 DATABASE_PASSWORD=YourDatabasePassword
 
@@ -250,17 +258,31 @@ git clone https://github.com/AnonymousWall/AnonymousWall.git .
 ```bash
 cd /opt/anonymouswall
 
+# Extract and setup the ADB wallet (required for mTLS connections)
+# Get the wallet from Terraform output (run this from your local machine first):
+# terraform output -raw adb_wallet_content | base64 -d > wallet.zip
+
+# On the OCI instance, create wallet directory and extract
+mkdir -p /opt/anonymouswall/wallet
+# Transfer wallet.zip to the instance, then:
+unzip wallet.zip -d /opt/anonymouswall/wallet
+chmod 600 /opt/anonymouswall/wallet/*
+
 # Create .env file
+# NOTE: TNS_ADMIN=/app/wallet is the container path
+# The host path /opt/anonymouswall/wallet is mounted to /app/wallet in docker-compose.prod.yml
 cat > .env << 'EOF'
 JWT_GENERATOR_SIGNATURE_SECRET=your-secret-key-min-32-chars
-DATABASE_URL=jdbc:oracle:thin:@your-adb-connection-string
+DATABASE_URL=jdbc:oracle:thin:@anonwalldb_high?TNS_ADMIN=/app/wallet
 DATABASE_USER=ADMIN
 DATABASE_PASSWORD=YourDatabasePassword
 # REDIS_URI=redis://localhost:6379  # Optional, defaults to localhost
 EOF
 
 # Note: DATABASE_URL connects to OCI Autonomous Database (ADB)
-# ADB uses Oracle Database, so we use the Oracle JDBC driver
+# ADB uses Oracle Database with mTLS, requiring the wallet
+# The TNS alias (e.g., anonwalldb_high) can be found in wallet/tnsnames.ora
+# Path mapping: host /opt/anonymouswall/wallet -> container /app/wallet
 
 # Secure the .env file
 chmod 600 .env
