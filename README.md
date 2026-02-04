@@ -570,7 +570,7 @@ Response: 200 OK
 ### Prerequisites
 - Java 21 or higher
 - Maven 3.9.4+
-- MySQL 8+ (for local development and production)
+- MySQL 8+ (for local development) or Oracle Autonomous Database (for production on OCI)
 - Redis (optional, for caching)
 - Docker and Docker Compose (for containerized deployment)
 
@@ -603,7 +603,7 @@ redis.uri=redis://localhost:6379
 
 **File:** `src/main/resources/application-prod.properties`
 
-For production, set **required environment variables**:
+For production on OCI with Oracle Autonomous Database, set **required environment variables**:
 
 ```bash
 export MICRONAUT_ENVIRONMENTS=prod
@@ -611,9 +611,9 @@ export MICRONAUT_ENVIRONMENTS=prod
 # Required - JWT signing key (minimum 32 characters)
 export JWT_GENERATOR_SIGNATURE_SECRET="your-secret-key-min-32-chars"
 
-# Required - Database connection
-export DATABASE_URL="jdbc:mysql://production-host:3306/anonymous_wall"
-export DATABASE_USER="prod_user"
+# Required - Database connection (Oracle Autonomous Database)
+export DATABASE_URL="jdbc:oracle:thin:@your-adb-connection-string"
+export DATABASE_USER="ADMIN"
 export DATABASE_PASSWORD="prod_password"
 
 # Required - Redis connection
@@ -799,8 +799,8 @@ docker-compose -f docker-compose.prod.yml up -d
 
 **Deployment Files:**
 - `Dockerfile` - Multi-stage build for optimized image
-- `docker-compose.yml` - Full stack with MySQL and Redis
-- `docker-compose.prod.yml` - Production config for OCI
+- `docker-compose.yml` - Full stack with MySQL and Redis (local development)
+- `docker-compose.prod.yml` - Production config for OCI (Oracle ADB)
 - `deploy.sh` - Automated deployment script
 - `.env.example` - Configuration template
 
@@ -811,7 +811,7 @@ This application is designed to deploy on Oracle Cloud Infrastructure using the 
 **Architecture:**
 - Compute instances in private subnet (no public IPs)
 - Load balancer for traffic distribution
-- OCI Autonomous Database (ADB) - MySQL-compatible
+- OCI Autonomous Database (ADB) - Oracle Database
 - Health checks on `/health` endpoint
 - Port 8080 for application traffic
 

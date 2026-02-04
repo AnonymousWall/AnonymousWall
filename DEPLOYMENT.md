@@ -59,9 +59,10 @@ nano .env  # Edit with your actual values
 JWT_GENERATOR_SIGNATURE_SECRET=$(openssl rand -base64 32)
 
 # Get from Terraform output: adb_connection_strings
-# OCI Autonomous Database (ADB) is MySQL-compatible
-DATABASE_URL=jdbc:mysql://your-adb-host:3306/anonymous_wall
-DATABASE_USER=admin
+# OCI Autonomous Database (ADB) uses Oracle Database
+# Connection URL format: jdbc:oracle:thin:@<connection-string>
+DATABASE_URL=jdbc:oracle:thin:@your-adb-connection-string
+DATABASE_USER=ADMIN
 DATABASE_PASSWORD=YourDatabasePassword
 
 # Optional: Redis configuration (defaults to localhost:6379)
@@ -252,14 +253,14 @@ cd /opt/anonymouswall
 # Create .env file
 cat > .env << 'EOF'
 JWT_GENERATOR_SIGNATURE_SECRET=your-secret-key-min-32-chars
-DATABASE_URL=jdbc:mysql://your-adb-host:3306/anonymous_wall
-DATABASE_USER=admin
+DATABASE_URL=jdbc:oracle:thin:@your-adb-connection-string
+DATABASE_USER=ADMIN
 DATABASE_PASSWORD=YourDatabasePassword
 # REDIS_URI=redis://localhost:6379  # Optional, defaults to localhost
 EOF
 
 # Note: DATABASE_URL connects to OCI Autonomous Database (ADB)
-# ADB is MySQL-compatible, so we use the MySQL JDBC driver
+# ADB uses Oracle Database, so we use the Oracle JDBC driver
 
 # Secure the .env file
 chmod 600 .env
@@ -293,9 +294,9 @@ The application requires these environment variables for production deployment:
 
 **OPTIONAL (with defaults):**
 - `REDIS_URI` - Redis connection (default: `redis://localhost:6379`)
-- `DB_TYPE` - Database type (default: `mysql`)
-- `DB_DIALECT` - SQL dialect (default: `MYSQL`)
-- `DB_DRIVER` - JDBC driver (default: `com.mysql.cj.jdbc.Driver`)
+- `DB_TYPE` - Database type (default: `oracle`)
+- `DB_DIALECT` - SQL dialect (default: `ORACLE`)
+- `DB_DRIVER` - JDBC driver (default: `oracle.jdbc.OracleDriver`)
 - `LOG_DIR` - Log directory (default: `/app/logs`)
 - `SMTP_*` - Email configuration (optional for email verification)
 
@@ -304,11 +305,11 @@ The application requires these environment variables for production deployment:
 | Variable | Description | Example |
 |----------|-------------|---------|
 | `JWT_GENERATOR_SIGNATURE_SECRET` | JWT signing key (min 32 chars) | Generate with: `openssl rand -base64 32` |
-| `DATABASE_URL` | JDBC connection string to OCI Autonomous Database (ADB) | `jdbc:mysql://adb-host:3306/anonymous_wall` |
-| `DATABASE_USER` | ADB username | `admin` |
+| `DATABASE_URL` | JDBC connection string to OCI Autonomous Database (ADB) | `jdbc:oracle:thin:@your-adb-connection-string` |
+| `DATABASE_USER` | ADB username | `ADMIN` |
 | `DATABASE_PASSWORD` | ADB password | Complex password from Terraform |
 
-**Note:** OCI Autonomous Database (ADB) is MySQL-compatible, so we use the MySQL JDBC driver and protocol.
+**Note:** OCI Autonomous Database (ADB) uses Oracle Database, so we use the Oracle JDBC driver and protocol.
 
 ### Optional Environment Variables
 
@@ -473,11 +474,12 @@ docker exec anonymouswall-backend curl -v http://localhost:8080/health
 ```bash
 # Test database connectivity from container
 docker exec -it anonymouswall-backend sh
-# Inside container:
-curl -v jdbc:mysql://your-db-host:3306/
+# Inside container, verify Oracle connection environment:
+echo $DATABASE_URL
 
-# Check OCI security lists allow traffic from backend subnet to database subnet
+# Check OCI security lists allow traffic from backend subnet to ADB
 # Verify database credentials in .env file
+# Ensure ADB wallet is properly configured if using mTLS
 ```
 
 ### Load Balancer Can't Reach Backend

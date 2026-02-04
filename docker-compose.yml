@@ -1,7 +1,8 @@
 version: '3.8'
 
 # Local development stack with MySQL and Redis containers
-# For production on OCI, use docker-compose.prod.yml which connects to ADB (no MySQL container)
+# For production on OCI, use docker-compose.prod.yml which connects to Oracle ADB (no MySQL container)
+# Note: Local development uses MySQL, but production uses Oracle Autonomous Database
 
 services:
   app:
@@ -12,8 +13,8 @@ services:
     ports:
       - "8080:8080"
     environment:
-      # Production environment
-      - MICRONAUT_ENVIRONMENTS=prod
+      # Development environment uses MySQL
+      - MICRONAUT_ENVIRONMENTS=dev
       
       # JWT Secret - MUST be set in production (no default for security)
       - JWT_GENERATOR_SIGNATURE_SECRET=${JWT_GENERATOR_SIGNATURE_SECRET}
@@ -58,7 +59,7 @@ services:
     image: mysql:8.0
     container_name: anonymouswall-db
     # NOTE: This MySQL container is ONLY for local development
-    # Production on OCI uses Autonomous Database (ADB) - see docker-compose.prod.yml
+    # Production on OCI uses Oracle Autonomous Database (ADB) - see docker-compose.prod.yml
     environment:
       - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-rootpassword}
       - MYSQL_DATABASE=anonymous_wall

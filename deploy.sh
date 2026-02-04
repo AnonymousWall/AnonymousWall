@@ -82,10 +82,13 @@ if [ ! -f "${APP_DIR}/.env" ]; then
     print_info "Please create a .env file with required environment variables:"
     echo ""
     echo "JWT_GENERATOR_SIGNATURE_SECRET=your-secret-key-min-32-chars"
-    echo "DATABASE_URL=jdbc:mysql://your-adb-host:3306/anonymous_wall"
-    echo "DATABASE_USER=your-db-user"
+    echo "DATABASE_URL=jdbc:oracle:thin:@your-adb-connection-string"
+    echo "DATABASE_USER=ADMIN"
     echo "DATABASE_PASSWORD=your-db-password"
     echo "# REDIS_URI=redis://localhost:6379  # Optional, defaults to localhost:6379"
+    echo ""
+    echo "NOTE: OCI Autonomous Database uses Oracle Database."
+    echo "Get connection string from OCI Console or Terraform output: adb_connection_strings"
     echo ""
     exit 1
 fi

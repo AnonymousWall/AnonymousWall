@@ -119,8 +119,12 @@ sudo kill -9 <PID>
 
 **Database connection fails:**
 ```bash
-# Check database is accessible
+# For local MySQL development:
 telnet <db-host> 3306
+
+# For production Oracle ADB, verify environment:
+docker exec -it anonymouswall-backend sh
+echo $DATABASE_URL
 
 # Verify credentials
 docker exec -it anonymouswall-backend sh
