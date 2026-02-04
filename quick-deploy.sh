@@ -11,8 +11,10 @@ echo "========================================="
 # Step 1: Prepare directories
 echo "[1/5] Preparing application directories..."
 sudo mkdir -p /opt/anonymouswall/logs /opt/anonymouswall/wallet
+# Set ownership for logs directory to match container user (UID 1001 - micronaut)
 sudo chown 1001:1001 /opt/anonymouswall/logs
 sudo chmod 755 /opt/anonymouswall/logs
+# Wallet directory only needs read access (handled by root in container during init)
 sudo chmod 755 /opt/anonymouswall/wallet
 echo "✓ Directories prepared"
 
