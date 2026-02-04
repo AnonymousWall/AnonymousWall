@@ -582,8 +582,24 @@ The application uses **environment-specific profiles**:
 |---------|------|-------|----------|---------------|
 | **Default** | `application.properties` | Fallback/production base | Environment variables | `./logs` |
 | **Development** | `application-dev.properties` | Local development | Your local MySQL (ziyihuang) | `./logs` (project root) |
+| **Local Testing** | `application-local.properties` | **Production mimic** | Oracle XE (via Docker) | `./logs` (project root) |
 | **Production** | `application-prod.properties` | Production deployment | Environment variables (required) | `/var/log/anonymouswall` |
 | **Tests** | `src/test/resources/application.properties` | Running tests | Same as development | `./logs` |
+
+#### Local Testing Configuration (Production Mimic)
+
+For testing that mimics production behavior with Oracle Database:
+
+**File:** `src/main/resources/application-local.properties`
+
+```properties
+# Uses Oracle Database XE to match production Oracle ADB
+datasources.default.url=jdbc:oracle:thin:@localhost:1521/XEPDB1
+datasources.default.username=system
+datasources.default.password=OraclePass123!
+```
+
+See [LOCAL_TESTING.md](LOCAL_TESTING.md) for complete setup instructions using `docker-compose.local.yml`.
 
 #### Local Development Configuration
 
@@ -792,8 +808,11 @@ This application is containerized and ready for deployment using Docker/Podman a
 
 **Quick Start:**
 ```bash
-# Local testing with dependencies (uses Docker)
+# Local development with MySQL (quick start)
 docker-compose up -d
+
+# Local testing with Oracle (100% production mimic)
+docker-compose -f docker-compose.local.yml up -d
 
 # Production deployment on OCI (uses Podman)
 podman-compose -f docker-compose.prod.yml up -d
@@ -801,10 +820,15 @@ podman-compose -f docker-compose.prod.yml up -d
 
 **Deployment Files:**
 - `Dockerfile` - Multi-stage build for optimized image
-- `docker-compose.yml` - Full stack with MySQL and Redis (local development)
+- `docker-compose.yml` - Full stack with MySQL and Redis (quick local development)
+- `docker-compose.local.yml` - **Production-mimic with Oracle XE (recommended for testing)**
 - `docker-compose.prod.yml` - Production config for OCI (Oracle ADB)
 - `deploy.sh` - Automated deployment script (uses Podman)
-- `.env.example` - Configuration template
+- `.env.example` - Production configuration template
+- `.env.local` - Local testing configuration template
+
+**Testing Locally:**
+For the most accurate local testing that mimics production behavior, see [LOCAL_TESTING.md](LOCAL_TESTING.md) for detailed instructions on using Oracle Database locally.
 
 ### OCI Infrastructure
 
