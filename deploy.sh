@@ -100,8 +100,9 @@ fi
 
 # Create log directory if it doesn't exist
 print_info "Creating log directory..."
-mkdir -p ${APP_DIR}/logs
-chmod 755 ${APP_DIR}/logs
+sudo mkdir -p ${APP_DIR}/logs
+sudo chmod 755 ${APP_DIR}/logs
+sudo chown opc:opc ${APP_DIR}/logs
 
 # Stop existing containers
 print_info "Stopping existing containers..."

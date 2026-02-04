@@ -114,9 +114,15 @@ ssh -i $SSH_KEY opc@$BASTION_IP "scp /tmp/anonymouswall-deploy.tar.gz opc@$INSTA
 # SSH to the backend instance via bastion
 ssh -i $SSH_KEY -J opc@$BASTION_IP opc@$INSTANCE_IP
 
-# Extract files
-sudo mkdir -p /opt/anonymouswall
+# Prepare application directory
+sudo mkdir -p /opt/anonymouswall/logs
+sudo mkdir -p /opt/anonymouswall/wallet
 sudo chown opc:opc /opt/anonymouswall
+sudo chmod 755 /opt/anonymouswall
+sudo chmod 777 /opt/anonymouswall/logs
+sudo chmod 755 /opt/anonymouswall/wallet
+
+# Extract files
 cd /opt/anonymouswall
 tar xzf /tmp/anonymouswall-deploy.tar.gz
 
@@ -448,6 +454,29 @@ sudo netstat -tlnp | grep 8080
 
 # Verify environment variables
 podman exec anonymouswall-backend env | grep -E 'DATABASE|JWT'
+```
+
+### Log4j RollingFileAppender Errors
+
+If you see errors like "Unable to invoke factory method in class org.apache.logging.log4j.core.appender.RollingFileAppender":
+
+```bash
+# 1. Ensure the logs directory exists and is writable
+sudo mkdir -p /opt/anonymouswall/logs
+sudo chmod 777 /opt/anonymouswall/logs
+ls -la /opt/anonymouswall/logs
+
+# 2. Verify the volume is mounted in the container
+podman exec anonymouswall-backend ls -la /app/logs
+
+# 3. Check Log4j version compatibility
+podman logs anonymouswall-backend | grep -i "log4j"
+
+# 4. If errors persist, the application will still function:
+#    - File appenders are optional (ignoreExceptions=true in log4j2.xml)
+#    - Console logging will still work
+#    - Check podman logs for application output
+podman logs -f anonymouswall-backend
 ```
 
 ### Health Check Failing
