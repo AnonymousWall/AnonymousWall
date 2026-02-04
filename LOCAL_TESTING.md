@@ -30,26 +30,37 @@ The production environment uses **Oracle Autonomous Database (ADB)** on OCI. For
 git clone https://github.com/AnonymousWall/AnonymousWall.git
 cd AnonymousWall
 
-# 2. Start the environment
-docker-compose -f docker-compose.local.yml up -d
+# 2. Quick start with automated script (recommended)
+./start-local-test.sh
 
-# 3. Wait for Oracle to initialize (first time takes 2-3 minutes)
-docker-compose -f docker-compose.local.yml logs -f oracle-db
+# Or manually:
+# docker compose -f docker-compose.local.yml up -d
 
-# 4. Wait for the app to start and connect
-docker-compose -f docker-compose.local.yml logs -f app
-
-# 5. Check health
+# 3. Access the API
 curl http://localhost:8080/health
-
-# 6. Access the API
 curl http://localhost:8080/swagger-ui.html
+```
+
+**Using the Quick Start Script:**
+The `start-local-test.sh` script automates the entire setup:
+- Creates `.env` file if needed
+- Starts all services
+- Waits for services to be healthy
+- Displays connection info and helpful commands
+
+**Stopping the Environment:**
+```bash
+# Use the stop script with options
+./stop-local-test.sh
+
+# Or manually stop:
+docker compose -f docker-compose.local.yml stop
 ```
 
 ### Option 2: Using Podman Compose
 
 ```bash
-# Same commands, just replace docker-compose with podman-compose
+# Same commands, just replace docker with podman
 podman-compose -f docker-compose.local.yml up -d
 podman-compose -f docker-compose.local.yml logs -f
 ```

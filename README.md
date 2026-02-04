@@ -768,7 +768,7 @@ http://localhost:8080/swagger/anonymouswall-0.0.yml
 
 ### Quick Start
 
-**Local Development:**
+**Local Development (MySQL):**
 ```bash
 # 1. Build the project
 mvn clean package
@@ -778,6 +778,19 @@ MICRONAUT_ENVIRONMENTS=dev ./mvnw mn:run
 
 # 3. Access API
 curl http://localhost:8080/health
+```
+
+**Local Testing (Oracle - Production Mimic):**
+```bash
+# Automated setup with convenience script
+./start-local-test.sh
+
+# Or manually
+docker compose -f docker-compose.local.yml up -d
+
+# Access services
+curl http://localhost:8080/health
+# See LOCAL_TESTING.md for details
 ```
 
 **Docker/Podman Deployment:**

@@ -1,5 +1,3 @@
-version: '3.8'
-
 # Local testing environment that 100% mimics production behavior
 # Uses Oracle Database Express Edition (XE) to match production Oracle ADB
 # This provides the closest match to production Oracle Autonomous Database behavior
