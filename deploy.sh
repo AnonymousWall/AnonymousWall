@@ -113,7 +113,6 @@ fi
 # Start the application
 print_info "Starting application with docker-compose..."
 ${DOCKER_COMPOSE_CMD} -f ${COMPOSE_FILE} up -d
-docker-compose -f ${COMPOSE_FILE} up -d
 
 # Wait for application to be healthy
 print_info "Waiting for application to be healthy..."

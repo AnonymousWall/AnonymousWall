@@ -64,8 +64,10 @@ DATABASE_URL=jdbc:mysql://your-adb-host:3306/anonymous_wall
 DATABASE_USER=admin
 DATABASE_PASSWORD=YourDatabasePassword
 
-# Optional: Redis configuration (defaults to localhost:6379)
-# REDIS_URI=redis://localhost:6379
+# Optional: Redis configuration
+# Production deployment includes a containerized Redis instance by default
+# Only set REDIS_URI if you want to use an external Redis service
+# REDIS_URI=redis://your-external-redis-host:6379
 ```
 
 #### Step 2: Transfer Files to OCI Instance
@@ -470,14 +472,37 @@ docker exec anonymouswall-backend curl -v http://localhost:8080/health
 
 ### Database Connection Issues
 
-```bash
-# Test database connectivity from container
-docker exec -it anonymouswall-backend sh
-# Inside container:
-curl -v jdbc:mysql://your-db-host:3306/
+If you see `com.mysql.cj.jdbc.exceptions.CommunicationsException` errors:
 
-# Check OCI security lists allow traffic from backend subnet to database subnet
-# Verify database credentials in .env file
+```bash
+# Check container logs
+sudo docker logs anonymouswall-backend --tail 50
+
+# Common causes and fixes:
+
+# 1. Database not accessible (network/firewall issues)
+# - Verify OCI security lists allow traffic from backend subnet to database subnet
+# - Check if DATABASE_URL in .env is correct (get from Terraform output: adb_connection_strings)
+# - Ensure database is running and accessible
+
+# 2. Redis not available
+# - The production deployment includes a Redis container by default
+# - Verify Redis is running: docker ps | grep redis
+# - Check Redis logs: docker logs anonymouswall-redis
+
+# 3. Incorrect database credentials
+# - Verify DATABASE_USER and DATABASE_PASSWORD in /opt/anonymouswall/.env
+# - Test connection manually (if possible)
+
+# 4. Database startup delay
+# - The application now has a 60-second initialization timeout
+# - It will retry connecting to the database during startup
+# - Check if database is ready: docker exec anonymouswall-redis redis-cli ping
+
+# Verify all containers are running
+sudo docker ps
+
+# Should show both anonymouswall-backend and anonymouswall-redis containers
 ```
 
 ### Load Balancer Can't Reach Backend

@@ -27,8 +27,8 @@ services:
       - DB_DIALECT=MYSQL
       - DB_DRIVER=com.mysql.cj.jdbc.Driver
       
-      # Redis configuration (if using OCI Redis or separate Redis instance)
-      - REDIS_URI=${REDIS_URI:-redis://localhost:6379}
+      # Redis configuration - use containerized Redis if REDIS_URI not set
+      - REDIS_URI=${REDIS_URI:-redis://redis:6379}
       
       # Logging
       - LOG_DIR=/app/logs
@@ -43,6 +43,9 @@ services:
       # Persist logs
       - /opt/anonymouswall/logs:/app/logs
     restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
     networks:
       - anonymouswall-network
     healthcheck:
@@ -56,6 +59,31 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+
+  redis:
+    image: redis:7-alpine
+    container_name: anonymouswall-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+    networks:
+      - anonymouswall-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  redis-data:
+    driver: local
 
 networks:
   anonymouswall-network:
