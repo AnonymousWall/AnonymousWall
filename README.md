@@ -570,9 +570,9 @@ Response: 200 OK
 ### Prerequisites
 - Java 21 or higher
 - Maven 3.9.4+
-- MySQL 8+ (for local development and production)
+- MySQL 8+ (for local development) and Oracle ADB for production
 - Redis (optional, for caching)
-- Docker and Docker Compose (for containerized deployment)
+- Podman and Podman Compose (for containerized deployment)
 
 ### Configuration Files
 
@@ -612,7 +612,7 @@ export MICRONAUT_ENVIRONMENTS=prod
 export JWT_GENERATOR_SIGNATURE_SECRET="your-secret-key-min-32-chars"
 
 # Required - Database connection
-export DATABASE_URL="jdbc:mysql://production-host:3306/anonymous_wall"
+export DATABASE_URL="jdbc:oracle:thin:@production-host:1521/anonymous_wall"
 export DATABASE_USER="prod_user"
 export DATABASE_PASSWORD="prod_password"
 
@@ -693,15 +693,15 @@ mvn clean test jacoco:report
 
 #### Production Deployment
 
-**Option 1: Using Docker (Recommended for OCI)**
+**Option 1: Using Podman (Recommended for OCI)**
 
 See [DEPLOYMENT.md](DEPLOYMENT.md) for complete guide on deploying to OCI instances.
 
 ```bash
-# Quick start with Docker Compose
+# Quick start with Podman Compose
 cp .env.example .env
 # Edit .env with your configuration
-docker-compose -f docker-compose.prod.yml up -d
+podman-compose -f docker-compose.prod.yml up -d
 ```
 
 **Option 2: Direct JAR Deployment**
@@ -764,14 +764,14 @@ MICRONAUT_ENVIRONMENTS=dev ./mvnw mn:run
 curl http://localhost:8080/health
 ```
 
-**Docker Deployment:**
+**Podman Deployment:**
 ```bash
 # 1. Create configuration
 cp .env.example .env
 # Edit .env with your values
 
-# 2. Start with Docker Compose
-docker-compose up -d
+# 2. Start with Podman Compose
+podman-compose up -d
 
 # 3. Check health
 curl http://localhost:8080/health
@@ -784,23 +784,23 @@ See [DEPLOYMENT.md](DEPLOYMENT.md) for complete instructions on deploying to Ora
 
 ## Deployment
 
-### Docker Deployment
+### Podman Deployment
 
-This application is containerized and ready for deployment using Docker and Docker Compose.
+This application is containerized and ready for deployment using Podman and Podman Compose.
 
 **Quick Start:**
 ```bash
 # Local testing with dependencies
-docker-compose up -d
+podman-compose up -d
 
 # Production deployment (uses external database)
-docker-compose -f docker-compose.prod.yml up -d
+podman-compose -f docker-compose.prod.yml up -d
 ```
 
 **Deployment Files:**
 - `Dockerfile` - Multi-stage build for optimized image
 - `docker-compose.yml` - Full stack with MySQL and Redis
-- `docker-compose.prod.yml` - Production config for OCI
+- `docker-compose.prod.yml` - Production config for OCI (Podman Compose compatible)
 - `deploy.sh` - Automated deployment script
 - `.env.example` - Configuration template
 
@@ -811,7 +811,7 @@ This application is designed to deploy on Oracle Cloud Infrastructure using the 
 **Architecture:**
 - Compute instances in private subnet (no public IPs)
 - Load balancer for traffic distribution
-- OCI Autonomous Database (ADB) - MySQL-compatible
+- OCI Autonomous Database (ADB) - Oracle JDBC
 - Health checks on `/health` endpoint
 - Port 8080 for application traffic
 
@@ -1085,4 +1085,3 @@ For issues or questions, please refer to the test files and API documentation in
 ## Feature http-client documentation
 
 - [Micronaut HTTP Client documentation](https://docs.micronaut.io/latest/guide/index.html#nettyHttpClient)
-

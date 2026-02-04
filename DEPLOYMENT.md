@@ -4,9 +4,9 @@ This guide explains how to deploy the AnonymousWall Micronaut backend on OCI (Or
 
 ## Overview
 
-The application is deployed using Docker and Docker Compose. The OCI infrastructure (from [AnonymousWallInfra](https://github.com/AnonymousWall/AnonymousWallInfra)) creates compute instances with:
+The application is deployed using Podman and Podman Compose. The OCI infrastructure (from [AnonymousWallInfra](https://github.com/AnonymousWall/AnonymousWallInfra)) creates compute instances with:
 
-- Docker and Docker Compose pre-installed
+- Podman and Podman Compose pre-installed
 - Firewall configured for port 8080
 - Application directory at `/opt/anonymouswall`
 - Load balancer with health checks on `/health`
@@ -59,8 +59,8 @@ nano .env  # Edit with your actual values
 JWT_GENERATOR_SIGNATURE_SECRET=$(openssl rand -base64 32)
 
 # Get from Terraform output: adb_connection_strings
-# OCI Autonomous Database (ADB) is MySQL-compatible
-DATABASE_URL=jdbc:mysql://your-adb-host:3306/anonymous_wall
+# OCI Autonomous Database (ADB) uses the Oracle JDBC driver
+DATABASE_URL=jdbc:oracle:thin:@your-adb-host:1521/anonymous_wall
 DATABASE_USER=admin
 DATABASE_PASSWORD=YourDatabasePassword
 
@@ -111,33 +111,21 @@ sudo chown opc:opc /opt/anonymouswall
 cd /opt/anonymouswall
 tar xzf /tmp/anonymouswall-deploy.tar.gz
 
-# IMPORTANT: Verify Docker is installed
-# The OCI cloud-init should have installed Docker, but verify:
-docker --version
-docker-compose --version  # or: docker compose version
+# IMPORTANT: Verify Podman is installed
+# The OCI cloud-init should have installed Podman, but verify:
+podman --version
+podman-compose --version  # or: podman compose version
 
-# If Docker is NOT installed, install it:
-sudo yum install -y yum-utils
-sudo yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
-sudo yum install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
-sudo systemctl start docker
-sudo systemctl enable docker
-sudo usermod -aG docker opc
-
-# Install Docker Compose (standalone) if not available:
-sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-sudo chmod +x /usr/local/bin/docker-compose
-
-# Log out and log back in for group changes to take effect
-exit
-# Then SSH back in
+# If Podman is NOT installed, install it:
+sudo yum install -y podman podman-compose
+sudo systemctl enable --now podman.socket
 
 # Run deployment script
 ./deploy.sh
 ```
 
 The script will:
-- Build the Docker image
+- Build the container image
 - Start the application
 - Wait for health checks
 - Display status and useful commands
@@ -146,7 +134,7 @@ The script will:
 
 ```bash
 # Check if container is running
-docker ps
+podman ps
 
 # Check health endpoint
 curl http://localhost:8080/health
@@ -154,7 +142,7 @@ curl http://localhost:8080/health
 # Expected response: {"status":"UP"}
 
 # View logs
-docker logs -f anonymouswall-backend
+podman logs -f anonymouswall-backend
 
 # Exit and test from outside
 exit  # Exit from the instance
@@ -170,46 +158,42 @@ curl http://$LB_IP/health
 
 If the health check fails, check these common issues:
 
-1. **Docker Not Installed:**
+1. **Podman Not Installed:**
    ```bash
-   # Check if Docker is installed
-   docker --version
-   docker-compose --version
+   # Check if Podman is installed
+   podman --version
+   podman-compose --version
    
    # If not installed, follow the installation steps in Step 3 above
-   # After installation, ensure Docker service is running:
-   sudo systemctl status docker
-   
-   # Add user to docker group if needed:
-   sudo usermod -aG docker $USER
-   newgrp docker  # Or logout/login
+   # After installation, ensure the Podman socket is running:
+   sudo systemctl status podman.socket
    ```
 
 2. **Database Connection:**
    ```bash
    # Check if DATABASE_URL is correct
-   docker exec anonymouswall-backend env | grep DATABASE
+   podman exec anonymouswall-backend env | grep DATABASE
    
    # Check logs for database errors
-   docker logs anonymouswall-backend | grep -i "database\|connection\|sql"
+   podman logs anonymouswall-backend | grep -i "database\|connection\|sql"
    ```
 
 3. **Missing Environment Variables:**
    ```bash
    # Verify all required variables are set
-   docker exec anonymouswall-backend env | grep -E "JWT_|DATABASE_|REDIS_"
+   podman exec anonymouswall-backend env | grep -E "JWT_|DATABASE_|REDIS_"
    ```
 
 4. **Container Issues:**
    ```bash
    # Check container status
-   docker ps -a | grep anonymouswall
+   podman ps -a | grep anonymouswall
    
    # View full logs
-   docker logs anonymouswall-backend
+   podman logs anonymouswall-backend
    
    # Restart container
-   docker-compose -f docker-compose.prod.yml restart
+   podman-compose -f docker-compose.prod.yml restart
    ```
 
 ### Method 2: Manual Deployment
@@ -252,14 +236,14 @@ cd /opt/anonymouswall
 # Create .env file
 cat > .env << 'EOF'
 JWT_GENERATOR_SIGNATURE_SECRET=your-secret-key-min-32-chars
-DATABASE_URL=jdbc:mysql://your-adb-host:3306/anonymous_wall
+DATABASE_URL=jdbc:oracle:thin:@your-adb-host:1521/anonymous_wall
 DATABASE_USER=admin
 DATABASE_PASSWORD=YourDatabasePassword
 # REDIS_URI=redis://localhost:6379  # Optional, defaults to localhost
 EOF
 
 # Note: DATABASE_URL connects to OCI Autonomous Database (ADB)
-# ADB is MySQL-compatible, so we use the MySQL JDBC driver
+# ADB uses the Oracle JDBC driver
 
 # Secure the .env file
 chmod 600 .env
@@ -268,14 +252,14 @@ chmod 600 .env
 #### Step 5: Build and Deploy
 
 ```bash
-# Build Docker image
-docker build -t anonymouswall-backend:latest .
+# Build container image
+podman build -t anonymouswall-backend:latest .
 
 # Start application
-docker-compose -f docker-compose.prod.yml up -d
+podman-compose -f docker-compose.prod.yml up -d
 
 # Check logs
-docker logs -f anonymouswall-backend
+podman logs -f anonymouswall-backend
 ```
 
 ## Configuration
@@ -293,9 +277,9 @@ The application requires these environment variables for production deployment:
 
 **OPTIONAL (with defaults):**
 - `REDIS_URI` - Redis connection (default: `redis://localhost:6379`)
-- `DB_TYPE` - Database type (default: `mysql`)
-- `DB_DIALECT` - SQL dialect (default: `MYSQL`)
-- `DB_DRIVER` - JDBC driver (default: `com.mysql.cj.jdbc.Driver`)
+- `DB_TYPE` - Database type (default: `oracle`)
+- `DB_DIALECT` - SQL dialect (default: `ORACLE`)
+- `DB_DRIVER` - JDBC driver (default: `oracle.jdbc.driver.OracleDriver`)
 - `LOG_DIR` - Log directory (default: `/app/logs`)
 - `SMTP_*` - Email configuration (optional for email verification)
 
@@ -304,11 +288,11 @@ The application requires these environment variables for production deployment:
 | Variable | Description | Example |
 |----------|-------------|---------|
 | `JWT_GENERATOR_SIGNATURE_SECRET` | JWT signing key (min 32 chars) | Generate with: `openssl rand -base64 32` |
-| `DATABASE_URL` | JDBC connection string to OCI Autonomous Database (ADB) | `jdbc:mysql://adb-host:3306/anonymous_wall` |
+| `DATABASE_URL` | JDBC connection string to OCI Autonomous Database (ADB) | `jdbc:oracle:thin:@adb-host:1521/anonymous_wall` |
 | `DATABASE_USER` | ADB username | `admin` |
 | `DATABASE_PASSWORD` | ADB password | Complex password from Terraform |
 
-**Note:** OCI Autonomous Database (ADB) is MySQL-compatible, so we use the MySQL JDBC driver and protocol.
+**Note:** OCI Autonomous Database (ADB) uses the Oracle JDBC driver and protocol.
 
 ### Optional Environment Variables
 
@@ -346,13 +330,13 @@ git pull
 cd /opt/anonymouswall
 
 # Stop current application
-docker-compose -f docker-compose.prod.yml down
+podman-compose -f docker-compose.prod.yml down
 
 # Rebuild image
-docker build -t anonymouswall-backend:latest .
+podman build -t anonymouswall-backend:latest .
 
 # Start updated application
-docker-compose -f docker-compose.prod.yml up -d
+podman-compose -f docker-compose.prod.yml up -d
 ```
 
 ## Monitoring and Maintenance
@@ -361,10 +345,10 @@ docker-compose -f docker-compose.prod.yml up -d
 
 ```bash
 # Real-time logs
-docker logs -f anonymouswall-backend
+podman logs -f anonymouswall-backend
 
 # Last 100 lines
-docker logs --tail 100 anonymouswall-backend
+podman logs --tail 100 anonymouswall-backend
 
 # Application logs (on host)
 tail -f /opt/anonymouswall/logs/anonymouswall.log
@@ -384,97 +368,81 @@ curl http://<load-balancer-ip>/health
 
 ```bash
 cd /opt/anonymouswall
-docker-compose -f docker-compose.prod.yml restart
+podman-compose -f docker-compose.prod.yml restart
 ```
 
 ### Stop Application
 
 ```bash
 cd /opt/anonymouswall
-docker-compose -f docker-compose.prod.yml down
+podman-compose -f docker-compose.prod.yml down
 ```
 
 ### Clean Up Old Images
 
 ```bash
 # Remove unused images
-docker image prune -a
+podman image prune -a
 
 # Remove unused volumes
-docker volume prune
+podman volume prune
 ```
 
 ## Troubleshooting
 
-### Docker Not Installed
+### Podman Not Installed
 
-If you get "docker: command not found" or "docker-compose: command not found":
+If you get "podman: command not found" or "podman-compose: command not found":
 
 ```bash
-# Check if Docker is installed
-docker --version
-docker-compose --version
+# Check if Podman is installed
+podman --version
+podman-compose --version
 
-# If not installed, install Docker on Oracle Linux:
-sudo yum install -y yum-utils
-sudo yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
-sudo yum install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
-
-# Start and enable Docker service
-sudo systemctl start docker
-sudo systemctl enable docker
-
-# Add your user to docker group
-sudo usermod -aG docker opc
-
-# Install Docker Compose (standalone binary)
-sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-sudo chmod +x /usr/local/bin/docker-compose
+# If not installed, install Podman on Oracle Linux:
+sudo yum install -y podman podman-compose
+sudo systemctl enable --now podman.socket
 
 # Verify installation
-docker --version
-docker-compose --version
-
-# IMPORTANT: Log out and log back in for group changes to take effect
-exit
-# Then SSH back in and run deploy.sh again
+podman --version
+podman-compose --version
 ```
 
-**Note:** The OCI cloud-init script should install Docker automatically, but if the instance was created before cloud-init completed or if there was an issue, you'll need to install it manually.
+**Note:** The OCI cloud-init script should install Podman automatically, but if the instance was created before cloud-init completed or if there was an issue, you'll need to install it manually.
 
 ### Application Won't Start
 
 ```bash
 # Check logs
-docker logs anonymouswall-backend
+podman logs anonymouswall-backend
 
 # Check if port is already in use
 sudo netstat -tlnp | grep 8080
 
 # Verify environment variables
-docker exec anonymouswall-backend env | grep -E 'DATABASE|JWT'
+podman exec anonymouswall-backend env | grep -E 'DATABASE|JWT'
 ```
 
 ### Health Check Failing
 
 ```bash
 # Test health endpoint locally
-docker exec anonymouswall-backend curl http://localhost:8080/health
+podman exec anonymouswall-backend curl http://localhost:8080/health
 
 # Check application logs
-docker logs anonymouswall-backend | tail -50
+podman logs anonymouswall-backend | tail -50
 
 # Verify database connectivity
-docker exec anonymouswall-backend curl -v http://localhost:8080/health
+podman exec anonymouswall-backend curl -v http://localhost:8080/health
 ```
 
 ### Database Connection Issues
 
 ```bash
 # Test database connectivity from container
-docker exec -it anonymouswall-backend sh
+podman exec -it anonymouswall-backend sh
 # Inside container:
-curl -v jdbc:mysql://your-db-host:3306/
+curl -v jdbc:oracle:thin:@your-db-host:1521/anonymous_wall
 
 # Check OCI security lists allow traffic from backend subnet to database subnet
 # Verify database credentials in .env file
@@ -489,8 +457,8 @@ sudo firewall-cmd --list-all
 # Verify application is listening on 8080
 sudo netstat -tlnp | grep 8080
 
-# Check Docker network
-docker network inspect anonymouswall-network
+# Check Podman network
+podman network inspect anonymouswall-network
 ```
 
 ## Security Best Practices
@@ -551,7 +519,7 @@ terraform apply
 
 For automated deployments, consider:
 
-1. **Build Docker image in CI pipeline**
+1. **Build container image in CI pipeline**
 2. **Push to OCI Container Registry**
 3. **Deploy via SSH or OCI DevOps**
 4. **Run health checks**
@@ -570,13 +538,13 @@ For automated deployments, consider:
 ./deploy.sh
 
 # View logs
-docker logs -f anonymouswall-backend
+podman logs -f anonymouswall-backend
 
 # Restart application
-docker-compose -f docker-compose.prod.yml restart
+podman-compose -f docker-compose.prod.yml restart
 
 # Stop application
-docker-compose -f docker-compose.prod.yml down
+podman-compose -f docker-compose.prod.yml down
 
 # Check health
 curl http://localhost:8080/health

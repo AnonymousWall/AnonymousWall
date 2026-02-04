@@ -13,26 +13,26 @@ mvn test
 mvn clean package
 ```
 
-## Docker Operations
+## Podman Operations
 
 ```bash
 # Build image
-docker build -t anonymouswall-backend:latest .
+podman build -t anonymouswall-backend:latest .
 
 # Start full stack (local dev)
-docker-compose up -d
+podman-compose up -d
 
 # Start production config
-docker-compose -f docker-compose.prod.yml up -d
+podman-compose -f docker-compose.prod.yml up -d
 
 # View logs
-docker logs -f anonymouswall-backend
+podman logs -f anonymouswall-backend
 
 # Stop application
-docker-compose down
+podman-compose down
 
 # Restart
-docker-compose restart
+podman-compose restart
 ```
 
 ## OCI Deployment
@@ -49,10 +49,10 @@ cd /opt/anonymouswall
 curl http://localhost:8080/health
 
 # View logs
-docker logs -f anonymouswall-backend
+podman logs -f anonymouswall-backend
 
 # Restart application
-docker-compose -f docker-compose.prod.yml restart
+podman-compose -f docker-compose.prod.yml restart
 
 # Update application
 git pull
@@ -69,20 +69,20 @@ curl http://localhost:8080/health
 curl http://<load-balancer-ip>/health
 
 # Detailed health (inside container)
-docker exec anonymouswall-backend curl http://localhost:8080/health
+podman exec anonymouswall-backend curl http://localhost:8080/health
 ```
 
 ## Troubleshooting
 
 ```bash
 # Check container status
-docker ps
+podman ps
 
 # View recent logs
-docker logs --tail 100 anonymouswall-backend
+podman logs --tail 100 anonymouswall-backend
 
 # Check environment variables
-docker exec anonymouswall-backend env | grep -E 'DATABASE|JWT|REDIS'
+podman exec anonymouswall-backend env | grep -E 'DATABASE|JWT|REDIS'
 
 # Check port binding
 netstat -tlnp | grep 8080
@@ -91,9 +91,9 @@ netstat -tlnp | grep 8080
 sudo firewall-cmd --list-all
 
 # Rebuild and restart
-docker-compose down
-docker build -t anonymouswall-backend:latest .
-docker-compose up -d
+podman-compose down
+podman build -t anonymouswall-backend:latest .
+podman-compose up -d
 ```
 
 ## Configuration
@@ -119,21 +119,21 @@ sudo kill -9 <PID>
 
 **Database connection fails:**
 ```bash
-# Check database is accessible
-telnet <db-host> 3306
+# Check Oracle database is accessible
+telnet <db-host> 1521
 
 # Verify credentials
-docker exec -it anonymouswall-backend sh
+podman exec -it anonymouswall-backend sh
 # Inside container, check environment
 ```
 
 **Health check fails:**
 ```bash
 # Check application logs
-docker logs anonymouswall-backend
+podman logs anonymouswall-backend
 
 # Test internally
-docker exec anonymouswall-backend curl http://localhost:8080/health
+podman exec anonymouswall-backend curl http://localhost:8080/health
 ```
 
 ## Maintenance
@@ -142,15 +142,15 @@ docker exec anonymouswall-backend curl http://localhost:8080/health
 # Update to latest version
 cd /opt/anonymouswall
 git pull
-docker-compose -f docker-compose.prod.yml down
-docker build -t anonymouswall-backend:latest .
-docker-compose -f docker-compose.prod.yml up -d
+podman-compose -f docker-compose.prod.yml down
+podman build -t anonymouswall-backend:latest .
+podman-compose -f docker-compose.prod.yml up -d
 
 # Clean up old images
-docker image prune -a
+podman image prune -a
 
 # Clean up volumes
-docker volume prune
+podman volume prune
 
 # Backup logs
 tar czf logs-backup-$(date +%Y%m%d).tar.gz /opt/anonymouswall/logs/
@@ -160,13 +160,13 @@ tar czf logs-backup-$(date +%Y%m%d).tar.gz /opt/anonymouswall/logs/
 
 ```bash
 # CPU and memory usage
-docker stats anonymouswall-backend
+podman stats anonymouswall-backend
 
 # Disk usage
 df -h
 
 # Container health
-docker inspect anonymouswall-backend | grep Health -A 10
+podman inspect anonymouswall-backend | grep Health -A 10
 
 # Application metrics (if enabled)
 curl http://localhost:8080/metrics

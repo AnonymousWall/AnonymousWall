@@ -1,14 +1,14 @@
 # Alternative Deployment Methods
 
-This document describes alternative ways to deploy AnonymousWall beyond the recommended Docker approach.
+This document describes alternative ways to deploy AnonymousWall beyond the recommended Podman approach.
 
 ## Method 1: Systemd Service (Direct JAR)
 
-For those who prefer running the JAR directly without Docker.
+For those who prefer running the JAR directly without containers.
 
 ### Prerequisites
 - Java 21 or higher installed on the system
-- MySQL and Redis running (locally or remotely)
+- Oracle ADB and Redis running (locally or remotely)
 
 ### Step 1: Build the Application
 
@@ -23,7 +23,7 @@ mvn clean package -DskipTests
 cat > /opt/anonymouswall/app.env << 'EOF'
 MICRONAUT_ENVIRONMENTS=prod
 JWT_GENERATOR_SIGNATURE_SECRET=your-secret-key-min-32-chars
-DATABASE_URL=jdbc:mysql://your-db-host:3306/anonymous_wall
+DATABASE_URL=jdbc:oracle:thin:@your-db-host:1521/anonymous_wall
 DATABASE_USER=admin
 DATABASE_PASSWORD=YourDatabasePassword
 REDIS_URI=redis://localhost:6379
@@ -160,7 +160,7 @@ cd /opt/anonymouswall
 # Set environment variables
 export MICRONAUT_ENVIRONMENTS=prod
 export JWT_GENERATOR_SIGNATURE_SECRET="your-secret"
-export DATABASE_URL="jdbc:mysql://..."
+export DATABASE_URL="jdbc:oracle:thin:@..."
 export DATABASE_USER="admin"
 export DATABASE_PASSWORD="password"
 
@@ -208,27 +208,27 @@ tmux kill-session -t anonymouswall
 
 ---
 
-## Method 3: Docker Without Compose
+## Method 3: Podman Without Compose
 
-For those who prefer direct Docker commands.
+For those who prefer direct Podman commands.
 
 ### Build Image
 
 ```bash
 cd /opt/anonymouswall
-docker build -t anonymouswall-backend:latest .
+podman build -t anonymouswall-backend:latest .
 ```
 
 ### Run Container
 
 ```bash
-docker run -d \
+podman run -d \
   --name anonymouswall-backend \
   --restart unless-stopped \
   -p 8080:8080 \
   -e MICRONAUT_ENVIRONMENTS=prod \
   -e JWT_GENERATOR_SIGNATURE_SECRET="your-secret" \
-  -e DATABASE_URL="jdbc:mysql://your-db:3306/anonymous_wall" \
+  -e DATABASE_URL="jdbc:oracle:thin:@your-db:1521/anonymous_wall" \
   -e DATABASE_USER="admin" \
   -e DATABASE_PASSWORD="password" \
   -e REDIS_URI="redis://your-redis:6379" \
@@ -240,22 +240,22 @@ docker run -d \
 
 ```bash
 # View logs
-docker logs -f anonymouswall-backend
+podman logs -f anonymouswall-backend
 
 # Stop container
-docker stop anonymouswall-backend
+podman stop anonymouswall-backend
 
 # Start container
-docker start anonymouswall-backend
+podman start anonymouswall-backend
 
 # Restart container
-docker restart anonymouswall-backend
+podman restart anonymouswall-backend
 
 # Remove container
-docker rm -f anonymouswall-backend
+podman rm -f anonymouswall-backend
 
 # Check health
-docker exec anonymouswall-backend curl http://localhost:8080/health
+podman exec anonymouswall-backend curl http://localhost:8080/health
 ```
 
 ---
@@ -355,7 +355,7 @@ metadata:
 type: Opaque
 stringData:
   jwt-secret: "your-secret-key-min-32-chars"
-  database-url: "jdbc:mysql://your-db-host:3306/anonymous_wall"
+  database-url: "jdbc:oracle:thin:@your-db-host:1521/anonymous_wall"
   database-user: "admin"
   database-password: "YourDatabasePassword"
 ```
@@ -366,7 +366,7 @@ stringData:
 # Create secret
 kubectl create secret generic anonymouswall-secrets \
   --from-literal=jwt-secret="your-secret" \
-  --from-literal=database-url="jdbc:mysql://..." \
+  --from-literal=database-url="jdbc:oracle:thin:@..." \
   --from-literal=database-user="admin" \
   --from-literal=database-password="password"
 
@@ -394,7 +394,7 @@ For quick testing without any service management.
 # Set environment variables
 export MICRONAUT_ENVIRONMENTS=prod
 export JWT_GENERATOR_SIGNATURE_SECRET="test-secret-for-development-only"
-export DATABASE_URL="jdbc:mysql://localhost:3306/anonymous_wall"
+export DATABASE_URL="jdbc:oracle:thin:@localhost:1521/anonymous_wall"
 export DATABASE_USER="root"
 export DATABASE_PASSWORD=""
 export REDIS_URI="redis://localhost:6379"
@@ -420,10 +420,10 @@ pkill -f "anonymouswall-0.1.jar"
 
 | Method | Pros | Cons | Use Case |
 |--------|------|------|----------|
-| **Docker Compose** | Easy, portable, includes dependencies | Requires Docker | Recommended for production |
+| **Podman Compose** | Easy, portable, includes dependencies | Requires Podman | Recommended for production |
 | **Systemd Service** | Native Linux integration, auto-restart | Manual dependency management | Traditional Linux deployments |
 | **Screen/Tmux** | Simple, interactive | Not production-ready | Development/debugging |
-| **Docker CLI** | Fine-grained control | More commands to manage | Custom Docker setups |
+| **Podman CLI** | Fine-grained control | More commands to manage | Custom Podman setups |
 | **Kubernetes** | Highly scalable, enterprise-ready | Complex setup | Large-scale deployments |
 | **Standalone JAR** | Simplest, no overhead | No auto-restart, manual management | Quick testing |
 
@@ -431,8 +431,8 @@ pkill -f "anonymouswall-0.1.jar"
 
 ## Recommendations
 
-1. **Production (OCI)**: Use Docker Compose (recommended) or Systemd service
-2. **Development**: Use Docker Compose or standalone JAR
+1. **Production (OCI)**: Use Podman Compose (recommended) or Systemd service
+2. **Development**: Use Podman Compose or standalone JAR
 3. **Enterprise**: Use Kubernetes
 4. **Testing**: Use Screen/Tmux or standalone JAR
 
@@ -440,4 +440,4 @@ pkill -f "anonymouswall-0.1.jar"
 
 ## Support
 
-For the primary deployment method (Docker), see [DEPLOYMENT.md](DEPLOYMENT.md).
+For the primary deployment method (Podman), see [DEPLOYMENT.md](DEPLOYMENT.md).
