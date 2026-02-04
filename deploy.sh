@@ -99,10 +99,12 @@ if [ ! -d "${APP_DIR}/wallet" ]; then
 fi
 
 # Create log directory if it doesn't exist
+# The directory must be writable by the container user (UID 1001 - micronaut user)
+# Set ownership to match container user UID for security
 print_info "Creating log directory..."
 sudo mkdir -p ${APP_DIR}/logs
+sudo chown 1001:1001 ${APP_DIR}/logs
 sudo chmod 755 ${APP_DIR}/logs
-sudo chown opc:opc ${APP_DIR}/logs
 
 # Stop existing containers
 print_info "Stopping existing containers..."
