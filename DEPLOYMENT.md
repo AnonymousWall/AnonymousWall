@@ -497,7 +497,8 @@ sudo docker logs anonymouswall-backend --tail 50
 # 4. Database startup delay
 # - The application now has a 60-second initialization timeout
 # - It will retry connecting to the database during startup
-# - Check if database is ready: docker exec anonymouswall-redis redis-cli ping
+# - Check if Redis is ready: docker exec anonymouswall-redis redis-cli ping
+# - For external MySQL/ADB, check connectivity from the host or bastion
 
 # Verify all containers are running
 sudo docker ps
