@@ -106,7 +106,7 @@ chmod 755 ${APP_DIR}/logs
 # Stop existing containers
 print_info "Stopping existing containers..."
 cd ${APP_DIR}
-${DOCKER_COMPOSE_CMD} -f ${COMPOSE_FILE} down || true
+${COMPOSE_CMD} -f ${COMPOSE_FILE} down || true
 
 # Pull or build the container image
 if [ -f "${APP_DIR}/Dockerfile" ]; then

@@ -486,7 +486,7 @@ sudo firewall-cmd --list-all
 sudo netstat -tlnp | grep 8080
 
 # Check Podman network
-docker network inspect anonymouswall-network
+podman network inspect anonymouswall-network
 ```
 
 ## Security Best Practices
