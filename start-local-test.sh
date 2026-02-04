@@ -70,7 +70,7 @@ echo ""
 
 # Wait for Oracle to be ready
 echo -n "Waiting for Oracle Database"
-for i in {1..60}; do
+for _ in {1..60}; do
     if docker compose -f docker-compose.local.yml ps | grep -q "oracle-db.*healthy"; then
         echo -e " ${GREEN}✓${NC}"
         break
@@ -81,7 +81,7 @@ done
 
 # Wait for Redis to be ready
 echo -n "Waiting for Redis"
-for i in {1..10}; do
+for _ in {1..10}; do
     if docker compose -f docker-compose.local.yml ps | grep -q "redis.*healthy"; then
         echo -e " ${GREEN}✓${NC}"
         break
@@ -92,7 +92,7 @@ done
 
 # Wait for application to be ready
 echo -n "Waiting for Application"
-for i in {1..30}; do
+for _ in {1..30}; do
     if docker compose -f docker-compose.local.yml ps | grep -q "app.*healthy"; then
         echo -e " ${GREEN}✓${NC}"
         break

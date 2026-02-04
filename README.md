@@ -15,6 +15,12 @@ A Micronaut-based REST API for anonymous campus social networking. Users registe
 7. [Setup & Running](#setup--running)
 8. [Known Flaws & Limitations](#known-flaws--limitations)
 
+**Quick References:**
+- 📋 [Docker Quick Reference](DOCKER_QUICKREF.md) - Fast command lookup
+- 🐳 [Docker Compose Comparison](DOCKER_COMPOSE_COMPARISON.md) - Detailed config comparison
+- 🧪 [Local Testing Guide](LOCAL_TESTING.md) - Oracle setup for production mimic
+- 🚀 [Production Deployment](DEPLOYMENT.md) - OCI deployment guide
+
 ---
 
 ## Project Overview

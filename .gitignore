@@ -16,6 +16,7 @@ out/
 
 # Environment files - never commit secrets!
 # .env is user-specific and should never be committed
+# .env.local is a template and is tracked for reference
 .env
 
 # Logs
