@@ -11,9 +11,8 @@ echo "========================================="
 # Step 1: Prepare directories
 echo "[1/5] Preparing application directories..."
 sudo mkdir -p /opt/anonymouswall/logs /opt/anonymouswall/wallet
-sudo chown opc:opc /opt/anonymouswall
-sudo chmod 755 /opt/anonymouswall
-sudo chmod 777 /opt/anonymouswall/logs
+sudo chown 1001:1001 /opt/anonymouswall/logs
+sudo chmod 755 /opt/anonymouswall/logs
 sudo chmod 755 /opt/anonymouswall/wallet
 echo "✓ Directories prepared"
 

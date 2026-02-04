@@ -117,9 +117,8 @@ ssh -i $SSH_KEY -J opc@$BASTION_IP opc@$INSTANCE_IP
 # Prepare application directory
 sudo mkdir -p /opt/anonymouswall/logs
 sudo mkdir -p /opt/anonymouswall/wallet
-sudo chown opc:opc /opt/anonymouswall
-sudo chmod 755 /opt/anonymouswall
-sudo chmod 777 /opt/anonymouswall/logs
+sudo chown 1001:1001 /opt/anonymouswall/logs
+sudo chmod 755 /opt/anonymouswall/logs
 sudo chmod 755 /opt/anonymouswall/wallet
 
 # Extract files
@@ -461,9 +460,10 @@ podman exec anonymouswall-backend env | grep -E 'DATABASE|JWT'
 If you see errors like "Unable to invoke factory method in class org.apache.logging.log4j.core.appender.RollingFileAppender":
 
 ```bash
-# 1. Ensure the logs directory exists and is writable
+# 1. Ensure the logs directory exists and is writable by container user (UID 1001)
 sudo mkdir -p /opt/anonymouswall/logs
-sudo chmod 777 /opt/anonymouswall/logs
+sudo chown 1001:1001 /opt/anonymouswall/logs
+sudo chmod 755 /opt/anonymouswall/logs
 ls -la /opt/anonymouswall/logs
 
 # 2. Verify the volume is mounted in the container
