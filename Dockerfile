@@ -36,7 +36,7 @@ COPY --from=builder /app/target/anonymouswall-*.jar app.jar
 
 # Create log directory with proper permissions
 # Directory: 755 (rwxr-xr-x) - owner can write, others can read/execute
-# Files will be created with 640 (rw-r-----) permissions by log4j2.xml config
+# Log files will be created with OS default umask (typically 644)
 RUN mkdir -p /app/logs && \
     chmod 755 /app && \
     chmod 755 /app/logs && \

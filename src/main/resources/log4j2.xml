@@ -40,7 +40,7 @@
             File Appender: Main application logs (OPTIONAL)
             - ignoreExceptions="true": Won't crash app if file system is unavailable
             - createOnDemand="true": Only creates files when needed (saves resources)
-            - filePermissions: 640 (owner read/write, group read only - security best practice)
+            - File permissions controlled by OS umask (typically 644 or 640)
             - Rolls over daily or at 10MB
             - Keeps 30 days of logs
         -->
@@ -48,8 +48,7 @@
                       fileName="${log.dir}/${app.name}.log"
                       filePattern="${log.dir}/${app.name}-%d{yyyy-MM-dd}-%i.log.gz"
                       ignoreExceptions="true"
-                      createOnDemand="true"
-                      filePermissions="rw-r-----">
+                      createOnDemand="true">
             <PatternLayout pattern="${log.pattern}"/>
             <Policies>
                 <!-- Roll over every day or when file size reaches 10MB -->
@@ -68,8 +67,7 @@
                       fileName="${log.dir}/${app.name}-error.log"
                       filePattern="${log.dir}/${app.name}-error-%d{yyyy-MM-dd}-%i.log.gz"
                       ignoreExceptions="true"
-                      createOnDemand="true"
-                      filePermissions="rw-r-----">
+                      createOnDemand="true">
             <PatternLayout pattern="${log.pattern}"/>
             <Policies>
                 <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
@@ -90,8 +88,7 @@
                       fileName="${log.dir}/${app.name}-debug.log"
                       filePattern="${log.dir}/${app.name}-debug-%d{yyyy-MM-dd}-%i.log.gz"
                       ignoreExceptions="true"
-                      createOnDemand="true"
-                      filePermissions="rw-r-----">
+                      createOnDemand="true">
             <PatternLayout pattern="${log.pattern}"/>
             <Policies>
                 <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
