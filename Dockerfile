@@ -35,9 +35,11 @@ WORKDIR /app
 COPY --from=builder /app/target/anonymouswall-*.jar app.jar
 
 # Create log directory with proper permissions
+# Directory: 755 (rwxr-xr-x) - owner can write, others can read/execute
+# Files will be created with 640 (rw-r-----) permissions by log4j2.xml config
 RUN mkdir -p /app/logs && \
     chmod 755 /app && \
-    chmod 777 /app/logs && \
+    chmod 755 /app/logs && \
     chown -R micronaut:micronaut /app
 
 # Switch to non-root user
