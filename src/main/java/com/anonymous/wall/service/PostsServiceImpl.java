@@ -11,6 +11,9 @@ import com.anonymous.wall.repository.PostRepository;
 import com.anonymous.wall.repository.CommentRepository;
 import com.anonymous.wall.repository.PostLikeRepository;
 import com.anonymous.wall.repository.UserRepository;
+import io.micronaut.cache.annotation.CacheInvalidate;
+import io.micronaut.cache.annotation.CachePut;
+import io.micronaut.cache.annotation.Cacheable;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
 import io.micronaut.transaction.annotation.Transactional;
@@ -45,9 +48,11 @@ public class PostsServiceImpl implements PostsService {
 
     /**
      * Create a new post
+     * Invalidates post cache for this user
      */
     @Override
     @Retryable(attempts = "3", delay = "500ms")
+    @CacheInvalidate(value = "post:findById", parameters = {"savedPost.id"})
     public Post createPost(CreatePostRequest request, UUID userId) {
         if (request.getTitle() == null || request.getTitle().trim().isEmpty()) {
             throw new IllegalArgumentException("Post title cannot be empty");
@@ -400,10 +405,13 @@ public class PostsServiceImpl implements PostsService {
      * For national posts: all authenticated users can like
      * Returns true if post is now liked, false if unliked
      * Uses atomic operations to prevent race conditions
+     * Invalidates post cache to ensure consistency
      */
     @Override
     @Transactional
     @Retryable(attempts = "5", delay = "100ms")
+    @CacheInvalidate(value = "post:findById", parameters = {"postId"}, all = true)
+    @CacheInvalidate(value = "post:userLikes", parameters = {"userId"}, all = true)
     public boolean toggleLike(UUID postId, UUID userId) {
         // Verify post exists
         Optional<Post> postOpt = postRepository.findById(postId);
@@ -439,8 +447,10 @@ public class PostsServiceImpl implements PostsService {
     /**
      * Get a single post with like/comment counts
      * Validates that the user has permission to view the post
+     * Cacheable with explicit key to prevent cache penetration
      */
     @Override
+    @Cacheable(value = "post:findById", parameters = {"postId", "currentUserId"})
     public Post getPost(UUID postId, UUID currentUserId) {
         log.debug("Fetching post: {}, user: {}", postId, currentUserId);
 
@@ -645,10 +655,12 @@ public class PostsServiceImpl implements PostsService {
      * Hide a post (soft-delete)
      * Only the post author can hide their own post
      * When a post is hidden, all its comments are also hidden
+     * Invalidates cache for consistency
      */
     @Override
     @Transactional
     @Retryable(attempts = "3", delay = "500ms")
+    @CacheInvalidate(value = "post:findById", parameters = {"postId"}, all = true)
     public Post hidePost(UUID postId, UUID userId) {
         // Verify post exists
         Optional<Post> postOpt = postRepository.findById(postId);
@@ -683,10 +695,12 @@ public class PostsServiceImpl implements PostsService {
      * Unhide a post (undo soft-delete)
      * Only the post author can unhide their own post
      * When a post is unhidden, all its comments are restored
+     * Invalidates cache for consistency
      */
     @Override
     @Transactional
     @Retryable(attempts = "3", delay = "500ms")
+    @CacheInvalidate(value = "post:findById", parameters = {"postId"}, all = true)
     public Post unhidePost(UUID postId, UUID userId) {
         // Verify post exists
         Optional<Post> postOpt = postRepository.findById(postId);
