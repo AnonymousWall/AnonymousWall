@@ -38,6 +38,11 @@ public class JwtTokenService {
             claims.put("email", user.getEmail());
             claims.put("verified", user.isVerified());
             claims.put("passwordSet", user.isPasswordSet());
+            
+            // Add schoolDomain to JWT claims to avoid redundant database lookups
+            if (user.getSchoolDomain() != null) {
+                claims.put("schoolDomain", user.getSchoolDomain());
+            }
 
             // Convert 24 hours to seconds (86400 seconds)
             Integer expirationSeconds = 86400;
@@ -73,6 +78,11 @@ public class JwtTokenService {
             claims.put("email", user.getEmail());
             claims.put("verified", user.isVerified());
             claims.put("passwordSet", user.isPasswordSet());
+            
+            // Add schoolDomain to JWT claims to avoid redundant database lookups
+            if (user.getSchoolDomain() != null) {
+                claims.put("schoolDomain", user.getSchoolDomain());
+            }
 
             // Add custom claims
             if (customClaims != null) {

@@ -22,7 +22,9 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Singleton
 public class PostsServiceImpl implements PostsService {
@@ -138,8 +140,47 @@ public class PostsServiceImpl implements PostsService {
             }
         }
 
-        // Enrich posts with like/comment counts and check if current user liked
-        posts.getContent().forEach(post -> enrichPost(post, currentUserId));
+        // Enrich posts with like/comment counts and check if current user liked (batch operation)
+        enrichPosts(posts.getContent(), currentUserId);
+
+        log.info("Posts retrieved: wall={}, count={}, user={}", wall, posts.getNumberOfElements(), currentUserId);
+        return posts;
+    }
+
+    /**
+     * Get posts by wall type with pagination (optimized - schoolDomain from JWT)
+     * Campus posts: only visible to users with the same school domain
+     * National posts: visible to all users
+     * This method avoids redundant user lookup by using schoolDomain from JWT claims
+     */
+    @Override
+    public Page<Post> getPostsByWall(String wall, Pageable pageable, UUID currentUserId, String schoolDomain) {
+        if (!wall.equals("campus") && !wall.equals("national")) {
+            throw new IllegalArgumentException("Wall must be 'campus' or 'national'");
+        }
+
+        log.debug("Fetching posts for wall: {}, page: {}, limit: {}, user: {}", wall, pageable.getNumber() + 1, pageable.getSize(), currentUserId);
+
+        Page<Post> posts;
+
+        if (wall.equals("national")) {
+            // National posts are visible to all users (default sort by newest), excluding hidden posts
+            posts = postRepository.findByWallAndHiddenFalseOrderByCreatedAtDesc("national", pageable);
+            log.debug("Retrieved {} national posts for user: {}", posts.getNumberOfElements(), currentUserId);
+        } else {
+            // Campus posts: only visible to users from the same school, excluding hidden posts
+            if (schoolDomain == null || schoolDomain.trim().isEmpty()) {
+                // User has no school domain, cannot see campus posts
+                log.warn("User has no school domain, cannot retrieve campus posts: {}", currentUserId);
+                posts = Page.empty();
+            } else {
+                posts = postRepository.findByWallAndSchoolDomainAndHiddenFalseOrderByCreatedAtDesc("campus", schoolDomain, pageable);
+                log.debug("Retrieved {} campus posts for user: {}, schoolDomain: {}", posts.getNumberOfElements(), currentUserId, schoolDomain);
+            }
+        }
+
+        // Enrich posts with like/comment counts and check if current user liked (batch operation)
+        enrichPosts(posts.getContent(), currentUserId);
 
         log.info("Posts retrieved: wall={}, count={}, user={}", wall, posts.getNumberOfElements(), currentUserId);
         return posts;
@@ -189,8 +230,51 @@ public class PostsServiceImpl implements PostsService {
             }
         }
 
-        // Enrich posts with like/comment counts and check if current user liked
-        posts.getContent().forEach(post -> enrichPost(post, currentUserId));
+        // Enrich posts with like/comment counts and check if current user liked (batch operation)
+        enrichPosts(posts.getContent(), currentUserId);
+
+        log.info("Posts retrieved: wall={}, sort={}, count={}, user={}", wall, sortBy, posts.getNumberOfElements(), currentUserId);
+        return posts;
+    }
+
+    /**
+     * Get posts by wall type with pagination and sorting (optimized - schoolDomain from JWT)
+     * Campus posts: only visible to users with the same school domain
+     * National posts: visible to all users
+     * This method avoids redundant user lookup by using schoolDomain from JWT claims
+     */
+    @Override
+    public Page<Post> getPostsByWall(String wall, Pageable pageable, UUID currentUserId, String schoolDomain, SortBy sortBy) {
+        if (!wall.equals("campus") && !wall.equals("national")) {
+            throw new IllegalArgumentException("Wall must be 'campus' or 'national'");
+        }
+
+        if (sortBy == null) {
+            sortBy = SortBy.NEWEST; // Default sorting
+        }
+
+        log.debug("Fetching posts for wall: {}, page: {}, limit: {}, sort: {}, user: {}", wall, pageable.getNumber() + 1, pageable.getSize(), sortBy, currentUserId);
+
+        Page<Post> posts;
+
+        if (wall.equals("national")) {
+            // National posts are visible to all users
+            posts = getPostsWithSort("national", null, pageable, sortBy);
+            log.debug("Retrieved {} national posts (sort: {}) for user: {}", posts.getNumberOfElements(), sortBy, currentUserId);
+        } else {
+            // Campus posts: only visible to users from the same school
+            if (schoolDomain == null || schoolDomain.trim().isEmpty()) {
+                // User has no school domain, cannot see campus posts
+                log.warn("User has no school domain, cannot retrieve campus posts with sort: {}", currentUserId);
+                posts = Page.empty();
+            } else {
+                posts = getPostsWithSort("campus", schoolDomain, pageable, sortBy);
+                log.debug("Retrieved {} campus posts (sort: {}) for user: {}, schoolDomain: {}", posts.getNumberOfElements(), sortBy, currentUserId, schoolDomain);
+            }
+        }
+
+        // Enrich posts with like/comment counts and check if current user liked (batch operation)
+        enrichPosts(posts.getContent(), currentUserId);
 
         log.info("Posts retrieved: wall={}, sort={}, count={}, user={}", wall, sortBy, posts.getNumberOfElements(), currentUserId);
         return posts;
@@ -417,6 +501,35 @@ public class PostsServiceImpl implements PostsService {
         if (currentUserId != null) {
             Optional<PostLike> userLike = postLikeRepository.findByPostIdAndUserId(post.getId(), currentUserId);
             post.setLiked(userLike.isPresent());
+        }
+    }
+
+    /**
+     * Batch enrich multiple posts with current user's like status
+     * This method eliminates N+1 query problem by fetching all likes in a single query
+     * Like and comment counts are already stored atomically in the database
+     */
+    private void enrichPosts(List<Post> posts, UUID currentUserId) {
+        // Like and comment counts are already set from database
+        // No need to count - they're atomically maintained
+
+        // Check if current user liked any of these posts (batch query)
+        if (currentUserId != null && !posts.isEmpty()) {
+            // Collect all post IDs
+            List<UUID> postIds = posts.stream()
+                .map(Post::getId)
+                .collect(Collectors.toList());
+
+            // Fetch all likes for these posts in a single query
+            List<PostLike> userLikes = postLikeRepository.findByUserIdAndPostIdIn(currentUserId, postIds);
+            
+            // Create a set of liked post IDs for O(1) lookup
+            Set<UUID> likedPostIds = userLikes.stream()
+                .map(PostLike::getPostId)
+                .collect(Collectors.toSet());
+
+            // Enrich all posts with like status
+            posts.forEach(post -> post.setLiked(likedPostIds.contains(post.getId())));
         }
     }
 
