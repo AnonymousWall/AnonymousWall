@@ -3,6 +3,8 @@ package com.anonymous.wall.controller;
 import com.anonymous.wall.entity.UserEntity;
 import com.anonymous.wall.mapper.UserMapper;
 import com.anonymous.wall.model.*;
+import com.anonymous.wall.repository.CommentRepository;
+import com.anonymous.wall.repository.PostRepository;
 import com.anonymous.wall.repository.UserRepository;
 import com.anonymous.wall.service.AuthService;
 import com.anonymous.wall.service.JwtTokenService;
@@ -31,6 +33,12 @@ public class AuthController {
 
     @Inject
     private UserRepository userRepository;
+
+    @Inject
+    private PostRepository postRepository;
+
+    @Inject
+    private CommentRepository commentRepository;
 
     @Inject
     private UserMapper userMapper;
@@ -336,6 +344,10 @@ public class AuthController {
 
             user.setProfileName(newProfileName.trim());
             userRepository.update(user);
+
+            // Update profile name in all associated posts and comments
+            postRepository.updateProfileNameByUserId(userId, newProfileName.trim());
+            commentRepository.updateProfileNameByUserId(userId, newProfileName.trim());
 
             log.info("PATCH /auth/profile/name - Profile name updated successfully for user: {}, newName={}", userId, newProfileName.trim());
             return HttpResponse.ok(userMapper.toDTO(user));

@@ -305,7 +305,7 @@ class ProfileNameServiceTests {
             testUser.setProfileName("Updated Name");
             userRepository.update(testUser);
 
-            // Verify post still has original name
+            // Verify post still has original name (profile name updates are handled by AuthController)
             Optional<Post> savedPost = postRepository.findById(post.getId());
             assertTrue(savedPost.isPresent());
             assertEquals("Original Name", savedPost.get().getProfileName());
@@ -333,7 +333,7 @@ class ProfileNameServiceTests {
             testUser.setProfileName("Updated Name");
             userRepository.update(testUser);
 
-            // Verify comment still has original name
+            // Verify comment still has original name (profile name updates are handled by AuthController)
             Optional<Comment> savedComment = commentRepository.findById(comment.getId());
             assertTrue(savedComment.isPresent());
             assertEquals("Original Name", savedComment.get().getProfileName());

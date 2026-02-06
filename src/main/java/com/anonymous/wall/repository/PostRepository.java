@@ -1,6 +1,7 @@
 package com.anonymous.wall.repository;
 
 import com.anonymous.wall.entity.Post;
+import io.micronaut.data.annotation.Query;
 import io.micronaut.data.jdbc.annotation.JdbcRepository;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
@@ -117,4 +118,11 @@ public interface PostRepository extends CrudRepository<Post, UUID> {
      * Find non-hidden campus posts by wall and domain, sorted by like count (least liked first)
      */
     Page<Post> findByWallAndSchoolDomainAndHiddenFalseOrderByLikeCountAsc(String wall, String schoolDomain, Pageable pageable);
+
+    // ===== Profile Name Update =====
+    /**
+     * Update profile name for all posts by a specific user
+     */
+    @Query("UPDATE posts SET profile_name = :profileName WHERE user_id = :userId")
+    void updateProfileNameByUserId(UUID userId, String profileName);
 }

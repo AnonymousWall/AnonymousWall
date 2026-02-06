@@ -1,6 +1,7 @@
 package com.anonymous.wall.repository;
 
 import com.anonymous.wall.entity.Comment;
+import io.micronaut.data.annotation.Query;
 import io.micronaut.data.jdbc.annotation.JdbcRepository;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
@@ -82,5 +83,12 @@ public interface CommentRepository extends CrudRepository<Comment, UUID> {
 
     void updateByPostId(UUID postId, boolean hidden);
 //    void updateHiddenTrueByPostId(Long postId);
+
+    // ===== Profile Name Update =====
+    /**
+     * Update profile name for all comments by a specific user
+     */
+    @Query("UPDATE comments SET profile_name = :profileName WHERE user_id = :userId")
+    void updateProfileNameByUserId(UUID userId, String profileName);
 
 }
