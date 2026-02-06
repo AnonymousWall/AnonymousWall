@@ -91,10 +91,10 @@ class PostsControllerHideCommentTests {
         jwtTokenDifferentSchool = jwtTokenService.generateToken(testUserDifferentSchool);
 
         // Create test posts
-        campusPost = new Post(testUserCampus.getId(), "Harvard campus post", "campus", "harvard.edu");
+        campusPost = new Post(testUserCampus.getId(), "Title", "Harvard campus post", "campus", "harvard.edu");
         campusPost = postRepository.save(campusPost);
 
-        nationalPost = new Post(testUserCampus.getId(), "National post", "national", null);
+        nationalPost = new Post(testUserCampus.getId(), "Title", "National post", "national", null);
         nationalPost = postRepository.save(nationalPost);
 
         // Create test comments via service to properly update post counts
@@ -425,7 +425,7 @@ class PostsControllerHideCommentTests {
         @DisplayName("Should not allow user without access to post to hide comments")
         void shouldNotAllowHideWithoutPostAccess() {
             // Create a campus post by testUserCampus
-            Post harvardOnlyPost = new Post(testUserCampus.getId(), "Harvard only post", "campus", "harvard.edu");
+            Post harvardOnlyPost = new Post(testUserCampus.getId(), "Title", "Harvard only post", "campus", "harvard.edu");
             harvardOnlyPost = postRepository.save(harvardOnlyPost);
 
             // Create a comment on this post
@@ -577,7 +577,7 @@ class PostsControllerHideCommentTests {
         @DisplayName("Should not allow user without access to post to unhide comments")
         void shouldNotAllowUnhideWithoutPostAccess() {
             // Create a campus post by testUserCampus
-            Post harvardOnlyPost = new Post(testUserCampus.getId(), "Harvard only post", "campus", "harvard.edu");
+            Post harvardOnlyPost = new Post(testUserCampus.getId(), "Title", "Harvard only post", "campus", "harvard.edu");
             harvardOnlyPost = postRepository.save(harvardOnlyPost);
 
             // Create and hide a comment on this post

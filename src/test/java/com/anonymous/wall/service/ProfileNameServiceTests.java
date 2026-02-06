@@ -70,7 +70,7 @@ class ProfileNameServiceTests {
         @DisplayName("Post should capture user's current profile name at creation")
         void postShouldCaptureCurrentProfileName() {
             // Arrange
-            CreatePostRequest request = new CreatePostRequest("Test post content");
+            CreatePostRequest request = new CreatePostRequest("Test Title", "Test post content");
 
             // Act
             Post post = postsService.createPost(request, userCustomName.getId());
@@ -89,7 +89,7 @@ class ProfileNameServiceTests {
         @DisplayName("Post with default 'Anonymous' profile name")
         void postWithDefaultAnonymousProfileName() {
             // Arrange
-            CreatePostRequest request = new CreatePostRequest("Anonymous post");
+            CreatePostRequest request = new CreatePostRequest("Test Title", "Anonymous post");
 
             // Act
             Post post = postsService.createPost(request, userDefaultName.getId());
@@ -107,7 +107,7 @@ class ProfileNameServiceTests {
         @DisplayName("Multiple posts should capture profile name at each creation time")
         void multiplePostsCaptureProfileNameAtCreation() {
             // First post
-            CreatePostRequest request1 = new CreatePostRequest("First post");
+            CreatePostRequest request1 = new CreatePostRequest("Test Title", "First post");
 
             Post post1 = postsService.createPost(request1, userDefaultName.getId());
             assertEquals("Anonymous", post1.getProfileName());
@@ -117,7 +117,7 @@ class ProfileNameServiceTests {
             userRepository.update(userDefaultName);
 
             // Second post
-            CreatePostRequest request2 = new CreatePostRequest("Second post");
+            CreatePostRequest request2 = new CreatePostRequest("Test Title", "Second post");
 
             Post post2 = postsService.createPost(request2, userDefaultName.getId());
             assertEquals("New Name", post2.getProfileName());
@@ -132,7 +132,7 @@ class ProfileNameServiceTests {
         @DisplayName("Post profile name should not be null")
         void postProfileNameShouldNotBeNull() {
             // Arrange
-            CreatePostRequest request = new CreatePostRequest("Test content");
+            CreatePostRequest request = new CreatePostRequest("Test Title", "Test content");
 
             // Act
             Post post = postsService.createPost(request, userCustomName.getId());
@@ -170,7 +170,7 @@ class ProfileNameServiceTests {
             userCustomName = userRepository.save(userCustomName);
 
             // Create test post
-            testPost = new Post(userDefaultName.getId(), "Test post", "campus", "harvard.edu");
+            testPost = new Post(userDefaultName.getId(), "Title", "Test post", "campus", "harvard.edu");
             testPost = postRepository.save(testPost);
         }
 
@@ -296,7 +296,7 @@ class ProfileNameServiceTests {
         @DisplayName("Post should retain profile name even if user changes their name")
         void postRetainsOriginalProfileName() {
             // Create post
-            CreatePostRequest postRequest = new CreatePostRequest("Post with original name");
+            CreatePostRequest postRequest = new CreatePostRequest("Retain Title", "Post with original name");
 
             Post post = postsService.createPost(postRequest, testUser.getId());
             assertEquals("Original Name", post.getProfileName());
@@ -320,7 +320,7 @@ class ProfileNameServiceTests {
         @DisplayName("Comment should retain profile name even if user changes their name")
         void commentRetainsOriginalProfileName() {
             // Create post
-            Post testPost = new Post(testUser.getId(), "Test post", "campus", "harvard.edu");
+            Post testPost = new Post(testUser.getId(), "Title", "Test post", "campus", "harvard.edu");
             testPost = postRepository.save(testPost);
 
             // Create comment

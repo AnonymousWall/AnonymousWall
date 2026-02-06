@@ -64,7 +64,7 @@ public class TransactionRollbackTest {
         otherUser.setCreatedAt(ZonedDateTime.now());
         otherUser = userRepository.save(otherUser);
 
-        testPost = new Post(testUser.getId(), "Rollback test post", "national", null);
+        testPost = new Post(testUser.getId(), "Title", "Rollback test post", "national", null);
         testPost = postRepository.save(testPost);
     }
 

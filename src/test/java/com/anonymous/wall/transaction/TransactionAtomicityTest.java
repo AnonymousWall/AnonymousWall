@@ -55,7 +55,7 @@ public class TransactionAtomicityTest {
         testUser.setCreatedAt(ZonedDateTime.now());
         testUser = userRepository.save(testUser);
 
-        testPost = new Post(testUser.getId(), "Atomicity test post", "national", null);
+        testPost = new Post(testUser.getId(), "Title", "Atomicity test post", "national", null);
         testPost = postRepository.save(testPost);
     }
 

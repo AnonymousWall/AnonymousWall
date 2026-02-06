@@ -393,6 +393,7 @@ public class PostsController {
     private PostDTO mapPostToDTO(Post post) {
         PostDTO dto = new PostDTO();
         dto.setId(post.getId());
+        dto.setTitle(post.getTitle());
         dto.setContent(post.getContent());
         dto.setWall(PostDTOWall.valueOf(post.getWall().toUpperCase()));
         dto.setLikes(post.getLikeCount());

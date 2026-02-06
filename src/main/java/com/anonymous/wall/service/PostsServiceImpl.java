@@ -47,6 +47,14 @@ public class PostsServiceImpl implements PostsService {
     @Override
     @Retryable(attempts = "3", delay = "500ms")
     public Post createPost(CreatePostRequest request, UUID userId) {
+        if (request.getTitle() == null || request.getTitle().trim().isEmpty()) {
+            throw new IllegalArgumentException("Post title cannot be empty");
+        }
+
+        if (request.getTitle().length() > 255) {
+            throw new IllegalArgumentException("Post title exceeds maximum length of 255 characters");
+        }
+
         if (request.getContent() == null || request.getContent().trim().isEmpty()) {
             throw new IllegalArgumentException("Post content cannot be empty");
         }
@@ -82,7 +90,7 @@ public class PostsServiceImpl implements PostsService {
             }
         }
 
-        Post post = new Post(userId, request.getContent(), wall, schoolDomain);
+        Post post = new Post(userId, request.getTitle(), request.getContent(), wall, schoolDomain);
         post.setProfileName(user.getProfileName());
         Post savedPost = postRepository.save(post);
 

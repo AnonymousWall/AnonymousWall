@@ -19,6 +19,9 @@ public class Post {
     @MappedProperty("profile_name")
     private String profileName = "Anonymous";
 
+    @MappedProperty("title")
+    private String title;
+
     @MappedProperty("content")
     private String content;
 
@@ -56,8 +59,9 @@ public class Post {
     public Post() {
     }
 
-    public Post(UUID userId, String content, String wall, String schoolDomain) {
+    public Post(UUID userId, String title, String content, String wall, String schoolDomain) {
         this.userId = userId;
+        this.title = title;
         this.content = content;
         this.wall = wall != null ? wall : "campus";
         this.schoolDomain = schoolDomain;
@@ -80,6 +84,9 @@ public class Post {
 
     public String getProfileName() { return profileName; }
     public void setProfileName(String profileName) { this.profileName = profileName != null ? profileName : "Anonymous"; }
+
+    public String getTitle() { return title; }
+    public void setTitle(String title) { this.title = title; }
 
     public String getContent() { return content; }
     public void setContent(String content) { this.content = content; }

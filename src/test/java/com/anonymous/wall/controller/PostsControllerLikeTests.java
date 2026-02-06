@@ -94,10 +94,10 @@ class PostsControllerLikeTests {
         jwtTokenNoSchool = jwtTokenService.generateToken(testUserNoSchool);
 
         // Create test posts
-        campusPost = new Post(testUserCampus.getId(), "Harvard campus post", "campus", "harvard.edu");
+        campusPost = new Post(testUserCampus.getId(), "Title", "Harvard campus post", "campus", "harvard.edu");
         campusPost = postRepository.save(campusPost);
 
-        nationalPost = new Post(testUserCampus.getId(), "National post", "national", null);
+        nationalPost = new Post(testUserCampus.getId(), "Title", "National post", "national", null);
         nationalPost = postRepository.save(nationalPost);
     }
 

@@ -965,8 +965,13 @@ components:
     # ----- Posts -----
     CreatePostRequest:
       type: object
-      required: [content]
+      required: [title, content]
       properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 255
+          description: Post title
         content:
           type: string
           minLength: 1
@@ -984,6 +989,9 @@ components:
         id:
           type: string
           format: uuid
+        title:
+          type: string
+          description: Post title
         content:
           type: string
         wall:

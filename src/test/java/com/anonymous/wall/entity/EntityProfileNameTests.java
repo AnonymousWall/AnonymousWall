@@ -83,7 +83,7 @@ class EntityProfileNameTests {
         @BeforeEach
         void setUp() {
             userId = UUID.randomUUID();
-            post = new Post(userId, "Test content", "campus", "harvard.edu");
+            post = new Post(userId, "Title", "Test content", "campus", "harvard.edu");
         }
 
         @Test
@@ -109,7 +109,7 @@ class EntityProfileNameTests {
         @Test
         @DisplayName("Post constructor should initialize profile name to Anonymous")
         void postConstructorInitializesProfileName() {
-            Post newPost = new Post(userId, "Content", "national", null);
+            Post newPost = new Post(userId, "Title", "Content", "national", null);
             assertEquals("Anonymous", newPost.getProfileName());
         }
 
@@ -126,10 +126,10 @@ class EntityProfileNameTests {
         @Test
         @DisplayName("Multiple posts can have different profile names")
         void multiplePostsWithDifferentNames() {
-            Post post1 = new Post(userId, "Content 1", "campus", "harvard.edu");
+            Post post1 = new Post(userId, "Title", "Content 1", "campus", "harvard.edu");
             post1.setProfileName("Name 1");
 
-            Post post2 = new Post(userId, "Content 2", "campus", "harvard.edu");
+            Post post2 = new Post(userId, "Title", "Content 2", "campus", "harvard.edu");
             post2.setProfileName("Name 2");
 
             assertEquals("Name 1", post1.getProfileName());
@@ -230,7 +230,7 @@ class EntityProfileNameTests {
         void allEntitiesHandleProfileNameConsistently() {
             // All should default to Anonymous
             UserEntity user = new UserEntity();
-            Post post = new Post(UUID.randomUUID(), "Content", "campus", "harvard.edu");
+            Post post = new Post(UUID.randomUUID(), "Title", "Content", "campus", "harvard.edu");
             Comment comment = new Comment(UUID.randomUUID(), UUID.randomUUID(), "Comment");
 
             assertEquals("Anonymous", user.getProfileName());
@@ -266,7 +266,7 @@ class EntityProfileNameTests {
             user.setId(userId);
             user.setProfileName("Custom Name");
 
-            Post post = new Post(userId, "Content", "campus", "harvard.edu");
+            Post post = new Post(userId, "Title", "Content", "campus", "harvard.edu");
             post.setProfileName("Custom Name");
 
             Comment comment = new Comment(UUID.randomUUID(), userId, "Comment");

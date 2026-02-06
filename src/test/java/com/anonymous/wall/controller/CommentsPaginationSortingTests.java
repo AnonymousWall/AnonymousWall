@@ -71,7 +71,7 @@ class CommentsPaginationSortingTests {
         jwtToken = jwtTokenService.generateToken(testUser);
 
         // Create test post
-        testPost = new Post(testUser.getId(), "Test post for comments", "campus", "harvard.edu");
+        testPost = new Post(testUser.getId(), "Title", "Test post for comments", "campus", "harvard.edu");
         testPost = postRepository.save(testPost);
 
         // Create test comments (30 comments for comprehensive testing) via service
@@ -238,7 +238,7 @@ class CommentsPaginationSortingTests {
         @DisplayName("Should handle post with no comments")
         void shouldHandlePostWithNoComments() {
             // Create a new post with no comments
-            Post emptyPost = new Post(testUser.getId(), "Empty post", "campus", "harvard.edu");
+            Post emptyPost = new Post(testUser.getId(), "Title", "Empty post", "campus", "harvard.edu");
             emptyPost = postRepository.save(emptyPost);
 
             HttpResponse<Map> response = client.toBlocking().exchange(
@@ -445,7 +445,7 @@ class CommentsPaginationSortingTests {
         @DisplayName("Should handle sorting with no comments")
         void shouldHandleSortingWithNoComments() {
             // Create empty post
-            Post emptyPost = new Post(testUser.getId(), "Empty post", "campus", "harvard.edu");
+            Post emptyPost = new Post(testUser.getId(), "Title", "Empty post", "campus", "harvard.edu");
             emptyPost = postRepository.save(emptyPost);
 
             HttpResponse<Map> response = client.toBlocking().exchange(

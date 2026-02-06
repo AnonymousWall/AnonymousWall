@@ -69,7 +69,7 @@ class PostsPaginationSortingTests {
         // Create test posts with different properties for sorting
         testPosts = new ArrayList<>();
         for (int i = 0; i < 25; i++) {
-            Post post = new Post(testUser.getId(), "Test post " + i, "campus", "harvard.edu");
+            Post post = new Post(testUser.getId(), "Test Title " + i, "Test post " + i, "campus", "harvard.edu");
             post.setLikeCount(i); // Vary like counts
             testPosts.add(postRepository.save(post));
         }
@@ -243,7 +243,7 @@ class PostsPaginationSortingTests {
         void shouldHandleExactPageBoundary() {
             // Create exactly 40 posts (2 full pages of 20)
             for (int i = 0; i < 15; i++) {
-                Post post = new Post(testUser.getId(), "Extra post " + i, "campus", "harvard.edu");
+                Post post = new Post(testUser.getId(), "Extra Title " + i, "Extra post " + i, "campus", "harvard.edu");
                 postRepository.save(post);
             }
 
