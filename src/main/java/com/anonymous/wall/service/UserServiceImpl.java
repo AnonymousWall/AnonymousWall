@@ -51,15 +51,17 @@ public class UserServiceImpl implements UserService {
         UserEntity user = userOpt.get();
         
         // Validate and set profile name
-        String newProfileName = profileName;
-        if (newProfileName == null || newProfileName.trim().isEmpty()) {
+        String newProfileName;
+        if (profileName == null || profileName.trim().isEmpty()) {
             newProfileName = "Anonymous";
+        } else {
+            newProfileName = profileName.trim();
         }
         
-        user.setProfileName(newProfileName.trim());
+        user.setProfileName(newProfileName);
         UserEntity updated = userRepository.update(user);
         
-        log.info("Profile name updated for user: {}, newName={}", userId, newProfileName.trim());
+        log.info("Profile name updated for user: {}, newName={}", userId, newProfileName);
         return updated;
     }
 
