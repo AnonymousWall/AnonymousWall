@@ -22,6 +22,7 @@ import org.junit.jupiter.api.*;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -356,7 +357,8 @@ class PostsControllerHideCommentTests {
         @Order(21)
         @DisplayName("Should return 404 when trying to hide non-existent comment")
         void shouldReturn404ForNonExistentComment() {
-            String endpoint = BASE_PATH + "/" + campusPost.getId() + "/comments/99999/hide";
+            UUID nonExistentCommentId = UUID.randomUUID();
+            String endpoint = BASE_PATH + "/" + campusPost.getId() + "/comments/" + nonExistentCommentId + "/hide";
 
             HttpClientResponseException exception = assertThrows(
                 HttpClientResponseException.class,
@@ -374,7 +376,8 @@ class PostsControllerHideCommentTests {
         @Order(22)
         @DisplayName("Should return 404 when post does not exist")
         void shouldReturn404WhenPostDoesNotExist() {
-            String endpoint = BASE_PATH + "/99999/comments/" + campusComment.getId() + "/hide";
+            UUID nonExistentPostId = UUID.randomUUID();
+            String endpoint = BASE_PATH + "/" + nonExistentPostId + "/comments/" + campusComment.getId() + "/hide";
 
             HttpClientResponseException exception = assertThrows(
                 HttpClientResponseException.class,
@@ -504,7 +507,8 @@ class PostsControllerHideCommentTests {
         @Order(31)
         @DisplayName("Should return 404 when trying to unhide non-existent comment")
         void shouldReturn404ForNonExistentCommentUnhide() {
-            String endpoint = BASE_PATH + "/" + campusPost.getId() + "/comments/99999/unhide";
+            UUID nonExistentCommentId = UUID.randomUUID();
+            String endpoint = BASE_PATH + "/" + campusPost.getId() + "/comments/" + nonExistentCommentId + "/unhide";
 
             HttpClientResponseException exception = assertThrows(
                 HttpClientResponseException.class,
@@ -522,7 +526,8 @@ class PostsControllerHideCommentTests {
         @Order(32)
         @DisplayName("Should return 404 when post does not exist for unhide")
         void shouldReturn404WhenPostDoesNotExistForUnhide() {
-            String endpoint = BASE_PATH + "/99999/comments/" + campusComment.getId() + "/unhide";
+            UUID nonExistentPostId = UUID.randomUUID();
+            String endpoint = BASE_PATH + "/" + nonExistentPostId + "/comments/" + campusComment.getId() + "/unhide";
 
             HttpClientResponseException exception = assertThrows(
                 HttpClientResponseException.class,
@@ -692,7 +697,7 @@ class PostsControllerHideCommentTests {
         @DisplayName("Should maintain other comment data when hiding")
         void shouldMaintainCommentDataWhenHiding() {
             String originalText = campusComment.getText();
-            Long originalPostId = campusComment.getPostId();
+            UUID originalPostId = campusComment.getPostId();
 
             String endpoint = BASE_PATH + "/" + campusPost.getId() + "/comments/" + campusComment.getId() + "/hide";
             client.toBlocking().exchange(

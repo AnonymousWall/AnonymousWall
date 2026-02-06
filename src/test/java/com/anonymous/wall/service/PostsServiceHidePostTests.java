@@ -14,6 +14,7 @@ import org.junit.jupiter.api.*;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -104,7 +105,7 @@ class PostsServiceHidePostTests {
         void shouldThrowExceptionForNonExistentPost() {
             // Act & Assert
             IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
-                    postsService.hidePost(99999L, testUser.getId())
+                    postsService.hidePost(UUID.randomUUID(), testUser.getId())
             );
             assertEquals("Post not found", exception.getMessage());
         }
@@ -233,7 +234,7 @@ class PostsServiceHidePostTests {
         void shouldThrowExceptionForNonExistentPost() {
             // Act & Assert
             IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
-                    postsService.unhidePost(99999L, testUser.getId())
+                    postsService.unhidePost(UUID.randomUUID(), testUser.getId())
             );
             assertEquals("Post not found", exception.getMessage());
         }

@@ -9,7 +9,6 @@ import com.anonymous.wall.service.JwtTokenService;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.annotation.Body;
 import io.micronaut.http.annotation.Controller;
-import io.micronaut.http.annotation.Header;
 import io.micronaut.http.annotation.Post;
 import io.micronaut.http.annotation.Patch;
 import io.micronaut.security.annotation.Secured;
@@ -47,8 +46,11 @@ public class AuthController {
     @Secured(SecurityRule.IS_ANONYMOUS)
     public HttpResponse<Object> sendEmailCode(@Body SendEmailCodeRequest request) {
         try {
+            log.info("POST /auth/email/send-code - Sending verification code, email={}, purpose={}", request.getEmail(), request.getPurpose());
+
             // Validate email
             if (request.getEmail() == null || request.getEmail().trim().isEmpty()) {
+                log.warn("POST /auth/email/send-code - Invalid email provided");
                 return HttpResponse.badRequest(error("Invalid email"));
             }
 
@@ -57,19 +59,22 @@ public class AuthController {
 
             if (request.getPurpose() == SendEmailCodeRequestPurpose.REGISTER) {
                 if (userOpt.isPresent()) {
+                    log.warn("POST /auth/email/send-code - Email already registered: {}", request.getEmail());
                     return HttpResponse.status(io.micronaut.http.HttpStatus.CONFLICT);
                 }
             } else if (request.getPurpose() == SendEmailCodeRequestPurpose.LOGIN ||
                        request.getPurpose() == SendEmailCodeRequestPurpose.RESET_PASSWORD) {
                 if (userOpt.isEmpty()) {
+                    log.warn("POST /auth/email/send-code - Email not found: {}", request.getEmail());
                     return HttpResponse.badRequest(error("Email not found"));
                 }
             }
 
             authService.sendEmailCode(request);
+            log.info("POST /auth/email/send-code - Verification code sent successfully to email: {}", request.getEmail());
             return HttpResponse.ok(new MessageResponse("Verification code sent to email"));
         } catch (Exception e) {
-            log.error("Error sending email code", e);
+            log.error("POST /auth/email/send-code - Error sending email code", e);
             return HttpResponse.badRequest(error(e.getMessage()));
         }
     }
@@ -82,19 +87,24 @@ public class AuthController {
     @Secured(SecurityRule.IS_ANONYMOUS)
     public HttpResponse<Object> registerWithEmail(@Body RegisterEmailRequest request) {
         try {
+            log.info("POST /auth/register/email - Registering new user with email: {}", request.getEmail());
+
             UserEntity user = authService.registerWithEmail(request);
             String token = jwtTokenService.generateToken(user);
+
+            log.info("POST /auth/register/email - User registered successfully, userId={}", user.getId());
             return HttpResponse.created(success(
                 userMapper.toDTO(user),
                 token
             ));
         } catch (IllegalArgumentException e) {
+            log.warn("POST /auth/register/email - Registration failed: {}", e.getMessage());
             if (e.getMessage().contains("already registered")) {
                 return HttpResponse.status(io.micronaut.http.HttpStatus.CONFLICT);
             }
             return HttpResponse.badRequest(error(e.getMessage()));
         } catch (Exception e) {
-            log.error("Error registering user", e);
+            log.error("POST /auth/register/email - Error registering user", e);
             return HttpResponse.badRequest(error("Registration failed"));
         }
     }
@@ -107,16 +117,21 @@ public class AuthController {
     @Secured(SecurityRule.IS_ANONYMOUS)
     public HttpResponse<Object> loginWithEmail(@Body LoginEmailRequest request) {
         try {
+            log.info("POST /auth/login/email - Login attempt with email: {}", request.getEmail());
+
             UserEntity user = authService.loginWithEmail(request);
             String token = jwtTokenService.generateToken(user);
+
+            log.info("POST /auth/login/email - User logged in successfully, userId={}", user.getId());
             return HttpResponse.ok(success(
                 userMapper.toDTO(user),
                 token
             ));
         } catch (IllegalArgumentException e) {
+            log.warn("POST /auth/login/email - Login failed: {}", e.getMessage());
             return HttpResponse.badRequest(error(e.getMessage()));
         } catch (Exception e) {
-            log.error("Error logging in with email", e);
+            log.error("POST /auth/login/email - Error logging in with email", e);
             return HttpResponse.badRequest(error("Authentication failed"));
         }
     }
@@ -129,16 +144,21 @@ public class AuthController {
     @Secured(SecurityRule.IS_ANONYMOUS)
     public HttpResponse<Object> loginWithPassword(@Body PasswordLoginRequest request) {
         try {
+            log.info("POST /auth/login/password - Login attempt with email: {}", request.getEmail());
+
             UserEntity user = authService.loginWithPassword(request);
             String token = jwtTokenService.generateToken(user);
+
+            log.info("POST /auth/login/password - User logged in successfully, userId={}", user.getId());
             return HttpResponse.ok(success(
                 userMapper.toDTO(user),
                 token
             ));
         } catch (IllegalArgumentException e) {
+            log.warn("POST /auth/login/password - Login failed: {}", e.getMessage());
             return HttpResponse.badRequest(error(e.getMessage()));
         } catch (Exception e) {
-            log.error("Error logging in with password", e);
+            log.error("POST /auth/login/password - Error logging in with password", e);
             return HttpResponse.badRequest(error("Authentication failed"));
         }
     }
@@ -155,25 +175,33 @@ public class AuthController {
             // Extract user ID from JWT Principal (secure source of truth)
             Optional<java.security.Principal> principalOpt = httpRequest.getUserPrincipal();
             if (principalOpt.isEmpty()) {
+                log.warn("POST /auth/password/set - User not authenticated");
                 return HttpResponse.badRequest(error("User not authenticated"));
             }
 
             UUID userId = UUID.fromString(principalOpt.get().getName());
+            log.info("POST /auth/password/set - Setting password for user: {}", userId);
+
             Optional<UserEntity> userOpt = userRepository.findById(userId);
 
             if (userOpt.isEmpty()) {
+                log.warn("POST /auth/password/set - User not found: {}", userId);
                 return HttpResponse.badRequest(error("User not found"));
             }
 
             UserEntity user = authService.setPassword(request, userOpt.get());
             if (user == null) {
+                log.warn("POST /auth/password/set - Failed to set password for user: {}", userId);
                 return HttpResponse.badRequest(error("Failed to set password"));
             }
+
+            log.info("POST /auth/password/set - Password set successfully for user: {}", userId);
             return HttpResponse.ok(userMapper.toDTO(user));
         } catch (IllegalArgumentException e) {
+            log.warn("POST /auth/password/set - Invalid request: {}", e.getMessage());
             return HttpResponse.badRequest(error("Invalid request: " + e.getMessage()));
         } catch (Exception e) {
-            log.error("Error setting password", e);
+            log.error("POST /auth/password/set - Error setting password", e);
             return HttpResponse.badRequest(error(e.getMessage()));
         }
     }
@@ -190,25 +218,33 @@ public class AuthController {
             // Extract user ID from JWT Principal (secure source of truth)
             Optional<java.security.Principal> principalOpt = httpRequest.getUserPrincipal();
             if (principalOpt.isEmpty()) {
+                log.warn("POST /auth/password/change - User not authenticated");
                 return HttpResponse.badRequest(error("User not authenticated"));
             }
 
             UUID userId = UUID.fromString(principalOpt.get().getName());
+            log.info("POST /auth/password/change - Changing password for user: {}", userId);
+
             Optional<UserEntity> userOpt = userRepository.findById(userId);
 
             if (userOpt.isEmpty()) {
+                log.warn("POST /auth/password/change - User not found: {}", userId);
                 return HttpResponse.badRequest(error("User not found"));
             }
 
             UserEntity user = authService.changePassword(request, userOpt.get());
             if (user == null) {
+                log.warn("POST /auth/password/change - Failed to change password for user: {}", userId);
                 return HttpResponse.badRequest(error("Failed to change password"));
             }
+
+            log.info("POST /auth/password/change - Password changed successfully for user: {}", userId);
             return HttpResponse.ok(userMapper.toDTO(user));
         } catch (IllegalArgumentException e) {
+            log.warn("POST /auth/password/change - Invalid request: {}", e.getMessage());
             return HttpResponse.badRequest(error(e.getMessage()));
         } catch (Exception e) {
-            log.error("Error changing password", e);
+            log.error("POST /auth/password/change - Error changing password", e);
             return HttpResponse.badRequest(error("Password change failed"));
         }
     }
@@ -221,12 +257,17 @@ public class AuthController {
     @Secured(SecurityRule.IS_ANONYMOUS)
     public HttpResponse<Object> resetPasswordRequest(@Body PasswordResetRequestRequest request) {
         try {
+            log.info("POST /auth/password/reset-request - Password reset request for email: {}", request.getEmail());
+
             authService.requestPasswordReset(request);
+
+            log.info("POST /auth/password/reset-request - Password reset code sent successfully to email: {}", request.getEmail());
             return HttpResponse.ok(new MessageResponse("Password reset code sent to email"));
         } catch (IllegalArgumentException e) {
+            log.warn("POST /auth/password/reset-request - Invalid request: {}", e.getMessage());
             return HttpResponse.notFound(error(e.getMessage()));
         } catch (Exception e) {
-            log.error("Error requesting password reset", e);
+            log.error("POST /auth/password/reset-request - Error requesting password reset", e);
             return HttpResponse.badRequest(error("Failed to process request"));
         }
     }
@@ -239,16 +280,21 @@ public class AuthController {
     @Secured(SecurityRule.IS_ANONYMOUS)
     public HttpResponse<Object> resetPassword(@Body ResetPasswordRequest request) {
         try {
+            log.info("POST /auth/password/reset - Resetting password");
+
             UserEntity user = authService.resetPassword(request);
             String token = jwtTokenService.generateToken(user);
+
+            log.info("POST /auth/password/reset - Password reset successfully, userId={}", user.getId());
             return HttpResponse.ok(success(
                 userMapper.toDTO(user),
                 token
             ));
         } catch (IllegalArgumentException e) {
+            log.warn("POST /auth/password/reset - Invalid request: {}", e.getMessage());
             return HttpResponse.badRequest(error(e.getMessage()));
         } catch (Exception e) {
-            log.error("Error resetting password", e);
+            log.error("POST /auth/password/reset - Error resetting password", e);
             return HttpResponse.badRequest(error("Password reset failed"));
         }
     }
@@ -265,15 +311,18 @@ public class AuthController {
             // Get user ID from Principal (JWT token) - same approach as PostsController
             Optional<java.security.Principal> principalOpt = httpRequest.getUserPrincipal();
             if (principalOpt.isEmpty()) {
+                log.warn("PATCH /auth/profile/name - User not authenticated");
                 return HttpResponse.badRequest(error("User not authenticated"));
             }
 
             String principalName = principalOpt.get().getName();
             UUID userId = UUID.fromString(principalName);
+            log.info("PATCH /auth/profile/name - Updating profile name for user: {}", userId);
 
             Optional<UserEntity> userOpt = userRepository.findById(userId);
 
             if (userOpt.isEmpty()) {
+                log.warn("PATCH /auth/profile/name - User not found: {}", userId);
                 return HttpResponse.badRequest(error("User not found"));
             }
 
@@ -288,11 +337,13 @@ public class AuthController {
             user.setProfileName(newProfileName.trim());
             userRepository.update(user);
 
+            log.info("PATCH /auth/profile/name - Profile name updated successfully for user: {}, newName={}", userId, newProfileName.trim());
             return HttpResponse.ok(userMapper.toDTO(user));
         } catch (IllegalArgumentException e) {
+            log.warn("PATCH /auth/profile/name - Invalid user ID format: {}", e.getMessage());
             return HttpResponse.badRequest(error("Invalid user ID format: " + e.getMessage()));
         } catch (Exception e) {
-            log.error("Error updating profile name", e);
+            log.error("PATCH /auth/profile/name - Error updating profile name", e);
             return HttpResponse.badRequest(error("Failed to update profile name"));
         }
     }

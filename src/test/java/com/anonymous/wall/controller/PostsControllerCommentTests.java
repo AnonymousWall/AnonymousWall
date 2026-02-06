@@ -21,6 +21,7 @@ import org.junit.jupiter.api.*;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -264,11 +265,11 @@ class PostsControllerCommentTests {
         void shouldRejectCommentOnMissingPost() {
             Map<String, Object> request = new HashMap<>();
             request.put("text", "Comment on missing post");
-
+            UUID nonExistentPostId = UUID.randomUUID();
             HttpClientResponseException exception = assertThrows(
                 HttpClientResponseException.class,
                 () -> client.toBlocking().exchange(
-                    HttpRequest.POST(BASE_PATH + "/999999/comments", request)
+                    HttpRequest.POST(BASE_PATH + "/" + nonExistentPostId + "/comments", request)
                         .header("Authorization", "Bearer " + jwtTokenCampus),
                     CommentDTO.class
                 )
@@ -556,7 +557,7 @@ class PostsControllerCommentTests {
 
             // Verify in database
             Optional<com.anonymous.wall.entity.Comment> savedComment =
-                commentRepository.findById(Long.parseLong(commentDTO.getId()));
+                commentRepository.findById(commentDTO.getId());
             assertTrue(savedComment.isPresent());
             assertEquals("Anonymous", savedComment.get().getProfileName());
         }
@@ -583,7 +584,7 @@ class PostsControllerCommentTests {
 
             // Verify in database
             Optional<com.anonymous.wall.entity.Comment> savedComment =
-                commentRepository.findById(Long.parseLong(commentDTO.getId()));
+                commentRepository.findById(commentDTO.getId());
             assertTrue(savedComment.isPresent());
             assertEquals("Jane Smith", savedComment.get().getProfileName());
         }
@@ -613,7 +614,7 @@ class PostsControllerCommentTests {
 
             // Verify comment still has original profile name
             Optional<com.anonymous.wall.entity.Comment> comment =
-                commentRepository.findById(Long.parseLong(commentDTO.getId()));
+                commentRepository.findById(commentDTO.getId());
             assertTrue(comment.isPresent());
             assertEquals("Original Name", comment.get().getProfileName());
 
@@ -687,9 +688,9 @@ class PostsControllerCommentTests {
 
             // Verify both comments have their original names in database
             Optional<com.anonymous.wall.entity.Comment> comment1 =
-                commentRepository.findById(Long.parseLong(response1.body().getId()));
+                commentRepository.findById(response1.body().getId());
             Optional<com.anonymous.wall.entity.Comment> comment2 =
-                commentRepository.findById(Long.parseLong(response2.body().getId()));
+                commentRepository.findById(response2.body().getId());
 
             assertTrue(comment1.isPresent());
             assertTrue(comment2.isPresent());

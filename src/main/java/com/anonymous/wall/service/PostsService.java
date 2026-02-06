@@ -30,57 +30,57 @@ public interface PostsService {
     /**
      * Add a comment to a post
      */
-    Comment addComment(Long postId, CreateCommentRequest request, UUID userId);
+    Comment addComment(UUID postId, CreateCommentRequest request, UUID userId);
 
     /**
      * Get all comments for a post
      */
-    List<Comment> getComments(Long postId);
+    List<Comment> getComments(UUID postId);
 
     /**
      * Get comments for a post with pagination
      */
-    Page<Comment> getCommentsWithPagination(Long postId, Pageable pageable);
+    Page<Comment> getCommentsWithPagination(UUID postId, Pageable pageable);
 
     /**
      * Get comments for a post with pagination and sorting
      */
-    Page<Comment> getCommentsWithPagination(Long postId, Pageable pageable, SortBy sortBy);
+    Page<Comment> getCommentsWithPagination(UUID postId, Pageable pageable, SortBy sortBy);
 
     /**
      * Toggle like on a post (like if not liked, unlike if already liked)
      * Returns true if post is now liked, false if unliked
      */
-    boolean toggleLike(Long postId, UUID userId);
+    boolean toggleLike(UUID postId, UUID userId);
 
     /**
      * Get a single post with like/comment counts
      */
-    Post getPost(Long postId, UUID currentUserId);
+    Post getPost(UUID postId, UUID currentUserId);
 
     /**
      * Hide a comment (soft-delete)
      * Only the comment author can hide their own comment
      */
-    Comment hideComment(Long postId, Long commentId, UUID userId);
+    Comment hideComment(UUID postId, UUID commentId, UUID userId);
 
     /**
      * Unhide a comment (undo soft-delete)
      * Only the comment author can unhide their own comment
      */
-    Comment unhideComment(Long postId, Long commentId, UUID userId);
+    Comment unhideComment(UUID postId, UUID commentId, UUID userId);
 
     /**
      * Hide a post (soft-delete)
      * Only the post author can hide their own post
      * When a post is hidden, all its comments are also hidden
      */
-    Post hidePost(Long postId, UUID userId);
+    Post hidePost(UUID postId, UUID userId);
 
     /**
      * Unhide a post (undo soft-delete)
      * Only the post author can unhide their own post
      * When a post is unhidden, all its previously hidden comments are restored
      */
-    Post unhidePost(Long postId, UUID userId);
+    Post unhidePost(UUID postId, UUID userId);
 }

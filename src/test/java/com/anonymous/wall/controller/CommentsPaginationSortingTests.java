@@ -202,9 +202,10 @@ class CommentsPaginationSortingTests {
         @Test
         @DisplayName("Should return 404 for non-existent post")
         void shouldReturn404ForNonExistentPost() {
+            UUID nonExistentPostId = UUID.randomUUID();
             try {
                 client.toBlocking().exchange(
-                    HttpRequest.GET(BASE_PATH + "/99999/comments")
+                    HttpRequest.GET(BASE_PATH + "/" + nonExistentPostId + "/comments")
                         .header("Authorization", "Bearer " + jwtToken),
                     Map.class
                 );

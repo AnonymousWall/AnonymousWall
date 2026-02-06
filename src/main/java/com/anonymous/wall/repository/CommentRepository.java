@@ -9,65 +9,66 @@ import io.micronaut.data.repository.CrudRepository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @JdbcRepository(dialect = Dialect.MYSQL)
-public interface CommentRepository extends CrudRepository<Comment, Long> {
+public interface CommentRepository extends CrudRepository<Comment, UUID> {
 
     /**
      * Find all comments for a post
      */
-    List<Comment> findByPostId(Long postId);
+    List<Comment> findByPostId(UUID postId);
 
     /**
      * Find all non-hidden comments for a post
      */
-    List<Comment> findByPostIdAndHiddenFalse(Long postId);
+    List<Comment> findByPostIdAndHiddenFalse(UUID postId);
 
     // ===== Sorting by Created Time (Default) =====
     /**
      * Find comments for a post with pagination, sorted by created time (newest first)
      */
-    Page<Comment> findByPostIdOrderByCreatedAtDesc(Long postId, Pageable pageable);
+    Page<Comment> findByPostIdOrderByCreatedAtDesc(UUID postId, Pageable pageable);
 
     /**
      * Find non-hidden comments for a post with pagination, sorted by created time (newest first)
      */
-    Page<Comment> findByPostIdAndHiddenFalseOrderByCreatedAtDesc(Long postId, Pageable pageable);
+    Page<Comment> findByPostIdAndHiddenFalseOrderByCreatedAtDesc(UUID postId, Pageable pageable);
 
     /**
      * Find comments for a post with pagination, sorted by created time (oldest first)
      */
-    Page<Comment> findByPostIdOrderByCreatedAtAsc(Long postId, Pageable pageable);
+    Page<Comment> findByPostIdOrderByCreatedAtAsc(UUID postId, Pageable pageable);
 
     /**
      * Find non-hidden comments for a post with pagination, sorted by created time (oldest first)
      */
-    Page<Comment> findByPostIdAndHiddenFalseOrderByCreatedAtAsc(Long postId, Pageable pageable);
+    Page<Comment> findByPostIdAndHiddenFalseOrderByCreatedAtAsc(UUID postId, Pageable pageable);
 
     /**
      * Find comments for a post with pagination (generic - for compatibility)
      */
-    Page<Comment> findByPostId(Long postId, Pageable pageable);
+    Page<Comment> findByPostId(UUID postId, Pageable pageable);
 
     /**
      * Find non-hidden comments for a post with pagination (generic)
      */
-    Page<Comment> findByPostIdAndHiddenFalse(Long postId, Pageable pageable);
+    Page<Comment> findByPostIdAndHiddenFalse(UUID postId, Pageable pageable);
 
     /**
      * Count comments for a post
      */
-    long countByPostId(Long postId);
+    long countByPostId(UUID postId);
 
     /**
      * Count non-hidden comments for a post
      */
-    long countByPostIdAndHiddenFalse(Long postId);
+    long countByPostIdAndHiddenFalse(UUID postId);
 
     /**
      * Delete all comments for a post (useful for post deletion)
      */
-    long deleteByPostId(Long postId);
+    long deleteByPostId(UUID postId);
 
     /**
      * Update a comment (used for hiding/unhiding)
@@ -77,9 +78,9 @@ public interface CommentRepository extends CrudRepository<Comment, Long> {
     /**
      * Find all comments for a post (including hidden ones)
      */
-    List<Comment> findAllByPostId(Long postId);
+    List<Comment> findAllByPostId(UUID postId);
 
-    void updateByPostId(Long postId, boolean hidden);
+    void updateByPostId(UUID postId, boolean hidden);
 //    void updateHiddenTrueByPostId(Long postId);
 
 }

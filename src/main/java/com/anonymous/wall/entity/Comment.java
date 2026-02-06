@@ -10,11 +10,11 @@ import java.util.UUID;
 public class Comment {
 
     @Id
-    @GeneratedValue
-    private Long id;
+    @AutoPopulated
+    private UUID id;
 
     @MappedProperty("post_id")
-    private Long postId;
+    private UUID postId;
 
     @MappedProperty("user_id")
     private UUID userId;
@@ -40,7 +40,7 @@ public class Comment {
     public Comment() {
     }
 
-    public Comment(Long postId, UUID userId, String text) {
+    public Comment(UUID postId, UUID userId, String text) {
         this.postId = postId;
         this.userId = userId;
         this.text = text;
@@ -52,11 +52,11 @@ public class Comment {
 
     // ================= Getters & Setters =================
 
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    public UUID getId() { return id; }
+    public void setId(UUID id) { this.id = id; }
 
-    public Long getPostId() { return postId; }
-    public void setPostId(Long postId) { this.postId = postId; }
+    public UUID getPostId() { return postId; }
+    public void setPostId(UUID postId) { this.postId = postId; }
 
     public UUID getUserId() { return userId; }
     public void setUserId(UUID userId) { this.userId = userId; }

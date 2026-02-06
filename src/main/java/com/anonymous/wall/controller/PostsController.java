@@ -56,13 +56,18 @@ public class PostsController {
     public HttpResponse<Object> createPost(@Body CreatePostRequest request, HttpRequest<?> httpRequest) {
         try {
             UUID userId = getUserIdFromRequest(httpRequest);
+            log.info("POST /posts - Creating new post, user={}, content_length={}", userId, request.getContent().length());
+
             Post post = postsService.createPost(request, userId);
             PostDTO dto = mapPostToDTO(post);
+
+            log.info("POST /posts - Post created successfully, postId={}", dto.getId());
             return HttpResponse.created(dto);
         } catch (IllegalArgumentException e) {
+            log.warn("POST /posts - Bad request: {}", e.getMessage());
             return HttpResponse.badRequest(error(e.getMessage()));
         } catch (Exception e) {
-            log.error("Error creating post", e);
+            log.error("POST /posts - Error creating post", e);
             return HttpResponse.badRequest(error("Failed to create post"));
         }
     }
@@ -82,10 +87,12 @@ public class PostsController {
             @QueryValue(defaultValue = "NEWEST") String sort,
             HttpRequest<?> httpRequest) {
         try {
+            UUID userId = getUserIdFromRequest(httpRequest);
+            log.info("GET /posts - Listing posts, user={}, wall={}, page={}, limit={}, sort={}", userId, wall, page, limit, sort);
+
             if (page < 1) page = 1;
             if (limit < 1 || limit > 100) limit = 20;
 
-            UUID userId = getUserIdFromRequest(httpRequest);
             Pageable pageable = Pageable.from(page - 1, limit);
 
             com.anonymous.wall.model.SortBy sortBy = com.anonymous.wall.model.SortBy.parse(sort);
@@ -99,11 +106,13 @@ public class PostsController {
             response.put("data", dtos);
             response.put("pagination", createPaginationInfo(posts));
 
+            log.info("GET /posts - Successfully retrieved {} posts", dtos.size());
             return HttpResponse.ok(response);
         } catch (IllegalArgumentException e) {
+            log.warn("GET /posts - Bad request: {}", e.getMessage());
             return HttpResponse.badRequest(error(e.getMessage()));
         } catch (Exception e) {
-            log.error("Error listing posts", e);
+            log.error("GET /posts - Error listing posts", e);
             return HttpResponse.badRequest(error("Failed to list posts"));
         }
     }
@@ -115,24 +124,29 @@ public class PostsController {
     @io.micronaut.http.annotation.Post("/{postId}/comments")
     @Secured(SecurityRule.IS_AUTHENTICATED)
     public HttpResponse<Object> addComment(
-            @PathVariable Long postId,
+            @PathVariable UUID postId,
             @Body CreateCommentRequest request,
             HttpRequest<?> httpRequest) {
         try {
             UUID userId = getUserIdFromRequest(httpRequest);
+            log.info("POST /posts/{}/comments - Adding comment, user={}, text_length={}", postId, userId, request.getText().length());
+
             Comment comment = postsService.addComment(postId, request, userId);
             CommentDTO dto = mapCommentToDTO(comment);
+
+            log.info("POST /posts/{}/comments - Comment added successfully, commentId={}", postId, dto.getId());
             return HttpResponse.created(dto);
         } catch (IllegalArgumentException e) {
+            log.warn("POST /posts/{}/comments - Bad request: {}", postId, e.getMessage());
             if (e.getMessage().contains("not found")) {
                 return HttpResponse.notFound();
             }
             if (e.getMessage().contains("do not have access")) {
-                return HttpResponse.<Object>status(io.micronaut.http.HttpStatus.FORBIDDEN).body(error(e.getMessage()));
+                return HttpResponse.status(io.micronaut.http.HttpStatus.FORBIDDEN).body(error(e.getMessage()));
             }
             return HttpResponse.badRequest(error(e.getMessage()));
         } catch (Exception e) {
-            log.error("Error adding comment", e);
+            log.error("POST /posts/{}/comments - Error adding comment", postId, e);
             return HttpResponse.badRequest(error("Failed to add comment"));
         }
     }
@@ -146,17 +160,19 @@ public class PostsController {
     @Get("/{postId}/comments")
     @Secured(SecurityRule.IS_AUTHENTICATED)
     public HttpResponse<Object> getComments(
-            @PathVariable Long postId,
+            @PathVariable UUID postId,
             @QueryValue(defaultValue = "1") int page,
             @QueryValue(defaultValue = "20") int limit,
             @QueryValue(defaultValue = "NEWEST") String sort,
             HttpRequest<?> httpRequest) {
         try {
+            UUID userId = getUserIdFromRequest(httpRequest);
+            log.info("GET /posts/{}/comments - Getting comments, user={}, page={}, limit={}, sort={}", postId, userId, page, limit, sort);
+
             // Validate pagination parameters
             if (page < 1) page = 1;
             if (limit < 1 || limit > 100) limit = 20;
 
-            UUID userId = getUserIdFromRequest(httpRequest);
             // This will validate visibility and throw if user doesn't have access
             postsService.getPost(postId, userId);
 
@@ -178,8 +194,10 @@ public class PostsController {
             response.put("data", dtos);
             response.put("pagination", pagination);
 
+            log.info("GET /posts/{}/comments - Successfully retrieved {} comments", postId, dtos.size());
             return HttpResponse.ok(response);
         } catch (IllegalArgumentException e) {
+            log.warn("GET /posts/{}/comments - Bad request: {}", postId, e.getMessage());
             if (e.getMessage().contains("not found")) {
                 return HttpResponse.notFound();
             }
@@ -188,7 +206,7 @@ public class PostsController {
             }
             return HttpResponse.badRequest(error(e.getMessage()));
         } catch (Exception e) {
-            log.error("Error getting comments", e);
+            log.error("GET /posts/{}/comments - Error getting comments", postId, e);
             return HttpResponse.badRequest(error("Failed to get comments"));
         }
     }
@@ -199,25 +217,29 @@ public class PostsController {
      */
     @io.micronaut.http.annotation.Post("/{postId}/likes")
     @Secured(SecurityRule.IS_AUTHENTICATED)
-    public HttpResponse<Object> likePost(@PathVariable Long postId, HttpRequest<?> httpRequest) {
+    public HttpResponse<Object> likePost(@PathVariable UUID postId, HttpRequest<?> httpRequest) {
         try {
             UUID userId = getUserIdFromRequest(httpRequest);
+            log.info("POST /posts/{}/likes - Toggling like, user={}", postId, userId);
+
             boolean isNowLiked = postsService.toggleLike(postId, userId);
 
             Map<String, Object> response = new HashMap<>();
             response.put("liked", isNowLiked);
 
+            log.info("POST /posts/{}/likes - Like toggled successfully, liked={}", postId, isNowLiked);
             return HttpResponse.ok(response);
         } catch (IllegalArgumentException e) {
+            log.warn("POST /posts/{}/likes - Bad request: {}", postId, e.getMessage());
             if (e.getMessage().contains("not found")) {
                 return HttpResponse.notFound();
             }
             if (e.getMessage().contains("do not have access")) {
-                return HttpResponse.<Object>status(io.micronaut.http.HttpStatus.FORBIDDEN).body(error(e.getMessage()));
+                return HttpResponse.status(io.micronaut.http.HttpStatus.FORBIDDEN).body(error(e.getMessage()));
             }
             return HttpResponse.badRequest(error(e.getMessage()));
         } catch (Exception e) {
-            log.error("Error liking post", e);
+            log.error("POST /posts/{}/likes - Error liking post", postId, e);
             return HttpResponse.badRequest(error("Failed to like post"));
         }
     }
@@ -229,28 +251,32 @@ public class PostsController {
     @Patch("/{postId}/comments/{commentId}/hide")
     @Secured(SecurityRule.IS_AUTHENTICATED)
     public HttpResponse<Object> hideComment(
-            @PathVariable Long postId,
-            @PathVariable Long commentId,
+            @PathVariable UUID postId,
+            @PathVariable UUID commentId,
             HttpRequest<?> httpRequest) {
         try {
             UUID userId = getUserIdFromRequest(httpRequest);
+            log.info("PATCH /posts/{}/comments/{}/hide - Hiding comment, user={}", postId, commentId, userId);
+
             postsService.hideComment(postId, commentId, userId);
 
             Map<String, String> response = new HashMap<>();
             response.put("message", "Comment hidden successfully");
 
+            log.info("PATCH /posts/{}/comments/{}/hide - Comment hidden successfully", postId, commentId);
             return HttpResponse.ok(response);
         } catch (IllegalArgumentException e) {
+            log.warn("PATCH /posts/{}/comments/{}/hide - Bad request: {}", postId, commentId, e.getMessage());
             if (e.getMessage().contains("not found")) {
                 return HttpResponse.notFound();
             }
             if (e.getMessage().contains("You can only hide your own comments") ||
                 e.getMessage().contains("do not have access")) {
-                return HttpResponse.<Object>status(io.micronaut.http.HttpStatus.FORBIDDEN).body(error(e.getMessage()));
+                return HttpResponse.status(io.micronaut.http.HttpStatus.FORBIDDEN).body(error(e.getMessage()));
             }
             return HttpResponse.badRequest(error(e.getMessage()));
         } catch (Exception e) {
-            log.error("Error hiding comment", e);
+            log.error("PATCH /posts/{}/comments/{}/hide - Error hiding comment", postId, commentId, e);
             return HttpResponse.badRequest(error("Failed to hide comment"));
         }
     }
@@ -262,28 +288,32 @@ public class PostsController {
     @Patch("/{postId}/comments/{commentId}/unhide")
     @Secured(SecurityRule.IS_AUTHENTICATED)
     public HttpResponse<Object> unhideComment(
-            @PathVariable Long postId,
-            @PathVariable Long commentId,
+            @PathVariable UUID postId,
+            @PathVariable UUID commentId,
             HttpRequest<?> httpRequest) {
         try {
             UUID userId = getUserIdFromRequest(httpRequest);
+            log.info("PATCH /posts/{}/comments/{}/unhide - Unhiding comment, user={}", postId, commentId, userId);
+
             postsService.unhideComment(postId, commentId, userId);
 
             Map<String, String> response = new HashMap<>();
             response.put("message", "Comment unhidden successfully");
 
+            log.info("PATCH /posts/{}/comments/{}/unhide - Comment unhidden successfully", postId, commentId);
             return HttpResponse.ok(response);
         } catch (IllegalArgumentException e) {
+            log.warn("PATCH /posts/{}/comments/{}/unhide - Bad request: {}", postId, commentId, e.getMessage());
             if (e.getMessage().contains("not found")) {
                 return HttpResponse.notFound();
             }
             if (e.getMessage().contains("You can only unhide your own comments") ||
                 e.getMessage().contains("do not have access")) {
-                return HttpResponse.<Object>status(io.micronaut.http.HttpStatus.FORBIDDEN).body(error(e.getMessage()));
+                return HttpResponse.status(io.micronaut.http.HttpStatus.FORBIDDEN).body(error(e.getMessage()));
             }
             return HttpResponse.badRequest(error(e.getMessage()));
         } catch (Exception e) {
-            log.error("Error unhiding comment", e);
+            log.error("PATCH /posts/{}/comments/{}/unhide - Error unhiding comment", postId, commentId, e);
             return HttpResponse.badRequest(error("Failed to unhide comment"));
         }
     }
@@ -295,26 +325,30 @@ public class PostsController {
     @Patch("/{postId}/hide")
     @Secured(SecurityRule.IS_AUTHENTICATED)
     public HttpResponse<Object> hidePost(
-            @PathVariable Long postId,
+            @PathVariable UUID postId,
             HttpRequest<?> httpRequest) {
         try {
             UUID userId = getUserIdFromRequest(httpRequest);
+            log.info("PATCH /posts/{}/hide - Hiding post, user={}", postId, userId);
+
             postsService.hidePost(postId, userId);
 
             Map<String, String> response = new HashMap<>();
             response.put("message", "Post hidden successfully");
 
+            log.info("PATCH /posts/{}/hide - Post hidden successfully", postId);
             return HttpResponse.ok(response);
         } catch (IllegalArgumentException e) {
+            log.warn("PATCH /posts/{}/hide - Bad request: {}", postId, e.getMessage());
             if (e.getMessage().contains("not found")) {
                 return HttpResponse.notFound();
             }
             if (e.getMessage().contains("You can only hide your own posts")) {
-                return HttpResponse.<Object>status(io.micronaut.http.HttpStatus.FORBIDDEN).body(error(e.getMessage()));
+                return HttpResponse.status(io.micronaut.http.HttpStatus.FORBIDDEN).body(error(e.getMessage()));
             }
             return HttpResponse.badRequest(error(e.getMessage()));
         } catch (Exception e) {
-            log.error("Error hiding post", e);
+            log.error("PATCH /posts/{}/hide - Error hiding post", postId, e);
             return HttpResponse.badRequest(error("Failed to hide post"));
         }
     }
@@ -326,26 +360,30 @@ public class PostsController {
     @Patch("/{postId}/unhide")
     @Secured(SecurityRule.IS_AUTHENTICATED)
     public HttpResponse<Object> unhidePost(
-            @PathVariable Long postId,
+            @PathVariable UUID postId,
             HttpRequest<?> httpRequest) {
         try {
             UUID userId = getUserIdFromRequest(httpRequest);
+            log.info("PATCH /posts/{}/unhide - Unhiding post, user={}", postId, userId);
+
             postsService.unhidePost(postId, userId);
 
             Map<String, String> response = new HashMap<>();
             response.put("message", "Post unhidden successfully");
 
+            log.info("PATCH /posts/{}/unhide - Post unhidden successfully", postId);
             return HttpResponse.ok(response);
         } catch (IllegalArgumentException e) {
+            log.warn("PATCH /posts/{}/unhide - Bad request: {}", postId, e.getMessage());
             if (e.getMessage().contains("not found")) {
                 return HttpResponse.notFound();
             }
             if (e.getMessage().contains("You can only unhide your own posts")) {
-                return HttpResponse.<Object>status(io.micronaut.http.HttpStatus.FORBIDDEN).body(error(e.getMessage()));
+                return HttpResponse.status(io.micronaut.http.HttpStatus.FORBIDDEN).body(error(e.getMessage()));
             }
             return HttpResponse.badRequest(error(e.getMessage()));
         } catch (Exception e) {
-            log.error("Error unhiding post", e);
+            log.error("PATCH /posts/{}/unhide - Error unhiding post", postId, e);
             return HttpResponse.badRequest(error("Failed to unhide post"));
         }
     }
@@ -354,7 +392,7 @@ public class PostsController {
 
     private PostDTO mapPostToDTO(Post post) {
         PostDTO dto = new PostDTO();
-        dto.setId(post.getId().toString());
+        dto.setId(post.getId());
         dto.setContent(post.getContent());
         dto.setWall(PostDTOWall.valueOf(post.getWall().toUpperCase()));
         dto.setLikes(post.getLikeCount());
@@ -375,8 +413,8 @@ public class PostsController {
 
     private CommentDTO mapCommentToDTO(Comment comment) {
         CommentDTO dto = new CommentDTO();
-        dto.setId(comment.getId().toString());
-        dto.setPostId(comment.getPostId().toString());
+        dto.setId(comment.getId());
+        dto.setPostId(comment.getPostId());
         dto.setText(comment.getText());
         dto.setCreatedAt(comment.getCreatedAt());
 

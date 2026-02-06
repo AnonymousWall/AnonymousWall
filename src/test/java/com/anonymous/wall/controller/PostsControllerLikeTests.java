@@ -20,6 +20,7 @@ import org.junit.jupiter.api.*;
 
 import java.util.HashMap;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -203,10 +204,11 @@ class PostsControllerLikeTests {
         @Test
         @DisplayName("Should fail like on non-existent post")
         void shouldFailOnMissingPost() {
+            UUID nonExistentPostId = UUID.randomUUID();
             HttpClientResponseException exception = assertThrows(
                 HttpClientResponseException.class,
                 () -> client.toBlocking().exchange(
-                    HttpRequest.POST(BASE_PATH + "/999999/likes", new HashMap<>())
+                    HttpRequest.POST(BASE_PATH + "/" + nonExistentPostId + "/likes", new HashMap<>())
                         .header("Authorization", "Bearer " + jwtTokenCampus),
                     PostDTO.class
                 )
