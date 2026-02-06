@@ -95,10 +95,10 @@ class PostsControllerCommentTests {
         jwtTokenNoSchool = jwtTokenService.generateToken(testUserNoSchool);
 
         // Create test posts
-        campusPost = new Post(testUserCampus.getId(), "Harvard campus post", "campus", "harvard.edu");
+        campusPost = new Post(testUserCampus.getId(), "Title", "Harvard campus post", "campus", "harvard.edu");
         campusPost = postRepository.save(campusPost);
 
-        nationalPost = new Post(testUserCampus.getId(), "National post", "national", null);
+        nationalPost = new Post(testUserCampus.getId(), "Title", "National post", "national", null);
         nationalPost = postRepository.save(nationalPost);
     }
 
@@ -531,7 +531,7 @@ class PostsControllerCommentTests {
             tokenCustomName = jwtTokenService.generateToken(userWithCustomName);
 
             // Create test post (post author doesn't matter for comment tests)
-            testPost = new Post(userWithDefaultName.getId(), "Test post for comments", "campus", "harvard.edu");
+            testPost = new Post(userWithDefaultName.getId(), "Title", "Test post for comments", "campus", "harvard.edu");
             testPost = postRepository.save(testPost);
         }
 

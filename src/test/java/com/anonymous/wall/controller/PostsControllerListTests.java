@@ -108,14 +108,14 @@ class PostsControllerListTests {
         @DisplayName("Should return only campus posts for user's school")
         void shouldReturnOnlyCampusPostsForSchool() {
             // Create Harvard posts
-            Post harvardPost1 = new Post(testUserHarvard.getId(), "Harvard post 1", "campus", "harvard.edu");
-            Post harvardPost2 = new Post(testUserHarvard.getId(), "Harvard post 2", "campus", "harvard.edu");
+            Post harvardPost1 = new Post(testUserHarvard.getId(), "Title", "Harvard post 1", "campus", "harvard.edu");
+            Post harvardPost2 = new Post(testUserHarvard.getId(), "Title", "Harvard post 2", "campus", "harvard.edu");
             postRepository.save(harvardPost1);
             postRepository.save(harvardPost2);
 
             // Create MIT posts
-            Post mitPost1 = new Post(testUserMIT.getId(), "MIT post 1", "campus", "mit.edu");
-            Post mitPost2 = new Post(testUserMIT.getId(), "MIT post 2", "campus", "mit.edu");
+            Post mitPost1 = new Post(testUserMIT.getId(), "Title", "MIT post 1", "campus", "mit.edu");
+            Post mitPost2 = new Post(testUserMIT.getId(), "Title", "MIT post 2", "campus", "mit.edu");
             postRepository.save(mitPost1);
             postRepository.save(mitPost2);
 
@@ -142,7 +142,7 @@ class PostsControllerListTests {
         @DisplayName("Should not show MIT campus posts to Harvard user")
         void shouldNotShowOtherSchoolPosts() {
             // Create MIT-only post
-            Post mitPost = new Post(testUserMIT.getId(), "MIT exclusive content", "campus", "mit.edu");
+            Post mitPost = new Post(testUserMIT.getId(), "Title", "MIT exclusive content", "campus", "mit.edu");
             postRepository.save(mitPost);
 
             // Harvard user requests campus posts
@@ -169,7 +169,7 @@ class PostsControllerListTests {
         @DisplayName("Should return empty campus posts for user without school")
         void shouldReturnEmptyForNoSchoolUser() {
             // Create some campus posts
-            Post harvardPost = new Post(testUserHarvard.getId(), "Harvard post", "campus", "harvard.edu");
+            Post harvardPost = new Post(testUserHarvard.getId(), "Title", "Harvard post", "campus", "harvard.edu");
             postRepository.save(harvardPost);
 
             // User without school requests campus
@@ -196,8 +196,8 @@ class PostsControllerListTests {
         @DisplayName("Should return national posts to any authenticated user")
         void shouldReturnNationalPostsToAll() {
             // Create national posts
-            Post nationalPost1 = new Post(testUserHarvard.getId(), "National post 1", "national", null);
-            Post nationalPost2 = new Post(testUserMIT.getId(), "National post 2", "national", null);
+            Post nationalPost1 = new Post(testUserHarvard.getId(), "Title", "National post 1", "national", null);
+            Post nationalPost2 = new Post(testUserMIT.getId(), "Title", "National post 2", "national", null);
             postRepository.save(nationalPost1);
             postRepository.save(nationalPost2);
 
@@ -220,8 +220,8 @@ class PostsControllerListTests {
         @DisplayName("Should not show campus posts when requesting national")
         void shouldNotMixWallTypes() {
             // Create both types
-            Post campusPost = new Post(testUserHarvard.getId(), "Campus only", "campus", "harvard.edu");
-            Post nationalPost = new Post(testUserHarvard.getId(), "National post", "national", null);
+            Post campusPost = new Post(testUserHarvard.getId(), "Title", "Campus only", "campus", "harvard.edu");
+            Post nationalPost = new Post(testUserHarvard.getId(), "Title", "National post", "national", null);
             postRepository.save(campusPost);
             postRepository.save(nationalPost);
 
@@ -253,7 +253,7 @@ class PostsControllerListTests {
         void shouldPaginateResults() {
             // Create 30 national posts
             for (int i = 1; i <= 30; i++) {
-                Post post = new Post(testUserHarvard.getId(), "Post " + i, "national", null);
+                Post post = new Post(testUserHarvard.getId(), "Title " + i, "National post " + i, "national", null);
                 postRepository.save(post);
             }
 
@@ -290,7 +290,7 @@ class PostsControllerListTests {
         void shouldHandlePageBoundaries() {
             // Create 15 posts
             for (int i = 1; i <= 15; i++) {
-                Post post = new Post(testUserHarvard.getId(), "Post " + i, "national", null);
+                Post post = new Post(testUserHarvard.getId(), "Title " + i, "National post " + i, "national", null);
                 postRepository.save(post);
             }
 
@@ -329,7 +329,7 @@ class PostsControllerListTests {
         void shouldHandleEmptyPage() {
             // Create only 5 posts
             for (int i = 1; i <= 5; i++) {
-                Post post = new Post(testUserHarvard.getId(), "Post " + i, "national", null);
+                Post post = new Post(testUserHarvard.getId(), "Title " + i, "National post " + i, "national", null);
                 postRepository.save(post);
             }
 
@@ -354,9 +354,9 @@ class PostsControllerListTests {
         @DisplayName("Should return posts in order")
         void shouldSortByNewestFirst() {
             // Create posts in order
-            Post post1 = new Post(testUserHarvard.getId(), "First post (oldest)", "national", null);
-            Post post2 = new Post(testUserHarvard.getId(), "Second post", "national", null);
-            Post post3 = new Post(testUserHarvard.getId(), "Third post (newest)", "national", null);
+            Post post1 = new Post(testUserHarvard.getId(), "Title", "First post (oldest)", "national", null);
+            Post post2 = new Post(testUserHarvard.getId(), "Title", "Second post", "national", null);
+            Post post3 = new Post(testUserHarvard.getId(), "Title", "Third post (newest)", "national", null);
 
             postRepository.save(post1);
             postRepository.save(post2);
@@ -383,7 +383,7 @@ class PostsControllerListTests {
         void shouldMaintainSortAcrossPages() {
             // Create 25 posts
             for (int i = 1; i <= 25; i++) {
-                Post post = new Post(testUserHarvard.getId(), "Post " + String.format("%02d", i), "national", null);
+                Post post = new Post(testUserHarvard.getId(), "Title " + String.format("%02d", i), "National post " + i, "national", null);
                 postRepository.save(post);
             }
 
@@ -419,7 +419,7 @@ class PostsControllerListTests {
         @DisplayName("Should include like and comment counts in response")
         void shouldIncludeStats() {
             // Create a post
-            Post post = new Post(testUserHarvard.getId(), "Post with stats", "national", null);
+            Post post = new Post(testUserHarvard.getId(), "Title", "Post with stats", "national", null);
             post.setLikeCount(5);
             post.setCommentCount(3);
             postRepository.save(post);
@@ -441,7 +441,7 @@ class PostsControllerListTests {
         @Test
         @DisplayName("Should anonymize author information")
         void shouldAnonymizeAuthor() {
-            Post post = new Post(testUserHarvard.getId(), "Anonymized post", "national", null);
+            Post post = new Post(testUserHarvard.getId(), "Title", "Anonymized post", "national", null);
             postRepository.save(post);
 
             HttpResponse<Map> response = client.toBlocking().exchange(
@@ -463,7 +463,7 @@ class PostsControllerListTests {
         @DisplayName("Should indicate if current user liked the post")
         void shouldShowUserLikeStatus() {
             // Create post
-            Post post = new Post(testUserHarvard.getId(), "Like status test", "national", null);
+            Post post = new Post(testUserHarvard.getId(), "Title", "Like status test", "national", null);
             postRepository.save(post);
 
             // User doesn't like - should show liked=false

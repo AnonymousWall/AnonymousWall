@@ -56,7 +56,7 @@ public class TransactionConcurrencyTest {
         testUser.setCreatedAt(ZonedDateTime.now());
         testUser = userRepository.save(testUser);
 
-        testPost = new Post(testUser.getId(), "Transaction test post", "national", null);
+        testPost = new Post(testUser.getId(), "Title", "Transaction test post", "national", null);
         testPost = postRepository.save(testPost);
     }
 

@@ -88,7 +88,7 @@ class PostsControllerHidePostTests {
         otherToken = jwtTokenService.generateToken(otherUser);
 
         // Create test post
-        testPost = new Post(authorUser.getId(), "Test post content", "campus", "harvard.edu");
+        testPost = new Post(authorUser.getId(), "Title", "Test post content", "campus", "harvard.edu");
         testPost = postRepository.save(testPost);
     }
 

@@ -57,7 +57,7 @@ class PostsServiceCommentsPaginationSortingTests {
         userId = testUser.getId();
 
         // Create test post
-        testPost = new Post(userId, "Test post for comments", "campus", "harvard.edu");
+        testPost = new Post(userId, "Title", "Test post for comments", "campus", "harvard.edu");
         testPost = postRepository.save(testPost);
 
         // Create test comments (40 comments for comprehensive testing) via service
@@ -137,7 +137,7 @@ class PostsServiceCommentsPaginationSortingTests {
         @DisplayName("Should return empty for post with no comments")
         void shouldReturnEmptyForPostWithNoComments() {
             // Create post with no comments
-            Post emptyPost = new Post(userId, "Empty post", "campus", "harvard.edu");
+            Post emptyPost = new Post(userId, "Title", "Empty post", "campus", "harvard.edu");
             emptyPost = postRepository.save(emptyPost);
 
             Pageable pageable = Pageable.from(0, 20);
@@ -357,7 +357,7 @@ class PostsServiceCommentsPaginationSortingTests {
         @Test
         @DisplayName("Should return empty comments with pagination and sorting")
         void shouldReturnEmptyCommentsWithPaginationAndSorting() {
-            Post emptyPost = new Post(userId, "Empty post", "campus", "harvard.edu");
+            Post emptyPost = new Post(userId, "Title", "Empty post", "campus", "harvard.edu");
             emptyPost = postRepository.save(emptyPost);
 
             Pageable pageable = Pageable.from(0, 20);

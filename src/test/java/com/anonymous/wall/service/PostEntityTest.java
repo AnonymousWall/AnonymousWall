@@ -22,7 +22,7 @@ class PostEntityTest {
             UUID userId = UUID.randomUUID();
             String content = "This is a campus post";
 
-            Post post = new Post(userId, content, "campus", "harvard.edu");
+            Post post = new Post(userId, "Test Title", content, "campus", "harvard.edu");
 
             assertNotNull(post);
             assertEquals(userId, post.getUserId());
@@ -42,7 +42,7 @@ class PostEntityTest {
             UUID userId = UUID.randomUUID();
             String content = "This is a national post";
 
-            Post post = new Post(userId, content, "national", null);
+            Post post = new Post(userId, "Test Title", content, "national", null);
 
             assertNotNull(post);
             assertEquals(userId, post.getUserId());
@@ -57,7 +57,7 @@ class PostEntityTest {
             UUID userId = UUID.randomUUID();
             String content = "A";
 
-            Post post = new Post(userId, content, "campus", "mit.edu");
+            Post post = new Post(userId, "Test Title", content, "campus", "mit.edu");
 
             assertEquals(1, post.getContent().length());
             assertEquals("A", post.getContent());
@@ -69,7 +69,7 @@ class PostEntityTest {
             UUID userId = UUID.randomUUID();
             String content = "X".repeat(5000);
 
-            Post post = new Post(userId, content, "campus", "stanford.edu");
+            Post post = new Post(userId, "Test Title", content, "campus", "stanford.edu");
 
             assertEquals(5000, post.getContent().length());
         }
@@ -80,7 +80,7 @@ class PostEntityTest {
             UUID userId = UUID.randomUUID();
             String content = "Post with emojis 🎉 @mentions #hashtags!!!";
 
-            Post post = new Post(userId, content, "campus", "cornell.edu");
+            Post post = new Post(userId, "Test Title", content, "campus", "cornell.edu");
 
             assertEquals(content, post.getContent());
         }
@@ -92,7 +92,7 @@ class PostEntityTest {
             String content = "Content";
 
             // When wall is null, it should default to "campus"
-            Post post = new Post(userId, content, null, "penn.edu");
+            Post post = new Post(userId, "Test Title", content, null, "penn.edu");
 
             // Check behavior - the constructor handles null wall
             String wall = post.getWall() != null ? post.getWall() : "campus";
@@ -189,12 +189,12 @@ class PostEntityTest {
             UUID userId = UUID.randomUUID();
 
             // Minimum length
-            Post minPost = new Post(userId, "A", "campus", "harvard.edu");
+            Post minPost = new Post(userId, "Title", "A", "campus", "harvard.edu");
             assertEquals(1, minPost.getContent().length());
 
             // Maximum length
             String maxContent = "X".repeat(5000);
-            Post maxPost = new Post(userId, maxContent, "campus", "harvard.edu");
+            Post maxPost = new Post(userId, "Test Title", maxContent, "campus", "harvard.edu");
             assertEquals(5000, maxPost.getContent().length());
         }
 
@@ -204,10 +204,10 @@ class PostEntityTest {
             UUID userId = UUID.randomUUID();
             String content = "Content";
 
-            Post campusPost = new Post(userId, content, "campus", "harvard.edu");
+            Post campusPost = new Post(userId, "Test Title", content, "campus", "harvard.edu");
             assertEquals("campus", campusPost.getWall());
 
-            Post nationalPost = new Post(userId, content, "national", null);
+            Post nationalPost = new Post(userId, "Test Title", content, "national", null);
             assertEquals("national", nationalPost.getWall());
         }
 
@@ -217,7 +217,7 @@ class PostEntityTest {
             UUID userId = UUID.randomUUID();
             String content = "Campus content";
 
-            Post post = new Post(userId, content, "campus", "mit.edu");
+            Post post = new Post(userId, "Test Title", content, "campus", "mit.edu");
 
             assertEquals("campus", post.getWall());
             assertNotNull(post.getSchoolDomain());
@@ -230,7 +230,7 @@ class PostEntityTest {
             UUID userId = UUID.randomUUID();
             String content = "National content";
 
-            Post post = new Post(userId, content, "national", null);
+            Post post = new Post(userId, "Title", content, "national", null);
 
             assertEquals("national", post.getWall());
             assertNull(post.getSchoolDomain());
@@ -245,7 +245,7 @@ class PostEntityTest {
         @DisplayName("Post should have created timestamp")
         void shouldHaveCreatedTimestamp() {
             UUID userId = UUID.randomUUID();
-            Post post = new Post(userId, "Content", "campus", "penn.edu");
+            Post post = new Post(userId, "Title", "Content", "campus", "penn.edu");
 
             assertNotNull(post.getCreatedAt());
         }
@@ -254,7 +254,7 @@ class PostEntityTest {
         @DisplayName("Post should have updated timestamp")
         void shouldHaveUpdatedTimestamp() {
             UUID userId = UUID.randomUUID();
-            Post post = new Post(userId, "Content", "campus", "duke.edu");
+            Post post = new Post(userId, "Title", "Content", "campus", "duke.edu");
 
             assertNotNull(post.getUpdatedAt());
         }
@@ -263,7 +263,7 @@ class PostEntityTest {
         @DisplayName("Initial created and updated timestamps should be equal or very close")
         void shouldHaveEqualInitialTimestamps() {
             UUID userId = UUID.randomUUID();
-            Post post = new Post(userId, "Content", "campus", "cornell.edu");
+            Post post = new Post(userId, "Title", "Content", "campus", "cornell.edu");
 
             // Allow for microsecond-level precision differences
             // The timestamps should be within 1 millisecond of each other
@@ -278,7 +278,7 @@ class PostEntityTest {
         @DisplayName("Should be able to update timestamp")
         void shouldBeAbleToUpdateTimestamp() {
             UUID userId = UUID.randomUUID();
-            Post post = new Post(userId, "Content", "campus", "yale.edu");
+            Post post = new Post(userId, "Title", "Content", "campus", "yale.edu");
 
             var originalCreatedAt = post.getCreatedAt();
             var originalUpdatedAt = post.getUpdatedAt();
@@ -299,7 +299,7 @@ class PostEntityTest {
         @DisplayName("Post should initialize with zero likes")
         void shouldInitializeWithZeroLikes() {
             UUID userId = UUID.randomUUID();
-            Post post = new Post(userId, "Content", "campus", "harvard.edu");
+            Post post = new Post(userId, "Title", "Content", "campus", "harvard.edu");
 
             assertEquals(0, post.getLikeCount());
         }
@@ -308,7 +308,7 @@ class PostEntityTest {
         @DisplayName("Post should initialize with zero comments")
         void shouldInitializeWithZeroComments() {
             UUID userId = UUID.randomUUID();
-            Post post = new Post(userId, "Content", "campus", "harvard.edu");
+            Post post = new Post(userId, "Title", "Content", "campus", "harvard.edu");
 
             assertEquals(0, post.getCommentCount());
         }
@@ -317,7 +317,7 @@ class PostEntityTest {
         @DisplayName("Post should initialize with not liked")
         void shouldInitializeWithNotLiked() {
             UUID userId = UUID.randomUUID();
-            Post post = new Post(userId, "Content", "campus", "harvard.edu");
+            Post post = new Post(userId, "Title", "Content", "campus", "harvard.edu");
 
             assertFalse(post.isLiked());
         }

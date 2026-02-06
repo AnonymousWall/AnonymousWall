@@ -55,7 +55,7 @@ public class TransactionConsistencyTest {
         testUser.setCreatedAt(ZonedDateTime.now());
         testUser = userRepository.save(testUser);
 
-        testPost = new Post(testUser.getId(), "Consistency test post", "national", null);
+        testPost = new Post(testUser.getId(), "Title", "Consistency test post", "national", null);
         testPost = postRepository.save(testPost);
     }
 

@@ -6,18 +6,108 @@ A Micronaut-based REST API for anonymous campus social networking. Users registe
 
 ## Table of Contents
 
-1. [Project Overview](#project-overview)
-2. [Project Structure](#project-structure)
-3. [Technology Stack](#technology-stack)
-4. [Database Schema](#database-schema)
-5. [API Documentation](#api-documentation)
-6. [Authentication & Authorization](#authentication--authorization)
-7. [Setup & Running](#setup--running)
-8. [Known Flaws & Limitations](#known-flaws--limitations)
+1. [Recent Changes](#recent-changes)
+2. [Project Overview](#project-overview)
+3. [Project Structure](#project-structure)
+4. [Technology Stack](#technology-stack)
+5. [Database Schema](#database-schema)
+6. [API Documentation](#api-documentation)
+7. [Authentication & Authorization](#authentication--authorization)
+8. [Setup & Running](#setup--running)
+9. [Known Flaws & Limitations](#known-flaws--limitations)
 
 ---
 
-## Project Overview
+## Recent Changes
+
+### Post Title Feature (February 2026)
+
+**Summary:** Posts now have a required `title` field. All endpoints that return posts have been updated to include the title.
+
+**Breaking Changes:**
+- ⚠️ `POST /api/v1/posts` now **requires** a `title` field (1-255 characters)
+- Old API requests without `title` will receive `400 Bad Request`
+- All clients must be updated to include `title` when creating posts
+
+**What Changed:**
+
+#### 1. Database Schema
+- Added `title VARCHAR(255)` column to `posts` table
+- Added `profile_name` and optimized column structure
+- Added atomic `like_count` and `comment_count` counters
+- Added `is_hidden` soft-delete flag and `version` for optimistic locking
+
+#### 2. Create Post Request
+**Before:**
+```json
+{ "content": "Post content", "wall": "campus" }
+```
+
+**After (REQUIRED):**
+```json
+{
+  "title": "Post Title",       // NEW - REQUIRED (1-255 chars)
+  "content": "Post content",   // REQUIRED (1-5000 chars)
+  "wall": "campus"             // Optional, defaults to "campus"
+}
+```
+
+#### 3. Post Response
+All GET endpoints (`/posts`, `/posts/{postId}`, `/comments`) now include:
+```json
+{
+  "id": "1",
+  "title": "Post Title",       // NEW
+  "content": "Post content",
+  "wall": "CAMPUS",
+  "likes": 5,
+  "comments": 2,
+  "liked": false,
+  "author": {...},
+  "createdAt": "2026-01-28T...",
+  "updatedAt": "2026-01-28T..."
+}
+```
+
+#### 4. Validation Rules
+- **Title:** Required, 1-255 characters, cannot be empty or whitespace-only
+- **Content:** Required, 1-5000 characters, cannot be empty or whitespace-only
+- **Wall:** Optional ("campus" or "national"), defaults to "campus"
+
+**Error Responses:**
+```json
+// Missing or empty title
+400 Bad Request
+{ "error": "Post title cannot be empty" }
+
+// Title exceeds 255 characters
+400 Bad Request
+{ "error": "Post title exceeds maximum length of 255 characters" }
+```
+
+#### 5. Affected Endpoints
+- ✅ `POST /api/v1/posts` - Create post (now requires title)
+- ✅ `GET /api/v1/posts` - List posts (now includes title)
+- ✅ `GET /api/v1/posts/{postId}` - Get single post (now includes title)
+- ✅ `POST /api/v1/posts/{postId}/like` - Returns post with title
+- ✅ `POST /api/v1/posts/{postId}/unlike` - Returns post with title
+- ✅ `GET /api/v1/posts/{postId}/comments` - Posts in response include title
+- ✅ `POST /api/v1/posts/{postId}/hide` - Returns post with title
+- ✅ `POST /api/v1/posts/{postId}/unhide` - Returns post with title
+
+#### 6. Implementation Details
+- **Entity:** `Post.java` - Added title field, getter/setter, and updated constructor
+- **Service:** `PostsServiceImpl.java` - Added title validation in `createPost()`
+- **Controller:** `PostsController.java` - Updated `mapPostToDTO()` to include title
+- **Database:** `01-schema.xml` - Added title column via Liquibase migration
+- **API Spec:** `api.yml` - Updated `CreatePostRequest` and `PostDTO` schemas
+
+**Migration:**
+- No manual migration required - Liquibase handles schema changes automatically
+- Existing posts will have NULL titles (database supports nullable for compatibility)
+- All new posts MUST provide a title
+
+---
 
 **Anonymous Wall** is a campus-specific social platform where:
 - Students register with their school email (e.g., student@harvard.edu)
@@ -136,11 +226,17 @@ CREATE TABLE users (
 ### Posts Table
 ```sql
 CREATE TABLE posts (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    id UUID PRIMARY KEY,
     user_id UUID NOT NULL REFERENCES users(id),
-    content VARCHAR(5000) NOT NULL,
+    profile_name VARCHAR(255) DEFAULT 'Anonymous',
+    title VARCHAR(255) NOT NULL,         -- Post title (max 255 characters)
+    content VARCHAR(5000) NOT NULL,      -- Post content (max 5000 characters)
     wall VARCHAR(20) DEFAULT 'campus',   -- "campus" or "national"
     school_domain VARCHAR(255),          -- NULL for national, set for campus
+    like_count INT DEFAULT 0,            -- Atomic counter for likes
+    comment_count INT DEFAULT 0,         -- Atomic counter for comments
+    is_hidden BOOLEAN DEFAULT false,     -- Soft-delete flag
+    version BIGINT DEFAULT 0,            -- Optimistic locking
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -149,8 +245,8 @@ CREATE TABLE posts (
 ### Comments Table
 ```sql
 CREATE TABLE comments (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT,
-    post_id BIGINT NOT NULL REFERENCES posts(id),
+    id UUID PRIMARY KEY,
+    post_id UUID NOT NULL REFERENCES posts(id),
     user_id UUID NOT NULL REFERENCES users(id),
     text VARCHAR(5000) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -160,8 +256,8 @@ CREATE TABLE comments (
 ### Post Likes Table
 ```sql
 CREATE TABLE post_likes (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT,
-    post_id BIGINT NOT NULL REFERENCES posts(id),
+    id UUID PRIMARY KEY,
+    post_id UUID NOT NULL REFERENCES posts(id),
     user_id UUID NOT NULL REFERENCES users(id),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(post_id, user_id)             -- One like per user per post
@@ -171,7 +267,7 @@ CREATE TABLE post_likes (
 ### Email Verification Codes Table
 ```sql
 CREATE TABLE email_verification_codes (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    id UUID PRIMARY KEY,
     email VARCHAR(255) NOT NULL,
     code VARCHAR(10) NOT NULL,
     purpose VARCHAR(50),                 -- "REGISTER", "LOGIN", "RESET_PASSWORD"
@@ -342,13 +438,15 @@ Authorization: Bearer {jwt-token}
 Content-Type: application/json
 
 {
+    "title": "My First Post Title",    // NEW - REQUIRED (1-255 chars)
     "content": "This is my first post!",
-    "wall": "campus"  // or "national"
+    "wall": "campus"  // or "national", optional, defaults to "campus"
 }
 
 Response: 201 Created
 {
-    "id": "1",
+    "id": "uuid",
+    "title": "My First Post Title",     // NEW
     "content": "This is my first post!",
     "wall": "CAMPUS",
     "likes": 0,
@@ -364,6 +462,28 @@ Response: 201 Created
 }
 ```
 
+**Request Validation:**
+- `title` is **required** (cannot be null, empty, or whitespace-only)
+- `title` maximum length: **255 characters**
+- `content` is **required** (cannot be null, empty, or whitespace-only)
+- `content` maximum length: **5000 characters**
+- `wall` is optional (defaults to "campus"), must be "campus" or "national"
+
+**Error Responses:**
+```json
+// Missing or empty title
+400 Bad Request
+{
+    "error": "Post title cannot be empty"
+}
+
+// Title exceeds 255 characters
+400 Bad Request
+{
+    "error": "Post title exceeds maximum length of 255 characters"
+}
+```
+
 #### 2. List Posts
 ```http
 GET /api/v1/posts?wall=campus&page=1&limit=20&sort=NEWEST
@@ -373,7 +493,8 @@ Response: 200 OK
 {
     "data": [
         {
-            "id": "1",
+            "id": "uuid",
+            "title": "Post Title",        // NEW
             "content": "Post content",
             "wall": "CAMPUS",
             "likes": 5,
@@ -403,14 +524,51 @@ Response: 200 OK
 - `limit` (default: 20) - Posts per page (max: 100)
 - `sort` (default: "NEWEST") - Sort order: NEWEST, OLDEST, MOST_LIKED, LEAST_LIKED
 
-#### 3. Toggle Like on Post
+#### 3. Like Post
 ```http
-POST /api/v1/posts/{postId}/likes
+POST /api/v1/posts/{postId}/like
 Authorization: Bearer {jwt-token}
 
 Response: 200 OK
 {
-    "liked": true  // or false if unlike
+    "id": "uuid",
+    "title": "Post Title",               // UPDATED
+    "content": "Post content",
+    "wall": "CAMPUS",
+    "likes": 6,
+    "comments": 2,
+    "liked": true,
+    "author": {
+        "id": "uuid",
+        "profileName": "John Doe",
+        "isAnonymous": true
+    },
+    "createdAt": "2026-01-28T...",
+    "updatedAt": "2026-01-28T..."
+}
+```
+
+#### 3b. Unlike Post
+```http
+POST /api/v1/posts/{postId}/unlike
+Authorization: Bearer {jwt-token}
+
+Response: 200 OK
+{
+    "id": "uuid",
+    "title": "Post Title",               // UPDATED
+    "content": "Post content",
+    "wall": "CAMPUS",
+    "likes": 5,
+    "comments": 2,
+    "liked": false,
+    "author": {
+        "id": "uuid",
+        "profileName": "John Doe",
+        "isAnonymous": true
+    },
+    "createdAt": "2026-01-28T...",
+    "updatedAt": "2026-01-28T..."
 }
 ```
 
@@ -426,8 +584,8 @@ Content-Type: application/json
 
 Response: 201 Created
 {
-    "id": "1",
-    "postId": "1",
+    "id": "uuid",
+    "postId": "uuid",
     "text": "Great post!",
     "author": {
         "id": "uuid",
@@ -436,7 +594,21 @@ Response: 201 Created
     },
     "createdAt": "2026-01-28T..."
 }
+
+Response: 400 Bad Request
+{
+    "error": "Comment text cannot be empty"
+}
+
+Response: 400 Bad Request
+{
+    "error": "Comment text exceeds maximum length of 5000 characters"
+}
 ```
+
+**Validation Rules:**
+- `text` is **required** (cannot be null, empty, or whitespace-only)
+- `text` maximum length: **5000 characters**
 
 #### 5. Get Comments for Post
 ```http
@@ -447,8 +619,8 @@ Response: 200 OK
 {
     "data": [
         {
-            "id": "1",
-            "postId": "1",
+            "id": "uuid",
+            "postId": "uuid",
             "text": "Great post!",
             "author": {
                 "id": "uuid",
@@ -472,14 +644,51 @@ Response: 200 OK
 - `limit` (default: 20) - Comments per page (max: 100)
 - `sort` (default: "NEWEST") - Sort order: NEWEST, OLDEST
 
-#### 6. Hide Post
+#### 6. Get Single Post
 ```http
-PATCH /api/v1/posts/{postId}/hide
+GET /api/v1/posts/{postId}
 Authorization: Bearer {jwt-token}
 
 Response: 200 OK
 {
-    "message": "Post hidden successfully"
+    "id": "uuid",
+    "title": "Post Title",               // UPDATED
+    "content": "Post content",
+    "wall": "CAMPUS",
+    "likes": 5,
+    "comments": 2,
+    "liked": false,
+    "author": {
+        "id": "uuid",
+        "profileName": "John Doe",
+        "isAnonymous": true
+    },
+    "createdAt": "2026-01-28T...",
+    "updatedAt": "2026-01-28T..."
+}
+```
+
+#### 7. Hide Post
+```http
+POST /api/v1/posts/{postId}/hide
+Authorization: Bearer {jwt-token}
+
+Response: 200 OK
+{
+    "id": "uuid",
+    "title": "Post Title",               // UPDATED
+    "content": "Post content",
+    "wall": "CAMPUS",
+    "likes": 5,
+    "comments": 2,
+    "liked": false,
+    "author": {
+        "id": "uuid",
+        "profileName": "John Doe",
+        "isAnonymous": true
+    },
+    "createdAt": "2026-01-28T...",
+    "updatedAt": "2026-01-28T..."
 }
 ```
 
@@ -488,14 +697,69 @@ Response: 200 OK
 - When a post is hidden, all its comments are also hidden
 - This is a soft-delete operation; data is preserved in the database
 
-#### 7. Unhide Post
+#### 8. Unhide Post
 ```http
-PATCH /api/v1/posts/{postId}/unhide
+POST /api/v1/posts/{postId}/unhide
 Authorization: Bearer {jwt-token}
 
 Response: 200 OK
 {
-    "message": "Post unhidden successfully"
+    "id": "uuid",
+    "title": "Post Title",               // UPDATED
+    "content": "Post content",
+    "wall": "CAMPUS",
+    "likes": 5,
+    "comments": 2,
+    "liked": false,
+    "author": {
+        "id": "uuid",
+        "profileName": "John Doe",
+        "isAnonymous": true
+    },
+    "createdAt": "2026-01-28T...",
+    "updatedAt": "2026-01-28T..."
+}
+```
+
+#### 9. Hide Comment
+```http
+POST /api/v1/posts/{postId}/comments/{commentId}/hide
+Authorization: Bearer {jwt-token}
+
+Response: 200 OK
+{
+    "id": "uuid",
+    "postId": "uuid",
+    "text": "Great post!",
+    "author": {
+        "id": "uuid",
+        "profileName": "Jane Smith",
+        "isAnonymous": true
+    },
+    "createdAt": "2026-01-28T..."
+}
+```
+
+**Notes:**
+- Only the comment author can hide their own comment
+- This is a soft-delete operation; data is preserved in the database
+
+#### 10. Unhide Comment
+```http
+POST /api/v1/posts/{postId}/comments/{commentId}/unhide
+Authorization: Bearer {jwt-token}
+
+Response: 200 OK
+{
+    "id": "uuid",
+    "postId": "uuid",
+    "text": "Great post!",
+    "author": {
+        "id": "uuid",
+        "profileName": "Jane Smith",
+        "isAnonymous": true
+    },
+    "createdAt": "2026-01-28T..."
 }
 ```
 

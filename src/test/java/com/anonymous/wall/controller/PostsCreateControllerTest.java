@@ -83,6 +83,7 @@ class PostsCreateControllerTest {
         @DisplayName("Should create campus post with valid content")
         void shouldCreateCampusPost() {
             Map<String, Object> request = new HashMap<>();
+            request.put("title", "Test Campus Post");
             request.put("content", "This is a great campus post!");
             request.put("wall", "campus");
 
@@ -114,6 +115,7 @@ class PostsCreateControllerTest {
         @DisplayName("Should create national post with valid content")
         void shouldCreateNationalPost() {
             Map<String, Object> request = new HashMap<>();
+            request.put("title", "Test National Post");
             request.put("content", "This is a national post visible to everyone!");
             request.put("wall", "national");
 
@@ -138,6 +140,7 @@ class PostsCreateControllerTest {
         @DisplayName("Should default to campus wall when not specified")
         void shouldDefaultToCampusWall() {
             Map<String, Object> request = new HashMap<>();
+            request.put("title", "Test Default Campus Post");
             request.put("content", "Default campus post");
 
             HttpResponse<PostDTO> response = client.toBlocking().exchange(
@@ -159,6 +162,7 @@ class PostsCreateControllerTest {
         void shouldCreatePostWithSpecialCharacters() {
             String content = "Check this out! @everyone #campus 💯 This is awesome🎉";
             Map<String, Object> request = new HashMap<>();
+            request.put("title", "Test Special Characters Post");
             request.put("content", content);
 
             HttpResponse<PostDTO> response = client.toBlocking().exchange(
@@ -172,12 +176,88 @@ class PostsCreateControllerTest {
         }
 
         @Test
+        @DisplayName("Should create post with special characters in title")
+        void shouldCreatePostWithSpecialCharactersInTitle() {
+            String title = "🎉 Special Post @mention #topic";
+            Map<String, Object> request = new HashMap<>();
+            request.put("title", title);
+            request.put("content", "Content with special title");
+
+            HttpResponse<PostDTO> response = client.toBlocking().exchange(
+                HttpRequest.POST(BASE_PATH, request)
+                    .header("Authorization", "Bearer " + jwtTokenCampus),
+                PostDTO.class
+            );
+
+            assertEquals(HttpStatus.CREATED, response.getStatus());
+            assertEquals(title, response.body().getTitle());
+        }
+
+        @Test
+        @DisplayName("Should create post with maximum title length (255 characters)")
+        void shouldCreatePostWithMaximumTitleLength() {
+            String title = "T".repeat(255);
+            Map<String, Object> request = new HashMap<>();
+            request.put("title", title);
+            request.put("content", "Content with max length title");
+
+            HttpResponse<PostDTO> response = client.toBlocking().exchange(
+                HttpRequest.POST(BASE_PATH, request)
+                    .header("Authorization", "Bearer " + jwtTokenCampus),
+                PostDTO.class
+            );
+
+            assertEquals(HttpStatus.CREATED, response.getStatus());
+            assertEquals(255, response.body().getTitle().length());
+            assertEquals(title, response.body().getTitle());
+        }
+
+        @Test
+        @DisplayName("Should create post with minimum title length (1 character)")
+        void shouldCreatePostWithMinimumTitleLength() {
+            Map<String, Object> request = new HashMap<>();
+            request.put("title", "T");
+            request.put("content", "Content with minimum title length");
+
+            HttpResponse<PostDTO> response = client.toBlocking().exchange(
+                HttpRequest.POST(BASE_PATH, request)
+                    .header("Authorization", "Bearer " + jwtTokenCampus),
+                PostDTO.class
+            );
+
+            assertEquals(HttpStatus.CREATED, response.getStatus());
+            assertEquals("T", response.body().getTitle());
+            assertEquals(1, response.body().getTitle().length());
+        }
+
+        @Test
+        @DisplayName("Should include title in response")
+        void shouldIncludeTitleInResponse() {
+            Map<String, Object> request = new HashMap<>();
+            request.put("title", "Test Title Response");
+            request.put("content", "Test content");
+
+            HttpResponse<PostDTO> response = client.toBlocking().exchange(
+                HttpRequest.POST(BASE_PATH, request)
+                    .header("Authorization", "Bearer " + jwtTokenCampus),
+                PostDTO.class
+            );
+
+            assertEquals(HttpStatus.CREATED, response.getStatus());
+            PostDTO postDTO = response.body();
+            assertNotNull(postDTO.getTitle());
+            assertEquals("Test Title Response", postDTO.getTitle());
+        }
+
+        @Test
         @DisplayName("Should create multiple posts from same user")
         void shouldCreateMultiplePostsFromSameUser() {
             Map<String, Object> request1 = new HashMap<>();
+            request1.put("title", "Test First Post");
             request1.put("content", "First post");
 
             Map<String, Object> request2 = new HashMap<>();
+            request2.put("title", "Test Second Post");
             request2.put("content", "Second post");
 
             HttpResponse<PostDTO> response1 = client.toBlocking().exchange(
@@ -207,6 +287,7 @@ class PostsCreateControllerTest {
         @DisplayName("Should fail without authentication")
         void shouldFailWithoutAuthentication() {
             Map<String, Object> request = new HashMap<>();
+            request.put("title", "Test Unauthorized Post");
             request.put("content", "Unauthorized post");
 
             HttpClientResponseException exception = assertThrows(
@@ -223,7 +304,98 @@ class PostsCreateControllerTest {
         @DisplayName("Should fail with empty content")
         void shouldFailWithEmptyContent() {
             Map<String, Object> request = new HashMap<>();
+            request.put("title", "Test Empty Content");
             request.put("content", "");
+
+            HttpClientResponseException exception = assertThrows(
+                HttpClientResponseException.class,
+                () -> client.toBlocking().exchange(
+                    HttpRequest.POST(BASE_PATH, request)
+                        .header("Authorization", "Bearer " + jwtTokenCampus),
+                    PostDTO.class
+                )
+            );
+            assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
+        }
+
+        @Test
+        @DisplayName("Should fail when title is missing")
+        void shouldFailWithMissingTitle() {
+            Map<String, Object> request = new HashMap<>();
+            request.put("content", "Content without title");
+
+            HttpClientResponseException exception = assertThrows(
+                HttpClientResponseException.class,
+                () -> client.toBlocking().exchange(
+                    HttpRequest.POST(BASE_PATH, request)
+                        .header("Authorization", "Bearer " + jwtTokenCampus),
+                    PostDTO.class
+                )
+            );
+            assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
+        }
+
+        @Test
+        @DisplayName("Should fail with empty title")
+        void shouldFailWithEmptyTitle() {
+            Map<String, Object> request = new HashMap<>();
+            request.put("title", "");
+            request.put("content", "Content with empty title");
+
+            HttpClientResponseException exception = assertThrows(
+                HttpClientResponseException.class,
+                () -> client.toBlocking().exchange(
+                    HttpRequest.POST(BASE_PATH, request)
+                        .header("Authorization", "Bearer " + jwtTokenCampus),
+                    PostDTO.class
+                )
+            );
+            assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
+        }
+
+        @Test
+        @DisplayName("Should fail with whitespace-only title")
+        void shouldFailWithWhitespaceOnlyTitle() {
+            Map<String, Object> request = new HashMap<>();
+            request.put("title", "   \n\t   ");
+            request.put("content", "Content with whitespace title");
+
+            HttpClientResponseException exception = assertThrows(
+                HttpClientResponseException.class,
+                () -> client.toBlocking().exchange(
+                    HttpRequest.POST(BASE_PATH, request)
+                        .header("Authorization", "Bearer " + jwtTokenCampus),
+                    PostDTO.class
+                )
+            );
+            assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
+        }
+
+        @Test
+        @DisplayName("Should fail when title exceeds maximum length (255 characters)")
+        void shouldFailWithTitleTooLong() {
+            String title = "T".repeat(256);
+            Map<String, Object> request = new HashMap<>();
+            request.put("title", title);
+            request.put("content", "Content with title too long");
+
+            HttpClientResponseException exception = assertThrows(
+                HttpClientResponseException.class,
+                () -> client.toBlocking().exchange(
+                    HttpRequest.POST(BASE_PATH, request)
+                        .header("Authorization", "Bearer " + jwtTokenCampus),
+                    PostDTO.class
+                )
+            );
+            assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
+        }
+
+        @Test
+        @DisplayName("Should fail when null is passed for title")
+        void shouldFailWithNullTitle() {
+            Map<String, Object> request = new HashMap<>();
+            request.put("title", null);
+            request.put("content", "Content with null title");
 
             HttpClientResponseException exception = assertThrows(
                 HttpClientResponseException.class,
@@ -241,6 +413,7 @@ class PostsCreateControllerTest {
         void shouldFailWithContentTooLong() {
             String content = "X".repeat(5001);
             Map<String, Object> request = new HashMap<>();
+            request.put("title", "Test Content Too Long");
             request.put("content", content);
 
             HttpClientResponseException exception = assertThrows(
@@ -258,6 +431,7 @@ class PostsCreateControllerTest {
         @DisplayName("Should fail with invalid wall type")
         void shouldFailWithInvalidWallType() {
             Map<String, Object> request = new HashMap<>();
+            request.put("title", "Test Invalid Wall Type");
             request.put("content", "Post to invalid wall");
             request.put("wall", "invalid");
 
@@ -289,6 +463,7 @@ class PostsCreateControllerTest {
             String tokenNoSchool = jwtTokenService.generateToken(userNoSchool);
 
             Map<String, Object> request = new HashMap<>();
+            request.put("title", "Test Campus Post Without School Domain");
             request.put("content", "Campus post without school domain");
             request.put("wall", "campus");
 
@@ -315,6 +490,7 @@ class PostsCreateControllerTest {
             String tokenNoSchool = jwtTokenService.generateToken(userNoSchool);
 
             Map<String, Object> request = new HashMap<>();
+            request.put("title", "Test National Post Without School Domain");
             request.put("content", "National post from user without school");
             request.put("wall", "national");
 
@@ -333,6 +509,7 @@ class PostsCreateControllerTest {
         void shouldCreatePostWithMaximumLength() {
             String content = "X".repeat(5000);
             Map<String, Object> request = new HashMap<>();
+            request.put("title", "Test Maximum Length");
             request.put("content", content);
 
             HttpResponse<PostDTO> response = client.toBlocking().exchange(
@@ -349,6 +526,7 @@ class PostsCreateControllerTest {
         @DisplayName("Should create post with minimum length (1 character)")
         void shouldCreatePostWithMinimumLength() {
             Map<String, Object> request = new HashMap<>();
+            request.put("title", "Test Minimum Length");
             request.put("content", "A");
 
             HttpResponse<PostDTO> response = client.toBlocking().exchange(
@@ -370,6 +548,7 @@ class PostsCreateControllerTest {
         @DisplayName("Should anonymize user in response")
         void shouldAnonymizeUser() {
             Map<String, Object> request = new HashMap<>();
+            request.put("title", "Test Anonymity");
             request.put("content", "Test anonymity");
 
             HttpResponse<PostDTO> response = client.toBlocking().exchange(
@@ -386,6 +565,7 @@ class PostsCreateControllerTest {
         @DisplayName("Post should be created with correct user ID in database")
         void shouldStoreCorrectUserIdInDatabase() {
             Map<String, Object> request = new HashMap<>();
+            request.put("title", "Test Correct User");
             request.put("content", "Verify correct user");
 
             HttpResponse<PostDTO> response = client.toBlocking().exchange(
@@ -403,8 +583,10 @@ class PostsCreateControllerTest {
         @DisplayName("Different users should have separate posts")
         void shouldKeepUsersPostsSeparate() {
             Map<String, Object> request1 = new HashMap<>();
+            request1.put("title", "Test User 1 Post");
             request1.put("content", "User 1 post");
             Map<String, Object> request2 = new HashMap<>();
+            request2.put("title", "Test User 2 Post");
             request2.put("content", "User 2 post");
 
             HttpResponse<PostDTO> response1 = client.toBlocking().exchange(
@@ -464,6 +646,7 @@ class PostsCreateControllerTest {
         void shouldCaptureDefaultProfileNameInPost() {
             // Arrange
             Map<String, Object> request = new HashMap<>();
+            request.put("title", "Test Default Post");
             request.put("content", "Post with default profile name");
             request.put("wall", "campus");
 
@@ -491,6 +674,7 @@ class PostsCreateControllerTest {
         void shouldCaptureCustomProfileNameInPost() {
             // Arrange
             Map<String, Object> request = new HashMap<>();
+            request.put("title", "Test Custom Post");
             request.put("content", "Post with custom profile name");
             request.put("wall", "campus");
 
@@ -521,6 +705,7 @@ class PostsCreateControllerTest {
             userRepository.update(userWithDefaultName);
 
             Map<String, Object> request = new HashMap<>();
+            request.put("title", "Test Custom Name Post");
             request.put("content", "Post with custom name");
             request.put("wall", "campus");
 
@@ -544,6 +729,7 @@ class PostsCreateControllerTest {
 
             // But new posts should use new name
             Map<String, Object> request2 = new HashMap<>();
+            request2.put("title", "Test New Post");
             request2.put("content", "New post");
             request2.put("wall", "campus");
 
@@ -561,6 +747,7 @@ class PostsCreateControllerTest {
         void postAuthorProfileNameShouldNotEqualUserId() {
             // Arrange
             Map<String, Object> request = new HashMap<>();
+            request.put("title", "Test Post");
             request.put("content", "Post content");
             request.put("wall", "campus");
 

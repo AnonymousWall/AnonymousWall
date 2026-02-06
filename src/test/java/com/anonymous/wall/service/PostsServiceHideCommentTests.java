@@ -72,10 +72,10 @@ class PostsServiceHideCommentTests {
         userDifferentSchoolId = testUserDifferentSchool.getId();
 
         // Create test posts
-        campusPost = new Post(userCampusId, "Harvard campus post", "campus", "harvard.edu");
+        campusPost = new Post(userCampusId, "Title", "Harvard campus post", "campus", "harvard.edu");
         campusPost = postRepository.save(campusPost);
 
-        nationalPost = new Post(userCampusId, "National post", "national", null);
+        nationalPost = new Post(userCampusId, "Title", "National post", "national", null);
         nationalPost = postRepository.save(nationalPost);
 
         // Create test comments
@@ -609,7 +609,7 @@ class PostsServiceHideCommentTests {
             user2 = userRepository.save(user2);
 
             // Create a post by user2
-            Post post2 = new Post(user2.getId(), "Post by user2", "campus", "harvard.edu");
+            Post post2 = new Post(user2.getId(), "Title", "Post by user2", "campus", "harvard.edu");
             post2 = postRepository.save(post2);
 
             // User1 adds a comment to user2's post
@@ -627,7 +627,7 @@ class PostsServiceHideCommentTests {
         @DisplayName("Should validate post visibility before hiding")
         void shouldValidatePostVisibilityBeforeHiding() {
             // Create a post by different school
-            Post mitPost = new Post(userDifferentSchoolId, "MIT post", "campus", "mit.edu");
+            Post mitPost = new Post(userDifferentSchoolId, "Title", "MIT post", "campus", "mit.edu");
             mitPost = postRepository.save(mitPost);
 
             // Create a comment on MIT post via service

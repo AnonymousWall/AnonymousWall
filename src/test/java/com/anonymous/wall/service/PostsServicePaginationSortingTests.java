@@ -70,14 +70,14 @@ class PostsServicePaginationSortingTests {
 
         // Create test posts with varying likes for sorting tests
         for (int i = 0; i < 35; i++) {
-            Post post = new Post(campusUserId, "Campus post " + i, "campus", "harvard.edu");
+            Post post = new Post(campusUserId, "Title " + i, "Campus post " + i, "campus", "harvard.edu");
             post.setLikeCount(i); // Vary like counts
             postRepository.save(post);
         }
 
         // Create national posts
         for (int i = 0; i < 25; i++) {
-            Post post = new Post(nationalUserId, "National post " + i, "national", null);
+            Post post = new Post(nationalUserId, "Title " + i, "National post " + i, "national", null);
             post.setLikeCount(i);
             postRepository.save(post);
         }
@@ -364,7 +364,7 @@ class PostsServicePaginationSortingTests {
         void shouldHandleSortingWithSameLikes() {
             // Create posts with same like count
             for (int i = 0; i < 10; i++) {
-                Post post = new Post(campusUserId, "Same likes post " + i, "campus", "harvard.edu");
+                Post post = new Post(campusUserId, "Test Title", "Same likes post " + i, "campus", "harvard.edu");
                 post.setLikeCount(10); // All have 10 likes
                 postRepository.save(post);
             }

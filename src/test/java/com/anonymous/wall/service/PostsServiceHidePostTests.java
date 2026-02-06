@@ -67,7 +67,7 @@ class PostsServiceHidePostTests {
         otherUser = userRepository.save(otherUser);
 
         // Create test post
-        testPost = new Post(testUser.getId(), "Test post", "campus", "harvard.edu");
+        testPost = new Post(testUser.getId(), "Title", "Test post", "campus", "harvard.edu");
         testPost = postRepository.save(testPost);
     }
 
@@ -344,7 +344,7 @@ class PostsServiceHidePostTests {
         @DisplayName("Hidden posts should not appear in getPostsByWall")
         void shouldFilterHiddenPostsFromWallQuery() {
             // Arrange - Create another post and hide the first one
-            Post post2 = new Post(otherUser.getId(), "Other post", "campus", "harvard.edu");
+            Post post2 = new Post(otherUser.getId(), "Title", "Other post", "campus", "harvard.edu");
             post2 = postRepository.save(post2);
 
             // Hide first post
@@ -366,7 +366,7 @@ class PostsServiceHidePostTests {
         @DisplayName("Unhidden posts should reappear in queries")
         void shouldIncludeUnHiddenPostsInQueries() {
             // Arrange - Hide post and create another
-            Post post2 = new Post(otherUser.getId(), "Other post", "campus", "harvard.edu");
+            Post post2 = new Post(otherUser.getId(), "Title", "Other post", "campus", "harvard.edu");
             post2 = postRepository.save(post2);
             postsService.hidePost(testPost.getId(), testUser.getId());
 
@@ -409,7 +409,7 @@ class PostsServiceHidePostTests {
         @DisplayName("Should handle national posts")
         void shouldHideNationalPost() {
             // Arrange - Create national post
-            Post nationalPost = new Post(testUser.getId(), "National post", "national", null);
+            Post nationalPost = new Post(testUser.getId(), "Title", "National post", "national", null);
             nationalPost = postRepository.save(nationalPost);
 
             // Add comment

@@ -56,7 +56,7 @@ public class PostConcurrencyTest {
         testUser.setCreatedAt(ZonedDateTime.now());
         testUser = userRepository.save(testUser);
 
-        testPost = new Post(testUser.getId(), "Test post for concurrency", "national", null);
+        testPost = new Post(testUser.getId(), "Title", "Test post for concurrency", "national", null);
         testPost = postRepository.save(testPost);
     }
 
