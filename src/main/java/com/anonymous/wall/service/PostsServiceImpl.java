@@ -22,7 +22,9 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Singleton
 public class PostsServiceImpl implements PostsService {
@@ -138,8 +140,8 @@ public class PostsServiceImpl implements PostsService {
             }
         }
 
-        // Enrich posts with like/comment counts and check if current user liked
-        posts.getContent().forEach(post -> enrichPost(post, currentUserId));
+        // Enrich posts with like/comment counts and check if current user liked (batch operation)
+        enrichPosts(posts.getContent(), currentUserId);
 
         log.info("Posts retrieved: wall={}, count={}, user={}", wall, posts.getNumberOfElements(), currentUserId);
         return posts;
@@ -189,8 +191,8 @@ public class PostsServiceImpl implements PostsService {
             }
         }
 
-        // Enrich posts with like/comment counts and check if current user liked
-        posts.getContent().forEach(post -> enrichPost(post, currentUserId));
+        // Enrich posts with like/comment counts and check if current user liked (batch operation)
+        enrichPosts(posts.getContent(), currentUserId);
 
         log.info("Posts retrieved: wall={}, sort={}, count={}, user={}", wall, sortBy, posts.getNumberOfElements(), currentUserId);
         return posts;
@@ -417,6 +419,35 @@ public class PostsServiceImpl implements PostsService {
         if (currentUserId != null) {
             Optional<PostLike> userLike = postLikeRepository.findByPostIdAndUserId(post.getId(), currentUserId);
             post.setLiked(userLike.isPresent());
+        }
+    }
+
+    /**
+     * Batch enrich multiple posts with current user's like status
+     * This method eliminates N+1 query problem by fetching all likes in a single query
+     * Like and comment counts are already stored atomically in the database
+     */
+    private void enrichPosts(List<Post> posts, UUID currentUserId) {
+        // Like and comment counts are already set from database
+        // No need to count - they're atomically maintained
+
+        // Check if current user liked any of these posts (batch query)
+        if (currentUserId != null && !posts.isEmpty()) {
+            // Collect all post IDs
+            List<UUID> postIds = posts.stream()
+                .map(Post::getId)
+                .collect(Collectors.toList());
+
+            // Fetch all likes for these posts in a single query
+            List<PostLike> userLikes = postLikeRepository.findByUserIdAndPostIdIn(currentUserId, postIds);
+            
+            // Create a set of liked post IDs for O(1) lookup
+            Set<UUID> likedPostIds = userLikes.stream()
+                .map(PostLike::getPostId)
+                .collect(Collectors.toSet());
+
+            // Enrich all posts with like status
+            posts.forEach(post -> post.setLiked(likedPostIds.contains(post.getId())));
         }
     }
 
