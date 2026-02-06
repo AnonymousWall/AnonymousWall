@@ -11,9 +11,6 @@ import com.anonymous.wall.repository.PostRepository;
 import com.anonymous.wall.repository.CommentRepository;
 import com.anonymous.wall.repository.PostLikeRepository;
 import com.anonymous.wall.repository.UserRepository;
-import io.micronaut.cache.annotation.CacheInvalidate;
-import io.micronaut.cache.annotation.CachePut;
-import io.micronaut.cache.annotation.Cacheable;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
 import io.micronaut.transaction.annotation.Transactional;
@@ -46,16 +43,11 @@ public class PostsServiceImpl implements PostsService {
     @Inject
     private UserRepository userRepository;
 
-    @Inject
-    private UserCacheService userCacheService;
-
     /**
      * Create a new post
-     * Invalidates post cache for this user
      */
     @Override
     @Retryable(attempts = "3", delay = "500ms")
-    @CacheInvalidate(value = "post:findById", parameters = {"savedPost.id"})
     public Post createPost(CreatePostRequest request, UUID userId) {
         if (request.getTitle() == null || request.getTitle().trim().isEmpty()) {
             throw new IllegalArgumentException("Post title cannot be empty");
@@ -83,8 +75,8 @@ public class PostsServiceImpl implements PostsService {
             throw new IllegalArgumentException("Wall must be 'campus' or 'national'");
         }
 
-        // Fetch user's school domain using cached service
-        Optional<UserEntity> userOpt = userCacheService.findById(userId);
+        // Fetch user's school domain
+        Optional<UserEntity> userOpt = userRepository.findById(userId);
         if (userOpt.isEmpty()) {
             throw new IllegalArgumentException("User not found");
         }
@@ -211,8 +203,8 @@ public class PostsServiceImpl implements PostsService {
 
         log.debug("Fetching posts for wall: {}, page: {}, limit: {}, sort: {}, user: {}", wall, pageable.getNumber() + 1, pageable.getSize(), sortBy, currentUserId);
 
-        // Fetch current user to get their school domain using cached service
-        Optional<UserEntity> userOpt = userCacheService.findById(currentUserId);
+        // Fetch current user to get their school domain
+        Optional<UserEntity> userOpt = userRepository.findById(currentUserId);
         if (userOpt.isEmpty()) {
             log.warn("User not found when fetching posts with sort: {}", currentUserId);
             throw new IllegalArgumentException("User not found");
@@ -340,8 +332,8 @@ public class PostsServiceImpl implements PostsService {
             throw new IllegalArgumentException("Comment text exceeds maximum length of 5000 characters");
         }
 
-        // Fetch user to get profile name using cached service
-        Optional<UserEntity> userOpt = userCacheService.findById(userId);
+        // Fetch user to get profile name
+        Optional<UserEntity> userOpt = userRepository.findById(userId);
         if (userOpt.isEmpty()) {
             throw new IllegalArgumentException("User not found");
         }
@@ -408,13 +400,10 @@ public class PostsServiceImpl implements PostsService {
      * For national posts: all authenticated users can like
      * Returns true if post is now liked, false if unliked
      * Uses atomic operations to prevent race conditions
-     * Invalidates post cache to ensure consistency
      */
     @Override
     @Transactional
     @Retryable(attempts = "5", delay = "100ms")
-    @CacheInvalidate(value = "post:findById", parameters = {"postId"}, all = true)
-    @CacheInvalidate(value = "post:userLikes", parameters = {"userId"}, all = true)
     public boolean toggleLike(UUID postId, UUID userId) {
         // Verify post exists
         Optional<Post> postOpt = postRepository.findById(postId);
@@ -450,10 +439,8 @@ public class PostsServiceImpl implements PostsService {
     /**
      * Get a single post with like/comment counts
      * Validates that the user has permission to view the post
-     * Cacheable with explicit key to prevent cache penetration
      */
     @Override
-    @Cacheable(value = "post:findById", parameters = {"postId", "currentUserId"})
     public Post getPost(UUID postId, UUID currentUserId) {
         log.debug("Fetching post: {}, user: {}", postId, currentUserId);
 
@@ -483,7 +470,7 @@ public class PostsServiceImpl implements PostsService {
         }
         if (post.getWall().equals("campus")) {
             log.debug("Validating campus post access for user: {}, postSchoolDomain: {}", userId, post.getSchoolDomain());
-            Optional<UserEntity> userOpt = userCacheService.findById(userId);
+            Optional<UserEntity> userOpt = userRepository.findById(userId);
             if (userOpt.isEmpty()) {
                 log.warn("User not found during visibility check: {}", userId);
                 throw new IllegalArgumentException("User not found");
@@ -658,12 +645,10 @@ public class PostsServiceImpl implements PostsService {
      * Hide a post (soft-delete)
      * Only the post author can hide their own post
      * When a post is hidden, all its comments are also hidden
-     * Invalidates cache for consistency
      */
     @Override
     @Transactional
     @Retryable(attempts = "3", delay = "500ms")
-    @CacheInvalidate(value = "post:findById", parameters = {"postId"}, all = true)
     public Post hidePost(UUID postId, UUID userId) {
         // Verify post exists
         Optional<Post> postOpt = postRepository.findById(postId);
@@ -698,12 +683,10 @@ public class PostsServiceImpl implements PostsService {
      * Unhide a post (undo soft-delete)
      * Only the post author can unhide their own post
      * When a post is unhidden, all its comments are restored
-     * Invalidates cache for consistency
      */
     @Override
     @Transactional
     @Retryable(attempts = "3", delay = "500ms")
-    @CacheInvalidate(value = "post:findById", parameters = {"postId"}, all = true)
     public Post unhidePost(UUID postId, UUID userId) {
         // Verify post exists
         Optional<Post> postOpt = postRepository.findById(postId);

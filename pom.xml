@@ -117,11 +117,6 @@
             <artifactId>micronaut-reactor-http-client</artifactId>
             <scope>compile</scope>
         </dependency>
-        <dependency>
-            <groupId>io.micronaut.cache</groupId>
-            <artifactId>micronaut-cache-caffeine</artifactId>
-            <scope>compile</scope>
-        </dependency>
 <!--        <dependency>-->
 <!--            <groupId>io.micronaut.redis</groupId>-->
 <!--            <artifactId>micronaut-redis-lettuce</artifactId>-->
