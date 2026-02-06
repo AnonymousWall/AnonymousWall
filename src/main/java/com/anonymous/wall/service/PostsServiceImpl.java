@@ -101,9 +101,12 @@ public class PostsServiceImpl implements PostsService {
             throw new IllegalArgumentException("Wall must be 'campus' or 'national'");
         }
 
+        log.debug("Fetching posts for wall: {}, page: {}, limit: {}, user: {}", wall, pageable.getNumber() + 1, pageable.getSize(), currentUserId);
+
         // Fetch current user to get their school domain
         Optional<UserEntity> userOpt = userRepository.findById(currentUserId);
         if (userOpt.isEmpty()) {
+            log.warn("User not found when fetching posts: {}", currentUserId);
             throw new IllegalArgumentException("User not found");
         }
 
@@ -113,20 +116,24 @@ public class PostsServiceImpl implements PostsService {
         if (wall.equals("national")) {
             // National posts are visible to all users (default sort by newest), excluding hidden posts
             posts = postRepository.findByWallAndHiddenFalseOrderByCreatedAtDesc("national", pageable);
+            log.debug("Retrieved {} national posts for user: {}", posts.getNumberOfElements(), currentUserId);
         } else {
             // Campus posts: only visible to users from the same school, excluding hidden posts
             String userSchoolDomain = currentUser.getSchoolDomain();
             if (userSchoolDomain == null || userSchoolDomain.trim().isEmpty()) {
                 // User has no school domain, cannot see campus posts
+                log.warn("User has no school domain, cannot retrieve campus posts: {}", currentUserId);
                 posts = Page.empty();
             } else {
                 posts = postRepository.findByWallAndSchoolDomainAndHiddenFalseOrderByCreatedAtDesc("campus", userSchoolDomain, pageable);
+                log.debug("Retrieved {} campus posts for user: {}, schoolDomain: {}", posts.getNumberOfElements(), currentUserId, userSchoolDomain);
             }
         }
 
         // Enrich posts with like/comment counts and check if current user liked
         posts.getContent().forEach(post -> enrichPost(post, currentUserId));
 
+        log.info("Posts retrieved: wall={}, count={}, user={}", wall, posts.getNumberOfElements(), currentUserId);
         return posts;
     }
 
@@ -145,9 +152,12 @@ public class PostsServiceImpl implements PostsService {
             sortBy = SortBy.NEWEST; // Default sorting
         }
 
+        log.debug("Fetching posts for wall: {}, page: {}, limit: {}, sort: {}, user: {}", wall, pageable.getNumber() + 1, pageable.getSize(), sortBy, currentUserId);
+
         // Fetch current user to get their school domain
         Optional<UserEntity> userOpt = userRepository.findById(currentUserId);
         if (userOpt.isEmpty()) {
+            log.warn("User not found when fetching posts with sort: {}", currentUserId);
             throw new IllegalArgumentException("User not found");
         }
 
@@ -157,20 +167,24 @@ public class PostsServiceImpl implements PostsService {
         if (wall.equals("national")) {
             // National posts are visible to all users
             posts = getPostsWithSort("national", null, pageable, sortBy);
+            log.debug("Retrieved {} national posts (sort: {}) for user: {}", posts.getNumberOfElements(), sortBy, currentUserId);
         } else {
             // Campus posts: only visible to users from the same school
             String userSchoolDomain = currentUser.getSchoolDomain();
             if (userSchoolDomain == null || userSchoolDomain.trim().isEmpty()) {
                 // User has no school domain, cannot see campus posts
+                log.warn("User has no school domain, cannot retrieve campus posts with sort: {}", currentUserId);
                 posts = Page.empty();
             } else {
                 posts = getPostsWithSort("campus", userSchoolDomain, pageable, sortBy);
+                log.debug("Retrieved {} campus posts (sort: {}) for user: {}, schoolDomain: {}", posts.getNumberOfElements(), sortBy, currentUserId, userSchoolDomain);
             }
         }
 
         // Enrich posts with like/comment counts and check if current user liked
         posts.getContent().forEach(post -> enrichPost(post, currentUserId));
 
+        log.info("Posts retrieved: wall={}, sort={}, count={}, user={}", wall, sortBy, posts.getNumberOfElements(), currentUserId);
         return posts;
     }
 
@@ -250,7 +264,10 @@ public class PostsServiceImpl implements PostsService {
      */
     @Override
     public List<Comment> getComments(UUID postId) {
-        return commentRepository.findByPostIdAndHiddenFalse(postId);
+        log.debug("Fetching all comments for post: {}", postId);
+        List<Comment> comments = commentRepository.findByPostIdAndHiddenFalse(postId);
+        log.info("Retrieved {} comments for post: {}", comments.size(), postId);
+        return comments;
     }
 
     /**
@@ -258,7 +275,10 @@ public class PostsServiceImpl implements PostsService {
      */
     @Override
     public Page<Comment> getCommentsWithPagination(UUID postId, Pageable pageable) {
-        return commentRepository.findByPostIdAndHiddenFalse(postId, pageable);
+        log.debug("Fetching comments for post: {}, page: {}, limit: {}", postId, pageable.getNumber() + 1, pageable.getSize());
+        Page<Comment> comments = commentRepository.findByPostIdAndHiddenFalse(postId, pageable);
+        log.info("Retrieved {} comments for post: {}, total: {}", comments.getNumberOfElements(), postId, comments.getTotalSize());
+        return comments;
     }
 
     /**
@@ -270,11 +290,16 @@ public class PostsServiceImpl implements PostsService {
             sortBy = SortBy.NEWEST; // Default sorting
         }
 
+        log.debug("Fetching comments for post: {}, page: {}, limit: {}, sort: {}", postId, pageable.getNumber() + 1, pageable.getSize(), sortBy);
+
         // Comments only support sorting by created time
-        return switch (sortBy) {
+        Page<Comment> comments = switch (sortBy) {
             case NEWEST, MOST_LIKED -> commentRepository.findByPostIdAndHiddenFalseOrderByCreatedAtDesc(postId, pageable);
             case OLDEST, LEAST_LIKED -> commentRepository.findByPostIdAndHiddenFalseOrderByCreatedAtAsc(postId, pageable);
         };
+
+        log.info("Retrieved {} comments for post: {}, sort: {}, total: {}", comments.getNumberOfElements(), postId, sortBy, comments.getTotalSize());
+        return comments;
     }
 
     /**
@@ -325,8 +350,11 @@ public class PostsServiceImpl implements PostsService {
      */
     @Override
     public Post getPost(UUID postId, UUID currentUserId) {
+        log.debug("Fetching post: {}, user: {}", postId, currentUserId);
+
         Optional<Post> postOpt = postRepository.findById(postId);
         if (postOpt.isEmpty()) {
+            log.warn("Post not found: {}", postId);
             throw new IllegalArgumentException("Post not found");
         }
 
@@ -334,6 +362,7 @@ public class PostsServiceImpl implements PostsService {
         validatePostVisibility(post, currentUserId);
 
         enrichPost(post, currentUserId);
+        log.info("Post retrieved: {}, wall: {}, user: {}", postId, post.getWall(), currentUserId);
         return post;
     }
 
@@ -344,21 +373,27 @@ public class PostsServiceImpl implements PostsService {
      */
     private void validatePostVisibility(Post post, UUID userId) {
         if (post.getWall().equals("national")) {
+            log.debug("Validating national post access for user: {}", userId);
             return;
         }
         if (post.getWall().equals("campus")) {
+            log.debug("Validating campus post access for user: {}, postSchoolDomain: {}", userId, post.getSchoolDomain());
             Optional<UserEntity> userOpt = userRepository.findById(userId);
             if (userOpt.isEmpty()) {
+                log.warn("User not found during visibility check: {}", userId);
                 throw new IllegalArgumentException("User not found");
             }
             UserEntity user = userOpt.get();
             String userSchoolDomain = user.getSchoolDomain();
             if (userSchoolDomain == null || userSchoolDomain.trim().isEmpty()) {
+                log.warn("User has no school domain, cannot access campus posts: {}", userId);
                 throw new IllegalArgumentException("You do not have access to campus posts");
             }
             if (!userSchoolDomain.equals(post.getSchoolDomain())) {
+                log.warn("School domain mismatch - user: {}, userDomain: {}, postDomain: {}", userId, userSchoolDomain, post.getSchoolDomain());
                 throw new IllegalArgumentException("You do not have access to posts from other schools");
             }
+            log.debug("User validated for campus post access: {}", userId);
         }
     }
 
