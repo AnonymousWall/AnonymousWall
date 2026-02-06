@@ -46,6 +46,9 @@ public class PostsServiceImpl implements PostsService {
     @Inject
     private UserRepository userRepository;
 
+    @Inject
+    private UserCacheService userCacheService;
+
     /**
      * Create a new post
      * Invalidates post cache for this user
@@ -80,8 +83,8 @@ public class PostsServiceImpl implements PostsService {
             throw new IllegalArgumentException("Wall must be 'campus' or 'national'");
         }
 
-        // Fetch user's school domain
-        Optional<UserEntity> userOpt = userRepository.findById(userId);
+        // Fetch user's school domain using cached service
+        Optional<UserEntity> userOpt = userCacheService.findById(userId);
         if (userOpt.isEmpty()) {
             throw new IllegalArgumentException("User not found");
         }
@@ -208,8 +211,8 @@ public class PostsServiceImpl implements PostsService {
 
         log.debug("Fetching posts for wall: {}, page: {}, limit: {}, sort: {}, user: {}", wall, pageable.getNumber() + 1, pageable.getSize(), sortBy, currentUserId);
 
-        // Fetch current user to get their school domain
-        Optional<UserEntity> userOpt = userRepository.findById(currentUserId);
+        // Fetch current user to get their school domain using cached service
+        Optional<UserEntity> userOpt = userCacheService.findById(currentUserId);
         if (userOpt.isEmpty()) {
             log.warn("User not found when fetching posts with sort: {}", currentUserId);
             throw new IllegalArgumentException("User not found");
@@ -337,8 +340,8 @@ public class PostsServiceImpl implements PostsService {
             throw new IllegalArgumentException("Comment text exceeds maximum length of 5000 characters");
         }
 
-        // Fetch user to get profile name
-        Optional<UserEntity> userOpt = userRepository.findById(userId);
+        // Fetch user to get profile name using cached service
+        Optional<UserEntity> userOpt = userCacheService.findById(userId);
         if (userOpt.isEmpty()) {
             throw new IllegalArgumentException("User not found");
         }
@@ -480,7 +483,7 @@ public class PostsServiceImpl implements PostsService {
         }
         if (post.getWall().equals("campus")) {
             log.debug("Validating campus post access for user: {}, postSchoolDomain: {}", userId, post.getSchoolDomain());
-            Optional<UserEntity> userOpt = userRepository.findById(userId);
+            Optional<UserEntity> userOpt = userCacheService.findById(userId);
             if (userOpt.isEmpty()) {
                 log.warn("User not found during visibility check: {}", userId);
                 throw new IllegalArgumentException("User not found");
