@@ -96,9 +96,9 @@ class ProfileNameUpdateTests {
         @Test
         @DisplayName("Should update profile name in all user's comments")
         void shouldUpdateProfileNameInAllComments() {
-            // Create a test post
-            Post testPost = new Post(testUser.getId(), "Test Title", "Test post", "campus", "harvard.edu");
-            testPost = postRepository.save(testPost);
+            // Create a test post using the service for consistency
+            CreatePostRequest postRequest = new CreatePostRequest("Test Title", "Test post");
+            Post testPost = postsService.createPost(postRequest, testUser.getId());
 
             // Create multiple comments with original name
             CreateCommentRequest commentRequest1 = new CreateCommentRequest("First comment");
@@ -224,14 +224,20 @@ class ProfileNameUpdateTests {
         }
 
         @Test
-        @DisplayName("Should handle empty profile name by defaulting to Anonymous")
-        void shouldHandleEmptyProfileName() {
+        @DisplayName("Should update profile name to Anonymous when set to empty string")
+        void shouldUpdateProfileNameToAnonymousWhenEmpty() {
             // Create a post with original name
             CreatePostRequest postRequest = new CreatePostRequest("Test Post", "Content");
             Post post = postsService.createPost(postRequest, testUser.getId());
             assertEquals("Original Name", post.getProfileName());
 
-            // Update to empty name (should default to "Anonymous")
+            // Create a comment with original name
+            CreateCommentRequest commentRequest = new CreateCommentRequest("Test comment");
+            Comment comment = postsService.addComment(post.getId(), commentRequest, testUser.getId());
+            assertEquals("Original Name", comment.getProfileName());
+
+            // Update to "Anonymous" (simulating AuthController's behavior when empty name is provided)
+            // The AuthController validates and converts empty/null names to "Anonymous"
             testUser.setProfileName("Anonymous");
             userRepository.update(testUser);
             postRepository.updateProfileNameByUserId(testUser.getId(), "Anonymous");
@@ -239,8 +245,12 @@ class ProfileNameUpdateTests {
 
             // Verify profile name is "Anonymous"
             Optional<Post> savedPost = postRepository.findById(post.getId());
+            Optional<Comment> savedComment = commentRepository.findById(comment.getId());
+            
             assertTrue(savedPost.isPresent());
+            assertTrue(savedComment.isPresent());
             assertEquals("Anonymous", savedPost.get().getProfileName());
+            assertEquals("Anonymous", savedComment.get().getProfileName());
         }
     }
 }
