@@ -10,11 +10,11 @@ import java.util.UUID;
 public class PostLike {
 
     @Id
-    @GeneratedValue
-    private Long id;
+    @AutoPopulated
+    private UUID id;
 
     @MappedProperty("post_id")
-    private Long postId;
+    private UUID postId;
 
     @MappedProperty("user_id")
     private UUID userId;
@@ -27,7 +27,7 @@ public class PostLike {
     public PostLike() {
     }
 
-    public PostLike(Long postId, UUID userId) {
+    public PostLike(UUID postId, UUID userId) {
         this.postId = postId;
         this.userId = userId;
         this.createdAt = ZonedDateTime.now();
@@ -35,11 +35,11 @@ public class PostLike {
 
     // ================= Getters & Setters =================
 
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    public UUID getId() { return id; }
+    public void setId(UUID id) { this.id = id; }
 
-    public Long getPostId() { return postId; }
-    public void setPostId(Long postId) { this.postId = postId; }
+    public UUID getPostId() { return postId; }
+    public void setPostId(UUID postId) { this.postId = postId; }
 
     public UUID getUserId() { return userId; }
     public void setUserId(UUID userId) { this.userId = userId; }

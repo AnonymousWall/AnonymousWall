@@ -102,7 +102,7 @@ class PostsCreateControllerTest {
             assertEquals(0, body.getLikes());
             assertEquals(0, body.getComments());
 
-            Optional<Post> savedPost = postRepository.findById(Long.parseLong(body.getId()));
+            Optional<Post> savedPost = postRepository.findById(body.getId());
             assertTrue(savedPost.isPresent());
             assertEquals("This is a great campus post!", savedPost.get().getContent());
             assertEquals("campus", savedPost.get().getWall());
@@ -129,7 +129,7 @@ class PostsCreateControllerTest {
             assertEquals("This is a national post visible to everyone!", body.getContent());
             assertEquals("national", body.getWall().toString().toLowerCase());
 
-            Optional<Post> savedPost = postRepository.findById(Long.parseLong(body.getId()));
+            Optional<Post> savedPost = postRepository.findById(body.getId());
             assertTrue(savedPost.isPresent());
             assertEquals("national", savedPost.get().getWall());
         }
@@ -149,7 +149,7 @@ class PostsCreateControllerTest {
             assertEquals(HttpStatus.CREATED, response.getStatus());
             assertEquals("campus", response.body().getWall().toString().toLowerCase());
 
-            Optional<Post> savedPost = postRepository.findById(Long.parseLong(response.body().getId()));
+            Optional<Post> savedPost = postRepository.findById(response.body().getId());
             assertTrue(savedPost.isPresent());
             assertEquals("campus", savedPost.get().getWall());
         }
@@ -394,7 +394,7 @@ class PostsCreateControllerTest {
                 PostDTO.class
             );
 
-            Optional<Post> savedPost = postRepository.findById(Long.parseLong(response.body().getId()));
+            Optional<Post> savedPost = postRepository.findById(response.body().getId());
             assertTrue(savedPost.isPresent());
             assertEquals(testUserCampus.getId(), savedPost.get().getUserId());
         }
@@ -418,8 +418,8 @@ class PostsCreateControllerTest {
                 PostDTO.class
             );
 
-            Optional<Post> post1 = postRepository.findById(Long.parseLong(response1.body().getId()));
-            Optional<Post> post2 = postRepository.findById(Long.parseLong(response2.body().getId()));
+            Optional<Post> post1 = postRepository.findById(response1.body().getId());
+            Optional<Post> post2 = postRepository.findById(response2.body().getId());
             assertTrue(post1.isPresent());
             assertTrue(post2.isPresent());
             assertEquals(testUserCampus.getId(), post1.get().getUserId());
@@ -481,7 +481,7 @@ class PostsCreateControllerTest {
             assertEquals("Anonymous", postDTO.getAuthor().getProfileName());
 
             // Verify in database
-            Optional<Post> savedPost = postRepository.findById(Long.parseLong(postDTO.getId()));
+            Optional<Post> savedPost = postRepository.findById(postDTO.getId());
             assertTrue(savedPost.isPresent());
             assertEquals("Anonymous", savedPost.get().getProfileName());
         }
@@ -508,7 +508,7 @@ class PostsCreateControllerTest {
             assertEquals("John Doe", postDTO.getAuthor().getProfileName());
 
             // Verify in database
-            Optional<Post> savedPost = postRepository.findById(Long.parseLong(postDTO.getId()));
+            Optional<Post> savedPost = postRepository.findById(postDTO.getId());
             assertTrue(savedPost.isPresent());
             assertEquals("John Doe", savedPost.get().getProfileName());
         }
@@ -538,7 +538,7 @@ class PostsCreateControllerTest {
             userRepository.update(userWithDefaultName);
 
             // Verify post still has original profile name
-            Optional<Post> post = postRepository.findById(Long.parseLong(postDTO.getId()));
+            Optional<Post> post = postRepository.findById(postDTO.getId());
             assertTrue(post.isPresent());
             assertEquals("Custom Name", post.get().getProfileName());
 

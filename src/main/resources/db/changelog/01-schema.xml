@@ -30,7 +30,7 @@
     <!-- ================= Email verification codes ================= -->
     <changeSet id="2-create-email-codes-table" author="ziyihuang">
         <createTable tableName="email_verification_codes">
-            <column name="id" type="BIGINT" autoIncrement="true">
+            <column name="id" type="CHAR(36)">
                 <constraints primaryKey="true"/>
             </column>
             <column name="email" type="VARCHAR(255)">
@@ -51,7 +51,7 @@
     <!-- ================= Posts ================= -->
     <changeSet id="3-create-posts-table" author="ziyihuang">
         <createTable tableName="posts">
-            <column name="id" type="BIGINT" autoIncrement="true">
+            <column name="id" type="CHAR(36)">
                 <constraints primaryKey="true"/>
             </column>
             <column name="user_id" type="CHAR(36)"/>
@@ -74,10 +74,10 @@
     <!-- ================= Comments ================= -->
     <changeSet id="4-create-comments-table" author="ziyihuang">
         <createTable tableName="comments">
-            <column name="id" type="BIGINT" autoIncrement="true">
+            <column name="id" type="CHAR(36)">
                 <constraints primaryKey="true"/>
             </column>
-            <column name="post_id" type="BIGINT">
+            <column name="post_id" type="CHAR(36)">
                 <constraints nullable="false"/>
             </column>
             <column name="user_id" type="CHAR(36)"/>
@@ -98,10 +98,10 @@
     <!-- ================= Post Likes ================= -->
     <changeSet id="5-create-post-likes-table" author="ziyihuang">
         <createTable tableName="post_likes">
-            <column name="id" type="BIGINT" autoIncrement="true">
+            <column name="id" type="CHAR(36)">
                 <constraints primaryKey="true"/>
             </column>
-            <column name="post_id" type="BIGINT"/>
+            <column name="post_id" type="CHAR(36)"/>
             <column name="user_id" type="CHAR(36)"/>
             <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP"/>
         </createTable>
@@ -118,7 +118,7 @@
     <!-- ================= Internships ================= -->
     <changeSet id="6-create-internships-table" author="ziyihuang">
         <createTable tableName="internships">
-            <column name="id" type="BIGINT" autoIncrement="true">
+            <column name="id" type="CHAR(36)">
                 <constraints primaryKey="true"/>
             </column>
             <column name="user_id" type="CHAR(36)"/>
@@ -149,7 +149,7 @@
     <!-- ================= Marketplace Items ================= -->
     <changeSet id="7-create-marketplace-table" author="ziyihuang">
         <createTable tableName="marketplace_items">
-            <column name="id" type="BIGINT" autoIncrement="true">
+            <column name="id" type="CHAR(36)">
                 <constraints primaryKey="true"/>
             </column>
             <column name="user_id" type="CHAR(36)"/>
@@ -179,7 +179,7 @@
     <!-- ================= Coins ================= -->
     <changeSet id="8-create-coins-table" author="ziyihuang">
         <createTable tableName="coins">
-            <column name="id" type="BIGINT" autoIncrement="true">
+            <column name="id" type="CHAR(36)">
                 <constraints primaryKey="true"/>
             </column>
             <column name="user_id" type="CHAR(36)">

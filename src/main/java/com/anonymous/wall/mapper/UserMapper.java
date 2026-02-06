@@ -13,7 +13,7 @@ public class UserMapper {
     public UserDTO toDTO(UserEntity entity) {
         if (entity == null) return null;
         UserDTO dto = new UserDTO();
-        dto.setId(entity.getId() != null ? entity.getId().toString() : null);
+        dto.setId(entity.getId() != null ? entity.getId() : null);
         dto.setEmail(entity.getEmail());
         dto.setProfileName(entity.getProfileName());
         dto.setIsVerified(entity.isVerified());
@@ -28,8 +28,8 @@ public class UserMapper {
         UserEntity entity = new UserEntity();
 
         // 只在「更新」场景下才 setId
-        if (dto.getId() != null && !dto.getId().isBlank()) {
-            entity.setId(UUID.fromString(dto.getId()));
+        if (dto.getId() != null) {
+            entity.setId(dto.getId());
         }
 
         entity.setEmail(dto.getEmail());

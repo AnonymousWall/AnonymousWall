@@ -12,7 +12,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 @JdbcRepository(dialect = Dialect.MYSQL)
-public interface PostRepository extends CrudRepository<Post, Long> {
+public interface PostRepository extends CrudRepository<Post, UUID> {
 
     // ===== Sorting by Created Time (Default) =====
     /**
@@ -75,7 +75,7 @@ public interface PostRepository extends CrudRepository<Post, Long> {
     /**
      * Find post by ID
      */
-    Optional<Post> findById(Long id);
+    Optional<Post> findById(UUID id);
 
     // ===== Filter Hidden Posts =====
     /**

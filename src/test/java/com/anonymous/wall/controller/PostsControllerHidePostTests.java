@@ -22,6 +22,7 @@ import org.junit.jupiter.api.*;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -266,10 +267,11 @@ class PostsControllerHidePostTests {
         @Test
         @DisplayName("Hide non-existent post returns 404")
         void shouldReturn404ForNonExistentPost() {
+            UUID nonExistentPostId = UUID.randomUUID();
             // Act & Assert
             HttpClientResponseException exception = assertThrows(HttpClientResponseException.class, () ->
                     client.toBlocking().exchange(
-                            HttpRequest.PATCH(BASE_PATH + "/99999/hide", "")
+                            HttpRequest.PATCH(BASE_PATH + "/" + nonExistentPostId + "/hide", "")
                                     .bearerAuth(authorToken),
                             Map.class
                     )
@@ -469,10 +471,11 @@ class PostsControllerHidePostTests {
         @Test
         @DisplayName("Unhide non-existent post returns 404")
         void shouldReturn404ForNonExistentPost() {
+            UUID nonExistentPostId = UUID.randomUUID();
             // Act & Assert
             HttpClientResponseException exception = assertThrows(HttpClientResponseException.class, () ->
                     client.toBlocking().exchange(
-                            HttpRequest.PATCH(BASE_PATH + "/99999/unhide", "")
+                            HttpRequest.PATCH(BASE_PATH + "/" + nonExistentPostId + "/unhide", "")
                                     .bearerAuth(authorToken),
                             Map.class
                     )

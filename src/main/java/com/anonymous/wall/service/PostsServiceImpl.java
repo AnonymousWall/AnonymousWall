@@ -206,7 +206,7 @@ public class PostsServiceImpl implements PostsService {
     @Override
     @Transactional
     @Retryable(attempts = "3", delay = "500ms")
-    public Comment addComment(Long postId, CreateCommentRequest request, UUID userId) {
+    public Comment addComment(UUID postId, CreateCommentRequest request, UUID userId) {
         // Verify post exists
         Optional<Post> postOpt = postRepository.findById(postId);
         if (postOpt.isEmpty()) {
@@ -249,7 +249,7 @@ public class PostsServiceImpl implements PostsService {
      * Get all comments for a post
      */
     @Override
-    public List<Comment> getComments(Long postId) {
+    public List<Comment> getComments(UUID postId) {
         return commentRepository.findByPostIdAndHiddenFalse(postId);
     }
 
@@ -257,7 +257,7 @@ public class PostsServiceImpl implements PostsService {
      * Get comments for a post with pagination
      */
     @Override
-    public Page<Comment> getCommentsWithPagination(Long postId, Pageable pageable) {
+    public Page<Comment> getCommentsWithPagination(UUID postId, Pageable pageable) {
         return commentRepository.findByPostIdAndHiddenFalse(postId, pageable);
     }
 
@@ -265,7 +265,7 @@ public class PostsServiceImpl implements PostsService {
      * Get comments for a post with pagination and sorting
      */
     @Override
-    public Page<Comment> getCommentsWithPagination(Long postId, Pageable pageable, SortBy sortBy) {
+    public Page<Comment> getCommentsWithPagination(UUID postId, Pageable pageable, SortBy sortBy) {
         if (sortBy == null) {
             sortBy = SortBy.NEWEST; // Default sorting
         }
@@ -287,7 +287,7 @@ public class PostsServiceImpl implements PostsService {
     @Override
     @Transactional
     @Retryable(attempts = "5", delay = "100ms")
-    public boolean toggleLike(Long postId, UUID userId) {
+    public boolean toggleLike(UUID postId, UUID userId) {
         // Verify post exists
         Optional<Post> postOpt = postRepository.findById(postId);
         if (postOpt.isEmpty()) {
@@ -324,7 +324,7 @@ public class PostsServiceImpl implements PostsService {
      * Validates that the user has permission to view the post
      */
     @Override
-    public Post getPost(Long postId, UUID currentUserId) {
+    public Post getPost(UUID postId, UUID currentUserId) {
         Optional<Post> postOpt = postRepository.findById(postId);
         if (postOpt.isEmpty()) {
             throw new IllegalArgumentException("Post not found");
@@ -385,7 +385,7 @@ public class PostsServiceImpl implements PostsService {
     @Override
     @Transactional
     @Retryable(attempts = "3", delay = "500ms")
-    public Comment hideComment(Long postId, Long commentId, UUID userId) {
+    public Comment hideComment(UUID postId, UUID commentId, UUID userId) {
         // Verify post exists
         Optional<Post> postOpt = postRepository.findById(postId);
         if (postOpt.isEmpty()) {
@@ -439,7 +439,7 @@ public class PostsServiceImpl implements PostsService {
     @Override
     @Transactional
     @Retryable(attempts = "3", delay = "500ms")
-    public Comment unhideComment(Long postId, Long commentId, UUID userId) {
+    public Comment unhideComment(UUID postId, UUID commentId, UUID userId) {
         // Verify post exists
         Optional<Post> postOpt = postRepository.findById(postId);
         if (postOpt.isEmpty()) {
@@ -493,7 +493,7 @@ public class PostsServiceImpl implements PostsService {
     @Override
     @Transactional
     @Retryable(attempts = "3", delay = "500ms")
-    public Post hidePost(Long postId, UUID userId) {
+    public Post hidePost(UUID postId, UUID userId) {
         // Verify post exists
         Optional<Post> postOpt = postRepository.findById(postId);
         if (postOpt.isEmpty()) {
@@ -531,7 +531,7 @@ public class PostsServiceImpl implements PostsService {
     @Override
     @Transactional
     @Retryable(attempts = "3", delay = "500ms")
-    public Post unhidePost(Long postId, UUID userId) {
+    public Post unhidePost(UUID postId, UUID userId) {
         // Verify post exists
         Optional<Post> postOpt = postRepository.findById(postId);
         if (postOpt.isEmpty()) {

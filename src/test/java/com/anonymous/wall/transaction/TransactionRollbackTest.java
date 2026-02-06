@@ -15,6 +15,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.ZonedDateTime;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -88,7 +89,7 @@ public class TransactionRollbackTest {
         assertEquals(1, beforeError.getCommentCount());
 
         // Try to hide non-existent comment - should throw error
-        Long fakeCommentId = 99999L;
+        UUID fakeCommentId = UUID.randomUUID();
         assertThrows(Exception.class, () -> {
             postsService.hideComment(testPost.getId(), fakeCommentId, testUser.getId());
         }, "Should throw exception for non-existent comment");
@@ -141,7 +142,7 @@ public class TransactionRollbackTest {
 
         // Try to hide a non-existent comment on the same post
         // If transaction is atomic, no partial update should occur
-        Long fakeId = 88888L;
+        UUID fakeId = UUID.randomUUID();
         try {
             postsService.hideComment(testPost.getId(), fakeId, testUser.getId());
         } catch (Exception e) {
@@ -241,7 +242,7 @@ public class TransactionRollbackTest {
 
         // Failure: try to hide non-existent comment
         try {
-            postsService.hideComment(testPost.getId(), 77777L, testUser.getId());
+            postsService.hideComment(testPost.getId(), UUID.randomUUID(), testUser.getId());
         } catch (Exception e) {
             // Expected
         }
@@ -274,7 +275,7 @@ public class TransactionRollbackTest {
         // Try to hide non-existent comment multiple times
         for (int i = 0; i < 5; i++) {
             try {
-                postsService.hideComment(testPost.getId(), 66666L + i, testUser.getId());
+                postsService.hideComment(testPost.getId(), UUID.randomUUID(), testUser.getId());
             } catch (Exception e) {
                 // Expected
             }

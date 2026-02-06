@@ -115,7 +115,7 @@ public class PostsController {
     @io.micronaut.http.annotation.Post("/{postId}/comments")
     @Secured(SecurityRule.IS_AUTHENTICATED)
     public HttpResponse<Object> addComment(
-            @PathVariable Long postId,
+            @PathVariable UUID postId,
             @Body CreateCommentRequest request,
             HttpRequest<?> httpRequest) {
         try {
@@ -146,7 +146,7 @@ public class PostsController {
     @Get("/{postId}/comments")
     @Secured(SecurityRule.IS_AUTHENTICATED)
     public HttpResponse<Object> getComments(
-            @PathVariable Long postId,
+            @PathVariable UUID postId,
             @QueryValue(defaultValue = "1") int page,
             @QueryValue(defaultValue = "20") int limit,
             @QueryValue(defaultValue = "NEWEST") String sort,
@@ -199,7 +199,7 @@ public class PostsController {
      */
     @io.micronaut.http.annotation.Post("/{postId}/likes")
     @Secured(SecurityRule.IS_AUTHENTICATED)
-    public HttpResponse<Object> likePost(@PathVariable Long postId, HttpRequest<?> httpRequest) {
+    public HttpResponse<Object> likePost(@PathVariable UUID postId, HttpRequest<?> httpRequest) {
         try {
             UUID userId = getUserIdFromRequest(httpRequest);
             boolean isNowLiked = postsService.toggleLike(postId, userId);
@@ -229,8 +229,8 @@ public class PostsController {
     @Patch("/{postId}/comments/{commentId}/hide")
     @Secured(SecurityRule.IS_AUTHENTICATED)
     public HttpResponse<Object> hideComment(
-            @PathVariable Long postId,
-            @PathVariable Long commentId,
+            @PathVariable UUID postId,
+            @PathVariable UUID commentId,
             HttpRequest<?> httpRequest) {
         try {
             UUID userId = getUserIdFromRequest(httpRequest);
@@ -262,8 +262,8 @@ public class PostsController {
     @Patch("/{postId}/comments/{commentId}/unhide")
     @Secured(SecurityRule.IS_AUTHENTICATED)
     public HttpResponse<Object> unhideComment(
-            @PathVariable Long postId,
-            @PathVariable Long commentId,
+            @PathVariable UUID postId,
+            @PathVariable UUID commentId,
             HttpRequest<?> httpRequest) {
         try {
             UUID userId = getUserIdFromRequest(httpRequest);
@@ -295,7 +295,7 @@ public class PostsController {
     @Patch("/{postId}/hide")
     @Secured(SecurityRule.IS_AUTHENTICATED)
     public HttpResponse<Object> hidePost(
-            @PathVariable Long postId,
+            @PathVariable UUID postId,
             HttpRequest<?> httpRequest) {
         try {
             UUID userId = getUserIdFromRequest(httpRequest);
@@ -326,7 +326,7 @@ public class PostsController {
     @Patch("/{postId}/unhide")
     @Secured(SecurityRule.IS_AUTHENTICATED)
     public HttpResponse<Object> unhidePost(
-            @PathVariable Long postId,
+            @PathVariable UUID postId,
             HttpRequest<?> httpRequest) {
         try {
             UUID userId = getUserIdFromRequest(httpRequest);
@@ -354,7 +354,7 @@ public class PostsController {
 
     private PostDTO mapPostToDTO(Post post) {
         PostDTO dto = new PostDTO();
-        dto.setId(post.getId().toString());
+        dto.setId(post.getId());
         dto.setContent(post.getContent());
         dto.setWall(PostDTOWall.valueOf(post.getWall().toUpperCase()));
         dto.setLikes(post.getLikeCount());
@@ -375,8 +375,8 @@ public class PostsController {
 
     private CommentDTO mapCommentToDTO(Comment comment) {
         CommentDTO dto = new CommentDTO();
-        dto.setId(comment.getId().toString());
-        dto.setPostId(comment.getPostId().toString());
+        dto.setId(comment.getId());
+        dto.setPostId(comment.getPostId());
         dto.setText(comment.getText());
         dto.setCreatedAt(comment.getCreatedAt());
 

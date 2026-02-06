@@ -172,9 +172,10 @@ class PostEntityTest {
         @DisplayName("Should set and get ID")
         void shouldSetAndGetId() {
             Post post = new Post();
-            post.setId(123L);
+            UUID postId = UUID.randomUUID();
+            post.setId(postId);
 
-            assertEquals(123L, post.getId());
+            assertEquals(postId, post.getId());
         }
     }
 

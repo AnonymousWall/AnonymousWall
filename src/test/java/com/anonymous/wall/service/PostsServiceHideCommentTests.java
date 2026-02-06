@@ -154,7 +154,7 @@ class PostsServiceHideCommentTests {
         @DisplayName("Should preserve comment data when hiding")
         void shouldPreserveCommentDataWhenHiding() {
             String originalText = campusComment.getText();
-            Long originalPostId = campusComment.getPostId();
+            UUID originalPostId = campusComment.getPostId();
             UUID originalUserId = campusComment.getUserId();
 
             postsService.hideComment(campusPost.getId(), campusComment.getId(), userCampusId);
@@ -258,7 +258,7 @@ class PostsServiceHideCommentTests {
         @DisplayName("Should preserve comment data when unhiding")
         void shouldPreserveCommentDataWhenUnhiding() {
             String originalText = campusComment.getText();
-            Long originalPostId = campusComment.getPostId();
+            UUID originalPostId = campusComment.getPostId();
             UUID originalUserId = campusComment.getUserId();
 
             postsService.hideComment(campusPost.getId(), campusComment.getId(), userCampusId);
@@ -306,7 +306,7 @@ class PostsServiceHideCommentTests {
         void shouldThrowExceptionForNonExistentComment() {
             IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
-                () -> postsService.hideComment(campusPost.getId(), 99999L, userCampusId)
+                () -> postsService.hideComment(campusPost.getId(), UUID.randomUUID(), userCampusId)
             );
 
             assertTrue(exception.getMessage().contains("not found"));
@@ -318,7 +318,7 @@ class PostsServiceHideCommentTests {
         void shouldThrowExceptionWhenPostDoesNotExist() {
             IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
-                () -> postsService.hideComment(99999L, campusComment.getId(), userCampusId)
+                () -> postsService.hideComment(UUID.randomUUID(), campusComment.getId(), userCampusId)
             );
 
             assertTrue(exception.getMessage().contains("not found"));
@@ -394,7 +394,7 @@ class PostsServiceHideCommentTests {
         void shouldThrowExceptionForNonExistentCommentOnUnhide() {
             IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
-                () -> postsService.unhideComment(campusPost.getId(), 99999L, userCampusId)
+                () -> postsService.unhideComment(campusPost.getId(), UUID.randomUUID(), userCampusId)
             );
 
             assertTrue(exception.getMessage().contains("not found"));
@@ -406,7 +406,7 @@ class PostsServiceHideCommentTests {
         void shouldThrowExceptionWhenPostDoesNotExistOnUnhide() {
             IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
-                () -> postsService.unhideComment(99999L, campusComment.getId(), userCampusId)
+                () -> postsService.unhideComment(UUID.randomUUID(), campusComment.getId(), userCampusId)
             );
 
             assertTrue(exception.getMessage().contains("not found"));
@@ -498,9 +498,9 @@ class PostsServiceHideCommentTests {
             Comment comment3 = new Comment(campusPost.getId(), userCampusId, "Comment 3");
             comment3 = commentRepository.save(comment3);
 
-            final Long comment2Id = comment2.getId();
-            final Long comment3Id = comment3.getId();
-            final Long campusCommentId = campusComment.getId();
+            final UUID comment2Id = comment2.getId();
+            final UUID comment3Id = comment3.getId();
+            final UUID campusCommentId = campusComment.getId();
 
             // Hide one comment
             postsService.hideComment(campusPost.getId(), campusComment.getId(), userCampusId);
@@ -634,8 +634,8 @@ class PostsServiceHideCommentTests {
             Comment mitComment = postsService.addComment(mitPost.getId(),
                 new com.anonymous.wall.model.CreateCommentRequest("MIT comment"), userDifferentSchoolId);
 
-            final Long mitPostId = mitPost.getId();
-            final Long mitCommentId = mitComment.getId();
+            final UUID mitPostId = mitPost.getId();
+            final UUID mitCommentId = mitComment.getId();
 
             // Harvard student should not be able to hide comment on MIT post (no access)
             IllegalArgumentException exception = assertThrows(

@@ -10,8 +10,8 @@ import java.util.UUID;
 public class Post {
 
     @Id
-    @GeneratedValue
-    private Long id;
+    @AutoPopulated
+    private UUID id;
 
     @MappedProperty("user_id")
     private UUID userId;
@@ -72,8 +72,8 @@ public class Post {
 
     // ================= Getters & Setters =================
 
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    public UUID getId() { return id; }
+    public void setId(UUID id) { this.id = id; }
 
     public UUID getUserId() { return userId; }
     public void setUserId(UUID userId) { this.userId = userId; }

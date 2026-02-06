@@ -9,25 +9,25 @@ import java.util.Optional;
 import java.util.UUID;
 
 @JdbcRepository(dialect = Dialect.MYSQL)
-public interface PostLikeRepository extends CrudRepository<PostLike, Long> {
+public interface PostLikeRepository extends CrudRepository<PostLike, UUID> {
 
     /**
      * Check if a user has liked a post
      */
-    Optional<PostLike> findByPostIdAndUserId(Long postId, UUID userId);
+    Optional<PostLike> findByPostIdAndUserId(UUID postId, UUID userId);
 
     /**
      * Count likes for a post
      */
-    long countByPostId(Long postId);
+    long countByPostId(UUID postId);
 
     /**
      * Delete a like by post and user
      */
-    long deleteByPostIdAndUserId(Long postId, UUID userId);
+    long deleteByPostIdAndUserId(UUID postId, UUID userId);
 
     /**
      * Delete all likes for a post (useful for post deletion)
      */
-    long deleteByPostId(Long postId);
+    long deleteByPostId(UUID postId);
 }
