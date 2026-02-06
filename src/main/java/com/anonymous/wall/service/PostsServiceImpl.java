@@ -148,6 +148,45 @@ public class PostsServiceImpl implements PostsService {
     }
 
     /**
+     * Get posts by wall type with pagination (optimized - schoolDomain from JWT)
+     * Campus posts: only visible to users with the same school domain
+     * National posts: visible to all users
+     * This method avoids redundant user lookup by using schoolDomain from JWT claims
+     */
+    @Override
+    public Page<Post> getPostsByWall(String wall, Pageable pageable, UUID currentUserId, String schoolDomain) {
+        if (!wall.equals("campus") && !wall.equals("national")) {
+            throw new IllegalArgumentException("Wall must be 'campus' or 'national'");
+        }
+
+        log.debug("Fetching posts for wall: {}, page: {}, limit: {}, user: {}", wall, pageable.getNumber() + 1, pageable.getSize(), currentUserId);
+
+        Page<Post> posts;
+
+        if (wall.equals("national")) {
+            // National posts are visible to all users (default sort by newest), excluding hidden posts
+            posts = postRepository.findByWallAndHiddenFalseOrderByCreatedAtDesc("national", pageable);
+            log.debug("Retrieved {} national posts for user: {}", posts.getNumberOfElements(), currentUserId);
+        } else {
+            // Campus posts: only visible to users from the same school, excluding hidden posts
+            if (schoolDomain == null || schoolDomain.trim().isEmpty()) {
+                // User has no school domain, cannot see campus posts
+                log.warn("User has no school domain, cannot retrieve campus posts: {}", currentUserId);
+                posts = Page.empty();
+            } else {
+                posts = postRepository.findByWallAndSchoolDomainAndHiddenFalseOrderByCreatedAtDesc("campus", schoolDomain, pageable);
+                log.debug("Retrieved {} campus posts for user: {}, schoolDomain: {}", posts.getNumberOfElements(), currentUserId, schoolDomain);
+            }
+        }
+
+        // Enrich posts with like/comment counts and check if current user liked (batch operation)
+        enrichPosts(posts.getContent(), currentUserId);
+
+        log.info("Posts retrieved: wall={}, count={}, user={}", wall, posts.getNumberOfElements(), currentUserId);
+        return posts;
+    }
+
+    /**
      * Get posts by wall type with pagination and sorting
      * Campus posts: only visible to users with the same school domain
      * National posts: visible to all users
@@ -188,6 +227,49 @@ public class PostsServiceImpl implements PostsService {
             } else {
                 posts = getPostsWithSort("campus", userSchoolDomain, pageable, sortBy);
                 log.debug("Retrieved {} campus posts (sort: {}) for user: {}, schoolDomain: {}", posts.getNumberOfElements(), sortBy, currentUserId, userSchoolDomain);
+            }
+        }
+
+        // Enrich posts with like/comment counts and check if current user liked (batch operation)
+        enrichPosts(posts.getContent(), currentUserId);
+
+        log.info("Posts retrieved: wall={}, sort={}, count={}, user={}", wall, sortBy, posts.getNumberOfElements(), currentUserId);
+        return posts;
+    }
+
+    /**
+     * Get posts by wall type with pagination and sorting (optimized - schoolDomain from JWT)
+     * Campus posts: only visible to users with the same school domain
+     * National posts: visible to all users
+     * This method avoids redundant user lookup by using schoolDomain from JWT claims
+     */
+    @Override
+    public Page<Post> getPostsByWall(String wall, Pageable pageable, UUID currentUserId, String schoolDomain, SortBy sortBy) {
+        if (!wall.equals("campus") && !wall.equals("national")) {
+            throw new IllegalArgumentException("Wall must be 'campus' or 'national'");
+        }
+
+        if (sortBy == null) {
+            sortBy = SortBy.NEWEST; // Default sorting
+        }
+
+        log.debug("Fetching posts for wall: {}, page: {}, limit: {}, sort: {}, user: {}", wall, pageable.getNumber() + 1, pageable.getSize(), sortBy, currentUserId);
+
+        Page<Post> posts;
+
+        if (wall.equals("national")) {
+            // National posts are visible to all users
+            posts = getPostsWithSort("national", null, pageable, sortBy);
+            log.debug("Retrieved {} national posts (sort: {}) for user: {}", posts.getNumberOfElements(), sortBy, currentUserId);
+        } else {
+            // Campus posts: only visible to users from the same school
+            if (schoolDomain == null || schoolDomain.trim().isEmpty()) {
+                // User has no school domain, cannot see campus posts
+                log.warn("User has no school domain, cannot retrieve campus posts with sort: {}", currentUserId);
+                posts = Page.empty();
+            } else {
+                posts = getPostsWithSort("campus", schoolDomain, pageable, sortBy);
+                log.debug("Retrieved {} campus posts (sort: {}) for user: {}, schoolDomain: {}", posts.getNumberOfElements(), sortBy, currentUserId, schoolDomain);
             }
         }
 

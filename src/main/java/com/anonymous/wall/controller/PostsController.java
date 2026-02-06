@@ -47,6 +47,25 @@ public class PostsController {
         }
     }
 
+    // Helper to extract schoolDomain from JWT attributes
+    private String getSchoolDomainFromRequest(HttpRequest<?> request) {
+        Optional<Principal> principalOpt = request.getUserPrincipal();
+
+        if (principalOpt.isEmpty()) {
+            return null;
+        }
+
+        Principal principal = principalOpt.get();
+        // In Micronaut Security with JWT, the principal has attributes from claims
+        if (principal instanceof io.micronaut.security.authentication.Authentication) {
+            io.micronaut.security.authentication.Authentication auth = (io.micronaut.security.authentication.Authentication) principal;
+            Object schoolDomainObj = auth.getAttributes().get("schoolDomain");
+            return schoolDomainObj != null ? schoolDomainObj.toString() : null;
+        }
+        
+        return null;
+    }
+
     /**
      * POST /posts
      * Create a new post
@@ -88,7 +107,8 @@ public class PostsController {
             HttpRequest<?> httpRequest) {
         try {
             UUID userId = getUserIdFromRequest(httpRequest);
-            log.info("GET /posts - Listing posts, user={}, wall={}, page={}, limit={}, sort={}", userId, wall, page, limit, sort);
+            String schoolDomain = getSchoolDomainFromRequest(httpRequest);
+            log.info("GET /posts - Listing posts, user={}, wall={}, page={}, limit={}, sort={}, schoolDomain={}", userId, wall, page, limit, sort, schoolDomain);
 
             if (page < 1) page = 1;
             if (limit < 1 || limit > 100) limit = 20;
@@ -96,7 +116,9 @@ public class PostsController {
             Pageable pageable = Pageable.from(page - 1, limit);
 
             com.anonymous.wall.model.SortBy sortBy = com.anonymous.wall.model.SortBy.parse(sort);
-            Page<Post> posts = postsService.getPostsByWall(wall, pageable, userId, sortBy);
+            
+            // Use optimized method that doesn't require user lookup
+            Page<Post> posts = postsService.getPostsByWall(wall, pageable, userId, schoolDomain, sortBy);
 
             List<PostDTO> dtos = posts.getContent().stream()
                     .map(this::mapPostToDTO)
