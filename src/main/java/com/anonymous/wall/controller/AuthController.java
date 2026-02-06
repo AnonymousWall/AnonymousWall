@@ -337,19 +337,21 @@ public class AuthController {
             UserEntity user = userOpt.get();
             String newProfileName = updateProfileNameRequest.getProfileName();
 
-            // Validate profile name
+            // Validate and trim profile name
             if (newProfileName == null || newProfileName.trim().isEmpty()) {
                 newProfileName = "Anonymous";
+            } else {
+                newProfileName = newProfileName.trim();
             }
 
-            user.setProfileName(newProfileName.trim());
+            user.setProfileName(newProfileName);
             userRepository.update(user);
 
             // Update profile name in all associated posts and comments
-            postRepository.updateProfileNameByUserId(userId, newProfileName.trim());
-            commentRepository.updateProfileNameByUserId(userId, newProfileName.trim());
+            postRepository.updateProfileNameByUserId(userId, newProfileName);
+            commentRepository.updateProfileNameByUserId(userId, newProfileName);
 
-            log.info("PATCH /auth/profile/name - Profile name updated successfully for user: {}, newName={}", userId, newProfileName.trim());
+            log.info("PATCH /auth/profile/name - Profile name updated successfully for user: {}, newName={}", userId, newProfileName);
             return HttpResponse.ok(userMapper.toDTO(user));
         } catch (IllegalArgumentException e) {
             log.warn("PATCH /auth/profile/name - Invalid user ID format: {}", e.getMessage());
