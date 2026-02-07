@@ -796,6 +796,48 @@ Response: 200 OK
 **Notes:**
 - Only the comment author can unhide their own comment
 
+### User Endpoints
+
+#### 1. Get User's Own Comments
+```http
+GET /api/v1/users/me/comments?page=1&limit=20&sort=NEWEST
+Authorization: Bearer {jwt-token}
+
+Response: 200 OK
+{
+    "data": [
+        {
+            "id": "uuid",
+            "postId": "uuid",
+            "text": "Great post!",
+            "author": {
+                "id": "uuid",
+                "profileName": "Jane Smith",
+                "isAnonymous": true
+            },
+            "createdAt": "2026-01-28T..."
+        }
+    ],
+    "pagination": {
+        "page": 1,
+        "limit": 20,
+        "total": 50,
+        "totalPages": 3
+    }
+}
+```
+
+**Query Parameters:**
+- `page` (default: 1) - Page number (1-based)
+- `limit` (default: 20) - Comments per page (max: 100)
+- `sort` (default: "NEWEST") - Sort order: NEWEST, OLDEST
+
+**Notes:**
+- Returns all comments made by the authenticated user across all posts
+- Hidden (soft-deleted) comments are automatically excluded
+- Uses optimized query with composite database index for efficient retrieval
+- Performance: O(log K) where K is the user's total comment count
+
 ---
 
 ## Authentication & Authorization

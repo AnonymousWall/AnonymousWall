@@ -264,4 +264,33 @@ public class CommentsServiceImpl implements CommentsService {
             log.debug("User validated for campus post access: {}", userId);
         }
     }
+
+    /**
+     * Get user's own comments with pagination and sorting
+     * This is optimized with a composite index on (user_id, is_hidden, created_at)
+     * Performs a single query instead of N+1 queries
+     * Hidden comments are excluded (soft-deleted)
+     */
+    @Override
+    public Page<Comment> getUserOwnComments(UUID userId, Pageable pageable, SortBy sortBy) {
+        if (sortBy == null) {
+            sortBy = SortBy.NEWEST; // Default sorting
+        }
+
+        log.debug("Fetching user's own comments: userId={}, page={}, limit={}, sort={}", 
+            userId, pageable.getNumber() + 1, pageable.getSize(), sortBy);
+
+        // Comments only support sorting by created time
+        // MOST_LIKED/LEAST_LIKED are mapped to NEWEST/OLDEST for consistency with API
+        // since comments don't have a like count field
+        // Only non-hidden comments are returned
+        Page<Comment> comments = switch (sortBy) {
+            case NEWEST, MOST_LIKED -> commentRepository.findByUserIdAndHiddenFalseOrderByCreatedAtDesc(userId, pageable);
+            case OLDEST, LEAST_LIKED -> commentRepository.findByUserIdAndHiddenFalseOrderByCreatedAtAsc(userId, pageable);
+        };
+
+        log.info("Retrieved {} comments for user: {}, sort: {}, total: {}", 
+            comments.getNumberOfElements(), userId, sortBy, comments.getTotalSize());
+        return comments;
+    }
 }

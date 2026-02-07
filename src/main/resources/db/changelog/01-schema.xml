@@ -245,4 +245,14 @@
         </createIndex>
     </changeSet>
 
+    <!-- Optimize user's own comments query -->
+    <changeSet id="10-add-user-comments-composite-index" author="copilot">
+        <comment>Add composite index for efficient retrieval of user's own comments with filtering and sorting</comment>
+        <createIndex tableName="comments" indexName="idx_comments_user_created">
+            <column name="user_id"/>
+            <column name="is_hidden"/>
+            <column name="created_at" descending="true"/>
+        </createIndex>
+    </changeSet>
+
 </databaseChangeLog>
