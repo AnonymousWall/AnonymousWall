@@ -324,14 +324,10 @@ class UserControllerPostsTest {
 
             // Add likes to simulate different like counts
             // Post2: 5 likes, Post3: 2 likes, Post1: 0 likes
-            for (int i = 0; i < 5; i++) {
-                post2.setLikeCount(post2.getLikeCount() + 1);
-            }
+            post2.setLikeCount(post2.getLikeCount() + 5);
             postRepository.update(post2);
 
-            for (int i = 0; i < 2; i++) {
-                post3.setLikeCount(post3.getLikeCount() + 1);
-            }
+            post3.setLikeCount(post3.getLikeCount() + 2);
             postRepository.update(post3);
 
             String endpoint = BASE_PATH + "?sort=MOST_LIKED";
@@ -367,14 +363,10 @@ class UserControllerPostsTest {
 
             // Add likes to simulate different like counts
             // Post2: 5 likes, Post3: 2 likes, Post1: 0 likes
-            for (int i = 0; i < 5; i++) {
-                post2.setLikeCount(post2.getLikeCount() + 1);
-            }
+            post2.setLikeCount(post2.getLikeCount() + 5);
             postRepository.update(post2);
 
-            for (int i = 0; i < 2; i++) {
-                post3.setLikeCount(post3.getLikeCount() + 1);
-            }
+            post3.setLikeCount(post3.getLikeCount() + 2);
             postRepository.update(post3);
 
             String endpoint = BASE_PATH + "?sort=LEAST_LIKED";
