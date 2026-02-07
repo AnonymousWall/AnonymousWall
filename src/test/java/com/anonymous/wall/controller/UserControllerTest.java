@@ -24,8 +24,8 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 
 @MicronautTest(transactional = false)
-@DisplayName("User Own Comments Tests")
-class UserOwnCommentsTests {
+@DisplayName("UserController Tests")
+class UserControllerTest {
 
     private static final String BASE_PATH = "/api/v1/users/me/comments";
 
