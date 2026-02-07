@@ -3,7 +3,6 @@ package com.anonymous.wall.service;
 import com.anonymous.wall.model.*;
 import com.anonymous.wall.entity.UserEntity;
 import com.anonymous.wall.entity.EmailVerificationCode;
-import com.anonymous.wall.repository.UserRepository;
 import com.anonymous.wall.repository.EmailVerificationCodeRepository;
 import com.anonymous.wall.util.PasswordUtil;
 import com.anonymous.wall.util.CodeGenerator;
@@ -26,7 +25,7 @@ public class AuthServiceImpl implements AuthService {
     private static final int CODE_EXPIRATION_MINUTES = 15;
 
     @Inject
-    private UserRepository userRepository;
+    private UserService userService;
 
     @Inject
     private EmailVerificationCodeRepository emailCodeRepository;
@@ -73,7 +72,7 @@ public class AuthServiceImpl implements AuthService {
         }
 
         // Check if email already exists
-        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
+        if (userService.findByEmail(request.getEmail()).isPresent()) {
             log.warn("Registration failed - email already registered: {}", request.getEmail());
             throw new IllegalArgumentException("Email already registered");
         }
@@ -103,7 +102,7 @@ public class AuthServiceImpl implements AuthService {
         user.setPasswordSet(false);
         user.setCreatedAt(ZonedDateTime.now());
 
-        UserEntity savedUser = userRepository.save(user);
+        UserEntity savedUser = userService.save(user);
         log.debug("User account created, userId: {}, schoolDomain: {}", savedUser.getId(), savedUser.getSchoolDomain());
 
         // Clean up used code
@@ -141,7 +140,7 @@ public class AuthServiceImpl implements AuthService {
 
         // Find or create user
         log.debug("Looking up user account for email: {}", request.getEmail());
-        Optional<UserEntity> userOpt = userRepository.findByEmail(request.getEmail());
+        Optional<UserEntity> userOpt = userService.findByEmail(request.getEmail());
         UserEntity user;
 
         if (userOpt.isEmpty()) {
@@ -152,7 +151,7 @@ public class AuthServiceImpl implements AuthService {
             user.setVerified(true);
             user.setPasswordSet(false);
             user.setCreatedAt(ZonedDateTime.now());
-            user = userRepository.save(user);
+            user = userService.save(user);
             log.debug("Auto-created user account, userId: {}", user.getId());
         } else {
             user = userOpt.get();
@@ -174,7 +173,7 @@ public class AuthServiceImpl implements AuthService {
     public UserEntity loginWithPassword(PasswordLoginRequest request) {
         log.debug("Attempting password-based login for: {}", request.getEmail());
 
-        Optional<UserEntity> userOpt = userRepository.findByEmail(request.getEmail());
+        Optional<UserEntity> userOpt = userService.findByEmail(request.getEmail());
 
         if (userOpt.isEmpty()) {
             log.warn("Password login failed - user not found for email: {}", request.getEmail());
@@ -213,7 +212,7 @@ public class AuthServiceImpl implements AuthService {
         currentUser.setPasswordHash(hashedPassword);
         currentUser.setPasswordSet(true);
 
-        UserEntity updated = userRepository.update(currentUser);
+        UserEntity updated = userService.update(currentUser);
         log.info("Password set successfully for user: email={}, userId={}", currentUser.getEmail(), currentUser.getId());
         return updated;
     }
@@ -243,7 +242,7 @@ public class AuthServiceImpl implements AuthService {
         String hashedPassword = PasswordUtil.hashPassword(request.getNewPassword());
         currentUser.setPasswordHash(hashedPassword);
 
-        UserEntity updated = userRepository.update(currentUser);
+        UserEntity updated = userService.update(currentUser);
         log.info("Password changed successfully for user: email={}, userId={}", currentUser.getEmail(), currentUser.getId());
         return updated;
     }
@@ -255,7 +254,7 @@ public class AuthServiceImpl implements AuthService {
     public UserEntity requestPasswordReset(PasswordResetRequestRequest request) {
         log.debug("Processing password reset request for email: {}", request.getEmail());
 
-        Optional<UserEntity> userOpt = userRepository.findByEmail(request.getEmail());
+        Optional<UserEntity> userOpt = userService.findByEmail(request.getEmail());
 
         if (userOpt.isEmpty()) {
             // Don't reveal if email exists
@@ -290,7 +289,7 @@ public class AuthServiceImpl implements AuthService {
     public UserEntity resetPassword(ResetPasswordRequest request) {
         log.debug("Processing password reset for email: {}", request.getEmail());
 
-        Optional<UserEntity> userOpt = userRepository.findByEmail(request.getEmail());
+        Optional<UserEntity> userOpt = userService.findByEmail(request.getEmail());
 
         if (userOpt.isEmpty()) {
             log.warn("Password reset failed - user not found for email: {}", request.getEmail());
@@ -320,7 +319,7 @@ public class AuthServiceImpl implements AuthService {
         user.setPasswordHash(hashedPassword);
         user.setPasswordSet(true);
 
-        UserEntity updated = userRepository.update(user);
+        UserEntity updated = userService.update(user);
         log.debug("Password updated in database for email: {}", request.getEmail());
 
         // Clean up used code

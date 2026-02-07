@@ -4,7 +4,6 @@ import com.anonymous.wall.entity.EmailVerificationCode;
 import com.anonymous.wall.entity.UserEntity;
 import com.anonymous.wall.model.*;
 import com.anonymous.wall.repository.EmailVerificationCodeRepository;
-import com.anonymous.wall.repository.UserRepository;
 import com.anonymous.wall.util.PasswordUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -24,19 +23,19 @@ import static org.mockito.Mockito.*;
 class AuthServiceImplTest {
 
     private AuthServiceImpl authService;
-    private UserRepository userRepository;
+    private UserService userService;
     private EmailVerificationCodeRepository emailCodeRepository;
 
     @BeforeEach
     void setUp() {
-        userRepository = mock(UserRepository.class);
+        userService = mock(UserService.class);
         emailCodeRepository = mock(EmailVerificationCodeRepository.class);
         authService = new AuthServiceImpl();
         // Use reflection to inject mocks
         try {
-            var userRepoField = AuthServiceImpl.class.getDeclaredField("userRepository");
-            userRepoField.setAccessible(true);
-            userRepoField.set(authService, userRepository);
+            var userServiceField = AuthServiceImpl.class.getDeclaredField("userService");
+            userServiceField.setAccessible(true);
+            userServiceField.set(authService, userService);
 
             var emailRepoField = AuthServiceImpl.class.getDeclaredField("emailCodeRepository");
             emailRepoField.setAccessible(true);
@@ -120,10 +119,10 @@ class AuthServiceImplTest {
             savedUser.setEmail(email);
             savedUser.setVerified(true);
 
-            when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
+            when(userService.findByEmail(email)).thenReturn(Optional.empty());
             when(emailCodeRepository.findByEmailAndCodeAndPurpose(email, code, "register"))
                 .thenReturn(Optional.of(verificationCode));
-            when(userRepository.save(any(UserEntity.class))).thenReturn(savedUser);
+            when(userService.save(any(UserEntity.class))).thenReturn(savedUser);
 
             // Act
             UserEntity result = authService.registerWithEmail(request);
@@ -155,10 +154,10 @@ class AuthServiceImplTest {
             createdUser.setVerified(true);
             createdUser.setPasswordSet(false);
 
-            when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
+            when(userService.findByEmail(email)).thenReturn(Optional.empty());
             when(emailCodeRepository.findByEmailAndCodeAndPurpose(email, code, "register"))
                 .thenReturn(Optional.of(verificationCode));
-            when(userRepository.save(any(UserEntity.class))).thenReturn(createdUser);
+            when(userService.save(any(UserEntity.class))).thenReturn(createdUser);
 
             // Act
             UserEntity result = authService.registerWithEmail(request);
@@ -177,7 +176,7 @@ class AuthServiceImplTest {
 
             UserEntity existingUser = new UserEntity();
             existingUser.setEmail(email);
-            when(userRepository.findByEmail(email)).thenReturn(Optional.of(existingUser));
+            when(userService.findByEmail(email)).thenReturn(Optional.of(existingUser));
 
             // Act & Assert
             IllegalArgumentException exception = assertThrows(
@@ -185,7 +184,7 @@ class AuthServiceImplTest {
                 () -> authService.registerWithEmail(request)
             );
             assertEquals("Email already registered", exception.getMessage());
-            verify(userRepository, never()).save(any());
+            verify(userService, never()).save(any());
         }
 
         @Test
@@ -195,7 +194,7 @@ class AuthServiceImplTest {
             String email = "test@harvard.edu";
             RegisterEmailRequest request = new RegisterEmailRequest(email, "wrong_code");
 
-            when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
+            when(userService.findByEmail(email)).thenReturn(Optional.empty());
             when(emailCodeRepository.findByEmailAndCodeAndPurpose(email, "wrong_code", "register"))
                 .thenReturn(Optional.empty());
 
@@ -219,7 +218,7 @@ class AuthServiceImplTest {
                 email, code, "register", ZonedDateTime.now().minusMinutes(1)
             );
 
-            when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
+            when(userService.findByEmail(email)).thenReturn(Optional.empty());
             when(emailCodeRepository.findByEmailAndCodeAndPurpose(email, code, "register"))
                 .thenReturn(Optional.of(expiredCode));
 
@@ -255,7 +254,7 @@ class AuthServiceImplTest {
 
             when(emailCodeRepository.findByEmailAndCodeAndPurpose(email, code, "login"))
                 .thenReturn(Optional.of(verificationCode));
-            when(userRepository.findByEmail(email)).thenReturn(Optional.of(existingUser));
+            when(userService.findByEmail(email)).thenReturn(Optional.of(existingUser));
 
             // Act
             UserEntity result = authService.loginWithEmail(request);
@@ -286,8 +285,8 @@ class AuthServiceImplTest {
 
             when(emailCodeRepository.findByEmailAndCodeAndPurpose(email, code, "login"))
                 .thenReturn(Optional.of(verificationCode));
-            when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
-            when(userRepository.save(any(UserEntity.class))).thenReturn(newUser);
+            when(userService.findByEmail(email)).thenReturn(Optional.empty());
+            when(userService.save(any(UserEntity.class))).thenReturn(newUser);
 
             // Act
             UserEntity result = authService.loginWithEmail(request);
@@ -295,7 +294,7 @@ class AuthServiceImplTest {
             // Assert
             assertNotNull(result);
             assertEquals(email, result.getEmail());
-            verify(userRepository, times(1)).save(any(UserEntity.class));
+            verify(userService, times(1)).save(any(UserEntity.class));
         }
 
         @Test
@@ -360,7 +359,7 @@ class AuthServiceImplTest {
             // Generate proper hash for the password
             user.setPasswordHash(PasswordUtil.hashPassword(password));
 
-            when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));
+            when(userService.findByEmail(email)).thenReturn(Optional.of(user));
 
             // Act
             UserEntity result = authService.loginWithPassword(request);
@@ -382,7 +381,7 @@ class AuthServiceImplTest {
             user.setPasswordSet(true);
             user.setPasswordHash("$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy");
 
-            when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));
+            when(userService.findByEmail(email)).thenReturn(Optional.of(user));
 
             // Act & Assert
             IllegalArgumentException exception = assertThrows(
@@ -398,7 +397,7 @@ class AuthServiceImplTest {
             // Arrange
             PasswordLoginRequest request = new PasswordLoginRequest("nonexistent@harvard.edu", "password");
 
-            when(userRepository.findByEmail("nonexistent@harvard.edu")).thenReturn(Optional.empty());
+            when(userService.findByEmail("nonexistent@harvard.edu")).thenReturn(Optional.empty());
 
             // Act & Assert
             IllegalArgumentException exception = assertThrows(
@@ -419,7 +418,7 @@ class AuthServiceImplTest {
             user.setEmail(email);
             user.setPasswordSet(false);
 
-            when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));
+            when(userService.findByEmail(email)).thenReturn(Optional.of(user));
 
             // Act & Assert
             IllegalArgumentException exception = assertThrows(
@@ -441,7 +440,7 @@ class AuthServiceImplTest {
             user.setPasswordSet(false);
             user.setPasswordHash(null);
 
-            when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));
+            when(userService.findByEmail(email)).thenReturn(Optional.of(user));
 
             // Act & Assert
             IllegalArgumentException exception = assertThrows(
@@ -472,7 +471,7 @@ class AuthServiceImplTest {
             updatedUser.setEmail(currentUser.getEmail());
             updatedUser.setPasswordSet(true);
 
-            when(userRepository.update(any(UserEntity.class))).thenReturn(updatedUser);
+            when(userService.update(any(UserEntity.class))).thenReturn(updatedUser);
 
             // Act
             UserEntity result = authService.setPassword(request, currentUser);
@@ -481,7 +480,7 @@ class AuthServiceImplTest {
             assertNotNull(result);
             assertTrue(result.isPasswordSet());
             assertNotNull(currentUser.getPasswordHash());
-            verify(userRepository, times(1)).update(currentUser);
+            verify(userService, times(1)).update(currentUser);
         }
 
         @Test
@@ -519,14 +518,14 @@ class AuthServiceImplTest {
             // Generate proper hash for old password
             currentUser.setPasswordHash(PasswordUtil.hashPassword(oldPassword));
 
-            when(userRepository.update(any(UserEntity.class))).thenReturn(currentUser);
+            when(userService.update(any(UserEntity.class))).thenReturn(currentUser);
 
             // Act
             UserEntity result = authService.changePassword(request, currentUser);
 
             // Assert
             assertNotNull(result);
-            verify(userRepository, times(1)).update(currentUser);
+            verify(userService, times(1)).update(currentUser);
             // Password hash should exist
             assertNotNull(currentUser.getPasswordHash());
         }
@@ -614,7 +613,7 @@ class AuthServiceImplTest {
             user.setId(UUID.randomUUID());
             user.setEmail(email);
 
-            when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));
+            when(userService.findByEmail(email)).thenReturn(Optional.of(user));
 
             // Act
             UserEntity result = authService.requestPasswordReset(request);
@@ -631,7 +630,7 @@ class AuthServiceImplTest {
             // Arrange
             PasswordResetRequestRequest request = new PasswordResetRequestRequest("nonexistent@harvard.edu");
 
-            when(userRepository.findByEmail("nonexistent@harvard.edu")).thenReturn(Optional.empty());
+            when(userService.findByEmail("nonexistent@harvard.edu")).thenReturn(Optional.empty());
 
             // Act & Assert
             IllegalArgumentException exception = assertThrows(
@@ -670,10 +669,10 @@ class AuthServiceImplTest {
             updatedUser.setEmail(email);
             updatedUser.setPasswordSet(true);
 
-            when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));
+            when(userService.findByEmail(email)).thenReturn(Optional.of(user));
             when(emailCodeRepository.findByEmailAndCodeAndPurpose(email, code, "reset_password"))
                 .thenReturn(Optional.of(verificationCode));
-            when(userRepository.update(any(UserEntity.class))).thenReturn(updatedUser);
+            when(userService.update(any(UserEntity.class))).thenReturn(updatedUser);
 
             // Act
             UserEntity result = authService.resetPassword(request);
@@ -690,7 +689,7 @@ class AuthServiceImplTest {
             // Arrange
             ResetPasswordRequest request = new ResetPasswordRequest("nonexistent@harvard.edu", "123456", "password");
 
-            when(userRepository.findByEmail("nonexistent@harvard.edu")).thenReturn(Optional.empty());
+            when(userService.findByEmail("nonexistent@harvard.edu")).thenReturn(Optional.empty());
 
             // Act & Assert
             IllegalArgumentException exception = assertThrows(
@@ -710,7 +709,7 @@ class AuthServiceImplTest {
             UserEntity user = new UserEntity();
             user.setEmail(email);
 
-            when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));
+            when(userService.findByEmail(email)).thenReturn(Optional.of(user));
             when(emailCodeRepository.findByEmailAndCodeAndPurpose(email, "invalid", "reset_password"))
                 .thenReturn(Optional.empty());
 
@@ -737,7 +736,7 @@ class AuthServiceImplTest {
             UserEntity user = new UserEntity();
             user.setEmail(email);
 
-            when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));
+            when(userService.findByEmail(email)).thenReturn(Optional.of(user));
             when(emailCodeRepository.findByEmailAndCodeAndPurpose(email, code, "reset_password"))
                 .thenReturn(Optional.of(expiredCode));
 
@@ -766,17 +765,17 @@ class AuthServiceImplTest {
             user.setPasswordSet(true);
             user.setPasswordHash("oldHash");
 
-            when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));
+            when(userService.findByEmail(email)).thenReturn(Optional.of(user));
             when(emailCodeRepository.findByEmailAndCodeAndPurpose(email, code, "reset_password"))
                 .thenReturn(Optional.of(verificationCode));
-            when(userRepository.update(any(UserEntity.class))).thenReturn(user);
+            when(userService.update(any(UserEntity.class))).thenReturn(user);
 
             // Act
             UserEntity result = authService.resetPassword(request);
 
             // Assert
             assertNotNull(result);
-            verify(userRepository, times(1)).update(user);
+            verify(userService, times(1)).update(user);
         }
     }
 
@@ -849,10 +848,10 @@ class AuthServiceImplTest {
             registeredUser.setVerified(true);
             registeredUser.setPasswordSet(false);
 
-            when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
+            when(userService.findByEmail(email)).thenReturn(Optional.empty());
             when(emailCodeRepository.findByEmailAndCodeAndPurpose(email, code, "register"))
                 .thenReturn(Optional.of(verificationCode));
-            when(userRepository.save(any(UserEntity.class))).thenReturn(registeredUser);
+            when(userService.save(any(UserEntity.class))).thenReturn(registeredUser);
 
             // Act - Register
             UserEntity registered = authService.registerWithEmail(registerRequest);
@@ -869,7 +868,7 @@ class AuthServiceImplTest {
             updatedUser.setEmail(email);
             updatedUser.setPasswordSet(true);
 
-            when(userRepository.update(any(UserEntity.class))).thenReturn(updatedUser);
+            when(userService.update(any(UserEntity.class))).thenReturn(updatedUser);
 
             // Act - Set password
             UserEntity passwordSet = authService.setPassword(setPasswordRequest, registered);
@@ -900,14 +899,14 @@ class AuthServiceImplTest {
             updatedUser.setEmail(email);
             updatedUser.setPasswordSet(true);
 
-            when(userRepository.update(any(UserEntity.class))).thenReturn(updatedUser);
+            when(userService.update(any(UserEntity.class))).thenReturn(updatedUser);
 
             // Act
             UserEntity result = authService.changePassword(changeRequest, user);
 
             // Assert
             assertNotNull(result);
-            verify(userRepository).update(user);
+            verify(userService).update(user);
         }
 
         @Test
@@ -927,10 +926,10 @@ class AuthServiceImplTest {
             user.setEmail(email);
             user.setVerified(true);
 
-            when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
+            when(userService.findByEmail(email)).thenReturn(Optional.empty());
             when(emailCodeRepository.findByEmailAndCodeAndPurpose(email, code, "register"))
                 .thenReturn(Optional.of(registerCode));
-            when(userRepository.save(any(UserEntity.class))).thenReturn(user);
+            when(userService.save(any(UserEntity.class))).thenReturn(user);
 
             RegisterEmailRequest registerRequest = new RegisterEmailRequest(email, code);
 
@@ -968,14 +967,14 @@ class AuthServiceImplTest {
             user.setEmail("secure@harvard.edu");
             user.setPasswordSet(false);
 
-            when(userRepository.update(any(UserEntity.class))).thenReturn(user);
+            when(userService.update(any(UserEntity.class))).thenReturn(user);
 
             // Act
             authService.setPassword(request, user);
 
             // Assert
             ArgumentCaptor<UserEntity> captor = ArgumentCaptor.forClass(UserEntity.class);
-            verify(userRepository).update(captor.capture());
+            verify(userService).update(captor.capture());
             UserEntity updatedUser = captor.getValue();
 
             assertNotNull(updatedUser.getPasswordHash());
@@ -995,13 +994,13 @@ class AuthServiceImplTest {
             user.setEmail("secure@harvard.edu");
 
             // This should ideally fail at validation layer, but if service accepts it
-            when(userRepository.update(any(UserEntity.class))).thenReturn(user);
+            when(userService.update(any(UserEntity.class))).thenReturn(user);
 
             // Act
             authService.setPassword(request, user);
 
             // Assert - Should still set password (validation may be at controller level)
-            verify(userRepository, times(1)).update(any(UserEntity.class));
+            verify(userService, times(1)).update(any(UserEntity.class));
         }
 
         @Test
@@ -1020,7 +1019,7 @@ class AuthServiceImplTest {
             updatedUser.setId(user.getId());
             updatedUser.setPasswordSet(true);
 
-            when(userRepository.update(any(UserEntity.class))).thenReturn(updatedUser);
+            when(userService.update(any(UserEntity.class))).thenReturn(updatedUser);
 
             // Act
             UserEntity result = authService.setPassword(request, user);
@@ -1028,7 +1027,7 @@ class AuthServiceImplTest {
             // Assert
             assertNotNull(result);
             assertTrue(result.isPasswordSet());
-            verify(userRepository).update(any(UserEntity.class));
+            verify(userService).update(any(UserEntity.class));
         }
 
         @Test
@@ -1050,10 +1049,10 @@ class AuthServiceImplTest {
             createdUser.setVerified(true);
             createdUser.setPasswordSet(false);
 
-            when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
+            when(userService.findByEmail(email)).thenReturn(Optional.empty());
             when(emailCodeRepository.findByEmailAndCodeAndPurpose(email, code, "register"))
                 .thenReturn(Optional.of(verificationCode));
-            when(userRepository.save(any(UserEntity.class))).thenReturn(createdUser);
+            when(userService.save(any(UserEntity.class))).thenReturn(createdUser);
 
             // Act
             UserEntity result = authService.registerWithEmail(request);
