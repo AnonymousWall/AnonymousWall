@@ -255,4 +255,23 @@
         </createIndex>
     </changeSet>
 
+    <!-- Optimize user's own posts query -->
+    <changeSet id="11-add-user-posts-composite-index" author="copilot">
+        <comment>Add composite index for efficient retrieval of user's own posts with filtering and sorting by created_at</comment>
+        <createIndex tableName="posts" indexName="idx_posts_user_created">
+            <column name="user_id"/>
+            <column name="is_hidden"/>
+            <column name="created_at" descending="true"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="12-add-user-posts-like-count-index" author="copilot">
+        <comment>Add composite index for efficient retrieval of user's own posts with filtering and sorting by like_count</comment>
+        <createIndex tableName="posts" indexName="idx_posts_user_likes">
+            <column name="user_id"/>
+            <column name="is_hidden"/>
+            <column name="like_count" descending="true"/>
+        </createIndex>
+    </changeSet>
+
 </databaseChangeLog>

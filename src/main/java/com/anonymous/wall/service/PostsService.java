@@ -61,4 +61,10 @@ public interface PostsService {
      * When a post is unhidden, all its previously hidden comments are restored
      */
     Post unhidePost(UUID postId, UUID userId);
+
+    /**
+     * Get user's own posts with pagination and sorting
+     * Only returns non-hidden posts
+     */
+    Page<Post> getUserOwnPosts(UUID userId, Pageable pageable, SortBy sortBy);
 }

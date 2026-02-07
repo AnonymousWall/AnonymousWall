@@ -117,4 +117,30 @@ public interface PostRepository extends CrudRepository<Post, UUID> {
      * Find non-hidden campus posts by wall and domain, sorted by like count (least liked first)
      */
     Page<Post> findByWallAndSchoolDomainAndHiddenFalseOrderByLikeCountAsc(String wall, String schoolDomain, Pageable pageable);
+
+    // ===== User's Own Posts =====
+    /**
+     * Find non-hidden posts by a user with pagination, sorted by created time (newest first)
+     */
+    Page<Post> findByUserIdAndHiddenFalseOrderByCreatedAtDesc(UUID userId, Pageable pageable);
+
+    /**
+     * Find non-hidden posts by a user with pagination, sorted by created time (oldest first)
+     */
+    Page<Post> findByUserIdAndHiddenFalseOrderByCreatedAtAsc(UUID userId, Pageable pageable);
+
+    /**
+     * Find non-hidden posts by a user with pagination, sorted by like count (most liked first)
+     */
+    Page<Post> findByUserIdAndHiddenFalseOrderByLikeCountDesc(UUID userId, Pageable pageable);
+
+    /**
+     * Find non-hidden posts by a user with pagination, sorted by like count (least liked first)
+     */
+    Page<Post> findByUserIdAndHiddenFalseOrderByLikeCountAsc(UUID userId, Pageable pageable);
+
+    /**
+     * Count non-hidden posts by a user
+     */
+    long countByUserIdAndHiddenFalse(UUID userId);
 }
