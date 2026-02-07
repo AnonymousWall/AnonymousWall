@@ -838,6 +838,52 @@ Response: 200 OK
 - Uses optimized query with composite database index for efficient retrieval
 - Performance: O(log K) where K is the user's total comment count
 
+#### 2. Get User's Own Posts
+```http
+GET /api/v1/users/me/posts?page=1&limit=20&sort=NEWEST
+Authorization: Bearer {jwt-token}
+
+Response: 200 OK
+{
+    "data": [
+        {
+            "id": "uuid",
+            "title": "My Post Title",
+            "content": "Post content here...",
+            "wall": "campus",
+            "likes": 42,
+            "comments": 15,
+            "liked": false,
+            "author": {
+                "id": "uuid",
+                "profileName": "John Doe",
+                "isAnonymous": true
+            },
+            "createdAt": "2026-01-28T...",
+            "updatedAt": "2026-01-28T..."
+        }
+    ],
+    "pagination": {
+        "page": 1,
+        "limit": 20,
+        "total": 100,
+        "totalPages": 5
+    }
+}
+```
+
+**Query Parameters:**
+- `page` (default: 1) - Page number (1-based)
+- `limit` (default: 20) - Posts per page (max: 100)
+- `sort` (default: "NEWEST") - Sort order: NEWEST, OLDEST, MOST_LIKED, LEAST_LIKED
+
+**Notes:**
+- Returns all posts created by the authenticated user
+- Hidden (soft-deleted) posts are automatically excluded
+- Uses optimized queries with composite database indexes for efficient retrieval
+- Performance: O(log K) where K is the user's total post count
+- Supports sorting by creation time or like count
+
 ---
 
 ## Authentication & Authorization
