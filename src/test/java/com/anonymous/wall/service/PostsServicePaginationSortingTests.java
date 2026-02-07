@@ -306,7 +306,7 @@ class PostsServicePaginationSortingTests {
         @DisplayName("Should handle null SortBy with default")
         void shouldHandleNullSortBy() {
             Pageable pageable = Pageable.from(0, 10);
-            Page<Post> result = postsService.getPostsByWall("campus", pageable, campusUserId, null);
+            Page<Post> result = postsService.getPostsByWall("campus", pageable, campusUserId, (SortBy) null);
 
             assertNotNull(result, "Should return results even with null SortBy");
             assertEquals(10, result.getContent().size());

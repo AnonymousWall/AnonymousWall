@@ -115,7 +115,7 @@ class PostsServiceOptimizedUserLookupTest {
 
             // Use optimized method with null schoolDomain (user has no school)
             Pageable pageable = Pageable.from(0, 10);
-            Page<Post> result = postsService.getPostsByWall("campus", pageable, userId1, null);
+            Page<Post> result = postsService.getPostsByWall("campus", pageable, userId1, "");
 
             assertTrue(result.getContent().isEmpty(), "Should return empty page when no school domain");
         }
