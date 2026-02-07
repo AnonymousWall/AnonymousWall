@@ -1,9 +1,8 @@
 package com.anonymous.wall.controller;
 
 import com.anonymous.wall.entity.Comment;
-import com.anonymous.wall.model.CommentDTO;
-import com.anonymous.wall.model.CommentDTOAuthor;
-import com.anonymous.wall.model.SortBy;
+import com.anonymous.wall.entity.Post;
+import com.anonymous.wall.model.*;
 import com.anonymous.wall.service.CommentsService;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
@@ -29,6 +28,9 @@ public class UserController {
 
     @Inject
     private CommentsService commentsService;
+
+    @Inject
+    private com.anonymous.wall.service.PostsService postsService;
 
     // Helper to extract user ID from Principal
     private UUID getUserIdFromRequest(HttpRequest<?> request) {
@@ -98,6 +100,58 @@ public class UserController {
         }
     }
 
+    /**
+     * GET /users/me/posts
+     * Get current user's own posts with pagination and sorting
+     * Query parameters: page (default 1), limit (default 20), sort (default NEWEST)
+     * Sort options: NEWEST, OLDEST, MOST_LIKED, LEAST_LIKED
+     * Hidden posts are excluded (soft-deleted posts are not shown)
+     */
+    @Get("/me/posts")
+    @Secured(SecurityRule.IS_AUTHENTICATED)
+    public HttpResponse<Object> getUserPosts(
+            @QueryValue(defaultValue = "1") int page,
+            @QueryValue(defaultValue = "20") int limit,
+            @QueryValue(defaultValue = "NEWEST") String sort,
+            HttpRequest<?> httpRequest) {
+        try {
+            UUID userId = getUserIdFromRequest(httpRequest);
+            log.info("GET /users/me/posts - Getting user's own posts, user={}, page={}, limit={}, sort={}", 
+                userId, page, limit, sort);
+
+            // Validate pagination parameters
+            if (page < 1) page = 1;
+            if (limit < 1 || limit > 100) limit = 20;
+
+            Pageable pageable = Pageable.from(page - 1, limit);
+            SortBy sortBy = SortBy.parse(sort);
+            Page<Post> postPage = postsService.getUserOwnPosts(userId, pageable, sortBy);
+
+            List<PostDTO> dtos = postPage.getContent().stream()
+                    .map(this::mapPostToDTO)
+                    .collect(Collectors.toList());
+
+            Map<String, Object> pagination = new HashMap<>();
+            pagination.put("page", page);
+            pagination.put("limit", limit);
+            pagination.put("total", postPage.getTotalSize());
+            pagination.put("totalPages", postPage.getTotalPages());
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("data", dtos);
+            response.put("pagination", pagination);
+
+            log.info("GET /users/me/posts - Successfully retrieved {} posts", dtos.size());
+            return HttpResponse.ok(response);
+        } catch (IllegalArgumentException e) {
+            log.warn("GET /users/me/posts - Bad request: {}", e.getMessage());
+            return HttpResponse.badRequest(error(e.getMessage()));
+        } catch (Exception e) {
+            log.error("GET /users/me/posts - Error getting user posts", e);
+            return HttpResponse.badRequest(error("Failed to get user posts"));
+        }
+    }
+
     // ================= DTO Mapping Methods =================
 
     private CommentDTO mapCommentToDTO(Comment comment) {
@@ -112,6 +166,28 @@ public class UserController {
         author.setId(comment.getUserId().toString());
         author.setProfileName(comment.getProfileName());
         author.setIsAnonymous(true); // All comments are anonymous
+        dto.setAuthor(author);
+
+        return dto;
+    }
+
+    private PostDTO mapPostToDTO(Post post) {
+        PostDTO dto = new PostDTO();
+        dto.setId(post.getId());
+        dto.setTitle(post.getTitle());
+        dto.setContent(post.getContent());
+        dto.setWall(PostDTOWall.valueOf(post.getWall().toUpperCase()));
+        dto.setLikes(post.getLikeCount());
+        dto.setComments(post.getCommentCount());
+        dto.setLiked(post.isLiked());
+        dto.setCreatedAt(post.getCreatedAt());
+        dto.setUpdatedAt(post.getUpdatedAt());
+
+        // Set author info (anonymous)
+        PostDTOAuthor author = new PostDTOAuthor();
+        author.setId(post.getUserId().toString());
+        author.setProfileName(post.getProfileName());
+        author.setIsAnonymous(true); // All posts are anonymous
         dto.setAuthor(author);
 
         return dto;

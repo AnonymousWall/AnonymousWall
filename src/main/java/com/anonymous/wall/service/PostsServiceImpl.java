@@ -520,4 +520,26 @@ public class PostsServiceImpl implements PostsService {
         log.info("Post unhidden: id={}, user={}", postId, userId);
         return updatedPost;
     }
+
+    @Override
+    public Page<Post> getUserOwnPosts(UUID userId, Pageable pageable, SortBy sortBy) {
+        if (sortBy == null) {
+            sortBy = SortBy.NEWEST; // Default sorting
+        }
+
+        log.debug("Fetching user's own posts: userId={}, page={}, limit={}, sort={}", 
+            userId, pageable.getNumber() + 1, pageable.getSize(), sortBy);
+
+        // Only non-hidden posts are returned
+        Page<Post> posts = switch (sortBy) {
+            case NEWEST -> postRepository.findByUserIdAndHiddenFalseOrderByCreatedAtDesc(userId, pageable);
+            case OLDEST -> postRepository.findByUserIdAndHiddenFalseOrderByCreatedAtAsc(userId, pageable);
+            case MOST_LIKED -> postRepository.findByUserIdAndHiddenFalseOrderByLikeCountDesc(userId, pageable);
+            case LEAST_LIKED -> postRepository.findByUserIdAndHiddenFalseOrderByLikeCountAsc(userId, pageable);
+        };
+
+        log.info("Retrieved {} posts for user: {}, sort: {}, total: {}", 
+            posts.getNumberOfElements(), userId, sortBy, posts.getTotalSize());
+        return posts;
+    }
 }
