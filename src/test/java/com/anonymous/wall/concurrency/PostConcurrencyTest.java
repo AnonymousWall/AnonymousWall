@@ -9,6 +9,7 @@ import com.anonymous.wall.repository.CommentRepository;
 import com.anonymous.wall.repository.PostLikeRepository;
 import com.anonymous.wall.repository.UserRepository;
 import com.anonymous.wall.service.PostsService;
+import com.anonymous.wall.service.CommentsService;
 import io.micronaut.test.extensions.junit5.annotation.MicronautTest;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.AfterEach;
@@ -30,6 +31,9 @@ public class PostConcurrencyTest {
 
     @Inject
     private PostsService postsService;
+
+    @Inject
+    private CommentsService commentsService;
 
     @Inject
     private PostRepository postRepository;
@@ -83,7 +87,7 @@ public class PostConcurrencyTest {
                     try {
                         startLatch.await();
                         CreateCommentRequest request = new CreateCommentRequest("Concurrent comment #" + commentNumber);
-                        Comment result = postsService.addComment(testPost.getId(), request, testUser.getId());
+                        Comment result = commentsService.addComment(testPost.getId(), request, testUser.getId());
                         if (result != null && result.getId() != null) {
                             successCount.incrementAndGet();
                         }
@@ -167,7 +171,7 @@ public class PostConcurrencyTest {
         // Add comments sequentially
         for (int i = 0; i < commentCount; i++) {
             CreateCommentRequest request = new CreateCommentRequest("Mixed operation comment #" + i);
-            postsService.addComment(testPost.getId(), request, testUser.getId());
+            commentsService.addComment(testPost.getId(), request, testUser.getId());
         }
 
         // Add likes sequentially
@@ -203,7 +207,7 @@ public class PostConcurrencyTest {
                     try {
                         startLatch.await();
                         CreateCommentRequest request = new CreateCommentRequest("High-load comment #" + threadNumber);
-                        Comment result = postsService.addComment(testPost.getId(), request, testUser.getId());
+                        Comment result = commentsService.addComment(testPost.getId(), request, testUser.getId());
                         if (result != null) {
                             successCount.incrementAndGet();
                         }

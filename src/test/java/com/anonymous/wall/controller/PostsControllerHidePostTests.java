@@ -9,6 +9,7 @@ import com.anonymous.wall.repository.PostRepository;
 import com.anonymous.wall.repository.UserRepository;
 import com.anonymous.wall.service.JwtTokenService;
 import com.anonymous.wall.service.PostsService;
+import com.anonymous.wall.service.CommentsService;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.HttpStatus;
@@ -52,6 +53,9 @@ class PostsControllerHidePostTests {
 
     @Inject
     PostsService postsService;
+
+    @Inject
+    CommentsService commentsService;
 
     private static final String BASE_PATH = "/api/v1/posts";
 
@@ -151,13 +155,13 @@ class PostsControllerHidePostTests {
         @DisplayName("Hide post cascades to hide all comments")
         void shouldHideAllCommentsCascade() {
             // Arrange - Create 3 comments on the post
-            Comment comment1 = postsService.addComment(testPost.getId(),
+            Comment comment1 = commentsService.addComment(testPost.getId(),
                     new com.anonymous.wall.model.CreateCommentRequest("Comment 1"),
                     authorUser.getId());
-            Comment comment2 = postsService.addComment(testPost.getId(),
+            Comment comment2 = commentsService.addComment(testPost.getId(),
                     new com.anonymous.wall.model.CreateCommentRequest("Comment 2"),
                     otherUser.getId());
-            Comment comment3 = postsService.addComment(testPost.getId(),
+            Comment comment3 = commentsService.addComment(testPost.getId(),
                     new com.anonymous.wall.model.CreateCommentRequest("Comment 3"),
                     authorUser.getId());
 
@@ -335,10 +339,10 @@ class PostsControllerHidePostTests {
         @DisplayName("Unhide post restores all hidden comments")
         void shouldRestoreAllCommentsWhenUnhiding() {
             // Arrange - Create comments and hide post
-            Comment comment1 = postsService.addComment(testPost.getId(),
+            Comment comment1 = commentsService.addComment(testPost.getId(),
                     new com.anonymous.wall.model.CreateCommentRequest("Comment 1"),
                     authorUser.getId());
-            Comment comment2 = postsService.addComment(testPost.getId(),
+            Comment comment2 = commentsService.addComment(testPost.getId(),
                     new com.anonymous.wall.model.CreateCommentRequest("Comment 2"),
                     otherUser.getId());
 
@@ -509,10 +513,10 @@ class PostsControllerHidePostTests {
         @DisplayName("Hiding post hides all comments regardless of who created them")
         void shouldHideAllCommentsRegardlessOfAuthor() {
             // Arrange - Create comments from different users
-            Comment authorComment = postsService.addComment(testPost.getId(),
+            Comment authorComment = commentsService.addComment(testPost.getId(),
                     new com.anonymous.wall.model.CreateCommentRequest("Author comment"),
                     authorUser.getId());
-            Comment otherComment = postsService.addComment(testPost.getId(),
+            Comment otherComment = commentsService.addComment(testPost.getId(),
                     new com.anonymous.wall.model.CreateCommentRequest("Other user comment"),
                     otherUser.getId());
 
@@ -534,13 +538,13 @@ class PostsControllerHidePostTests {
         @DisplayName("Hiding then unhiding post preserves comment count")
         void shouldPreserveCommentCountThroughHideUnhide() {
             // Arrange - Create multiple comments
-            postsService.addComment(testPost.getId(),
+            commentsService.addComment(testPost.getId(),
                     new com.anonymous.wall.model.CreateCommentRequest("Comment 1"),
                     authorUser.getId());
-            postsService.addComment(testPost.getId(),
+            commentsService.addComment(testPost.getId(),
                     new com.anonymous.wall.model.CreateCommentRequest("Comment 2"),
                     otherUser.getId());
-            postsService.addComment(testPost.getId(),
+            commentsService.addComment(testPost.getId(),
                     new com.anonymous.wall.model.CreateCommentRequest("Comment 3"),
                     authorUser.getId());
 
@@ -608,10 +612,10 @@ class PostsControllerHidePostTests {
         @DisplayName("Hide/Unhide operations are transactional (atomic)")
         void shouldBeAtomicOperation() {
             // Arrange - Create comments
-            postsService.addComment(testPost.getId(),
+            commentsService.addComment(testPost.getId(),
                     new com.anonymous.wall.model.CreateCommentRequest("Comment 1"),
                     authorUser.getId());
-            postsService.addComment(testPost.getId(),
+            commentsService.addComment(testPost.getId(),
                     new com.anonymous.wall.model.CreateCommentRequest("Comment 2"),
                     otherUser.getId());
 

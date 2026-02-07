@@ -25,6 +25,9 @@ class ProfileNameServiceTests {
     private PostsService postsService;
 
     @Inject
+    private CommentsService commentsService;
+
+    @Inject
     private UserRepository userRepository;
 
     @Inject
@@ -181,7 +184,7 @@ class ProfileNameServiceTests {
             CreateCommentRequest request = new CreateCommentRequest("Test comment");
 
             // Act
-            Comment comment = postsService.addComment(testPost.getId(), request, userCustomName.getId());
+            Comment comment = commentsService.addComment(testPost.getId(), request, userCustomName.getId());
 
             // Assert
             assertEquals("Bob Builder", comment.getProfileName());
@@ -200,7 +203,7 @@ class ProfileNameServiceTests {
             CreateCommentRequest request = new CreateCommentRequest("Anonymous comment");
 
             // Act
-            Comment comment = postsService.addComment(testPost.getId(), request, userDefaultName.getId());
+            Comment comment = commentsService.addComment(testPost.getId(), request, userDefaultName.getId());
 
             // Assert
             assertEquals("Anonymous", comment.getProfileName());
@@ -217,7 +220,7 @@ class ProfileNameServiceTests {
             // First comment
             CreateCommentRequest request1 = new CreateCommentRequest("First comment");
 
-            Comment comment1 = postsService.addComment(testPost.getId(), request1, userDefaultName.getId());
+            Comment comment1 = commentsService.addComment(testPost.getId(), request1, userDefaultName.getId());
             assertEquals("Anonymous", comment1.getProfileName());
 
             // Change profile name
@@ -227,7 +230,7 @@ class ProfileNameServiceTests {
             // Second comment
             CreateCommentRequest request2 = new CreateCommentRequest("Second comment");
 
-            Comment comment2 = postsService.addComment(testPost.getId(), request2, userDefaultName.getId());
+            Comment comment2 = commentsService.addComment(testPost.getId(), request2, userDefaultName.getId());
             assertEquals("Changed Name", comment2.getProfileName());
 
             // Verify first comment still has original name
@@ -243,7 +246,7 @@ class ProfileNameServiceTests {
             CreateCommentRequest request = new CreateCommentRequest("Test comment");
 
             // Act
-            Comment comment = postsService.addComment(testPost.getId(), request, userCustomName.getId());
+            Comment comment = commentsService.addComment(testPost.getId(), request, userCustomName.getId());
 
             // Assert
             assertNotNull(comment.getProfileName());
@@ -256,13 +259,13 @@ class ProfileNameServiceTests {
             // First comment from user with custom name
             CreateCommentRequest request1 = new CreateCommentRequest("Comment from Bob");
 
-            Comment comment1 = postsService.addComment(testPost.getId(), request1, userCustomName.getId());
+            Comment comment1 = commentsService.addComment(testPost.getId(), request1, userCustomName.getId());
             assertEquals("Bob Builder", comment1.getProfileName());
 
             // Second comment from user with default name
             CreateCommentRequest request2 = new CreateCommentRequest("Comment from Anonymous");
 
-            Comment comment2 = postsService.addComment(testPost.getId(), request2, userDefaultName.getId());
+            Comment comment2 = commentsService.addComment(testPost.getId(), request2, userDefaultName.getId());
             assertEquals("Anonymous", comment2.getProfileName());
 
             // Verify both
@@ -326,7 +329,7 @@ class ProfileNameServiceTests {
             // Create comment
             CreateCommentRequest commentRequest = new CreateCommentRequest("Comment with original name");
 
-            Comment comment = postsService.addComment(testPost.getId(), commentRequest, testUser.getId());
+            Comment comment = commentsService.addComment(testPost.getId(), commentRequest, testUser.getId());
             assertEquals("Original Name", comment.getProfileName());
 
             // Change user's profile name

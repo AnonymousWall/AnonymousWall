@@ -26,6 +26,9 @@ class PostsServiceHideCommentTests {
     private PostsService postsService;
 
     @Inject
+    private CommentsService commentsService;
+
+    @Inject
     private PostRepository postRepository;
 
     @Inject
@@ -80,10 +83,10 @@ class PostsServiceHideCommentTests {
 
         // Create test comments
         // Use service to ensure comment counts are properly updated
-        campusComment = postsService.addComment(campusPost.getId(),
+        campusComment = commentsService.addComment(campusPost.getId(),
             new com.anonymous.wall.model.CreateCommentRequest("Campus comment"), userCampusId);
 
-        nationalComment = postsService.addComment(nationalPost.getId(),
+        nationalComment = commentsService.addComment(nationalPost.getId(),
             new com.anonymous.wall.model.CreateCommentRequest("National comment"), userCampusId);
     }
 
@@ -107,7 +110,7 @@ class PostsServiceHideCommentTests {
         void shouldHideOwnCommentOnCampusPost() {
             assertFalse(campusComment.isHidden(), "Comment should initially be visible");
 
-            Comment result = postsService.hideComment(campusPost.getId(), campusComment.getId(), userCampusId);
+            Comment result = commentsService.hideComment(campusPost.getId(), campusComment.getId(), userCampusId);
 
             assertTrue(result.isHidden(), "Comment should be hidden");
 
@@ -123,7 +126,7 @@ class PostsServiceHideCommentTests {
         void shouldHideOwnCommentOnNationalPost() {
             assertFalse(nationalComment.isHidden(), "Comment should initially be visible");
 
-            Comment result = postsService.hideComment(nationalPost.getId(), nationalComment.getId(), userCampusId);
+            Comment result = commentsService.hideComment(nationalPost.getId(), nationalComment.getId(), userCampusId);
 
             assertTrue(result.isHidden(), "Comment should be hidden");
 
@@ -137,10 +140,10 @@ class PostsServiceHideCommentTests {
         @DisplayName("Should handle hiding already hidden comment (idempotent)")
         void shouldHandleHidingAlreadyHiddenComment() {
             // First hide
-            postsService.hideComment(campusPost.getId(), campusComment.getId(), userCampusId);
+            commentsService.hideComment(campusPost.getId(), campusComment.getId(), userCampusId);
 
             // Hide again
-            Comment result = postsService.hideComment(campusPost.getId(), campusComment.getId(), userCampusId);
+            Comment result = commentsService.hideComment(campusPost.getId(), campusComment.getId(), userCampusId);
 
             assertTrue(result.isHidden(), "Comment should still be hidden");
 
@@ -157,7 +160,7 @@ class PostsServiceHideCommentTests {
             UUID originalPostId = campusComment.getPostId();
             UUID originalUserId = campusComment.getUserId();
 
-            postsService.hideComment(campusPost.getId(), campusComment.getId(), userCampusId);
+            commentsService.hideComment(campusPost.getId(), campusComment.getId(), userCampusId);
 
             Optional<Comment> result = commentRepository.findById(campusComment.getId());
             assertTrue(result.isPresent());
@@ -172,7 +175,7 @@ class PostsServiceHideCommentTests {
         void shouldIncrementVersionWhenHiding() {
             Long initialVersion = campusComment.getVersion();
 
-            postsService.hideComment(campusPost.getId(), campusComment.getId(), userCampusId);
+            commentsService.hideComment(campusPost.getId(), campusComment.getId(), userCampusId);
 
             Optional<Comment> result = commentRepository.findById(campusComment.getId());
             assertTrue(result.isPresent());
@@ -189,12 +192,12 @@ class PostsServiceHideCommentTests {
         @DisplayName("Should unhide own hidden comment on campus post")
         void shouldUnhideOwnHiddenCommentOnCampusPost() {
             // First hide
-            postsService.hideComment(campusPost.getId(), campusComment.getId(), userCampusId);
+            commentsService.hideComment(campusPost.getId(), campusComment.getId(), userCampusId);
             Optional<Comment> hidden = commentRepository.findById(campusComment.getId());
             assertTrue(hidden.isPresent() && hidden.get().isHidden(), "Comment should be hidden after hide operation");
 
             // Then unhide
-            Comment result = postsService.unhideComment(campusPost.getId(), campusComment.getId(), userCampusId);
+            Comment result = commentsService.unhideComment(campusPost.getId(), campusComment.getId(), userCampusId);
 
             assertFalse(result.isHidden(), "Comment should be visible after unhide");
 
@@ -208,10 +211,10 @@ class PostsServiceHideCommentTests {
         @DisplayName("Should unhide own hidden comment on national post")
         void shouldUnhideOwnHiddenCommentOnNationalPost() {
             // First hide
-            postsService.hideComment(nationalPost.getId(), nationalComment.getId(), userCampusId);
+            commentsService.hideComment(nationalPost.getId(), nationalComment.getId(), userCampusId);
 
             // Then unhide
-            Comment result = postsService.unhideComment(nationalPost.getId(), nationalComment.getId(), userCampusId);
+            Comment result = commentsService.unhideComment(nationalPost.getId(), nationalComment.getId(), userCampusId);
 
             assertFalse(result.isHidden(), "Comment should be visible after unhide");
 
@@ -225,7 +228,7 @@ class PostsServiceHideCommentTests {
         @DisplayName("Should handle unhiding already visible comment (idempotent)")
         void shouldHandleUnhidingAlreadyVisibleComment() {
             // Try to unhide without hiding first
-            Comment result = postsService.unhideComment(campusPost.getId(), campusComment.getId(), userCampusId);
+            Comment result = commentsService.unhideComment(campusPost.getId(), campusComment.getId(), userCampusId);
 
             assertFalse(result.isHidden(), "Comment should remain visible");
 
@@ -239,12 +242,12 @@ class PostsServiceHideCommentTests {
         @DisplayName("Should support multiple hide/unhide cycles")
         void shouldSupportMultipleHideUnhideCycles() {
             // First cycle
-            postsService.hideComment(campusPost.getId(), campusComment.getId(), userCampusId);
-            postsService.unhideComment(campusPost.getId(), campusComment.getId(), userCampusId);
+            commentsService.hideComment(campusPost.getId(), campusComment.getId(), userCampusId);
+            commentsService.unhideComment(campusPost.getId(), campusComment.getId(), userCampusId);
 
             // Second cycle
-            postsService.hideComment(campusPost.getId(), campusComment.getId(), userCampusId);
-            Comment result = postsService.unhideComment(campusPost.getId(), campusComment.getId(), userCampusId);
+            commentsService.hideComment(campusPost.getId(), campusComment.getId(), userCampusId);
+            Comment result = commentsService.unhideComment(campusPost.getId(), campusComment.getId(), userCampusId);
 
             assertFalse(result.isHidden(), "Comment should be visible after final unhide");
 
@@ -261,8 +264,8 @@ class PostsServiceHideCommentTests {
             UUID originalPostId = campusComment.getPostId();
             UUID originalUserId = campusComment.getUserId();
 
-            postsService.hideComment(campusPost.getId(), campusComment.getId(), userCampusId);
-            postsService.unhideComment(campusPost.getId(), campusComment.getId(), userCampusId);
+            commentsService.hideComment(campusPost.getId(), campusComment.getId(), userCampusId);
+            commentsService.unhideComment(campusPost.getId(), campusComment.getId(), userCampusId);
 
             Optional<Comment> result = commentRepository.findById(campusComment.getId());
             assertTrue(result.isPresent());
@@ -289,7 +292,7 @@ class PostsServiceHideCommentTests {
             // Now userCampus tries to hide it
             IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
-                () -> postsService.hideComment(nationalPost.getId(), savedOtherUserComment.getId(), userCampusId)
+                () -> commentsService.hideComment(nationalPost.getId(), savedOtherUserComment.getId(), userCampusId)
             );
 
             assertTrue(exception.getMessage().contains("hide your own comments"));
@@ -306,7 +309,7 @@ class PostsServiceHideCommentTests {
         void shouldThrowExceptionForNonExistentComment() {
             IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
-                () -> postsService.hideComment(campusPost.getId(), UUID.randomUUID(), userCampusId)
+                () -> commentsService.hideComment(campusPost.getId(), UUID.randomUUID(), userCampusId)
             );
 
             assertTrue(exception.getMessage().contains("not found"));
@@ -318,7 +321,7 @@ class PostsServiceHideCommentTests {
         void shouldThrowExceptionWhenPostDoesNotExist() {
             IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
-                () -> postsService.hideComment(UUID.randomUUID(), campusComment.getId(), userCampusId)
+                () -> commentsService.hideComment(UUID.randomUUID(), campusComment.getId(), userCampusId)
             );
 
             assertTrue(exception.getMessage().contains("not found"));
@@ -331,7 +334,7 @@ class PostsServiceHideCommentTests {
             // Comment belongs to nationalPost, try to hide as if it belongs to campusPost
             IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
-                () -> postsService.hideComment(campusPost.getId(), nationalComment.getId(), userCampusId)
+                () -> commentsService.hideComment(campusPost.getId(), nationalComment.getId(), userCampusId)
             );
 
             assertTrue(exception.getMessage().contains("does not belong to this post"));
@@ -349,7 +352,7 @@ class PostsServiceHideCommentTests {
             // MIT student trying to hide comment on Harvard campus post
             IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
-                () -> postsService.hideComment(campusPost.getId(), campusComment.getId(), userDifferentSchoolId)
+                () -> commentsService.hideComment(campusPost.getId(), campusComment.getId(), userDifferentSchoolId)
             );
 
             // Should be either access error or hide own comments error (access is checked first)
@@ -377,7 +380,7 @@ class PostsServiceHideCommentTests {
             // Try to unhide as different user (userCampus)
             IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
-                () -> postsService.unhideComment(nationalPost.getId(), savedOtherUserComment.getId(), userCampusId)
+                () -> commentsService.unhideComment(nationalPost.getId(), savedOtherUserComment.getId(), userCampusId)
             );
 
             assertTrue(exception.getMessage().contains("unhide your own comments"));
@@ -394,7 +397,7 @@ class PostsServiceHideCommentTests {
         void shouldThrowExceptionForNonExistentCommentOnUnhide() {
             IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
-                () -> postsService.unhideComment(campusPost.getId(), UUID.randomUUID(), userCampusId)
+                () -> commentsService.unhideComment(campusPost.getId(), UUID.randomUUID(), userCampusId)
             );
 
             assertTrue(exception.getMessage().contains("not found"));
@@ -406,7 +409,7 @@ class PostsServiceHideCommentTests {
         void shouldThrowExceptionWhenPostDoesNotExistOnUnhide() {
             IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
-                () -> postsService.unhideComment(UUID.randomUUID(), campusComment.getId(), userCampusId)
+                () -> commentsService.unhideComment(UUID.randomUUID(), campusComment.getId(), userCampusId)
             );
 
             assertTrue(exception.getMessage().contains("not found"));
@@ -417,12 +420,12 @@ class PostsServiceHideCommentTests {
         @DisplayName("Should throw exception when comment does not belong to post on unhide")
         void shouldThrowExceptionWhenCommentDoesNotBelongToPostOnUnhide() {
             // Hide first
-            postsService.hideComment(nationalPost.getId(), nationalComment.getId(), userCampusId);
+            commentsService.hideComment(nationalPost.getId(), nationalComment.getId(), userCampusId);
 
             // Try to unhide as if it belongs to campusPost
             IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
-                () -> postsService.unhideComment(campusPost.getId(), nationalComment.getId(), userCampusId)
+                () -> commentsService.unhideComment(campusPost.getId(), nationalComment.getId(), userCampusId)
             );
 
             assertTrue(exception.getMessage().contains("does not belong to this post"));
@@ -439,12 +442,12 @@ class PostsServiceHideCommentTests {
         void shouldThrowExceptionWhenUserDoesNotHavePostAccessOnUnhide() {
             // MIT student trying to unhide comment on Harvard campus post
             // First hide as owner
-            postsService.hideComment(campusPost.getId(), campusComment.getId(), userCampusId);
+            commentsService.hideComment(campusPost.getId(), campusComment.getId(), userCampusId);
 
             // Then try to unhide as different user
             IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
-                () -> postsService.unhideComment(campusPost.getId(), campusComment.getId(), userDifferentSchoolId)
+                () -> commentsService.unhideComment(campusPost.getId(), campusComment.getId(), userDifferentSchoolId)
             );
 
             assertTrue(
@@ -465,10 +468,10 @@ class PostsServiceHideCommentTests {
         @DisplayName("Should handle hiding comment with special characters")
         void shouldHandleHidingCommentWithSpecialCharacters() {
             String specialText = "Comment with 🎉 emoji @mention #hashtag ñ character";
-            Comment specialComment = postsService.addComment(campusPost.getId(),
+            Comment specialComment = commentsService.addComment(campusPost.getId(),
                 new com.anonymous.wall.model.CreateCommentRequest(specialText), userCampusId);
 
-            Comment result = postsService.hideComment(campusPost.getId(), specialComment.getId(), userCampusId);
+            Comment result = commentsService.hideComment(campusPost.getId(), specialComment.getId(), userCampusId);
 
             assertTrue(result.isHidden());
             assertEquals(specialText, result.getText(), "Special characters should be preserved");
@@ -479,10 +482,10 @@ class PostsServiceHideCommentTests {
         @DisplayName("Should handle hiding comment with very long text")
         void shouldHandleHidingCommentWithVeryLongText() {
             String longText = "X".repeat(5000);
-            Comment longComment = postsService.addComment(campusPost.getId(),
+            Comment longComment = commentsService.addComment(campusPost.getId(),
                 new com.anonymous.wall.model.CreateCommentRequest(longText), userCampusId);
 
-            Comment result = postsService.hideComment(campusPost.getId(), longComment.getId(), userCampusId);
+            Comment result = commentsService.hideComment(campusPost.getId(), longComment.getId(), userCampusId);
 
             assertTrue(result.isHidden());
             assertEquals(5000, result.getText().length(), "Long text should be preserved");
@@ -503,10 +506,10 @@ class PostsServiceHideCommentTests {
             final UUID campusCommentId = campusComment.getId();
 
             // Hide one comment
-            postsService.hideComment(campusPost.getId(), campusComment.getId(), userCampusId);
+            commentsService.hideComment(campusPost.getId(), campusComment.getId(), userCampusId);
 
             // Get comments should exclude hidden ones
-            List<Comment> visibleComments = postsService.getComments(campusPost.getId());
+            List<Comment> visibleComments = commentsService.getComments(campusPost.getId());
 
             assertEquals(2, visibleComments.size(), "Should only return visible comments");
             assertTrue(visibleComments.stream().anyMatch(c -> c.getId().equals(comment2Id)));
@@ -518,7 +521,7 @@ class PostsServiceHideCommentTests {
         @Order(43)
         @DisplayName("Should handle hiding comment and verifying database state")
         void shouldHandleHidingCommentAndVerifyDatabaseState() {
-            postsService.hideComment(campusPost.getId(), campusComment.getId(), userCampusId);
+            commentsService.hideComment(campusPost.getId(), campusComment.getId(), userCampusId);
 
             // Verify database directly
             Optional<Comment> dbComment = commentRepository.findById(campusComment.getId());
@@ -526,7 +529,7 @@ class PostsServiceHideCommentTests {
             assertTrue(dbComment.get().isHidden());
 
             // Verify it's not in the visible comments list
-            List<Comment> visibleComments = postsService.getComments(campusPost.getId());
+            List<Comment> visibleComments = commentsService.getComments(campusPost.getId());
             assertFalse(visibleComments.stream().anyMatch(c -> c.getId().equals(campusComment.getId())));
         }
 
@@ -535,14 +538,14 @@ class PostsServiceHideCommentTests {
         @DisplayName("Should decrement comment count when hiding")
         void shouldDecrementCommentCountWhenHiding() {
             // Add more comments via service to ensure comment counts are updated
-            postsService.addComment(campusPost.getId(),
+            commentsService.addComment(campusPost.getId(),
                 new com.anonymous.wall.model.CreateCommentRequest("Comment 2"), userCampusId);
 
             Post postBefore = postRepository.findById(campusPost.getId()).get();
             int initialCount = postBefore.getCommentCount();
 
             // Hide one comment
-            postsService.hideComment(campusPost.getId(), campusComment.getId(), userCampusId);
+            commentsService.hideComment(campusPost.getId(), campusComment.getId(), userCampusId);
 
             // Verify comment count is decremented (soft-delete behavior)
             Post postAfter = postRepository.findById(campusPost.getId()).get();
@@ -550,7 +553,7 @@ class PostsServiceHideCommentTests {
                 "Post comment count should be decremented when hiding");
 
             // Verify visible comments also decreased
-            int visibleCommentCount = postsService.getComments(campusPost.getId()).size();
+            int visibleCommentCount = commentsService.getComments(campusPost.getId()).size();
             assertEquals(initialCount - 1, visibleCommentCount,
                 "Visible comment count should match post comment count");
         }
@@ -560,13 +563,13 @@ class PostsServiceHideCommentTests {
         @DisplayName("Should increment comment count when unhiding")
         void shouldIncrementCommentCountWhenUnhiding() {
             // First hide a comment
-            postsService.hideComment(campusPost.getId(), campusComment.getId(), userCampusId);
+            commentsService.hideComment(campusPost.getId(), campusComment.getId(), userCampusId);
 
             Post postAfterHide = postRepository.findById(campusPost.getId()).get();
             int countAfterHide = postAfterHide.getCommentCount();
 
             // Then unhide it
-            postsService.unhideComment(campusPost.getId(), campusComment.getId(), userCampusId);
+            commentsService.unhideComment(campusPost.getId(), campusComment.getId(), userCampusId);
 
             // Verify comment count is incremented back
             Post postAfterUnhide = postRepository.findById(campusPost.getId()).get();
@@ -574,7 +577,7 @@ class PostsServiceHideCommentTests {
                 "Post comment count should be incremented when unhiding");
 
             // Verify visible comments increased
-            int visibleCommentCount = postsService.getComments(campusPost.getId()).size();
+            int visibleCommentCount = commentsService.getComments(campusPost.getId()).size();
             assertEquals(countAfterHide + 1, visibleCommentCount,
                 "Visible comment count should match post comment count");
         }
@@ -583,11 +586,11 @@ class PostsServiceHideCommentTests {
         @Order(45)
         @DisplayName("Should handle unhiding and immediately hiding again")
         void shouldHandleUnhidingAndImmediatelyHidinAgain() {
-            postsService.hideComment(campusPost.getId(), campusComment.getId(), userCampusId);
-            postsService.unhideComment(campusPost.getId(), campusComment.getId(), userCampusId);
+            commentsService.hideComment(campusPost.getId(), campusComment.getId(), userCampusId);
+            commentsService.unhideComment(campusPost.getId(), campusComment.getId(), userCampusId);
 
             // Immediately hide again
-            Comment result = postsService.hideComment(campusPost.getId(), campusComment.getId(), userCampusId);
+            Comment result = commentsService.hideComment(campusPost.getId(), campusComment.getId(), userCampusId);
 
             assertTrue(result.isHidden());
 
@@ -617,7 +620,7 @@ class PostsServiceHideCommentTests {
             comment = commentRepository.save(comment);
 
             // User1 should be able to hide their own comment even though post is by user2
-            Comment result = postsService.hideComment(post2.getId(), comment.getId(), userCampusId);
+            Comment result = commentsService.hideComment(post2.getId(), comment.getId(), userCampusId);
 
             assertTrue(result.isHidden());
         }
@@ -631,7 +634,7 @@ class PostsServiceHideCommentTests {
             mitPost = postRepository.save(mitPost);
 
             // Create a comment on MIT post via service
-            Comment mitComment = postsService.addComment(mitPost.getId(),
+            Comment mitComment = commentsService.addComment(mitPost.getId(),
                 new com.anonymous.wall.model.CreateCommentRequest("MIT comment"), userDifferentSchoolId);
 
             final UUID mitPostId = mitPost.getId();
@@ -640,7 +643,7 @@ class PostsServiceHideCommentTests {
             // Harvard student should not be able to hide comment on MIT post (no access)
             IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
-                () -> postsService.hideComment(mitPostId, mitCommentId, userCampusId)
+                () -> commentsService.hideComment(mitPostId, mitCommentId, userCampusId)
             );
 
             assertTrue(exception.getMessage().contains("access"));

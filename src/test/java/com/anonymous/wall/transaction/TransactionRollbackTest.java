@@ -8,6 +8,7 @@ import com.anonymous.wall.repository.CommentRepository;
 import com.anonymous.wall.repository.PostLikeRepository;
 import com.anonymous.wall.repository.UserRepository;
 import com.anonymous.wall.service.PostsService;
+import com.anonymous.wall.service.CommentsService;
 import io.micronaut.test.extensions.junit5.annotation.MicronautTest;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.AfterEach;
@@ -29,6 +30,9 @@ public class TransactionRollbackTest {
 
     @Inject
     private PostsService postsService;
+
+    @Inject
+    private CommentsService commentsService;
 
     @Inject
     private PostRepository postRepository;
@@ -83,7 +87,7 @@ public class TransactionRollbackTest {
     @Test
     void testHideNonExistentCommentError() {
         CreateCommentRequest req = new CreateCommentRequest("Valid comment");
-        postsService.addComment(testPost.getId(), req, testUser.getId());
+        commentsService.addComment(testPost.getId(), req, testUser.getId());
 
         Post beforeError = postRepository.findById(testPost.getId()).orElseThrow();
         assertEquals(1, beforeError.getCommentCount());
@@ -91,7 +95,7 @@ public class TransactionRollbackTest {
         // Try to hide non-existent comment - should throw error
         UUID fakeCommentId = UUID.randomUUID();
         assertThrows(Exception.class, () -> {
-            postsService.hideComment(testPost.getId(), fakeCommentId, testUser.getId());
+            commentsService.hideComment(testPost.getId(), fakeCommentId, testUser.getId());
         }, "Should throw exception for non-existent comment");
 
         // Verify state wasn't corrupted
@@ -109,14 +113,14 @@ public class TransactionRollbackTest {
     @Test
     void testHideCommentPermissionError() {
         CreateCommentRequest req = new CreateCommentRequest("Comment by original user");
-        var comment = postsService.addComment(testPost.getId(), req, testUser.getId());
+        var comment = commentsService.addComment(testPost.getId(), req, testUser.getId());
 
         Post beforeAttempt = postRepository.findById(testPost.getId()).orElseThrow();
         assertEquals(1, beforeAttempt.getCommentCount());
 
         // Other user tries to hide testUser's comment - should fail
         assertThrows(Exception.class, () -> {
-            postsService.hideComment(testPost.getId(), comment.getId(), otherUser.getId());
+            commentsService.hideComment(testPost.getId(), comment.getId(), otherUser.getId());
         }, "Should throw exception for permission denied");
 
         // Verify state unchanged
@@ -135,7 +139,7 @@ public class TransactionRollbackTest {
     void testPartialOperationFailure() {
         // Add a comment
         CreateCommentRequest req1 = new CreateCommentRequest("Comment 1");
-        var c1 = postsService.addComment(testPost.getId(), req1, testUser.getId());
+        var c1 = commentsService.addComment(testPost.getId(), req1, testUser.getId());
 
         Post after1 = postRepository.findById(testPost.getId()).orElseThrow();
         assertEquals(1, after1.getCommentCount());
@@ -144,7 +148,7 @@ public class TransactionRollbackTest {
         // If transaction is atomic, no partial update should occur
         UUID fakeId = UUID.randomUUID();
         try {
-            postsService.hideComment(testPost.getId(), fakeId, testUser.getId());
+            commentsService.hideComment(testPost.getId(), fakeId, testUser.getId());
         } catch (Exception e) {
             // Expected to fail
         }
@@ -200,7 +204,7 @@ public class TransactionRollbackTest {
         // Add multiple comments
         for (int i = 0; i < 3; i++) {
             CreateCommentRequest req = new CreateCommentRequest("Comment " + i);
-            postsService.addComment(testPost.getId(), req, testUser.getId());
+            commentsService.addComment(testPost.getId(), req, testUser.getId());
         }
 
         Post before = postRepository.findById(testPost.getId()).orElseThrow();
@@ -230,19 +234,19 @@ public class TransactionRollbackTest {
     void testConsistencyAfterMixedOperations() {
         // Success: add comment
         CreateCommentRequest req1 = new CreateCommentRequest("Comment 1");
-        var c1 = postsService.addComment(testPost.getId(), req1, testUser.getId());
+        var c1 = commentsService.addComment(testPost.getId(), req1, testUser.getId());
         Post s1 = postRepository.findById(testPost.getId()).orElseThrow();
         assertEquals(1, s1.getCommentCount());
 
         // Success: add another comment
         CreateCommentRequest req2 = new CreateCommentRequest("Comment 2");
-        var c2 = postsService.addComment(testPost.getId(), req2, testUser.getId());
+        var c2 = commentsService.addComment(testPost.getId(), req2, testUser.getId());
         Post s2 = postRepository.findById(testPost.getId()).orElseThrow();
         assertEquals(2, s2.getCommentCount());
 
         // Failure: try to hide non-existent comment
         try {
-            postsService.hideComment(testPost.getId(), UUID.randomUUID(), testUser.getId());
+            commentsService.hideComment(testPost.getId(), UUID.randomUUID(), testUser.getId());
         } catch (Exception e) {
             // Expected
         }
@@ -267,7 +271,7 @@ public class TransactionRollbackTest {
     @Test
     void testRepeatedFailedOperations() {
         CreateCommentRequest req = new CreateCommentRequest("Real comment");
-        postsService.addComment(testPost.getId(), req, testUser.getId());
+        commentsService.addComment(testPost.getId(), req, testUser.getId());
 
         Post initial = postRepository.findById(testPost.getId()).orElseThrow();
         int initialCount = initial.getCommentCount();
@@ -275,7 +279,7 @@ public class TransactionRollbackTest {
         // Try to hide non-existent comment multiple times
         for (int i = 0; i < 5; i++) {
             try {
-                postsService.hideComment(testPost.getId(), UUID.randomUUID(), testUser.getId());
+                commentsService.hideComment(testPost.getId(), UUID.randomUUID(), testUser.getId());
             } catch (Exception e) {
                 // Expected
             }
