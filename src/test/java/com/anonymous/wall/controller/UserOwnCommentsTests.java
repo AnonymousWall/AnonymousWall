@@ -315,7 +315,7 @@ class UserOwnCommentsTests {
     class HiddenCommentsTests {
 
         @Test
-        @DisplayName("Should exclude hidden comments by default")
+        @DisplayName("Should exclude hidden comments")
         void shouldExcludeHiddenCommentsByDefault() {
             // Create 3 comments
             Comment comment1 = commentsService.addComment(testPost1.getId(),
@@ -338,32 +338,6 @@ class UserOwnCommentsTests {
 
             Map<String, Object> pagination = (Map<String, Object>) body.get("pagination");
             assertEquals(2, pagination.get("total"));
-        }
-
-        @Test
-        @DisplayName("Should include hidden comments when includeHidden=true")
-        void shouldIncludeHiddenCommentsWhenRequested() {
-            // Create 3 comments
-            Comment comment1 = commentsService.addComment(testPost1.getId(),
-                new com.anonymous.wall.model.CreateCommentRequest("Comment 1"), testUser1.getId());
-            Comment comment2 = commentsService.addComment(testPost1.getId(),
-                new com.anonymous.wall.model.CreateCommentRequest("Comment 2"), testUser1.getId());
-            commentsService.addComment(testPost1.getId(),
-                new com.anonymous.wall.model.CreateCommentRequest("Comment 3"), testUser1.getId());
-
-            // Hide comment2
-            commentsService.hideComment(testPost1.getId(), comment2.getId(), testUser1.getId());
-
-            String endpoint = BASE_PATH + "?includeHidden=true";
-            HttpRequest<?> request = HttpRequest.GET(endpoint).bearerAuth(jwtToken1);
-            HttpResponse<Map> response = client.toBlocking().exchange(request, Map.class);
-
-            Map<String, Object> body = response.body();
-            List<Map> data = (List<Map>) body.get("data");
-            assertEquals(3, data.size(), "Should include all comments including hidden ones");
-
-            Map<String, Object> pagination = (Map<String, Object>) body.get("pagination");
-            assertEquals(3, pagination.get("total"));
         }
     }
 

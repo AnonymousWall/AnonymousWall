@@ -44,11 +44,11 @@ public interface CommentsService {
 
     /**
      * Get user's own comments with pagination and sorting
+     * Hidden comments are excluded (soft-deleted comments are not shown)
      * @param userId User ID
      * @param pageable Pagination settings
      * @param sortBy Sort order (NEWEST or OLDEST)
-     * @param includeHidden Whether to include hidden comments (default: false)
-     * @return Page of comments
+     * @return Page of non-hidden comments
      */
-    Page<Comment> getUserOwnComments(UUID userId, Pageable pageable, SortBy sortBy, boolean includeHidden);
+    Page<Comment> getUserOwnComments(UUID userId, Pageable pageable, SortBy sortBy);
 }

@@ -49,8 +49,9 @@ public class UserController {
     /**
      * GET /users/me/comments
      * Get current user's own comments with pagination and sorting
-     * Query parameters: page (default 1), limit (default 20), sort (default NEWEST), includeHidden (default false)
+     * Query parameters: page (default 1), limit (default 20), sort (default NEWEST)
      * Sort options: NEWEST, OLDEST (comments only sort by creation time)
+     * Hidden comments are excluded (soft-deleted comments are not shown)
      */
     @Get("/me/comments")
     @Secured(SecurityRule.IS_AUTHENTICATED)
@@ -58,12 +59,11 @@ public class UserController {
             @QueryValue(defaultValue = "1") int page,
             @QueryValue(defaultValue = "20") int limit,
             @QueryValue(defaultValue = "NEWEST") String sort,
-            @QueryValue(defaultValue = "false") boolean includeHidden,
             HttpRequest<?> httpRequest) {
         try {
             UUID userId = getUserIdFromRequest(httpRequest);
-            log.info("GET /users/me/comments - Getting user's own comments, user={}, page={}, limit={}, sort={}, includeHidden={}", 
-                userId, page, limit, sort, includeHidden);
+            log.info("GET /users/me/comments - Getting user's own comments, user={}, page={}, limit={}, sort={}", 
+                userId, page, limit, sort);
 
             // Validate pagination parameters
             if (page < 1) page = 1;
@@ -71,7 +71,7 @@ public class UserController {
 
             Pageable pageable = Pageable.from(page - 1, limit);
             SortBy sortBy = SortBy.parse(sort);
-            Page<Comment> commentPage = commentsService.getUserOwnComments(userId, pageable, sortBy, includeHidden);
+            Page<Comment> commentPage = commentsService.getUserOwnComments(userId, pageable, sortBy);
 
             List<CommentDTO> dtos = commentPage.getContent().stream()
                     .map(this::mapCommentToDTO)
