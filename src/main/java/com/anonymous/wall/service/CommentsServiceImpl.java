@@ -280,6 +280,8 @@ public class CommentsServiceImpl implements CommentsService {
             userId, pageable.getNumber() + 1, pageable.getSize(), sortBy, includeHidden);
 
         // Comments only support sorting by created time
+        // MOST_LIKED/LEAST_LIKED are mapped to NEWEST/OLDEST for consistency with API
+        // since comments don't have a like count field
         Page<Comment> comments;
         if (includeHidden) {
             // Include both hidden and non-hidden comments
