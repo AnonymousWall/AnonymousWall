@@ -9,6 +9,7 @@ import com.anonymous.wall.repository.CommentRepository;
 import com.anonymous.wall.repository.PostLikeRepository;
 import com.anonymous.wall.repository.UserRepository;
 import com.anonymous.wall.service.PostsService;
+import com.anonymous.wall.service.CommentsService;
 import io.micronaut.test.extensions.junit5.annotation.MicronautTest;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.AfterEach;
@@ -29,6 +30,9 @@ public class TransactionAtomicityTest {
 
     @Inject
     private PostsService postsService;
+
+    @Inject
+    private CommentsService commentsService;
 
     @Inject
     private PostRepository postRepository;
@@ -82,7 +86,7 @@ public class TransactionAtomicityTest {
         // 1. Save comment to DB
         // 2. Increment post comment count
         CreateCommentRequest request = new CreateCommentRequest("Test comment for atomicity");
-        Comment savedComment = postsService.addComment(testPost.getId(), request, testUser.getId());
+        Comment savedComment = commentsService.addComment(testPost.getId(), request, testUser.getId());
 
         // Both operations MUST succeed
         assertNotNull(savedComment.getId(), "Comment should be saved with ID");
@@ -113,7 +117,7 @@ public class TransactionAtomicityTest {
 
         for (int i = 0; i < numComments; i++) {
             CreateCommentRequest request = new CreateCommentRequest("Comment #" + i);
-            Comment savedComment = postsService.addComment(testPost.getId(), request, testUser.getId());
+            Comment savedComment = commentsService.addComment(testPost.getId(), request, testUser.getId());
             assertNotNull(savedComment.getId(), "Comment " + i + " should be saved");
         }
 
@@ -174,13 +178,13 @@ public class TransactionAtomicityTest {
     void testHideCommentAtomicity() {
         // Add a comment first
         CreateCommentRequest request = new CreateCommentRequest("Comment to hide");
-        Comment savedComment = postsService.addComment(testPost.getId(), request, testUser.getId());
+        Comment savedComment = commentsService.addComment(testPost.getId(), request, testUser.getId());
 
         Post beforeHide = postRepository.findById(testPost.getId()).orElseThrow();
         assertEquals(1, beforeHide.getCommentCount(), "Initial count should be 1");
 
         // Hide the comment
-        Comment hiddenComment = postsService.hideComment(testPost.getId(), savedComment.getId(), testUser.getId());
+        Comment hiddenComment = commentsService.hideComment(testPost.getId(), savedComment.getId(), testUser.getId());
 
         // Verify comment is hidden
         assertTrue(hiddenComment.isHidden(), "Comment should be marked as hidden");
@@ -205,7 +209,7 @@ public class TransactionAtomicityTest {
         // Add multiple comments
         for (int i = 0; i < 3; i++) {
             CreateCommentRequest request = new CreateCommentRequest("Comment #" + i);
-            postsService.addComment(testPost.getId(), request, testUser.getId());
+            commentsService.addComment(testPost.getId(), request, testUser.getId());
         }
 
         Post beforeHide = postRepository.findById(testPost.getId()).orElseThrow();
@@ -236,16 +240,16 @@ public class TransactionAtomicityTest {
     @Test
     void testUnhideCommentAtomicity() {
         CreateCommentRequest request = new CreateCommentRequest("Comment to toggle");
-        Comment savedComment = postsService.addComment(testPost.getId(), request, testUser.getId());
+        Comment savedComment = commentsService.addComment(testPost.getId(), request, testUser.getId());
 
         // Hide it
-        postsService.hideComment(testPost.getId(), savedComment.getId(), testUser.getId());
+        commentsService.hideComment(testPost.getId(), savedComment.getId(), testUser.getId());
 
         Post afterHide = postRepository.findById(testPost.getId()).orElseThrow();
         assertEquals(0, afterHide.getCommentCount(), "Count should be 0 after hide");
 
         // Unhide it
-        Comment unhiddenComment = postsService.unhideComment(testPost.getId(), savedComment.getId(), testUser.getId());
+        Comment unhiddenComment = commentsService.unhideComment(testPost.getId(), savedComment.getId(), testUser.getId());
 
         // Verify comment is unhidden
         assertFalse(unhiddenComment.isHidden(), "Comment should be unhidden");
@@ -268,14 +272,14 @@ public class TransactionAtomicityTest {
         // Add comments
         CreateCommentRequest req1 = new CreateCommentRequest("Comment 1");
         CreateCommentRequest req2 = new CreateCommentRequest("Comment 2");
-        Comment c1 = postsService.addComment(testPost.getId(), req1, testUser.getId());
-        Comment c2 = postsService.addComment(testPost.getId(), req2, testUser.getId());
+        Comment c1 = commentsService.addComment(testPost.getId(), req1, testUser.getId());
+        Comment c2 = commentsService.addComment(testPost.getId(), req2, testUser.getId());
 
         Post after2 = postRepository.findById(testPost.getId()).orElseThrow();
         assertEquals(2, after2.getCommentCount());
 
         // Hide first comment
-        postsService.hideComment(testPost.getId(), c1.getId(), testUser.getId());
+        commentsService.hideComment(testPost.getId(), c1.getId(), testUser.getId());
 
         Post after1Hide = postRepository.findById(testPost.getId()).orElseThrow();
         long visible1 = commentRepository.findByPostIdAndHiddenFalse(testPost.getId()).size();
@@ -283,7 +287,7 @@ public class TransactionAtomicityTest {
         assertEquals(visible1, after1Hide.getCommentCount());
 
         // Unhide first comment
-        postsService.unhideComment(testPost.getId(), c1.getId(), testUser.getId());
+        commentsService.unhideComment(testPost.getId(), c1.getId(), testUser.getId());
 
         Post afterUnhide = postRepository.findById(testPost.getId()).orElseThrow();
         long visible2 = commentRepository.findByPostIdAndHiddenFalse(testPost.getId()).size();

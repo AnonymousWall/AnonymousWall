@@ -43,6 +43,9 @@ public class PostsServiceImpl implements PostsService {
     @Inject
     private UserRepository userRepository;
 
+    @Inject
+    private CommentsService commentsService;
+
     /**
      * Create a new post
      */
@@ -304,97 +307,6 @@ public class PostsServiceImpl implements PostsService {
     }
 
     /**
-     * Add a comment to a post
-     * For campus posts: only users from the same school can comment
-     * For national posts: all authenticated users can comment
-     * Uses atomic operations to increment comment count
-     */
-    @Override
-    @Transactional
-    @Retryable(attempts = "3", delay = "500ms")
-    public Comment addComment(UUID postId, CreateCommentRequest request, UUID userId) {
-        // Verify post exists
-        Optional<Post> postOpt = postRepository.findById(postId);
-        if (postOpt.isEmpty()) {
-            throw new IllegalArgumentException("Post not found");
-        }
-
-        Post post = postOpt.get();
-
-        // Validate visibility and permission
-        validatePostVisibility(post, userId);
-
-        if (request.getText() == null || request.getText().trim().isEmpty()) {
-            throw new IllegalArgumentException("Comment text cannot be empty");
-        }
-
-        if (request.getText().length() > 5000) {
-            throw new IllegalArgumentException("Comment text exceeds maximum length of 5000 characters");
-        }
-
-        // Fetch user to get profile name
-        Optional<UserEntity> userOpt = userRepository.findById(userId);
-        if (userOpt.isEmpty()) {
-            throw new IllegalArgumentException("User not found");
-        }
-
-        Comment comment = new Comment(postId, userId, request.getText());
-        comment.setProfileName(userOpt.get().getProfileName());
-        Comment savedComment = commentRepository.save(comment);
-
-        // Atomically increment comment count on post
-        post.incrementCommentCount();
-        postRepository.update(post);
-
-        log.info("Comment added: id={}, postId={}, user={}, newCommentCount={}",
-            savedComment.getId(), postId, userId, post.getCommentCount());
-        return savedComment;
-    }
-
-    /**
-     * Get all comments for a post
-     */
-    @Override
-    public List<Comment> getComments(UUID postId) {
-        log.debug("Fetching all comments for post: {}", postId);
-        List<Comment> comments = commentRepository.findByPostIdAndHiddenFalse(postId);
-        log.info("Retrieved {} comments for post: {}", comments.size(), postId);
-        return comments;
-    }
-
-    /**
-     * Get comments for a post with pagination
-     */
-    @Override
-    public Page<Comment> getCommentsWithPagination(UUID postId, Pageable pageable) {
-        log.debug("Fetching comments for post: {}, page: {}, limit: {}", postId, pageable.getNumber() + 1, pageable.getSize());
-        Page<Comment> comments = commentRepository.findByPostIdAndHiddenFalse(postId, pageable);
-        log.info("Retrieved {} comments for post: {}, total: {}", comments.getNumberOfElements(), postId, comments.getTotalSize());
-        return comments;
-    }
-
-    /**
-     * Get comments for a post with pagination and sorting
-     */
-    @Override
-    public Page<Comment> getCommentsWithPagination(UUID postId, Pageable pageable, SortBy sortBy) {
-        if (sortBy == null) {
-            sortBy = SortBy.NEWEST; // Default sorting
-        }
-
-        log.debug("Fetching comments for post: {}, page: {}, limit: {}, sort: {}", postId, pageable.getNumber() + 1, pageable.getSize(), sortBy);
-
-        // Comments only support sorting by created time
-        Page<Comment> comments = switch (sortBy) {
-            case NEWEST, MOST_LIKED -> commentRepository.findByPostIdAndHiddenFalseOrderByCreatedAtDesc(postId, pageable);
-            case OLDEST, LEAST_LIKED -> commentRepository.findByPostIdAndHiddenFalseOrderByCreatedAtAsc(postId, pageable);
-        };
-
-        log.info("Retrieved {} comments for post: {}, sort: {}, total: {}", comments.getNumberOfElements(), postId, sortBy, comments.getTotalSize());
-        return comments;
-    }
-
-    /**
      * Toggle like on a post
      * For campus posts: only users from the same school can like
      * For national posts: all authenticated users can like
@@ -531,114 +443,6 @@ public class PostsServiceImpl implements PostsService {
             // Enrich all posts with like status
             posts.forEach(post -> post.setLiked(likedPostIds.contains(post.getId())));
         }
-    }
-
-    /**
-     * Hide a comment (soft-delete)
-     * Only the comment author can hide their own comment
-     * Decrements the comment count on the post (soft-delete appears as deletion to user)
-     */
-    @Override
-    @Transactional
-    @Retryable(attempts = "3", delay = "500ms")
-    public Comment hideComment(UUID postId, UUID commentId, UUID userId) {
-        // Verify post exists
-        Optional<Post> postOpt = postRepository.findById(postId);
-        if (postOpt.isEmpty()) {
-            throw new IllegalArgumentException("Post not found");
-        }
-
-        Post post = postOpt.get();
-
-        // Validate visibility and permission
-        validatePostVisibility(post, userId);
-
-        // Verify comment exists and belongs to this post
-        Optional<Comment> commentOpt = commentRepository.findById(commentId);
-        if (commentOpt.isEmpty()) {
-            throw new IllegalArgumentException("Comment not found");
-        }
-
-        Comment comment = commentOpt.get();
-        if (!comment.getPostId().equals(postId)) {
-            throw new IllegalArgumentException("Comment does not belong to this post");
-        }
-
-        // Only the comment author can hide their own comment
-        if (!comment.getUserId().equals(userId)) {
-            throw new IllegalArgumentException("You can only hide your own comments");
-        }
-
-        // If already hidden, just return
-        if (comment.isHidden()) {
-            return comment;
-        }
-
-        // Hide the comment
-        comment.setHidden(true);
-        Comment updatedComment = commentRepository.update(comment);
-
-        // Atomically decrement comment count on post (within same transaction)
-        post.decrementCommentCount();
-        postRepository.update(post);
-
-        log.info("Comment hidden: id={}, postId={}, user={}, newCommentCount={}",
-            commentId, postId, userId, post.getCommentCount());
-        return updatedComment;
-    }
-
-    /**
-     * Unhide a comment (undo soft-delete)
-     * Only the comment author can unhide their own comment
-     * Increments the comment count on the post (restore from deletion)
-     */
-    @Override
-    @Transactional
-    @Retryable(attempts = "3", delay = "500ms")
-    public Comment unhideComment(UUID postId, UUID commentId, UUID userId) {
-        // Verify post exists
-        Optional<Post> postOpt = postRepository.findById(postId);
-        if (postOpt.isEmpty()) {
-            throw new IllegalArgumentException("Post not found");
-        }
-
-        Post post = postOpt.get();
-
-        // Validate visibility and permission
-        validatePostVisibility(post, userId);
-
-        // Verify comment exists and belongs to this post
-        Optional<Comment> commentOpt = commentRepository.findById(commentId);
-        if (commentOpt.isEmpty()) {
-            throw new IllegalArgumentException("Comment not found");
-        }
-
-        Comment comment = commentOpt.get();
-        if (!comment.getPostId().equals(postId)) {
-            throw new IllegalArgumentException("Comment does not belong to this post");
-        }
-
-        // Only the comment author can unhide their own comment
-        if (!comment.getUserId().equals(userId)) {
-            throw new IllegalArgumentException("You can only unhide your own comments");
-        }
-
-        // If not hidden, just return
-        if (!comment.isHidden()) {
-            return comment;
-        }
-
-        // Unhide the comment
-        comment.setHidden(false);
-        Comment updatedComment = commentRepository.update(comment);
-
-        // Atomically increment comment count on post (within same transaction)
-        post.incrementCommentCount();
-        postRepository.update(post);
-
-        log.info("Comment unhidden: id={}, postId={}, user={}, newCommentCount={}",
-            commentId, postId, userId, post.getCommentCount());
-        return updatedComment;
     }
 
     /**

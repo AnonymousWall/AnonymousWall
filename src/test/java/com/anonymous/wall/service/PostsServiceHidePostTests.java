@@ -27,6 +27,9 @@ class PostsServiceHidePostTests {
     PostsService postsService;
 
     @Inject
+    CommentsService commentsService;
+
+    @Inject
     PostRepository postRepository;
 
     @Inject
@@ -142,11 +145,11 @@ class PostsServiceHidePostTests {
         @DisplayName("Should hide all comments when hiding post")
         void shouldHideAllCommentsWhenHidingPost() {
             // Arrange - Create 3 comments
-            Comment comment1 = postsService.addComment(testPost.getId(),
+            Comment comment1 = commentsService.addComment(testPost.getId(),
                     new CreateCommentRequest("Comment 1"), testUser.getId());
-            Comment comment2 = postsService.addComment(testPost.getId(),
+            Comment comment2 = commentsService.addComment(testPost.getId(),
                     new CreateCommentRequest("Comment 2"), otherUser.getId());
-            Comment comment3 = postsService.addComment(testPost.getId(),
+            Comment comment3 = commentsService.addComment(testPost.getId(),
                     new CreateCommentRequest("Comment 3"), testUser.getId());
 
             // Verify comments are visible
@@ -181,13 +184,13 @@ class PostsServiceHidePostTests {
         @DisplayName("Should hide comments from multiple users")
         void shouldHideCommentsFromMultipleUsers() {
             // Arrange - Create comments from both users
-            postsService.addComment(testPost.getId(),
+            commentsService.addComment(testPost.getId(),
                     new CreateCommentRequest("User1 comment 1"), testUser.getId());
-            postsService.addComment(testPost.getId(),
+            commentsService.addComment(testPost.getId(),
                     new CreateCommentRequest("User2 comment 1"), otherUser.getId());
-            postsService.addComment(testPost.getId(),
+            commentsService.addComment(testPost.getId(),
                     new CreateCommentRequest("User1 comment 2"), testUser.getId());
-            postsService.addComment(testPost.getId(),
+            commentsService.addComment(testPost.getId(),
                     new CreateCommentRequest("User2 comment 2"), otherUser.getId());
 
             // Act - Hide post
@@ -271,9 +274,9 @@ class PostsServiceHidePostTests {
         @DisplayName("Should restore all comments when unhiding post")
         void shouldRestoreAllCommentsWhenUnhidingPost() {
             // Arrange - Create comments and hide post
-            Comment comment1 = postsService.addComment(testPost.getId(),
+            Comment comment1 = commentsService.addComment(testPost.getId(),
                     new CreateCommentRequest("Comment 1"), testUser.getId());
-            Comment comment2 = postsService.addComment(testPost.getId(),
+            Comment comment2 = commentsService.addComment(testPost.getId(),
                     new CreateCommentRequest("Comment 2"), otherUser.getId());
 
             // Hide post (cascades to comments)
@@ -313,11 +316,11 @@ class PostsServiceHidePostTests {
         @DisplayName("Should preserve comment count through hide/unhide cycle")
         void shouldPreserveCommentCount() {
             // Arrange - Create comments
-            postsService.addComment(testPost.getId(),
+            commentsService.addComment(testPost.getId(),
                     new CreateCommentRequest("Comment 1"), testUser.getId());
-            postsService.addComment(testPost.getId(),
+            commentsService.addComment(testPost.getId(),
                     new CreateCommentRequest("Comment 2"), otherUser.getId());
-            postsService.addComment(testPost.getId(),
+            commentsService.addComment(testPost.getId(),
                     new CreateCommentRequest("Comment 3"), testUser.getId());
 
             Post initialPost = postRepository.findById(testPost.getId()).get();
@@ -394,7 +397,7 @@ class PostsServiceHidePostTests {
         @DisplayName("Should handle hiding post with liked comments")
         void shouldHidePostWithLikedComments() {
             // Arrange - Create comment and like (if applicable)
-            Comment comment = postsService.addComment(testPost.getId(),
+            Comment comment = commentsService.addComment(testPost.getId(),
                     new CreateCommentRequest("Test comment"), testUser.getId());
 
             // Act - Hide post
@@ -413,7 +416,7 @@ class PostsServiceHidePostTests {
             nationalPost = postRepository.save(nationalPost);
 
             // Add comment
-            Comment comment = postsService.addComment(nationalPost.getId(),
+            Comment comment = commentsService.addComment(nationalPost.getId(),
                     new CreateCommentRequest("National comment"), testUser.getId());
 
             // Act - Hide post
@@ -429,7 +432,7 @@ class PostsServiceHidePostTests {
         void shouldMaintainTransactionIntegrity() {
             // Arrange - Create multiple comments
             for (int i = 0; i < 10; i++) {
-                postsService.addComment(testPost.getId(),
+                commentsService.addComment(testPost.getId(),
                         new CreateCommentRequest("Comment " + i),
                         (i % 2 == 0) ? testUser.getId() : otherUser.getId());
             }

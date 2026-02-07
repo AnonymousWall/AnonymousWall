@@ -9,6 +9,7 @@ import com.anonymous.wall.repository.CommentRepository;
 import com.anonymous.wall.repository.PostLikeRepository;
 import com.anonymous.wall.repository.UserRepository;
 import com.anonymous.wall.service.PostsService;
+import com.anonymous.wall.service.CommentsService;
 import io.micronaut.test.extensions.junit5.annotation.MicronautTest;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.AfterEach;
@@ -30,6 +31,9 @@ public class TransactionConcurrencyTest {
 
     @Inject
     private PostsService postsService;
+
+    @Inject
+    private CommentsService commentsService;
 
     @Inject
     private PostRepository postRepository;
@@ -79,7 +83,7 @@ public class TransactionConcurrencyTest {
         // Add comments sequentially
         for (int i = 0; i < commentCount; i++) {
             CreateCommentRequest request = new CreateCommentRequest("Transactional comment #" + i);
-            postsService.addComment(testPost.getId(), request, testUser.getId());
+            commentsService.addComment(testPost.getId(), request, testUser.getId());
         }
 
         Thread.sleep(500);
@@ -137,14 +141,14 @@ public class TransactionConcurrencyTest {
         Comment[] comments = new Comment[commentCount];
         for (int i = 0; i < commentCount; i++) {
             CreateCommentRequest request = new CreateCommentRequest("Comment to hide #" + i);
-            comments[i] = postsService.addComment(testPost.getId(), request, testUser.getId());
+            comments[i] = commentsService.addComment(testPost.getId(), request, testUser.getId());
         }
 
         Thread.sleep(500);
 
         // Hide comments sequentially
         for (int i = 0; i < commentCount; i++) {
-            postsService.hideComment(testPost.getId(), comments[i].getId(), testUser.getId());
+            commentsService.hideComment(testPost.getId(), comments[i].getId(), testUser.getId());
         }
 
         Thread.sleep(500);
@@ -163,7 +167,7 @@ public class TransactionConcurrencyTest {
     @Test
     void testRapidStateCycles() throws InterruptedException {
         CreateCommentRequest request = new CreateCommentRequest("Rapid cycle comment");
-        Comment comment = postsService.addComment(testPost.getId(), request, testUser.getId());
+        Comment comment = commentsService.addComment(testPost.getId(), request, testUser.getId());
 
         int cycles = 5;
         int threadCount = 4;
@@ -177,9 +181,9 @@ public class TransactionConcurrencyTest {
                     try {
                         startLatch.await();
                         for (int cycle = 0; cycle < cycles; cycle++) {
-                            postsService.hideComment(testPost.getId(), comment.getId(), testUser.getId());
+                            commentsService.hideComment(testPost.getId(), comment.getId(), testUser.getId());
                             Thread.sleep(10);
-                            postsService.unhideComment(testPost.getId(), comment.getId(), testUser.getId());
+                            commentsService.unhideComment(testPost.getId(), comment.getId(), testUser.getId());
                             Thread.sleep(10);
                         }
                     } catch (InterruptedException e) {
@@ -215,7 +219,7 @@ public class TransactionConcurrencyTest {
         // Add comments sequentially
         for (int i = 0; i < commentCount; i++) {
             CreateCommentRequest request = new CreateCommentRequest("Comment " + i);
-            postsService.addComment(testPost.getId(), request, testUser.getId());
+            commentsService.addComment(testPost.getId(), request, testUser.getId());
         }
 
         Thread.sleep(500);
