@@ -41,4 +41,14 @@ public interface CommentsService {
      * Only the comment author can unhide their own comment
      */
     Comment unhideComment(UUID postId, UUID commentId, UUID userId);
+
+    /**
+     * Get user's own comments with pagination and sorting
+     * @param userId User ID
+     * @param pageable Pagination settings
+     * @param sortBy Sort order (NEWEST or OLDEST)
+     * @param includeHidden Whether to include hidden comments (default: false)
+     * @return Page of comments
+     */
+    Page<Comment> getUserOwnComments(UUID userId, Pageable pageable, SortBy sortBy, boolean includeHidden);
 }

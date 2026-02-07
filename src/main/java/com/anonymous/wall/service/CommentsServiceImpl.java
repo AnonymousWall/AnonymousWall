@@ -264,4 +264,39 @@ public class CommentsServiceImpl implements CommentsService {
             log.debug("User validated for campus post access: {}", userId);
         }
     }
+
+    /**
+     * Get user's own comments with pagination and sorting
+     * This is optimized with a composite index on (user_id, is_hidden, created_at)
+     * Performs a single query instead of N+1 queries
+     */
+    @Override
+    public Page<Comment> getUserOwnComments(UUID userId, Pageable pageable, SortBy sortBy, boolean includeHidden) {
+        if (sortBy == null) {
+            sortBy = SortBy.NEWEST; // Default sorting
+        }
+
+        log.debug("Fetching user's own comments: userId={}, page={}, limit={}, sort={}, includeHidden={}", 
+            userId, pageable.getNumber() + 1, pageable.getSize(), sortBy, includeHidden);
+
+        // Comments only support sorting by created time
+        Page<Comment> comments;
+        if (includeHidden) {
+            // Include both hidden and non-hidden comments
+            comments = switch (sortBy) {
+                case NEWEST, MOST_LIKED -> commentRepository.findByUserIdOrderByCreatedAtDesc(userId, pageable);
+                case OLDEST, LEAST_LIKED -> commentRepository.findByUserIdOrderByCreatedAtAsc(userId, pageable);
+            };
+        } else {
+            // Only non-hidden comments
+            comments = switch (sortBy) {
+                case NEWEST, MOST_LIKED -> commentRepository.findByUserIdAndHiddenFalseOrderByCreatedAtDesc(userId, pageable);
+                case OLDEST, LEAST_LIKED -> commentRepository.findByUserIdAndHiddenFalseOrderByCreatedAtAsc(userId, pageable);
+            };
+        }
+
+        log.info("Retrieved {} comments for user: {}, sort: {}, includeHidden: {}, total: {}", 
+            comments.getNumberOfElements(), userId, sortBy, includeHidden, comments.getTotalSize());
+        return comments;
+    }
 }

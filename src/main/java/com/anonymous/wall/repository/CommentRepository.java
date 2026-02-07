@@ -83,4 +83,35 @@ public interface CommentRepository extends CrudRepository<Comment, UUID> {
     void updateByPostId(UUID postId, boolean hidden);
 //    void updateHiddenTrueByPostId(Long postId);
 
+    // ===== User's Own Comments =====
+    /**
+     * Find all comments by a user with pagination, sorted by created time (newest first)
+     */
+    Page<Comment> findByUserIdOrderByCreatedAtDesc(UUID userId, Pageable pageable);
+
+    /**
+     * Find all comments by a user with pagination, sorted by created time (oldest first)
+     */
+    Page<Comment> findByUserIdOrderByCreatedAtAsc(UUID userId, Pageable pageable);
+
+    /**
+     * Find non-hidden comments by a user with pagination, sorted by created time (newest first)
+     */
+    Page<Comment> findByUserIdAndHiddenFalseOrderByCreatedAtDesc(UUID userId, Pageable pageable);
+
+    /**
+     * Find non-hidden comments by a user with pagination, sorted by created time (oldest first)
+     */
+    Page<Comment> findByUserIdAndHiddenFalseOrderByCreatedAtAsc(UUID userId, Pageable pageable);
+
+    /**
+     * Count all comments by a user
+     */
+    long countByUserId(UUID userId);
+
+    /**
+     * Count non-hidden comments by a user
+     */
+    long countByUserIdAndHiddenFalse(UUID userId);
+
 }
