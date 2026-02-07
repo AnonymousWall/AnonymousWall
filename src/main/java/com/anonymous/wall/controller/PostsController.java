@@ -4,6 +4,7 @@ import com.anonymous.wall.entity.Post;
 import com.anonymous.wall.entity.Comment;
 import com.anonymous.wall.model.*;
 import com.anonymous.wall.service.PostsService;
+import com.anonymous.wall.service.CommentsService;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
 import io.micronaut.http.HttpResponse;
@@ -30,6 +31,9 @@ public class PostsController {
 
     @Inject
     private PostsService postsService;
+
+    @Inject
+    private CommentsService commentsService;
 
     // Helper to extract user ID from Principal
     private UUID getUserIdFromRequest(HttpRequest<?> request) {
@@ -153,7 +157,7 @@ public class PostsController {
             UUID userId = getUserIdFromRequest(httpRequest);
             log.info("POST /posts/{}/comments - Adding comment, user={}, text_length={}", postId, userId, request.getText().length());
 
-            Comment comment = postsService.addComment(postId, request, userId);
+            Comment comment = commentsService.addComment(postId, request, userId);
             CommentDTO dto = mapCommentToDTO(comment);
 
             log.info("POST /posts/{}/comments - Comment added successfully, commentId={}", postId, dto.getId());
@@ -200,7 +204,7 @@ public class PostsController {
 
             Pageable pageable = Pageable.from(page - 1, limit);
             com.anonymous.wall.model.SortBy sortBy = com.anonymous.wall.model.SortBy.parse(sort);
-            Page<Comment> commentPage = postsService.getCommentsWithPagination(postId, pageable, sortBy);
+            Page<Comment> commentPage = commentsService.getCommentsWithPagination(postId, pageable, sortBy);
 
             List<CommentDTO> dtos = commentPage.getContent().stream()
                     .map(this::mapCommentToDTO)
@@ -280,7 +284,7 @@ public class PostsController {
             UUID userId = getUserIdFromRequest(httpRequest);
             log.info("PATCH /posts/{}/comments/{}/hide - Hiding comment, user={}", postId, commentId, userId);
 
-            postsService.hideComment(postId, commentId, userId);
+            commentsService.hideComment(postId, commentId, userId);
 
             Map<String, String> response = new HashMap<>();
             response.put("message", "Comment hidden successfully");
@@ -317,7 +321,7 @@ public class PostsController {
             UUID userId = getUserIdFromRequest(httpRequest);
             log.info("PATCH /posts/{}/comments/{}/unhide - Unhiding comment, user={}", postId, commentId, userId);
 
-            postsService.unhideComment(postId, commentId, userId);
+            commentsService.unhideComment(postId, commentId, userId);
 
             Map<String, String> response = new HashMap<>();
             response.put("message", "Comment unhidden successfully");

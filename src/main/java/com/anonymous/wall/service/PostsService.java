@@ -38,26 +38,6 @@ public interface PostsService {
     Page<Post> getPostsByWall(String wall, Pageable pageable, UUID currentUserId, String schoolDomain, SortBy sortBy);
 
     /**
-     * Add a comment to a post
-     */
-    Comment addComment(UUID postId, CreateCommentRequest request, UUID userId);
-
-    /**
-     * Get all comments for a post
-     */
-    List<Comment> getComments(UUID postId);
-
-    /**
-     * Get comments for a post with pagination
-     */
-    Page<Comment> getCommentsWithPagination(UUID postId, Pageable pageable);
-
-    /**
-     * Get comments for a post with pagination and sorting
-     */
-    Page<Comment> getCommentsWithPagination(UUID postId, Pageable pageable, SortBy sortBy);
-
-    /**
      * Toggle like on a post (like if not liked, unlike if already liked)
      * Returns true if post is now liked, false if unliked
      */
@@ -67,18 +47,6 @@ public interface PostsService {
      * Get a single post with like/comment counts
      */
     Post getPost(UUID postId, UUID currentUserId);
-
-    /**
-     * Hide a comment (soft-delete)
-     * Only the comment author can hide their own comment
-     */
-    Comment hideComment(UUID postId, UUID commentId, UUID userId);
-
-    /**
-     * Unhide a comment (undo soft-delete)
-     * Only the comment author can unhide their own comment
-     */
-    Comment unhideComment(UUID postId, UUID commentId, UUID userId);
 
     /**
      * Hide a post (soft-delete)
