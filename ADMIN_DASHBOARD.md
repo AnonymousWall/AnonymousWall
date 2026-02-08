@@ -45,11 +45,7 @@ For production environments, replace `localhost:8080` with your application's ho
   - IP whitelisting
   - Or reconfigure to require authentication
 
-### Management API Endpoints
-
-Other management endpoints (except `/health`) require JWT authentication when accessed programmatically:
-
-### Management API Endpoints
+## Management API Endpoints
 
 Other management endpoints (except `/health`) require JWT authentication when accessed programmatically:
 
