@@ -96,6 +96,37 @@ public class PostsController {
     }
 
     /**
+     * GET /posts/{postId}
+     * Get a single post by ID
+     */
+    @Get("/{postId}")
+    @Secured(SecurityRule.IS_AUTHENTICATED)
+    public HttpResponse<Object> getPostById(@PathVariable UUID postId, HttpRequest<?> httpRequest) {
+        try {
+            UUID userId = getUserIdFromRequest(httpRequest);
+            log.info("GET /posts/{} - Getting post, user={}", postId, userId);
+
+            Post post = postsService.getPost(postId, userId);
+            PostDTO dto = mapPostToDTO(post);
+
+            log.info("GET /posts/{} - Post retrieved successfully", postId);
+            return HttpResponse.ok(dto);
+        } catch (IllegalArgumentException e) {
+            log.warn("GET /posts/{} - Bad request: {}", postId, e.getMessage());
+            if (e.getMessage().contains("not found")) {
+                return HttpResponse.notFound();
+            }
+            if (e.getMessage().contains("do not have access")) {
+                return HttpResponse.status(io.micronaut.http.HttpStatus.FORBIDDEN).body(error(e.getMessage()));
+            }
+            return HttpResponse.badRequest(error(e.getMessage()));
+        } catch (Exception e) {
+            log.error("GET /posts/{} - Error getting post", postId, e);
+            return HttpResponse.badRequest(error("Failed to get post"));
+        }
+    }
+
+    /**
      * GET /posts
      * List posts with optional wall filter, pagination, and sorting
      * Query parameters: wall (default campus), page (default 1), limit (default 20), sort (default NEWEST)

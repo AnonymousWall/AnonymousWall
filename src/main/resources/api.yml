@@ -353,6 +353,35 @@ paths:
         "401":
           description: Unauthorized - authentication required
 
+  /posts/{postId}:
+    get:
+      tags: [posts]
+      summary: Get post by ID
+      description: Retrieve a single post by its ID
+      operationId: getPostById
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: postId
+          required: true
+          schema:
+            type: string
+          description: ID of the post to retrieve
+      responses:
+        "200":
+          description: Post retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PostDTO"
+        "401":
+          description: Unauthorized - authentication required
+        "403":
+          description: Forbidden - no access to this post
+        "404":
+          description: Post not found
+
   /posts/{postId}/comments:
     post:
       tags: [posts]

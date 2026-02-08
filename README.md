@@ -486,7 +486,48 @@ Response: 200 OK
 - `limit` (default: 20) - Posts per page (max: 100)
 - `sort` (default: "NEWEST") - Sort order: NEWEST, OLDEST, MOST_LIKED, LEAST_LIKED
 
-#### 3. Like/Unlike Post (Toggle)
+#### 3. Get Post by ID
+```http
+GET /api/v1/posts/{postId}
+Authorization: Bearer {jwt-token}
+
+Response: 200 OK
+{
+    "id": "uuid",
+    "title": "Post Title",
+    "content": "Post content",
+    "wall": "CAMPUS",
+    "likes": 5,
+    "comments": 2,
+    "liked": false,
+    "author": {
+        "id": "uuid",
+        "profileName": "John Doe",
+        "isAnonymous": true
+    },
+    "createdAt": "2026-01-28T...",
+    "updatedAt": "2026-01-28T..."
+}
+
+Response: 404 Not Found
+{
+    "error": "Post not found"
+}
+
+Response: 403 Forbidden
+{
+    "error": "You do not have access to posts from other schools"
+}
+```
+
+**Notes:**
+- Retrieves a single post by its ID
+- For campus posts: only users from the same school can access
+- For national posts: all authenticated users can access
+- Returns 404 if post does not exist
+- Returns 403 if user doesn't have access to the post
+
+#### 4. Like/Unlike Post (Toggle)
 ```http
 POST /api/v1/posts/{postId}/likes
 Authorization: Bearer {jwt-token}
@@ -506,7 +547,7 @@ Response: 200 OK
 - Response: `liked` (boolean) indicates post is now liked, `likeCount` is total likes on post
 
 
-#### 4. Add Comment
+#### 5. Add Comment
 ```http
 POST /api/v1/posts/{postId}/comments
 Authorization: Bearer {jwt-token}
@@ -544,7 +585,7 @@ Response: 400 Bad Request
 - `text` is **required** (cannot be null, empty, or whitespace-only)
 - `text` maximum length: **5000 characters**
 
-#### 5. Get Comments for Post
+#### 6. Get Comments for Post
 ```http
 GET /api/v1/posts/{postId}/comments?page=1&limit=20&sort=NEWEST
 Authorization: Bearer {jwt-token}
@@ -578,7 +619,7 @@ Response: 200 OK
 - `limit` (default: 20) - Comments per page (max: 100)
 - `sort` (default: "NEWEST") - Sort order: NEWEST, OLDEST
 
-#### 6. Hide Post
+#### 7. Hide Post
 ```http
 PATCH /api/v1/posts/{postId}/hide
 Authorization: Bearer {jwt-token}
@@ -594,7 +635,7 @@ Response: 200 OK
 - When a post is hidden, all its comments are also hidden
 - This is a soft-delete operation; data is preserved in the database
 
-#### 7. Unhide Post
+#### 8. Unhide Post
 ```http
 PATCH /api/v1/posts/{postId}/unhide
 Authorization: Bearer {jwt-token}
@@ -610,7 +651,7 @@ Response: 200 OK
 - When a post is unhidden, all its previously hidden comments are also restored
 
 
-#### 8. Hide Comment
+#### 9. Hide Comment
 ```http
 PATCH /api/v1/posts/{postId}/comments/{commentId}/hide
 Authorization: Bearer {jwt-token}
@@ -625,7 +666,7 @@ Response: 200 OK
 - Only the comment author can hide their own comment
 - This is a soft-delete operation; data is preserved in the database
 
-#### 9. Unhide Comment
+#### 10. Unhide Comment
 ```http
 PATCH /api/v1/posts/{postId}/comments/{commentId}/unhide
 Authorization: Bearer {jwt-token}
