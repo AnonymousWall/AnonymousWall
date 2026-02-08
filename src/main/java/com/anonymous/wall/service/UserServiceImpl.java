@@ -1,7 +1,9 @@
 package com.anonymous.wall.service;
 
 import com.anonymous.wall.entity.UserEntity;
+import com.anonymous.wall.event.ProfileNameChangedEvent;
 import com.anonymous.wall.repository.UserRepository;
+import io.micronaut.context.event.ApplicationEventPublisher;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import org.slf4j.Logger;
@@ -16,6 +18,9 @@ public class UserServiceImpl implements UserService {
 
     @Inject
     private UserRepository userRepository;
+
+    @Inject
+    private ApplicationEventPublisher<ProfileNameChangedEvent> eventPublisher;
 
     /**
      * Find user by ID
@@ -49,6 +54,7 @@ public class UserServiceImpl implements UserService {
         }
 
         UserEntity user = userOpt.get();
+        String oldProfileName = user.getProfileName();
         
         // Validate and set profile name
         String newProfileName;
@@ -61,7 +67,15 @@ public class UserServiceImpl implements UserService {
         user.setProfileName(newProfileName);
         UserEntity updated = userRepository.update(user);
         
-        log.info("Profile name updated for user: {}, newName={}", userId, newProfileName);
+        log.info("Profile name updated for user: {}, oldName={}, newName={}", 
+                userId, oldProfileName, newProfileName);
+        
+        // Publish event for asynchronous profile name propagation to posts and comments
+        eventPublisher.publishEvent(
+            new ProfileNameChangedEvent(userId, oldProfileName, newProfileName)
+        );
+        log.debug("Published ProfileNameChangedEvent for userId={}", userId);
+        
         return updated;
     }
 
