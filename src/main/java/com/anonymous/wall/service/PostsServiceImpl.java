@@ -309,48 +309,6 @@ public class PostsServiceImpl implements PostsService {
     }
 
     /**
-     * Toggle like on a post
-     * For campus posts: only users from the same school can like
-     * For national posts: all authenticated users can like
-     * Returns true if post is now liked, false if unliked
-     * Uses atomic operations to prevent race conditions
-     */
-    @Override
-    @Transactional
-    @Retryable(attempts = "5", delay = "100ms")
-    public boolean toggleLike(UUID postId, UUID userId) {
-        // Verify post exists
-        Optional<Post> postOpt = postRepository.findById(postId);
-        if (postOpt.isEmpty()) {
-            throw new IllegalArgumentException("Post not found");
-        }
-
-        Post post = postOpt.get();
-
-        // Validate visibility and permission
-        validatePostVisibility(post, userId);
-
-        Optional<PostLike> existingLike = postLikeRepository.findByPostIdAndUserId(postId, userId);
-
-        if (existingLike.isPresent()) {
-            // Unlike - decrement like count atomically
-            postLikeRepository.deleteByPostIdAndUserId(postId, userId);
-            post.decrementLikeCount();
-            postRepository.update(post);
-            log.info("Post unliked: postId={}, user={}, newLikeCount={}", postId, userId, post.getLikeCount());
-            return false;
-        } else {
-            // Like - increment like count atomically
-            PostLike like = new PostLike(postId, userId);
-            postLikeRepository.save(like);
-            post.incrementLikeCount();
-            postRepository.update(post);
-            log.info("Post liked: postId={}, user={}, newLikeCount={}", postId, userId, post.getLikeCount());
-            return true;
-        }
-    }
-
-    /**
      * Toggle like on a post and return detailed information
      * For campus posts: only users from the same school can like
      * For national posts: all authenticated users can like
