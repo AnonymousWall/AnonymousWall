@@ -120,10 +120,12 @@ endpoints.env.enabled=true
 endpoints.loggers.enabled=true
 endpoints.refresh.enabled=true
 
-# Enable Control Panel
+# Enable Control Panel (sensitive=false for browser access)
 endpoints.control-panel.enabled=true
-endpoints.control-panel.sensitive=true
+endpoints.control-panel.sensitive=false
 ```
+
+**Important**: The `sensitive=false` setting is required for browser access. When `sensitive=true`, the endpoint may not be accessible even with anonymous security configuration.
 
 ## Security Considerations
 
@@ -167,11 +169,23 @@ In production (using `application-prod.properties`), consider:
 
 ## Troubleshooting
 
+### 404 Not Found Error
+
+**For Control Panel (`/control-panel`):**
+- Check that `endpoints.control-panel.enabled=true` in your properties file
+- **CRITICAL**: Ensure `endpoints.control-panel.sensitive=false` is set
+  - When `sensitive=true`, the endpoint may not be accessible even with security rules
+- Verify the application started successfully - check logs for errors
+- Try accessing `http://localhost:8080/health` first to confirm the app is running
+- Clear your browser cache or try incognito mode
+
 ### Cannot Access Control Panel
 
 1. **Check if the application is running**: Verify the application started successfully
 2. **Check URL**: Ensure you're accessing `http://localhost:8080/control-panel` (not `/control-panel/`)
-3. **Check configuration**: Confirm `endpoints.control-panel.enabled=true` in your properties file
+3. **Check configuration**: 
+   - Confirm `endpoints.control-panel.enabled=true`
+   - Confirm `endpoints.control-panel.sensitive=false`
 4. **Review logs**: Check application logs for any errors
 5. **Clear browser cache**: Try in incognito/private mode
 
@@ -180,6 +194,7 @@ In production (using `application-prod.properties`), consider:
 **For Control Panel (`/control-panel`):**
 - This should NOT happen - control panel is configured for anonymous access
 - If you see 401, check that `micronaut.security.intercept-url-map[1].access[0]=isAnonymous()` is set
+- Verify `endpoints.control-panel.sensitive=false` (not `true`)
 - Verify no proxy/firewall is adding authentication requirements
 
 **For Other Management Endpoints (`/beans`, `/env`, etc.):**
