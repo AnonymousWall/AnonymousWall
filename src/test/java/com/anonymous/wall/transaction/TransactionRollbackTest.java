@@ -16,6 +16,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.ZonedDateTime;
+import java.util.Map;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -173,8 +174,8 @@ public class TransactionRollbackTest {
         assertEquals(0, before.getLikeCount());
 
         // Add like
-        boolean liked = postsService.toggleLike(testPost.getId(), testUser.getId());
-        assertTrue(liked);
+        Map<String, Object> liked = postsService.toggleLikeWithDetails(testPost.getId(), testUser.getId());
+        assertTrue((boolean) liked.get("liked"));
 
         Post afterLike = postRepository.findById(testPost.getId()).orElseThrow();
         long likeCount = postLikeRepository.countByPostId(testPost.getId());
@@ -184,8 +185,8 @@ public class TransactionRollbackTest {
         assertEquals(afterLike.getLikeCount(), likeCount, "Must be consistent");
 
         // Remove like
-        boolean unliked = postsService.toggleLike(testPost.getId(), testUser.getId());
-        assertFalse(unliked);
+        Map<String, Object> unliked = postsService.toggleLikeWithDetails(testPost.getId(), testUser.getId());
+        assertFalse((boolean) unliked.get("liked"));
 
         Post afterUnlike = postRepository.findById(testPost.getId()).orElseThrow();
         long likeCountAfter = postLikeRepository.countByPostId(testPost.getId());
@@ -254,7 +255,7 @@ public class TransactionRollbackTest {
         assertEquals(2, s3.getCommentCount(), "Count should be unchanged after failure");
 
         // Success: like post
-        postsService.toggleLike(testPost.getId(), testUser.getId());
+        postsService.toggleLikeWithDetails(testPost.getId(), testUser.getId());
         Post s4 = postRepository.findById(testPost.getId()).orElseThrow();
         assertEquals(2, s4.getCommentCount());
         assertEquals(1, s4.getLikeCount());

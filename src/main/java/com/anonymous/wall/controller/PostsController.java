@@ -248,13 +248,10 @@ public class PostsController {
             UUID userId = getUserIdFromRequest(httpRequest);
             log.info("POST /posts/{}/likes - Toggling like, user={}", postId, userId);
 
-            boolean isNowLiked = postsService.toggleLike(postId, userId);
+            Map<String, Object> result = postsService.toggleLikeWithDetails(postId, userId);
 
-            Map<String, Object> response = new HashMap<>();
-            response.put("liked", isNowLiked);
-
-            log.info("POST /posts/{}/likes - Like toggled successfully, liked={}", postId, isNowLiked);
-            return HttpResponse.ok(response);
+            log.info("POST /posts/{}/likes - Like toggled successfully, liked={}, likeCount={}", postId, result.get("liked"), result.get("likeCount"));
+            return HttpResponse.ok(result);
         } catch (IllegalArgumentException e) {
             log.warn("POST /posts/{}/likes - Bad request: {}", postId, e.getMessage());
             if (e.getMessage().contains("not found")) {

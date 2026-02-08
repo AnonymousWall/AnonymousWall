@@ -118,7 +118,7 @@ public class TransactionConcurrencyTest {
 
         // Like sequentially
         for (int i = 0; i < likeCount; i++) {
-            postsService.toggleLike(testPost.getId(), likeUsers[i].getId());
+            postsService.toggleLikeWithDetails(testPost.getId(), likeUsers[i].getId());
         }
 
         Thread.sleep(500);

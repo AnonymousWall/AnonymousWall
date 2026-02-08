@@ -9,6 +9,7 @@ import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 public interface PostsService {
@@ -38,10 +39,13 @@ public interface PostsService {
     Page<Post> getPostsByWall(String wall, Pageable pageable, UUID currentUserId, String schoolDomain, SortBy sortBy);
 
     /**
-     * Toggle like on a post (like if not liked, unlike if already liked)
-     * Returns true if post is now liked, false if unliked
+     * Toggle like on a post with details
+     * Returns a map containing:
+     * - "liked": boolean indicating if the post is now liked
+     * - "likeCount": long indicating the total number of likes on the post
+     * This is more efficient than toggleLike() as it avoids an extra query in the controller
      */
-    boolean toggleLike(UUID postId, UUID userId);
+    Map<String, Object> toggleLikeWithDetails(UUID postId, UUID userId);
 
     /**
      * Get a single post with like/comment counts

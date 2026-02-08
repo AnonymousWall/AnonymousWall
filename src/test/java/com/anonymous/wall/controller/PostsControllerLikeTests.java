@@ -2,7 +2,6 @@ package com.anonymous.wall.controller;
 
 import com.anonymous.wall.entity.Post;
 import com.anonymous.wall.entity.UserEntity;
-import com.anonymous.wall.model.PostDTO;
 import com.anonymous.wall.repository.CommentRepository;
 import com.anonymous.wall.repository.PostLikeRepository;
 import com.anonymous.wall.repository.PostRepository;
@@ -19,6 +18,7 @@ import jakarta.inject.Inject;
 import org.junit.jupiter.api.*;
 
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -116,20 +116,18 @@ class PostsControllerLikeTests {
         @Test
         @DisplayName("Should like a post")
         void shouldLikePost() {
-            HttpResponse<PostDTO> response = client.toBlocking().exchange(
+            HttpResponse<Map> response = client.toBlocking().exchange(
                 HttpRequest.POST(BASE_PATH + "/" + campusPost.getId() + "/likes", new HashMap<>())
                     .header("Authorization", "Bearer " + jwtTokenCampus),
-                PostDTO.class
+                Map.class
             );
 
             assertEquals(HttpStatus.OK, response.getStatus());
-            PostDTO body = response.body();
+            Map body = response.body();
             assertNotNull(body);
-            assertTrue(body.getLiked());
-            // Check likes if not null, otherwise just verify liked status
-            if (body.getLikes() != null) {
-                assertTrue(body.getLikes() >= 1);
-            }
+            assertTrue((Boolean) body.get("liked"));
+            assertNotNull(body.get("likeCount"));
+            assertTrue(((Number) body.get("likeCount")).longValue() >= 1);
         }
 
         @Test
@@ -139,61 +137,61 @@ class PostsControllerLikeTests {
             client.toBlocking().exchange(
                 HttpRequest.POST(BASE_PATH + "/" + campusPost.getId() + "/likes", new HashMap<>())
                     .header("Authorization", "Bearer " + jwtTokenCampus),
-                PostDTO.class
+                Map.class
             );
 
             // Then unlike (toggle)
-            HttpResponse<PostDTO> response = client.toBlocking().exchange(
+            HttpResponse<Map> response = client.toBlocking().exchange(
                 HttpRequest.POST(BASE_PATH + "/" + campusPost.getId() + "/likes", new HashMap<>())
                     .header("Authorization", "Bearer " + jwtTokenCampus),
-                PostDTO.class
+                Map.class
             );
 
             assertEquals(HttpStatus.OK, response.getStatus());
-            PostDTO body = response.body();
+            Map body = response.body();
             assertNotNull(body);
-            assertFalse(body.getLiked());
+            assertFalse((Boolean) body.get("liked"));
         }
 
         @Test
         @DisplayName("Should handle multiple like/unlike cycles")
         void shouldHandleMultipleCycles() {
             // Like
-            HttpResponse<PostDTO> response1 = client.toBlocking().exchange(
+            HttpResponse<Map> response1 = client.toBlocking().exchange(
                 HttpRequest.POST(BASE_PATH + "/" + campusPost.getId() + "/likes", new HashMap<>())
                     .header("Authorization", "Bearer " + jwtTokenCampus),
-                PostDTO.class
+                Map.class
             );
-            assertTrue(response1.body().getLiked());
+            assertTrue((Boolean) response1.body().get("liked"));
 
             // Unlike
-            HttpResponse<PostDTO> response2 = client.toBlocking().exchange(
+            HttpResponse<Map> response2 = client.toBlocking().exchange(
                 HttpRequest.POST(BASE_PATH + "/" + campusPost.getId() + "/likes", new HashMap<>())
                     .header("Authorization", "Bearer " + jwtTokenCampus),
-                PostDTO.class
+                Map.class
             );
-            assertFalse(response2.body().getLiked());
+            assertFalse((Boolean) response2.body().get("liked"));
 
             // Like again
-            HttpResponse<PostDTO> response3 = client.toBlocking().exchange(
+            HttpResponse<Map> response3 = client.toBlocking().exchange(
                 HttpRequest.POST(BASE_PATH + "/" + campusPost.getId() + "/likes", new HashMap<>())
                     .header("Authorization", "Bearer " + jwtTokenCampus),
-                PostDTO.class
+                Map.class
             );
-            assertTrue(response3.body().getLiked());
+            assertTrue((Boolean) response3.body().get("liked"));
         }
 
         @Test
         @DisplayName("Should like national post")
         void shouldLikeNationalPost() {
-            HttpResponse<PostDTO> response = client.toBlocking().exchange(
+            HttpResponse<Map> response = client.toBlocking().exchange(
                 HttpRequest.POST(BASE_PATH + "/" + nationalPost.getId() + "/likes", new HashMap<>())
                     .header("Authorization", "Bearer " + jwtTokenCampus),
-                PostDTO.class
+                Map.class
             );
 
             assertEquals(HttpStatus.OK, response.getStatus());
-            assertTrue(response.body().getLiked());
+            assertTrue((Boolean) response.body().get("liked"));
         }
     }
 
@@ -210,7 +208,7 @@ class PostsControllerLikeTests {
                 () -> client.toBlocking().exchange(
                     HttpRequest.POST(BASE_PATH + "/" + nonExistentPostId + "/likes", new HashMap<>())
                         .header("Authorization", "Bearer " + jwtTokenCampus),
-                    PostDTO.class
+                    Map.class
                 )
             );
             // Endpoint might return FORBIDDEN or NOT_FOUND
@@ -228,7 +226,7 @@ class PostsControllerLikeTests {
                 HttpClientResponseException.class,
                 () -> client.toBlocking().exchange(
                     HttpRequest.POST(BASE_PATH + "/" + campusPost.getId() + "/likes", new HashMap<>()),
-                    PostDTO.class
+                    Map.class
                 )
             );
             assertEquals(HttpStatus.UNAUTHORIZED, exception.getStatus());
@@ -247,7 +245,7 @@ class PostsControllerLikeTests {
                 () -> client.toBlocking().exchange(
                     HttpRequest.POST(BASE_PATH + "/" + campusPost.getId() + "/likes", new HashMap<>())
                         .header("Authorization", "Bearer " + jwtTokenDifferentSchool),
-                    PostDTO.class
+                    Map.class
                 )
             );
             assertTrue(
@@ -260,14 +258,14 @@ class PostsControllerLikeTests {
         @Test
         @DisplayName("Should allow like on national post from different school")
         void shouldAllowLikeOnNationalPostDifferentSchool() {
-            HttpResponse<PostDTO> response = client.toBlocking().exchange(
+            HttpResponse<Map> response = client.toBlocking().exchange(
                 HttpRequest.POST(BASE_PATH + "/" + nationalPost.getId() + "/likes", new HashMap<>())
                     .header("Authorization", "Bearer " + jwtTokenDifferentSchool),
-                PostDTO.class
+                Map.class
             );
 
             assertEquals(HttpStatus.OK, response.getStatus());
-            assertTrue(response.body().getLiked());
+            assertTrue((Boolean) response.body().get("liked"));
         }
 
         @Test
@@ -278,7 +276,7 @@ class PostsControllerLikeTests {
                 () -> client.toBlocking().exchange(
                     HttpRequest.POST(BASE_PATH + "/" + campusPost.getId() + "/likes", new HashMap<>())
                         .header("Authorization", "Bearer " + jwtTokenNoSchool),
-                    PostDTO.class
+                    Map.class
                 )
             );
             assertTrue(
@@ -291,14 +289,14 @@ class PostsControllerLikeTests {
         @Test
         @DisplayName("Should allow like on national post from user without school")
         void shouldAllowLikeOnNationalPostNoSchool() {
-            HttpResponse<PostDTO> response = client.toBlocking().exchange(
+            HttpResponse<Map> response = client.toBlocking().exchange(
                 HttpRequest.POST(BASE_PATH + "/" + nationalPost.getId() + "/likes", new HashMap<>())
                     .header("Authorization", "Bearer " + jwtTokenNoSchool),
-                PostDTO.class
+                Map.class
             );
 
             assertEquals(HttpStatus.OK, response.getStatus());
-            assertTrue(response.body().getLiked());
+            assertTrue((Boolean) response.body().get("liked"));
         }
     }
 
@@ -330,21 +328,21 @@ class PostsControllerLikeTests {
             client.toBlocking().exchange(
                 HttpRequest.POST(BASE_PATH + "/" + campusPost.getId() + "/likes", new HashMap<>())
                     .header("Authorization", "Bearer " + jwtTokenCampus),
-                PostDTO.class
+                Map.class
             );
 
             // User 2 likes
             client.toBlocking().exchange(
                 HttpRequest.POST(BASE_PATH + "/" + campusPost.getId() + "/likes", new HashMap<>())
                     .header("Authorization", "Bearer " + token2),
-                PostDTO.class
+                Map.class
             );
 
             // User 3 likes
             client.toBlocking().exchange(
                 HttpRequest.POST(BASE_PATH + "/" + campusPost.getId() + "/likes", new HashMap<>())
                     .header("Authorization", "Bearer " + token3),
-                PostDTO.class
+                Map.class
             );
 
             // Verify count is at least 3
@@ -357,14 +355,14 @@ class PostsControllerLikeTests {
         @DisplayName("Should show correct like status for current user")
         void shouldShowCorrectLikeStatus() {
             // User 1 likes the post
-            HttpResponse<PostDTO> likeResponse = client.toBlocking().exchange(
+            HttpResponse<Map> likeResponse = client.toBlocking().exchange(
                 HttpRequest.POST(BASE_PATH + "/" + campusPost.getId() + "/likes", new HashMap<>())
                     .header("Authorization", "Bearer " + jwtTokenCampus),
-                PostDTO.class
+                Map.class
             );
 
             // User 1 should see liked=true
-            assertTrue(likeResponse.body().getLiked());
+            assertTrue((Boolean) likeResponse.body().get("liked"));
 
             // Other users shouldn't like, so different post fetch would show different status
             // (This would need a GET endpoint to test fully)
@@ -377,7 +375,7 @@ class PostsControllerLikeTests {
             client.toBlocking().exchange(
                 HttpRequest.POST(BASE_PATH + "/" + campusPost.getId() + "/likes", new HashMap<>())
                     .header("Authorization", "Bearer " + jwtTokenCampus),
-                PostDTO.class
+                Map.class
             );
 
             Optional<Post> afterLike = postRepository.findById(campusPost.getId());
@@ -389,7 +387,7 @@ class PostsControllerLikeTests {
             client.toBlocking().exchange(
                 HttpRequest.POST(BASE_PATH + "/" + campusPost.getId() + "/likes", new HashMap<>())
                     .header("Authorization", "Bearer " + jwtTokenCampus),
-                PostDTO.class
+                Map.class
             );
 
             Optional<Post> afterUnlike = postRepository.findById(campusPost.getId());
@@ -407,59 +405,51 @@ class PostsControllerLikeTests {
         @DisplayName("Should not create duplicate likes")
         void shouldNotCreateDuplicateLikes() {
             // Like the post
-            HttpResponse<PostDTO> response1 = client.toBlocking().exchange(
+            HttpResponse<Map> response1 = client.toBlocking().exchange(
                 HttpRequest.POST(BASE_PATH + "/" + campusPost.getId() + "/likes", new HashMap<>())
                     .header("Authorization", "Bearer " + jwtTokenCampus),
-                PostDTO.class
+                Map.class
             );
-            Long count1 = null;
-            if (response1.body() != null && response1.body().getLikes() != null) {
-                count1 = Long.valueOf(response1.body().getLikes());
-            }
+            long count1 = ((Number) response1.body().get("likeCount")).longValue();
 
             // Try to like again (should toggle/return no-op or same count)
-            HttpResponse<PostDTO> response2 = client.toBlocking().exchange(
+            HttpResponse<Map> response2 = client.toBlocking().exchange(
                 HttpRequest.POST(BASE_PATH + "/" + campusPost.getId() + "/likes", new HashMap<>())
                     .header("Authorization", "Bearer " + jwtTokenCampus),
-                PostDTO.class
+                Map.class
             );
-            Long count2 = null;
-            if (response2.body() != null && response2.body().getLikes() != null) {
-                count2 = Long.valueOf(response2.body().getLikes());
-            }
+            long count2 = ((Number) response2.body().get("likeCount")).longValue();
 
             // Either count stays same or it toggled (unliked)
-            if (count1 != null && count2 != null) {
-                assertTrue(count2 <= count1, "Like count should not increase on second like");
-            }
+            assertTrue(count2 <= count1, "Like count should not increase on second like");
         }
 
         @Test
         @DisplayName("Should maintain like state across requests")
         void shouldMaintainLikeState() {
             // Like post
-            HttpResponse<PostDTO> response1 = client.toBlocking().exchange(
+            HttpResponse<Map> response1 = client.toBlocking().exchange(
                 HttpRequest.POST(BASE_PATH + "/" + campusPost.getId() + "/likes", new HashMap<>())
                     .header("Authorization", "Bearer " + jwtTokenCampus),
-                PostDTO.class
+                Map.class
             );
-            assertTrue(response1.body().getLiked());
+            assertTrue((Boolean) response1.body().get("liked"));
 
             // Verify state persists by liking again (which should unlike)
-            HttpResponse<PostDTO> response2 = client.toBlocking().exchange(
+            HttpResponse<Map> response2 = client.toBlocking().exchange(
                 HttpRequest.POST(BASE_PATH + "/" + campusPost.getId() + "/likes", new HashMap<>())
                     .header("Authorization", "Bearer " + jwtTokenCampus),
-                PostDTO.class
+                Map.class
             );
-            assertFalse(response2.body().getLiked(), "Toggle should set liked to false");
+            assertFalse((Boolean) response2.body().get("liked"), "Toggle should set liked to false");
 
             // Like again to verify
-            HttpResponse<PostDTO> response3 = client.toBlocking().exchange(
+            HttpResponse<Map> response3 = client.toBlocking().exchange(
                 HttpRequest.POST(BASE_PATH + "/" + campusPost.getId() + "/likes", new HashMap<>())
                     .header("Authorization", "Bearer " + jwtTokenCampus),
-                PostDTO.class
+                Map.class
             );
-            assertTrue(response3.body().getLiked(), "Toggle should set liked to true again");
+            assertTrue((Boolean) response3.body().get("liked"), "Toggle should set liked to true again");
         }
     }
 }

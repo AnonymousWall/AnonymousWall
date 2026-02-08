@@ -106,7 +106,7 @@ public class TransactionConsistencyTest {
     @Test
     void testLikeCountAccurate() {
         // Add like
-        postsService.toggleLike(testPost.getId(), testUser.getId());
+        postsService.toggleLikeWithDetails(testPost.getId(), testUser.getId());
 
         Post post1 = postRepository.findById(testPost.getId()).orElseThrow();
         long actual1 = postLikeRepository.countByPostId(testPost.getId());
@@ -116,7 +116,7 @@ public class TransactionConsistencyTest {
         assertEquals(post1.getLikeCount(), actual1, "Counts must match exactly");
 
         // Remove like
-        postsService.toggleLike(testPost.getId(), testUser.getId());
+        postsService.toggleLikeWithDetails(testPost.getId(), testUser.getId());
 
         Post post2 = postRepository.findById(testPost.getId()).orElseThrow();
         long actual2 = postLikeRepository.countByPostId(testPost.getId());
@@ -235,7 +235,7 @@ public class TransactionConsistencyTest {
         assertEquals(2, s2.getCommentCount());
 
         // Add like
-        postsService.toggleLike(testPost.getId(), testUser.getId());
+        postsService.toggleLikeWithDetails(testPost.getId(), testUser.getId());
         Post s3 = postRepository.findById(testPost.getId()).orElseThrow();
         assertEquals(2, s3.getCommentCount());
         assertEquals(1, s3.getLikeCount());

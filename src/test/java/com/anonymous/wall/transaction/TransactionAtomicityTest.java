@@ -17,6 +17,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.ZonedDateTime;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -146,8 +147,8 @@ public class TransactionAtomicityTest {
         assertEquals(0, beforeLike.getLikeCount(), "Initial like count should be 0");
 
         // First toggle - should add like
-        boolean liked1 = postsService.toggleLike(testPost.getId(), testUser.getId());
-        assertTrue(liked1, "First toggle should return true (liked)");
+        Map<String, Object> result1 = postsService.toggleLikeWithDetails(testPost.getId(), testUser.getId());
+        assertTrue((boolean) result1.get("liked"), "First toggle should return true (liked)");
 
         Post afterFirstToggle = postRepository.findById(testPost.getId()).orElseThrow();
         long actualLikes1 = postLikeRepository.countByPostId(testPost.getId());
@@ -158,8 +159,8 @@ public class TransactionAtomicityTest {
             "Count must match actual (atomicity)");
 
         // Second toggle - should remove like
-        boolean liked2 = postsService.toggleLike(testPost.getId(), testUser.getId());
-        assertFalse(liked2, "Second toggle should return false (unliked)");
+        Map<String, Object> result2 = postsService.toggleLikeWithDetails(testPost.getId(), testUser.getId());
+        assertFalse((boolean) result2.get("liked"), "Second toggle should return false (unliked)");
 
         Post afterSecondToggle = postRepository.findById(testPost.getId()).orElseThrow();
         long actualLikes2 = postLikeRepository.countByPostId(testPost.getId());

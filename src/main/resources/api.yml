@@ -414,6 +414,10 @@ paths:
                   liked:
                     type: boolean
                     description: true if post is now liked, false if unliked
+                  likeCount:
+                    type: integer
+                    format: int64
+                    description: Total number of likes on the post
         "401":
           description: Unauthorized - authentication required
         "404":

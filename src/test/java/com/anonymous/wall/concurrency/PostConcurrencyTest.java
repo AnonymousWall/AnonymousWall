@@ -138,7 +138,7 @@ public class PostConcurrencyTest {
 
         // Like sequentially
         for (int i = 0; i < threadCount; i++) {
-            postsService.toggleLike(testPost.getId(), likeUsers[i].getId());
+            postsService.toggleLikeWithDetails(testPost.getId(), likeUsers[i].getId());
         }
 
         Thread.sleep(1000);
@@ -176,7 +176,7 @@ public class PostConcurrencyTest {
 
         // Add likes sequentially
         for (int i = 0; i < likeCount; i++) {
-            postsService.toggleLike(testPost.getId(), likeUsers[i].getId());
+            postsService.toggleLikeWithDetails(testPost.getId(), likeUsers[i].getId());
         }
 
         Thread.sleep(1000);

@@ -20,7 +20,9 @@ import jakarta.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -346,6 +348,59 @@ public class PostsServiceImpl implements PostsService {
             log.info("Post liked: postId={}, user={}, newLikeCount={}", postId, userId, post.getLikeCount());
             return true;
         }
+    }
+
+    /**
+     * Toggle like on a post and return detailed information
+     * For campus posts: only users from the same school can like
+     * For national posts: all authenticated users can like
+     * Returns a map with:
+     * - "liked": boolean indicating if post is now liked
+     * - "likeCount": long indicating the total number of likes
+     * Uses atomic operations to prevent race conditions
+     * All changes (increment/decrement + like record) happen in the same transaction
+     */
+    @Override
+    @Transactional
+    @Retryable(attempts = "5", delay = "100ms")
+    public Map<String, Object> toggleLikeWithDetails(UUID postId, UUID userId) {
+        // Verify post exists
+        Optional<Post> postOpt = postRepository.findById(postId);
+        if (postOpt.isEmpty()) {
+            throw new IllegalArgumentException("Post not found");
+        }
+
+        Post post = postOpt.get();
+
+        // Validate visibility and permission
+        validatePostVisibility(post, userId);
+
+        Optional<PostLike> existingLike = postLikeRepository.findByPostIdAndUserId(postId, userId);
+        boolean isNowLiked;
+
+        if (existingLike.isPresent()) {
+            // Unlike - decrement like count atomically
+            postLikeRepository.deleteByPostIdAndUserId(postId, userId);
+            post.decrementLikeCount();
+            postRepository.update(post);
+            isNowLiked = false;
+            log.info("Post unliked: postId={}, user={}, newLikeCount={}", postId, userId, post.getLikeCount());
+        } else {
+            // Like - increment like count atomically
+            PostLike like = new PostLike(postId, userId);
+            postLikeRepository.save(like);
+            post.incrementLikeCount();
+            postRepository.update(post);
+            isNowLiked = true;
+            log.info("Post liked: postId={}, user={}, newLikeCount={}", postId, userId, post.getLikeCount());
+        }
+
+        // Return both liked status and like count in a single response
+        Map<String, Object> result = new HashMap<>();
+        result.put("liked", isNowLiked);
+        result.put("likeCount", (long) post.getLikeCount());
+
+        return result;
     }
 
     /**
