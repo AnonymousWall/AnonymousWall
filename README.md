@@ -6,8 +6,8 @@ A Micronaut-based REST API for anonymous campus social networking. Users registe
 
 ## Table of Contents
 
-1. [Recent Changes](#recent-changes)
-2. [Project Overview](#project-overview)
+1. [Project Overview](#project-overview)
+2. [Key Features](#key-features)
 3. [Project Structure](#project-structure)
 4. [Technology Stack](#technology-stack)
 5. [Database Schema](#database-schema)
@@ -18,99 +18,12 @@ A Micronaut-based REST API for anonymous campus social networking. Users registe
 
 ---
 
-## Recent Changes
+## Project Overview
 
-### Post Title Feature (February 2026)
+**Anonymous Wall** is a Micronaut-based REST API for anonymous campus social networking. Students register with their school email, create posts on campus or national walls, like posts, and comment anonymously.
 
-**Summary:** Posts now have a required `title` field. All endpoints that return posts have been updated to include the title.
-
-**Breaking Changes:**
-- ⚠️ `POST /api/v1/posts` now **requires** a `title` field (1-255 characters)
-- Old API requests without `title` will receive `400 Bad Request`
-- All clients must be updated to include `title` when creating posts
-
-**What Changed:**
-
-#### 1. Database Schema
-- Added `title VARCHAR(255)` column to `posts` table
-- Added `profile_name` and optimized column structure
-- Added atomic `like_count` and `comment_count` counters
-- Added `is_hidden` soft-delete flag and `version` for optimistic locking
-
-#### 2. Create Post Request
-**Before:**
-```json
-{ "content": "Post content", "wall": "campus" }
-```
-
-**After (REQUIRED):**
-```json
-{
-  "title": "Post Title",       // NEW - REQUIRED (1-255 chars)
-  "content": "Post content",   // REQUIRED (1-5000 chars)
-  "wall": "campus"             // Optional, defaults to "campus"
-}
-```
-
-#### 3. Post Response
-All GET endpoints (`/posts`, `/posts/{postId}`, `/comments`) now include:
-```json
-{
-  "id": "1",
-  "title": "Post Title",       // NEW
-  "content": "Post content",
-  "wall": "CAMPUS",
-  "likes": 5,
-  "comments": 2,
-  "liked": false,
-  "author": {...},
-  "createdAt": "2026-01-28T...",
-  "updatedAt": "2026-01-28T..."
-}
-```
-
-#### 4. Validation Rules
-- **Title:** Required, 1-255 characters, cannot be empty or whitespace-only
-- **Content:** Required, 1-5000 characters, cannot be empty or whitespace-only
-- **Wall:** Optional ("campus" or "national"), defaults to "campus"
-
-**Error Responses:**
-```json
-// Missing or empty title
-400 Bad Request
-{ "error": "Post title cannot be empty" }
-
-// Title exceeds 255 characters
-400 Bad Request
-{ "error": "Post title exceeds maximum length of 255 characters" }
-```
-
-#### 5. Affected Endpoints
-- ✅ `POST /api/v1/posts` - Create post (now requires title)
-- ✅ `GET /api/v1/posts` - List posts (now includes title)
-- ✅ `GET /api/v1/posts/{postId}` - Get single post (now includes title)
-- ✅ `POST /api/v1/posts/{postId}/like` - Returns post with title
-- ✅ `POST /api/v1/posts/{postId}/unlike` - Returns post with title
-- ✅ `GET /api/v1/posts/{postId}/comments` - Posts in response include title
-- ✅ `POST /api/v1/posts/{postId}/hide` - Returns post with title
-- ✅ `POST /api/v1/posts/{postId}/unhide` - Returns post with title
-
-#### 6. Implementation Details
-- **Entity:** `Post.java` - Added title field, getter/setter, and updated constructor
-- **Service:** `PostsServiceImpl.java` - Added title validation in `createPost()`
-- **Controller:** `PostsController.java` - Updated `mapPostToDTO()` to include title
-- **Database:** `01-schema.xml` - Added title column via Liquibase migration
-- **API Spec:** `api.yml` - Updated `CreatePostRequest` and `PostDTO` schemas
-
-**Migration:**
-- No manual migration required - Liquibase handles schema changes automatically
-- Existing posts will have NULL titles (database supports nullable for compatibility)
-- All new posts MUST provide a title
-
----
-
-**Anonymous Wall** is a campus-specific social platform where:
-- Students register with their school email (e.g., student@harvard.edu)
+### What is Anonymous Wall?
+- Students register with school email (e.g., student@harvard.edu)
 - They can post to **Campus walls** (visible only to students from their school)
 - They can post to **National walls** (visible to all authenticated students)
 - All posts and comments are anonymous
@@ -381,7 +294,6 @@ Response: 200 OK
 #### 6. Change Password (Requires Authentication)
 ```http
 POST /api/v1/auth/password/change
-Header: X-User-Id: {userId}
 Authorization: Bearer {jwt-token}
 Content-Type: application/json
 
@@ -401,7 +313,57 @@ Response: 200 OK
 }
 ```
 
-#### 7. Update Profile Name (Requires Authentication)
+#### 7. Request Password Reset (Forgot Password)
+```http
+POST /api/v1/auth/password/reset-request
+Content-Type: application/json
+
+{
+    "email": "student@harvard.edu"
+}
+
+Response: 200 OK
+{
+    "message": "Password reset code sent to email"
+}
+```
+
+**Notes:**
+- Sends a 6-digit verification code to the user's email
+- User must provide this code to reset their password
+- Code expires after 15 minutes
+
+#### 8. Reset Password
+```http
+POST /api/v1/auth/password/reset
+Content-Type: application/json
+
+{
+    "email": "student@harvard.edu",
+    "code": "123456",
+    "newPassword": "new_password"
+}
+
+Response: 200 OK
+{
+    "user": {
+        "id": "uuid",
+        "email": "student@harvard.edu",
+        "profileName": "Anonymous",
+        "isVerified": true,
+        "passwordSet": true,
+        "createdAt": "2026-01-28T..."
+    },
+    "accessToken": "jwt-token-here"
+}
+```
+
+**Notes:**
+- Requires valid email verification code
+- Code must not be expired (15 minute expiration)
+- Returns JWT token upon successful password reset
+
+#### 9. Update Profile Name (Requires Authentication)
 ```http
 PATCH /api/v1/auth/profile/name
 Authorization: Bearer {jwt-token}
@@ -524,53 +486,25 @@ Response: 200 OK
 - `limit` (default: 20) - Posts per page (max: 100)
 - `sort` (default: "NEWEST") - Sort order: NEWEST, OLDEST, MOST_LIKED, LEAST_LIKED
 
-#### 3. Like Post
+#### 3. Like/Unlike Post (Toggle)
 ```http
-POST /api/v1/posts/{postId}/like
+POST /api/v1/posts/{postId}/likes
 Authorization: Bearer {jwt-token}
 
 Response: 200 OK
 {
-    "id": "uuid",
-    "title": "Post Title",               // UPDATED
-    "content": "Post content",
-    "wall": "CAMPUS",
-    "likes": 6,
-    "comments": 2,
     "liked": true,
-    "author": {
-        "id": "uuid",
-        "profileName": "John Doe",
-        "isAnonymous": true
-    },
-    "createdAt": "2026-01-28T...",
-    "updatedAt": "2026-01-28T..."
+    "likeCount": 6
 }
 ```
 
-#### 3b. Unlike Post
-```http
-POST /api/v1/posts/{postId}/unlike
-Authorization: Bearer {jwt-token}
+**Notes:**
+- Single endpoint that toggles like state (like if not liked, unlike if already liked)
+- Returns both the new like state and total like count for the post
+- For campus posts: only users from the same school can like
+- For national posts: all authenticated users can like
+- Response: `liked` (boolean) indicates post is now liked, `likeCount` is total likes on post
 
-Response: 200 OK
-{
-    "id": "uuid",
-    "title": "Post Title",               // UPDATED
-    "content": "Post content",
-    "wall": "CAMPUS",
-    "likes": 5,
-    "comments": 2,
-    "liked": false,
-    "author": {
-        "id": "uuid",
-        "profileName": "John Doe",
-        "isAnonymous": true
-    },
-    "createdAt": "2026-01-28T...",
-    "updatedAt": "2026-01-28T..."
-}
-```
 
 #### 4. Add Comment
 ```http
@@ -644,51 +578,14 @@ Response: 200 OK
 - `limit` (default: 20) - Comments per page (max: 100)
 - `sort` (default: "NEWEST") - Sort order: NEWEST, OLDEST
 
-#### 6. Get Single Post
+#### 6. Hide Post
 ```http
-GET /api/v1/posts/{postId}
+PATCH /api/v1/posts/{postId}/hide
 Authorization: Bearer {jwt-token}
 
 Response: 200 OK
 {
-    "id": "uuid",
-    "title": "Post Title",               // UPDATED
-    "content": "Post content",
-    "wall": "CAMPUS",
-    "likes": 5,
-    "comments": 2,
-    "liked": false,
-    "author": {
-        "id": "uuid",
-        "profileName": "John Doe",
-        "isAnonymous": true
-    },
-    "createdAt": "2026-01-28T...",
-    "updatedAt": "2026-01-28T..."
-}
-```
-
-#### 7. Hide Post
-```http
-POST /api/v1/posts/{postId}/hide
-Authorization: Bearer {jwt-token}
-
-Response: 200 OK
-{
-    "id": "uuid",
-    "title": "Post Title",               // UPDATED
-    "content": "Post content",
-    "wall": "CAMPUS",
-    "likes": 5,
-    "comments": 2,
-    "liked": false,
-    "author": {
-        "id": "uuid",
-        "profileName": "John Doe",
-        "isAnonymous": true
-    },
-    "createdAt": "2026-01-28T...",
-    "updatedAt": "2026-01-28T..."
+    "message": "Post hidden successfully"
 }
 ```
 
@@ -697,75 +594,21 @@ Response: 200 OK
 - When a post is hidden, all its comments are also hidden
 - This is a soft-delete operation; data is preserved in the database
 
-#### 8. Unhide Post
+#### 7. Unhide Post
 ```http
-POST /api/v1/posts/{postId}/unhide
+PATCH /api/v1/posts/{postId}/unhide
 Authorization: Bearer {jwt-token}
 
 Response: 200 OK
 {
-    "id": "uuid",
-    "title": "Post Title",               // UPDATED
-    "content": "Post content",
-    "wall": "CAMPUS",
-    "likes": 5,
-    "comments": 2,
-    "liked": false,
-    "author": {
-        "id": "uuid",
-        "profileName": "John Doe",
-        "isAnonymous": true
-    },
-    "createdAt": "2026-01-28T...",
-    "updatedAt": "2026-01-28T..."
-}
-```
-
-#### 9. Hide Comment
-```http
-POST /api/v1/posts/{postId}/comments/{commentId}/hide
-Authorization: Bearer {jwt-token}
-
-Response: 200 OK
-{
-    "id": "uuid",
-    "postId": "uuid",
-    "text": "Great post!",
-    "author": {
-        "id": "uuid",
-        "profileName": "Jane Smith",
-        "isAnonymous": true
-    },
-    "createdAt": "2026-01-28T..."
-}
-```
-
-**Notes:**
-- Only the comment author can hide their own comment
-- This is a soft-delete operation; data is preserved in the database
-
-#### 10. Unhide Comment
-```http
-POST /api/v1/posts/{postId}/comments/{commentId}/unhide
-Authorization: Bearer {jwt-token}
-
-Response: 200 OK
-{
-    "id": "uuid",
-    "postId": "uuid",
-    "text": "Great post!",
-    "author": {
-        "id": "uuid",
-        "profileName": "Jane Smith",
-        "isAnonymous": true
-    },
-    "createdAt": "2026-01-28T..."
+    "message": "Post unhidden successfully"
 }
 ```
 
 **Notes:**
 - Only the post author can unhide their own post
 - When a post is unhidden, all its previously hidden comments are also restored
+
 
 #### 8. Hide Comment
 ```http
