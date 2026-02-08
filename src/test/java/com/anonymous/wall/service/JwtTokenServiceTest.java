@@ -34,6 +34,7 @@ class JwtTokenServiceTest {
         testUser.setSchoolDomain("harvard.edu");
         testUser.setVerified(true);
         testUser.setPasswordSet(true);
+        testUser.setRole("user");
     }
 
     @Nested
@@ -56,6 +57,7 @@ class JwtTokenServiceTest {
             assertEquals(testUser.getEmail(), claims.get("email"), "Email claim should match");
             assertEquals(testUser.isVerified(), claims.get("verified"), "Verified claim should match");
             assertEquals(testUser.isPasswordSet(), claims.get("passwordSet"), "PasswordSet claim should match");
+            assertEquals(testUser.getRole(), claims.get("role"), "Role claim should match");
         }
 
         @Test
@@ -122,11 +124,24 @@ class JwtTokenServiceTest {
             user2.setSchoolDomain("mit.edu");
             user2.setVerified(true);
             user2.setPasswordSet(true);
+            user2.setRole("user");
 
             String token1 = jwtTokenService.generateToken(testUser);
             String token2 = jwtTokenService.generateToken(user2);
 
             assertNotEquals(token1, token2, "Tokens for different users should be different");
+        }
+
+        @Test
+        @DisplayName("Should include admin role in token for admin users")
+        void shouldIncludeAdminRoleForAdminUsers() throws Exception {
+            testUser.setRole("admin");
+            String token = jwtTokenService.generateToken(testUser);
+
+            JWT jwt = JWTParser.parse(token);
+            Map<String, Object> claims = jwt.getJWTClaimsSet().getClaims();
+
+            assertEquals("admin", claims.get("role"), "Role claim should be admin");
         }
     }
 
