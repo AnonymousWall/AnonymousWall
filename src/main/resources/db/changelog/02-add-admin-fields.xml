@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="
+       http://www.liquibase.org/xml/ns/dbchangelog
+       http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <!-- ================= Admin Functionality ================= -->
+    <changeSet id="13-add-user-role-and-status" author="copilot">
+        <comment>Add role and account_status columns to users table for admin functionality</comment>
+        
+        <!-- Add role column (user or admin) -->
+        <addColumn tableName="users">
+            <column name="role" type="VARCHAR(20)" defaultValue="user">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+        
+        <!-- Add account_status column (active, blocked, or deleted) -->
+        <addColumn tableName="users">
+            <column name="account_status" type="VARCHAR(20)" defaultValue="active">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+        
+        <!-- Add index on role for admin queries -->
+        <createIndex tableName="users" indexName="idx_users_role">
+            <column name="role"/>
+        </createIndex>
+        
+        <!-- Add index on account_status for filtering -->
+        <createIndex tableName="users" indexName="idx_users_account_status">
+            <column name="account_status"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>

@@ -34,6 +34,12 @@ public class UserEntity {
     @MappedProperty("created_at")
     private ZonedDateTime createdAt = ZonedDateTime.now();
 
+    @MappedProperty("role")
+    private String role = "user";
+
+    @MappedProperty("account_status")
+    private String accountStatus = "active";
+
     // ---------------- Getters & Setters ----------------
 
     public UUID getId() { return id; }
@@ -59,4 +65,10 @@ public class UserEntity {
 
     public ZonedDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(ZonedDateTime createdAt) { this.createdAt = createdAt; }
+
+    public String getRole() { return role; }
+    public void setRole(String role) { this.role = role; }
+
+    public String getAccountStatus() { return accountStatus; }
+    public void setAccountStatus(String accountStatus) { this.accountStatus = accountStatus; }
 }

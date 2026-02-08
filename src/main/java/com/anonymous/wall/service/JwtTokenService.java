@@ -38,6 +38,7 @@ public class JwtTokenService {
             claims.put("email", user.getEmail());
             claims.put("verified", user.isVerified());
             claims.put("passwordSet", user.isPasswordSet());
+            claims.put("role", user.getRole());
             
             // Add schoolDomain to JWT claims to avoid redundant database lookups
             if (user.getSchoolDomain() != null) {
@@ -78,6 +79,7 @@ public class JwtTokenService {
             claims.put("email", user.getEmail());
             claims.put("verified", user.isVerified());
             claims.put("passwordSet", user.isPasswordSet());
+            claims.put("role", user.getRole());
             
             // Add schoolDomain to JWT claims to avoid redundant database lookups
             if (user.getSchoolDomain() != null) {
