@@ -20,6 +20,15 @@ public class AdminServiceImpl implements AdminService {
     
     private static final Logger log = LoggerFactory.getLogger(AdminServiceImpl.class);
     
+    // Account status constants
+    public static final String STATUS_ACTIVE = "active";
+    public static final String STATUS_BLOCKED = "blocked";
+    public static final String STATUS_DELETED = "deleted";
+    
+    // Role constants
+    public static final String ROLE_USER = "user";
+    public static final String ROLE_ADMIN = "admin";
+    
     @Inject
     private UserRepository userRepository;
     
@@ -45,11 +54,11 @@ public class AdminServiceImpl implements AdminService {
         }
         
         UserEntity user = userOpt.get();
-        if ("blocked".equals(user.getAccountStatus())) {
+        if (STATUS_BLOCKED.equals(user.getAccountStatus())) {
             throw new IllegalStateException("User is already blocked");
         }
         
-        user.setAccountStatus("blocked");
+        user.setAccountStatus(STATUS_BLOCKED);
         userRepository.update(user);
         log.info("User blocked successfully: {}", userId);
     }
@@ -63,11 +72,11 @@ public class AdminServiceImpl implements AdminService {
         }
         
         UserEntity user = userOpt.get();
-        if (!"blocked".equals(user.getAccountStatus())) {
+        if (!STATUS_BLOCKED.equals(user.getAccountStatus())) {
             throw new IllegalStateException("User is not blocked");
         }
         
-        user.setAccountStatus("active");
+        user.setAccountStatus(STATUS_ACTIVE);
         userRepository.update(user);
         log.info("User unblocked successfully: {}", userId);
     }
@@ -81,11 +90,11 @@ public class AdminServiceImpl implements AdminService {
         }
         
         UserEntity user = userOpt.get();
-        if ("deleted".equals(user.getAccountStatus())) {
+        if (STATUS_DELETED.equals(user.getAccountStatus())) {
             throw new IllegalStateException("User is already deleted");
         }
         
-        user.setAccountStatus("deleted");
+        user.setAccountStatus(STATUS_DELETED);
         userRepository.update(user);
         log.info("User soft deleted successfully: {}", userId);
     }

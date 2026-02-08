@@ -2,6 +2,7 @@ package com.anonymous.wall.controller;
 
 import com.anonymous.wall.entity.UserEntity;
 import com.anonymous.wall.service.AdminService;
+import com.anonymous.wall.service.AdminServiceImpl;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
 import io.micronaut.http.HttpRequest;
@@ -41,7 +42,7 @@ public class AdminController {
         if (principal instanceof Authentication) {
             Authentication auth = (Authentication) principal;
             Object role = auth.getAttributes().get("role");
-            return "admin".equals(role);
+            return AdminServiceImpl.ROLE_ADMIN.equals(role);
         }
         
         return false;
