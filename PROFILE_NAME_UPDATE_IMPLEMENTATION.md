@@ -41,11 +41,13 @@ User Profile Update → Event Published → Async Listener → Update Posts & Co
 ### 4. Repository Updates
 #### PostRepository (`repository/PostRepository.java`)
 - Added `updateProfileNameByUserId(UUID userId, String profileName)` method
-- Uses `@Query` annotation with raw SQL for bulk updates
+- Uses Micronaut Data's method naming convention for bulk updates
+- Automatically generates SQL: `UPDATE posts SET profile_name = ? WHERE user_id = ?`
 
 #### CommentRepository (`repository/CommentRepository.java`)
 - Added `updateProfileNameByUserId(UUID userId, String profileName)` method
-- Uses `@Query` annotation with raw SQL for bulk updates
+- Uses Micronaut Data's method naming convention for bulk updates
+- Automatically generates SQL: `UPDATE comments SET profile_name = ? WHERE user_id = ?`
 
 ### 5. Configuration (`resources/application.properties`)
 - Added async executor configuration:
