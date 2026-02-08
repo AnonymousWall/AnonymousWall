@@ -72,12 +72,12 @@ class ProfileNameUpdateEventListenerTest {
         
         // Assert
         verify(postRepository, times(1)).updateProfileNameByUserId(userId, newName);
-        // Comment repository should not be called due to exception
-        verify(commentRepository, never()).updateProfileNameByUserId(any(), any());
+        // With fail-safe behavior, comments should still be attempted
+        verify(commentRepository, times(1)).updateProfileNameByUserId(userId, newName);
     }
     
     @Test
-    @DisplayName("Should update comments even if posts update fails")
+    @DisplayName("Should update comments even if posts update fails (fail-safe)")
     void shouldUpdateCommentsEvenIfPostsUpdateFails() {
         // Arrange
         UUID userId = UUID.randomUUID();
@@ -93,8 +93,8 @@ class ProfileNameUpdateEventListenerTest {
         
         // Assert
         verify(postRepository, times(1)).updateProfileNameByUserId(userId, newName);
-        // Due to exception, comment repository is not called (fail-fast behavior in current implementation)
-        verify(commentRepository, never()).updateProfileNameByUserId(any(), any());
+        // With fail-safe behavior, comments should still be updated even if posts failed
+        verify(commentRepository, times(1)).updateProfileNameByUserId(userId, newName);
     }
     
     @Test

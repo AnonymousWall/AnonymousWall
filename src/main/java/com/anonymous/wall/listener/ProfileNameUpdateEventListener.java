@@ -31,6 +31,7 @@ public class ProfileNameUpdateEventListener implements ApplicationEventListener<
     /**
      * Handles profile name change events asynchronously.
      * Updates all posts and comments by the user with the new profile name.
+     * Uses fail-safe behavior: continues processing even if one update fails.
      */
     @Override
     @Async
@@ -38,22 +39,26 @@ public class ProfileNameUpdateEventListener implements ApplicationEventListener<
         log.info("Processing profile name change event: userId={}, oldName={}, newName={}", 
                 event.getUserId(), event.getOldName(), event.getNewName());
         
+        // Update posts (fail-safe: catch exceptions and continue)
         try {
-            // Update all posts by the user
             postRepository.updateProfileNameByUserId(event.getUserId(), event.getNewName());
             log.debug("Updated posts for userId={} with new profile name={}", 
                     event.getUserId(), event.getNewName());
-            
-            // Update all comments by the user
+        } catch (Exception e) {
+            log.error("Failed to update posts for userId={}: {}", 
+                    event.getUserId(), e.getMessage(), e);
+        }
+        
+        // Update comments (fail-safe: always attempt even if posts failed)
+        try {
             commentRepository.updateProfileNameByUserId(event.getUserId(), event.getNewName());
             log.debug("Updated comments for userId={} with new profile name={}", 
                     event.getUserId(), event.getNewName());
-            
-            log.info("Profile name propagation completed for userId={}", event.getUserId());
         } catch (Exception e) {
-            log.error("Failed to propagate profile name change for userId={}: {}", 
+            log.error("Failed to update comments for userId={}: {}", 
                     event.getUserId(), e.getMessage(), e);
-            // In production, you might want to add retry logic or dead letter queue here
         }
+        
+        log.info("Profile name propagation completed for userId={}", event.getUserId());
     }
 }
