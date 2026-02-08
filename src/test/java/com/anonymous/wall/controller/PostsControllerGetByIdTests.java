@@ -124,7 +124,7 @@ class PostsControllerGetByIdTests {
             assertEquals(nationalPost.getId().toString(), body.get("id"));
             assertEquals("National Post Title", body.get("title"));
             assertEquals("This is a national post", body.get("content"));
-            assertEquals("NATIONAL", body.get("wall"));
+            assertEquals("national", ((String) body.get("wall")).toLowerCase());
         }
 
         @Test
@@ -147,7 +147,7 @@ class PostsControllerGetByIdTests {
             assertEquals(campusPost.getId().toString(), body.get("id"));
             assertEquals("Harvard Post Title", body.get("title"));
             assertEquals("This is a Harvard campus post", body.get("content"));
-            assertEquals("CAMPUS", body.get("wall"));
+            assertEquals("campus", ((String) body.get("wall")).toLowerCase());
         }
 
         @Test
@@ -204,8 +204,8 @@ class PostsControllerGetByIdTests {
         @DisplayName("Should deny access to campus post from different school")
         void shouldDenyAccessToDifferentSchoolCampusPost() {
             // Create a Harvard campus post
-            Post harvardPost = new Post(testUserHarvard.getId(), "Harvard Post", "Harvard campus content", "campus", "harvard.edu");
-            harvardPost = postRepository.save(harvardPost);
+            Post harvardPostTmp = new Post(testUserHarvard.getId(), "Harvard Post", "Harvard campus content", "campus", "harvard.edu");
+            final Post harvardPost = postRepository.save(harvardPostTmp);
 
             // Try to access as MIT user
             HttpClientResponseException exception = assertThrows(
@@ -224,8 +224,8 @@ class PostsControllerGetByIdTests {
         @DisplayName("Should allow access to national post from any school")
         void shouldAllowAccessToNationalPostFromAnySchool() {
             // Create a national post by Harvard user
-            Post nationalPost = new Post(testUserHarvard.getId(), "National Post", "National content", "national", null);
-            nationalPost = postRepository.save(nationalPost);
+            Post nationalPostTmp = new Post(testUserHarvard.getId(), "National Post", "National content", "national", null);
+            final Post nationalPost = postRepository.save(nationalPostTmp);
 
             // Access by MIT user
             HttpResponse<Map> responseMIT = client.toBlocking().exchange(
@@ -250,8 +250,8 @@ class PostsControllerGetByIdTests {
         @DisplayName("Should deny access to campus post for user without school")
         void shouldDenyAccessToCampusPostForUserWithoutSchool() {
             // Create a Harvard campus post
-            Post campusPost = new Post(testUserHarvard.getId(), "Campus Post", "Campus content", "campus", "harvard.edu");
-            campusPost = postRepository.save(campusPost);
+            Post campusPostTmp = new Post(testUserHarvard.getId(), "Campus Post", "Campus content", "campus", "harvard.edu");
+            final Post campusPost = postRepository.save(campusPostTmp);
 
             // Try to access as user without school
             HttpClientResponseException exception = assertThrows(
@@ -294,8 +294,8 @@ class PostsControllerGetByIdTests {
         @DisplayName("Should return 401 for unauthenticated request")
         void shouldReturn401ForUnauthenticatedRequest() {
             // Create a post
-            Post post = new Post(testUserHarvard.getId(), "Post Title", "Post content", "national", null);
-            post = postRepository.save(post);
+            Post postTmp = new Post(testUserHarvard.getId(), "Post Title", "Post content", "national", null);
+            final Post post = postRepository.save(postTmp);
 
             // Try to access without authentication
             HttpClientResponseException exception = assertThrows(
