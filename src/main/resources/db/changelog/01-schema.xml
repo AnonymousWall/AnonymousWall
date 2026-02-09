@@ -19,6 +19,9 @@
                 <constraints nullable="false"/>
             </column>
             <column name="school_domain" type="VARCHAR(255)"/>
+            <column name="report_count" type="INT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
             <column name="password_hash" type="VARCHAR(255)"/>
             <column name="is_verified" type="BOOLEAN" defaultValueBoolean="false"/>
             <column name="password_set" type="BOOLEAN" defaultValueBoolean="false"/>
@@ -274,18 +277,8 @@
         </createIndex>
     </changeSet>
 
-    <!-- ================= Report Count for Users ================= -->
-    <changeSet id="13-add-user-report-count" author="copilot">
-        <comment>Add report_count field to users table to track how many reports a user has received</comment>
-        <addColumn tableName="users">
-            <column name="report_count" type="INT" defaultValueNumeric="0">
-                <constraints nullable="false"/>
-            </column>
-        </addColumn>
-    </changeSet>
-
     <!-- ================= Post Reports ================= -->
-    <changeSet id="14-create-post-reports-table" author="copilot">
+    <changeSet id="13-create-post-reports-table" author="copilot">
         <comment>Create table to track reports on posts</comment>
         <createTable tableName="post_reports">
             <column name="id" type="CHAR(36)">
@@ -317,7 +310,7 @@
     </changeSet>
 
     <!-- ================= Comment Reports ================= -->
-    <changeSet id="15-create-comment-reports-table" author="copilot">
+    <changeSet id="14-create-comment-reports-table" author="copilot">
         <comment>Create table to track reports on comments</comment>
         <createTable tableName="comment_reports">
             <column name="id" type="CHAR(36)">
