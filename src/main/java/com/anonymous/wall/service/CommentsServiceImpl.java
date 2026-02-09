@@ -35,6 +35,9 @@ public class CommentsServiceImpl implements CommentsService {
     @Inject
     private UserRepository userRepository;
 
+    @Inject
+    private com.anonymous.wall.repository.CommentReportRepository commentReportRepository;
+
     /**
      * Add a comment to a post
      * For campus posts: only users from the same school can comment
@@ -292,5 +295,39 @@ public class CommentsServiceImpl implements CommentsService {
         log.info("Retrieved {} comments for user: {}, sort: {}, total: {}", 
             comments.getNumberOfElements(), userId, sortBy, comments.getTotalSize());
         return comments;
+    }
+
+    @Override
+    @Transactional
+    public void reportComment(UUID commentId, UUID reporterUserId, String reason) {
+        log.info("Reporting comment: commentId={}, reporterUserId={}, reason={}", commentId, reporterUserId, reason);
+
+        // Check if comment exists
+        Optional<Comment> commentOpt = commentRepository.findById(commentId);
+        if (commentOpt.isEmpty()) {
+            throw new IllegalArgumentException("Comment not found");
+        }
+
+        Comment comment = commentOpt.get();
+
+        // Check if user has already reported this comment
+        if (commentReportRepository.existsByCommentIdAndReporterUserId(commentId, reporterUserId)) {
+            throw new IllegalArgumentException("You have already reported this comment");
+        }
+
+        // Create the report
+        com.anonymous.wall.entity.CommentReport report = new com.anonymous.wall.entity.CommentReport(commentId, reporterUserId, reason);
+        commentReportRepository.save(report);
+
+        // Increment report count for the comment author
+        Optional<UserEntity> authorOpt = userRepository.findById(comment.getUserId());
+        if (authorOpt.isPresent()) {
+            UserEntity author = authorOpt.get();
+            author.setReportCount(author.getReportCount() + 1);
+            userRepository.update(author);
+            log.info("Incremented report count for user: userId={}, newCount={}", author.getId(), author.getReportCount());
+        }
+
+        log.info("Comment reported successfully: commentId={}, reporterUserId={}", commentId, reporterUserId);
     }
 }

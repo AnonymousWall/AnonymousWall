@@ -442,6 +442,75 @@ public class PostsController {
         }
     }
 
+    /**
+     * POST /posts/{postId}/reports
+     * Report a post
+     */
+    @io.micronaut.http.annotation.Post("/{postId}/reports")
+    @Secured(SecurityRule.IS_AUTHENTICATED)
+    public HttpResponse<Object> reportPost(
+            @PathVariable UUID postId,
+            @Body com.anonymous.wall.model.ReportRequest request,
+            HttpRequest<?> httpRequest) {
+        try {
+            UUID userId = getUserIdFromRequest(httpRequest);
+            log.info("POST /posts/{}/reports - Reporting post, user={}", postId, userId);
+
+            String reason = request != null && request.getReason() != null ? request.getReason() : null;
+            postsService.reportPost(postId, userId, reason);
+
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "Post reported successfully");
+
+            log.info("POST /posts/{}/reports - Post reported successfully", postId);
+            return HttpResponse.created(response);
+        } catch (IllegalArgumentException e) {
+            log.warn("POST /posts/{}/reports - Bad request: {}", postId, e.getMessage());
+            if (e.getMessage().contains("not found")) {
+                return HttpResponse.notFound();
+            }
+            return HttpResponse.badRequest(error(e.getMessage()));
+        } catch (Exception e) {
+            log.error("POST /posts/{}/reports - Error reporting post", postId, e);
+            return HttpResponse.badRequest(error("Failed to report post"));
+        }
+    }
+
+    /**
+     * POST /posts/{postId}/comments/{commentId}/reports
+     * Report a comment
+     */
+    @io.micronaut.http.annotation.Post("/{postId}/comments/{commentId}/reports")
+    @Secured(SecurityRule.IS_AUTHENTICATED)
+    public HttpResponse<Object> reportComment(
+            @PathVariable UUID postId,
+            @PathVariable UUID commentId,
+            @Body com.anonymous.wall.model.ReportRequest request,
+            HttpRequest<?> httpRequest) {
+        try {
+            UUID userId = getUserIdFromRequest(httpRequest);
+            log.info("POST /posts/{}/comments/{}/reports - Reporting comment, user={}", postId, commentId, userId);
+
+            String reason = request != null && request.getReason() != null ? request.getReason() : null;
+            commentsService.reportComment(commentId, userId, reason);
+
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "Comment reported successfully");
+
+            log.info("POST /posts/{}/comments/{}/reports - Comment reported successfully", postId, commentId);
+            return HttpResponse.created(response);
+        } catch (IllegalArgumentException e) {
+            log.warn("POST /posts/{}/comments/{}/reports - Bad request: {}", postId, commentId, e.getMessage());
+            if (e.getMessage().contains("not found")) {
+                return HttpResponse.notFound();
+            }
+            return HttpResponse.badRequest(error(e.getMessage()));
+        } catch (Exception e) {
+            log.error("POST /posts/{}/comments/{}/reports - Error reporting comment", postId, commentId, e);
+            return HttpResponse.badRequest(error("Failed to report comment"));
+        }
+    }
+
     // ================= DTO Mapping Methods =================
 
     private PostDTO mapPostToDTO(Post post) {

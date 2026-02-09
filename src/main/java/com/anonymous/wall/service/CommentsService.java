@@ -51,4 +51,11 @@ public interface CommentsService {
      * @return Page of non-hidden comments
      */
     Page<Comment> getUserOwnComments(UUID userId, Pageable pageable, SortBy sortBy);
+
+    /**
+     * Report a comment for inappropriate content
+     * A user can only report the same comment once
+     * Increments the report count for the comment author
+     */
+    void reportComment(UUID commentId, UUID reporterUserId, String reason);
 }
