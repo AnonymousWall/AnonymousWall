@@ -254,33 +254,6 @@ paths:
         "401":
           description: Verification failed
 
-  # Profile Management - Update Profile Name
-  /auth/profile/name:
-    patch:
-      tags: [auth]
-      summary: Update profile name
-      description: Update the user's profile name (default is "Anonymous")
-      operationId: updateProfileName
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/UpdateProfileNameRequest"
-      responses:
-        "200":
-          description: Profile name updated successfully
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/UserDTO"
-        "400":
-          description: Invalid profile name
-        "401":
-          description: Unauthorized - authentication required
-
   # =================== Posts ===================
   /posts:
     post:
@@ -980,6 +953,32 @@ paths:
                         type: integer
                       totalPages:
                         type: integer
+        "401":
+          description: Unauthorized - authentication required
+
+  /users/me/profile/name:
+    patch:
+      tags: [users]
+      summary: Update profile name
+      description: Update the user's profile name (default is "Anonymous"). Profile name changes are propagated asynchronously to all user's posts and comments.
+      operationId: updateProfileName
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProfileNameRequest"
+      responses:
+        "200":
+          description: Profile name updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserDTO"
+        "400":
+          description: Invalid profile name or user not found
         "401":
           description: Unauthorized - authentication required
 
