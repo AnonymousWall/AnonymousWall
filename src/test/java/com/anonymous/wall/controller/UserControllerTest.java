@@ -667,5 +667,47 @@ class UserControllerTest {
             assertTrue(refreshedUser.isPresent());
             assertEquals("Persistent Name", refreshedUser.get().getProfileName());
         }
+
+        @Test
+        @DisplayName("Integration: Should asynchronously propagate profile name to posts and comments")
+        void shouldAsyncPropagateProfileNameToPostsAndComments() throws InterruptedException {
+            // Arrange - Create posts and comments with current profile name
+            Post testPost = new Post(testUserId, "Test Post", "Content", "campus", "harvard.edu");
+            testPost.setProfileName(testUser.getProfileName());
+            testPost = postRepository.save(testPost);
+
+            Comment testComment = new Comment(testPost.getId(), testUserId, "Test Comment");
+            testComment.setProfileName(testUser.getProfileName());
+            testComment = commentRepository.save(testComment);
+
+            String oldProfileName = testUser.getProfileName();
+            assertEquals("Anonymous", oldProfileName);
+
+            // Act - Update profile name
+            com.anonymous.wall.model.UpdateProfileNameRequest request = new com.anonymous.wall.model.UpdateProfileNameRequest("New Profile Name");
+            HttpResponse<com.anonymous.wall.model.UserDTO> response = client.toBlocking().exchange(
+                HttpRequest.PATCH(PROFILE_NAME_PATH, request)
+                    .header("Authorization", "Bearer " + jwtToken),
+                com.anonymous.wall.model.UserDTO.class
+            );
+
+            // Assert - User updated immediately
+            assertEquals(HttpStatus.OK, response.getStatus());
+            assertEquals("New Profile Name", response.body().getProfileName());
+
+            // Wait for async event processing (should be fast, but give it time)
+            Thread.sleep(500);
+
+            // Verify posts and comments were updated asynchronously
+            java.util.Optional<Post> updatedPost = postRepository.findById(testPost.getId());
+            assertTrue(updatedPost.isPresent());
+            assertEquals("New Profile Name", updatedPost.get().getProfileName(), 
+                "Post profile name should be updated via async event");
+
+            java.util.Optional<Comment> updatedComment = commentRepository.findById(testComment.getId());
+            assertTrue(updatedComment.isPresent());
+            assertEquals("New Profile Name", updatedComment.get().getProfileName(), 
+                "Comment profile name should be updated via async event");
+        }
     }
 }
