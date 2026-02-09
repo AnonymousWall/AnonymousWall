@@ -10,7 +10,6 @@ import io.micronaut.http.HttpResponse;
 import io.micronaut.http.annotation.Body;
 import io.micronaut.http.annotation.Controller;
 import io.micronaut.http.annotation.Post;
-import io.micronaut.http.annotation.Patch;
 import io.micronaut.security.annotation.Secured;
 import io.micronaut.security.rules.SecurityRule;
 import io.micronaut.serde.annotation.Serdeable;
@@ -296,55 +295,6 @@ public class AuthController {
         } catch (Exception e) {
             log.error("POST /auth/password/reset - Error resetting password", e);
             return HttpResponse.badRequest(error("Password reset failed"));
-        }
-    }
-
-    /**
-     * PATCH /auth/profile/name
-     * Update user profile name
-     */
-    @Patch("/profile/name")
-    @Secured(SecurityRule.IS_AUTHENTICATED)
-    public HttpResponse<Object> updateProfileName(@Body UpdateProfileNameRequest updateProfileNameRequest,
-                                                  io.micronaut.http.HttpRequest<?> httpRequest) {
-        try {
-            // Get user ID from Principal (JWT token) - same approach as PostsController
-            Optional<java.security.Principal> principalOpt = httpRequest.getUserPrincipal();
-            if (principalOpt.isEmpty()) {
-                log.warn("PATCH /auth/profile/name - User not authenticated");
-                return HttpResponse.badRequest(error("User not authenticated"));
-            }
-
-            String principalName = principalOpt.get().getName();
-            UUID userId = UUID.fromString(principalName);
-            log.info("PATCH /auth/profile/name - Updating profile name for user: {}", userId);
-
-            Optional<UserEntity> userOpt = userRepository.findById(userId);
-
-            if (userOpt.isEmpty()) {
-                log.warn("PATCH /auth/profile/name - User not found: {}", userId);
-                return HttpResponse.badRequest(error("User not found"));
-            }
-
-            UserEntity user = userOpt.get();
-            String newProfileName = updateProfileNameRequest.getProfileName();
-
-            // Validate profile name
-            if (newProfileName == null || newProfileName.trim().isEmpty()) {
-                newProfileName = "Anonymous";
-            }
-
-            user.setProfileName(newProfileName.trim());
-            userRepository.update(user);
-
-            log.info("PATCH /auth/profile/name - Profile name updated successfully for user: {}, newName={}", userId, newProfileName.trim());
-            return HttpResponse.ok(userMapper.toDTO(user));
-        } catch (IllegalArgumentException e) {
-            log.warn("PATCH /auth/profile/name - Invalid user ID format: {}", e.getMessage());
-            return HttpResponse.badRequest(error("Invalid user ID format: " + e.getMessage()));
-        } catch (Exception e) {
-            log.error("PATCH /auth/profile/name - Error updating profile name", e);
-            return HttpResponse.badRequest(error("Failed to update profile name"));
         }
     }
 

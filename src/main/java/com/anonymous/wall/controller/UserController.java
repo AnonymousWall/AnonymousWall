@@ -2,14 +2,19 @@ package com.anonymous.wall.controller;
 
 import com.anonymous.wall.entity.Comment;
 import com.anonymous.wall.entity.Post;
+import com.anonymous.wall.entity.UserEntity;
+import com.anonymous.wall.mapper.UserMapper;
 import com.anonymous.wall.model.*;
 import com.anonymous.wall.service.CommentsService;
+import com.anonymous.wall.service.UserService;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpResponse;
+import io.micronaut.http.annotation.Body;
 import io.micronaut.http.annotation.Controller;
 import io.micronaut.http.annotation.Get;
+import io.micronaut.http.annotation.Patch;
 import io.micronaut.http.annotation.QueryValue;
 import io.micronaut.security.annotation.Secured;
 import io.micronaut.security.rules.SecurityRule;
@@ -31,6 +36,12 @@ public class UserController {
 
     @Inject
     private com.anonymous.wall.service.PostsService postsService;
+
+    @Inject
+    private UserService userService;
+
+    @Inject
+    private UserMapper userMapper;
 
     // Helper to extract user ID from Principal
     private UUID getUserIdFromRequest(HttpRequest<?> request) {
@@ -149,6 +160,35 @@ public class UserController {
         } catch (Exception e) {
             log.error("GET /users/me/posts - Error getting user posts", e);
             return HttpResponse.badRequest(error("Failed to get user posts"));
+        }
+    }
+
+    /**
+     * PATCH /users/me/profile/name
+     * Update user profile name with async propagation to posts and comments
+     */
+    @Patch("/me/profile/name")
+    @Secured(SecurityRule.IS_AUTHENTICATED)
+    public HttpResponse<Object> updateProfileName(@Body UpdateProfileNameRequest updateProfileNameRequest,
+                                                  HttpRequest<?> httpRequest) {
+        try {
+            UUID userId = getUserIdFromRequest(httpRequest);
+            log.info("PATCH /users/me/profile/name - Updating profile name for user: {}", userId);
+
+            String newProfileName = updateProfileNameRequest.getProfileName();
+
+            // Use UserService which handles async propagation via events
+            UserEntity updatedUser = userService.updateProfileName(userId, newProfileName);
+
+            log.info("PATCH /users/me/profile/name - Profile name updated successfully for user: {}, newName={}", 
+                    userId, updatedUser.getProfileName());
+            return HttpResponse.ok(userMapper.toDTO(updatedUser));
+        } catch (IllegalArgumentException e) {
+            log.warn("PATCH /users/me/profile/name - Invalid request: {}", e.getMessage());
+            return HttpResponse.badRequest(error(e.getMessage()));
+        } catch (Exception e) {
+            log.error("PATCH /users/me/profile/name - Error updating profile name", e);
+            return HttpResponse.badRequest(error("Failed to update profile name"));
         }
     }
 

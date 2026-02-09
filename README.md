@@ -363,32 +363,6 @@ Response: 200 OK
 - Code must not be expired (15 minute expiration)
 - Returns JWT token upon successful password reset
 
-#### 9. Update Profile Name (Requires Authentication)
-```http
-PATCH /api/v1/auth/profile/name
-Authorization: Bearer {jwt-token}
-Content-Type: application/json
-
-{
-    "profileName": "John Doe"
-}
-
-Response: 200 OK
-{
-    "id": "uuid",
-    "email": "student@harvard.edu",
-    "profileName": "John Doe",
-    "isVerified": true,
-    "passwordSet": false,
-    "createdAt": "2026-01-28T..."
-}
-```
-
-**Notes:**
-- Default profile name is "Anonymous"
-- Sending an empty string will reset the profile name to "Anonymous"
-- Profile name can be 1-255 characters
-
 ---
 
 ### Post Endpoints
@@ -767,6 +741,35 @@ Response: 200 OK
 - Uses optimized queries with composite database indexes for efficient retrieval
 - Performance: O(log K) where K is the user's total post count
 - Supports sorting by creation time or like count
+
+#### 3. Update Profile Name (Requires Authentication)
+```http
+PATCH /api/v1/users/me/profile/name
+Authorization: Bearer {jwt-token}
+Content-Type: application/json
+
+{
+    "profileName": "John Doe"
+}
+
+Response: 200 OK
+{
+    "id": "uuid",
+    "email": "student@harvard.edu",
+    "profileName": "John Doe",
+    "isVerified": true,
+    "passwordSet": false,
+    "createdAt": "2026-01-28T..."
+}
+```
+
+**Notes:**
+- Default profile name is "Anonymous"
+- Sending an empty string will reset the profile name to "Anonymous"
+- Profile name can be 1-255 characters
+- Profile name changes are **asynchronously propagated** to all user's posts and comments
+- The API returns immediately after updating the user profile
+- Posts and comments are updated in the background for better performance
 
 ---
 

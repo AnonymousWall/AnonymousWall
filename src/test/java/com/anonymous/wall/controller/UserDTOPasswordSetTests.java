@@ -47,6 +47,8 @@ class UserDTOPasswordSetTests {
 
     private static final String BASE_PATH = "/api/v1/auth";
 
+    private static final String UPDATE_PROFILE_NAME_PATH = "/api/v1/users/me/profile/name";
+
     @BeforeEach
     void setUp() {
         emailCodeRepository.deleteAll();
@@ -407,7 +409,7 @@ class UserDTOPasswordSetTests {
             UpdateProfileNameRequest updateRequest = new UpdateProfileNameRequest("John Doe");
 
             HttpResponse<Map> updateResponse = client.toBlocking().exchange(
-                HttpRequest.PATCH(BASE_PATH + "/profile/name", updateRequest)
+                HttpRequest.PATCH(UPDATE_PROFILE_NAME_PATH, updateRequest)
                     .header("Authorization", "Bearer " + token),
                 Map.class
             );
@@ -443,7 +445,7 @@ class UserDTOPasswordSetTests {
             UpdateProfileNameRequest updateRequest = new UpdateProfileNameRequest("Jane Doe");
 
             HttpResponse<Map> updateResponse = client.toBlocking().exchange(
-                HttpRequest.PATCH(BASE_PATH + "/profile/name", updateRequest)
+                HttpRequest.PATCH(UPDATE_PROFILE_NAME_PATH, updateRequest)
                     .header("Authorization", "Bearer " + token),
                 Map.class
             );
