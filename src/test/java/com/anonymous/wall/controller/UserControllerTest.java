@@ -695,19 +695,32 @@ class UserControllerTest {
             assertEquals(HttpStatus.OK, response.getStatus());
             assertEquals("New Profile Name", response.body().getProfileName());
 
-            // Wait for async event processing (should be fast, but give it time)
-            Thread.sleep(500);
+            // Wait for async event processing with polling (max 5 seconds)
+            boolean postUpdated = false;
+            boolean commentUpdated = false;
+            int attempts = 0;
+            int maxAttempts = 50; // 50 attempts * 100ms = 5 seconds max wait
+
+            while ((!postUpdated || !commentUpdated) && attempts < maxAttempts) {
+                Thread.sleep(100); // Poll every 100ms
+                attempts++;
+
+                java.util.Optional<Post> updatedPost = postRepository.findById(testPost.getId());
+                if (updatedPost.isPresent() && "New Profile Name".equals(updatedPost.get().getProfileName())) {
+                    postUpdated = true;
+                }
+
+                java.util.Optional<Comment> updatedComment = commentRepository.findById(testComment.getId());
+                if (updatedComment.isPresent() && "New Profile Name".equals(updatedComment.get().getProfileName())) {
+                    commentUpdated = true;
+                }
+            }
 
             // Verify posts and comments were updated asynchronously
-            java.util.Optional<Post> updatedPost = postRepository.findById(testPost.getId());
-            assertTrue(updatedPost.isPresent());
-            assertEquals("New Profile Name", updatedPost.get().getProfileName(), 
-                "Post profile name should be updated via async event");
-
-            java.util.Optional<Comment> updatedComment = commentRepository.findById(testComment.getId());
-            assertTrue(updatedComment.isPresent());
-            assertEquals("New Profile Name", updatedComment.get().getProfileName(), 
-                "Comment profile name should be updated via async event");
+            assertTrue(postUpdated, 
+                "Post profile name should be updated via async event within 5 seconds");
+            assertTrue(commentUpdated, 
+                "Comment profile name should be updated via async event within 5 seconds");
         }
     }
 }
