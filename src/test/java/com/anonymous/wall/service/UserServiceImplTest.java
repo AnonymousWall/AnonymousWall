@@ -1,7 +1,9 @@
 package com.anonymous.wall.service;
 
 import com.anonymous.wall.entity.UserEntity;
+import com.anonymous.wall.event.ProfileNameChangedEvent;
 import com.anonymous.wall.repository.UserRepository;
+import io.micronaut.context.event.ApplicationEventPublisher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -20,16 +22,22 @@ class UserServiceImplTest {
 
     private UserServiceImpl userService;
     private UserRepository userRepository;
+    private ApplicationEventPublisher<ProfileNameChangedEvent> eventPublisher;
 
     @BeforeEach
     void setUp() {
         userRepository = mock(UserRepository.class);
+        eventPublisher = mock(ApplicationEventPublisher.class);
         userService = new UserServiceImpl();
-        // Use reflection to inject mock
+        // Use reflection to inject mocks
         try {
             var userRepoField = UserServiceImpl.class.getDeclaredField("userRepository");
             userRepoField.setAccessible(true);
             userRepoField.set(userService, userRepository);
+            
+            var eventPublisherField = UserServiceImpl.class.getDeclaredField("eventPublisher");
+            eventPublisherField.setAccessible(true);
+            eventPublisherField.set(userService, eventPublisher);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -136,6 +144,7 @@ class UserServiceImplTest {
             assertEquals("New Name", result.getProfileName());
             verify(userRepository, times(1)).findById(userId);
             verify(userRepository, times(1)).update(any(UserEntity.class));
+            verify(eventPublisher, times(1)).publishEvent(any(ProfileNameChangedEvent.class));
         }
 
         @Test
@@ -156,6 +165,7 @@ class UserServiceImplTest {
 
             // Assert
             assertEquals("Spaced Name", result.getProfileName());
+            verify(eventPublisher, times(1)).publishEvent(any(ProfileNameChangedEvent.class));
         }
 
         @Test
@@ -176,6 +186,7 @@ class UserServiceImplTest {
 
             // Assert
             assertEquals("Anonymous", result.getProfileName());
+            verify(eventPublisher, times(1)).publishEvent(any(ProfileNameChangedEvent.class));
         }
 
         @Test
@@ -196,6 +207,7 @@ class UserServiceImplTest {
 
             // Assert
             assertEquals("Anonymous", result.getProfileName());
+            verify(eventPublisher, times(1)).publishEvent(any(ProfileNameChangedEvent.class));
         }
 
         @Test
@@ -213,6 +225,7 @@ class UserServiceImplTest {
             assertEquals("User not found", exception.getMessage());
             verify(userRepository, times(1)).findById(userId);
             verify(userRepository, never()).update(any(UserEntity.class));
+            verify(eventPublisher, never()).publishEvent(any(ProfileNameChangedEvent.class));
         }
     }
 

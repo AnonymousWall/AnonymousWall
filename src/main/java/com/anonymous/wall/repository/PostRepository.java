@@ -143,4 +143,11 @@ public interface PostRepository extends CrudRepository<Post, UUID> {
      * Count non-hidden posts by a user
      */
     long countByUserIdAndHiddenFalse(UUID userId);
+
+    /**
+     * Update profile name for all posts by a user
+     * Used for profile name propagation when user changes their profile name
+     * Micronaut Data automatically generates: UPDATE posts SET profile_name = ? WHERE user_id = ?
+     */
+    void updateProfileNameByUserId(UUID userId, String profileName);
 }
