@@ -4,7 +4,6 @@ import com.anonymous.wall.entity.UserEntity;
 import io.micronaut.security.authentication.Authentication;
 import io.micronaut.security.token.jwt.generator.JwtTokenGenerator;
 import io.micronaut.security.token.jwt.validator.JwtTokenValidator;
-import io.micronaut.security.token.reader.TokenReader;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import org.slf4j.Logger;
