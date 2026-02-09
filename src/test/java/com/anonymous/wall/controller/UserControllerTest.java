@@ -446,6 +446,8 @@ class UserControllerTest {
     class UpdateProfileNameTests {
 
         private static final String PROFILE_NAME_PATH = "/api/v1/users/me/profile/name";
+        private static final int ASYNC_POLL_INTERVAL_MS = 100;
+        private static final int ASYNC_POLL_MAX_ATTEMPTS = 50; // 50 * 100ms = 5 seconds max
 
         private UserEntity testUser;
         private String jwtToken;
@@ -699,10 +701,9 @@ class UserControllerTest {
             boolean postUpdated = false;
             boolean commentUpdated = false;
             int attempts = 0;
-            int maxAttempts = 50; // 50 attempts * 100ms = 5 seconds max wait
 
-            while ((!postUpdated || !commentUpdated) && attempts < maxAttempts) {
-                Thread.sleep(100); // Poll every 100ms
+            while ((!postUpdated || !commentUpdated) && attempts < ASYNC_POLL_MAX_ATTEMPTS) {
+                Thread.sleep(ASYNC_POLL_INTERVAL_MS);
                 attempts++;
 
                 java.util.Optional<Post> updatedPost = postRepository.findById(testPost.getId());
