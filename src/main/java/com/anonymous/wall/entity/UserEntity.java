@@ -34,6 +34,9 @@ public class UserEntity {
     @MappedProperty("created_at")
     private ZonedDateTime createdAt = ZonedDateTime.now();
 
+    @MappedProperty("report_count")
+    private int reportCount = 0;
+
     // ---------------- Getters & Setters ----------------
 
     public UUID getId() { return id; }
@@ -59,4 +62,7 @@ public class UserEntity {
 
     public ZonedDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(ZonedDateTime createdAt) { this.createdAt = createdAt; }
+
+    public int getReportCount() { return reportCount; }
+    public void setReportCount(int reportCount) { this.reportCount = reportCount; }
 }

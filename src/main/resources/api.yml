@@ -569,6 +569,90 @@ paths:
         "404":
           description: Post not found
 
+  /posts/{postId}/reports:
+    post:
+      tags: [posts]
+      summary: Report a post
+      description: Report a post for inappropriate content or policy violation. A user can only report the same post once. Reporting increments the post author's report count.
+      operationId: reportPost
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: postId
+          required: true
+          schema:
+            type: string
+          description: ID of the post to report
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReportRequest"
+      responses:
+        "201":
+          description: Post reported successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Post reported successfully"
+        "400":
+          description: Invalid request or user has already reported this post
+        "401":
+          description: Unauthorized - authentication required
+        "404":
+          description: Post not found
+
+  /posts/{postId}/comments/{commentId}/reports:
+    post:
+      tags: [posts]
+      summary: Report a comment
+      description: Report a comment for inappropriate content or policy violation. A user can only report the same comment once. Reporting increments the comment author's report count.
+      operationId: reportComment
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: postId
+          required: true
+          schema:
+            type: string
+          description: ID of the post
+        - in: path
+          name: commentId
+          required: true
+          schema:
+            type: string
+          description: ID of the comment to report
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReportRequest"
+      responses:
+        "201":
+          description: Comment reported successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Comment reported successfully"
+        "400":
+          description: Invalid request or user has already reported this comment
+        "401":
+          description: Unauthorized - authentication required
+        "404":
+          description: Post or comment not found
+
   # =================== Walls ===================
   /walls/campus:
     get:
@@ -1330,6 +1414,15 @@ components:
       properties:
         balance:
           type: integer
+
+    # ----- Reports -----
+    ReportRequest:
+      type: object
+      properties:
+        reason:
+          type: string
+          maxLength: 500
+          description: Optional reason for the report
 
     # ----- Pagination -----
     PaginationInfo:

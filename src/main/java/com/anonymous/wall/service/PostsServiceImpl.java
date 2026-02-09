@@ -48,6 +48,9 @@ public class PostsServiceImpl implements PostsService {
     @Inject
     private CommentsService commentsService;
 
+    @Inject
+    private com.anonymous.wall.repository.PostReportRepository postReportRepository;
+
     /**
      * Create a new post
      */
@@ -554,5 +557,39 @@ public class PostsServiceImpl implements PostsService {
         log.info("Retrieved {} posts for user: {}, sort: {}, total: {}", 
             posts.getNumberOfElements(), userId, sortBy, posts.getTotalSize());
         return posts;
+    }
+
+    @Override
+    @Transactional
+    public void reportPost(UUID postId, UUID reporterUserId, String reason) {
+        log.info("Reporting post: postId={}, reporterUserId={}, reason={}", postId, reporterUserId, reason);
+
+        // Check if post exists
+        Optional<Post> postOpt = postRepository.findById(postId);
+        if (postOpt.isEmpty()) {
+            throw new IllegalArgumentException("Post not found");
+        }
+
+        Post post = postOpt.get();
+
+        // Check if user has already reported this post
+        if (postReportRepository.existsByPostIdAndReporterUserId(postId, reporterUserId)) {
+            throw new IllegalArgumentException("You have already reported this post");
+        }
+
+        // Create the report
+        com.anonymous.wall.entity.PostReport report = new com.anonymous.wall.entity.PostReport(postId, reporterUserId, reason);
+        postReportRepository.save(report);
+
+        // Increment report count for the post author
+        Optional<UserEntity> authorOpt = userRepository.findById(post.getUserId());
+        if (authorOpt.isPresent()) {
+            UserEntity author = authorOpt.get();
+            author.setReportCount(author.getReportCount() + 1);
+            userRepository.update(author);
+            log.info("Incremented report count for user: userId={}, newCount={}", author.getId(), author.getReportCount());
+        }
+
+        log.info("Post reported successfully: postId={}, reporterUserId={}", postId, reporterUserId);
     }
 }

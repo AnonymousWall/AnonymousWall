@@ -71,4 +71,11 @@ public interface PostsService {
      * Only returns non-hidden posts
      */
     Page<Post> getUserOwnPosts(UUID userId, Pageable pageable, SortBy sortBy);
+
+    /**
+     * Report a post for inappropriate content
+     * A user can only report the same post once
+     * Increments the report count for the post author
+     */
+    void reportPost(UUID postId, UUID reporterUserId, String reason);
 }

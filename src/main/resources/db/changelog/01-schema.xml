@@ -19,6 +19,9 @@
                 <constraints nullable="false"/>
             </column>
             <column name="school_domain" type="VARCHAR(255)"/>
+            <column name="report_count" type="INT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
             <column name="password_hash" type="VARCHAR(255)"/>
             <column name="is_verified" type="BOOLEAN" defaultValueBoolean="false"/>
             <column name="password_set" type="BOOLEAN" defaultValueBoolean="false"/>
@@ -271,6 +274,70 @@
             <column name="user_id"/>
             <column name="is_hidden"/>
             <column name="like_count" descending="true"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- ================= Post Reports ================= -->
+    <changeSet id="13-create-post-reports-table" author="copilot">
+        <comment>Create table to track reports on posts</comment>
+        <createTable tableName="post_reports">
+            <column name="id" type="CHAR(36)">
+                <constraints primaryKey="true"/>
+            </column>
+            <column name="post_id" type="CHAR(36)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="reporter_user_id" type="CHAR(36)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="reason" type="VARCHAR(500)"/>
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP"/>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="post_reports" baseColumnNames="post_id"
+                                 constraintName="fk_post_reports_post"
+                                 referencedTableName="posts" referencedColumnNames="id"/>
+        <addForeignKeyConstraint baseTableName="post_reports" baseColumnNames="reporter_user_id"
+                                 constraintName="fk_post_reports_user"
+                                 referencedTableName="users" referencedColumnNames="id"/>
+        <addUniqueConstraint tableName="post_reports" columnNames="post_id,reporter_user_id"
+                             constraintName="uk_post_reports_user_post"/>
+        <createIndex tableName="post_reports" indexName="idx_post_reports_post_id">
+            <column name="post_id"/>
+        </createIndex>
+        <createIndex tableName="post_reports" indexName="idx_post_reports_reporter_user_id">
+            <column name="reporter_user_id"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- ================= Comment Reports ================= -->
+    <changeSet id="14-create-comment-reports-table" author="copilot">
+        <comment>Create table to track reports on comments</comment>
+        <createTable tableName="comment_reports">
+            <column name="id" type="CHAR(36)">
+                <constraints primaryKey="true"/>
+            </column>
+            <column name="comment_id" type="CHAR(36)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="reporter_user_id" type="CHAR(36)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="reason" type="VARCHAR(500)"/>
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP"/>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="comment_reports" baseColumnNames="comment_id"
+                                 constraintName="fk_comment_reports_comment"
+                                 referencedTableName="comments" referencedColumnNames="id"/>
+        <addForeignKeyConstraint baseTableName="comment_reports" baseColumnNames="reporter_user_id"
+                                 constraintName="fk_comment_reports_user"
+                                 referencedTableName="users" referencedColumnNames="id"/>
+        <addUniqueConstraint tableName="comment_reports" columnNames="comment_id,reporter_user_id"
+                             constraintName="uk_comment_reports_user_comment"/>
+        <createIndex tableName="comment_reports" indexName="idx_comment_reports_comment_id">
+            <column name="comment_id"/>
+        </createIndex>
+        <createIndex tableName="comment_reports" indexName="idx_comment_reports_reporter_user_id">
+            <column name="reporter_user_id"/>
         </createIndex>
     </changeSet>
 
