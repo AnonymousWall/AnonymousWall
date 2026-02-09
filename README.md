@@ -132,6 +132,7 @@ CREATE TABLE users (
     password_hash VARCHAR(255),
     is_verified BOOLEAN DEFAULT false,
     password_set BOOLEAN DEFAULT false,
+    report_count INT DEFAULT 0,          -- Number of reports received by this user
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 ```
@@ -186,6 +187,30 @@ CREATE TABLE email_verification_codes (
     purpose VARCHAR(50),                 -- "REGISTER", "LOGIN", "RESET_PASSWORD"
     expires_at TIMESTAMP NOT NULL,
     is_used BOOLEAN DEFAULT false
+);
+```
+
+### Post Reports Table
+```sql
+CREATE TABLE post_reports (
+    id UUID PRIMARY KEY,
+    post_id UUID NOT NULL REFERENCES posts(id),
+    reporter_user_id UUID NOT NULL REFERENCES users(id),
+    reason VARCHAR(500),                 -- Optional reason for the report
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(post_id, reporter_user_id)    -- One report per user per post
+);
+```
+
+### Comment Reports Table
+```sql
+CREATE TABLE comment_reports (
+    id UUID PRIMARY KEY,
+    comment_id UUID NOT NULL REFERENCES comments(id),
+    reporter_user_id UUID NOT NULL REFERENCES users(id),
+    reason VARCHAR(500),                 -- Optional reason for the report
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(comment_id, reporter_user_id) -- One report per user per comment
 );
 ```
 
@@ -653,6 +678,50 @@ Response: 200 OK
 
 **Notes:**
 - Only the comment author can unhide their own comment
+
+#### 11. Report Post
+```http
+POST /api/v1/posts/{postId}/reports
+Authorization: Bearer {jwt-token}
+Content-Type: application/json
+
+{
+    "reason": "This post contains inappropriate content"
+}
+
+Response: 201 Created
+{
+    "message": "Post reported successfully"
+}
+```
+
+**Notes:**
+- A user can only report the same post once
+- `reason` is optional (max length: 500 characters)
+- Reporting a post increments the report count for the post author
+- Duplicate reports by the same user will return: `400 Bad Request`
+
+#### 12. Report Comment
+```http
+POST /api/v1/posts/{postId}/comments/{commentId}/reports
+Authorization: Bearer {jwt-token}
+Content-Type: application/json
+
+{
+    "reason": "This comment violates community guidelines"
+}
+
+Response: 201 Created
+{
+    "message": "Comment reported successfully"
+}
+```
+
+**Notes:**
+- A user can only report the same comment once
+- `reason` is optional (max length: 500 characters)
+- Reporting a comment increments the report count for the comment author
+- Duplicate reports by the same user will return: `400 Bad Request`
 
 ### User Endpoints
 
