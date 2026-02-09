@@ -3,6 +3,8 @@ package com.anonymous.wall.service;
 import com.anonymous.wall.entity.UserEntity;
 import io.micronaut.security.authentication.Authentication;
 import io.micronaut.security.token.jwt.generator.JwtTokenGenerator;
+import io.micronaut.security.token.jwt.validator.JwtTokenValidator;
+import io.micronaut.security.token.reader.TokenReader;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import org.slf4j.Logger;
@@ -13,6 +15,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Service to generate JWT tokens for authenticated users
@@ -23,6 +26,9 @@ public class JwtTokenService {
 
     @Inject
     private JwtTokenGenerator tokenGenerator;
+
+    @Inject
+    private JwtTokenValidator<Authentication> tokenValidator;
 
     /**
      * Generate JWT token for a user
@@ -106,6 +112,33 @@ public class JwtTokenService {
         } catch (Exception e) {
             log.error("Error generating JWT token with custom claims", e);
             throw new RuntimeException("Token generation failed", e);
+        }
+    }
+
+    /**
+     * Extract user ID from JWT token
+     * @param token JWT token string
+     * @return User ID or null if invalid
+     */
+    public UUID extractUserIdFromToken(String token) {
+        try {
+            // Validate token and extract authentication
+            Optional<Authentication> authOpt = tokenValidator.validateToken(token);
+            
+            if (authOpt.isPresent()) {
+                Authentication auth = authOpt.get();
+                String userIdStr = auth.getName();
+                
+                if (userIdStr != null && !userIdStr.isEmpty()) {
+                    return UUID.fromString(userIdStr);
+                }
+            }
+            
+            log.warn("Failed to extract user ID from token");
+            return null;
+        } catch (Exception e) {
+            log.error("Error extracting user ID from token: {}", e.getMessage());
+            return null;
         }
     }
 }
