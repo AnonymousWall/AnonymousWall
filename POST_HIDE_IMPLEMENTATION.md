@@ -1,15 +1,17 @@
-# Post Hide/Unhide Propagation - Implementation Documentation
+# Post Hide Propagation - Implementation Documentation
 
 ## Overview
-This document describes the implementation of **Asynchronous Event-Driven Update** for propagating post hide/unhide operations to associated comments. This implementation follows the same pattern as the profile name update feature.
+This document describes the implementation of **Asynchronous Event-Driven Update** for propagating post hide operations to associated comments. This implementation follows the same pattern as the profile name update feature.
+
+**Note**: Unhide functionality remains synchronous as it is part of the soft-delete pattern and users are not allowed to unhide posts.
 
 ## Architecture
 
 ### Event-Driven Design
-The implementation uses Micronaut's built-in event system to achieve asynchronous comment hiding/unhiding:
+The implementation uses Micronaut's built-in event system to achieve asynchronous comment hiding:
 
 ```
-Post Hide/Unhide → Event Published → Async Listener → Update Comments
+Post Hide → Event Published → Async Listener → Hide Comments
 ```
 
 ## Components
@@ -20,14 +22,8 @@ Post Hide/Unhide → Event Published → Async Listener → Update Comments
   - `postId`: UUID of the post that was hidden
   - `userId`: UUID of the user who hid the post
 
-### 2. PostUnhiddenEvent (`event/PostUnhiddenEvent.java`)
-- **Purpose**: Represents a post unhidden event
-- **Fields**:
-  - `postId`: UUID of the post that was unhidden
-  - `userId`: UUID of the user who unhid the post
-
-### 3. PostsServiceImpl (`service/PostsServiceImpl.java`)
-- **Purpose**: Handles post hide/unhide operations and publishes events
+### 2. PostsServiceImpl (`service/PostsServiceImpl.java`)
+- **Purpose**: Handles post hide operations and publishes events
 - **Key Methods**:
   - `hidePost(UUID postId, UUID userId)`:
     - Hides post synchronously
@@ -35,17 +31,16 @@ Post Hide/Unhide → Event Published → Async Listener → Update Comments
     - Returns immediately (non-blocking)
   - `unhidePost(UUID postId, UUID userId)`:
     - Unhides post synchronously
-    - Publishes `PostUnhiddenEvent` for async comment unhiding
-    - Returns immediately (non-blocking)
+    - Unhides comments synchronously (within same transaction)
+    - Uses traditional transactional approach
 
-### 4. PostHideEventListener (`listener/PostHideEventListener.java`)
-- **Purpose**: Listens for post hide/unhide events and updates comments
+### 3. PostHideEventListener (`listener/PostHideEventListener.java`)
+- **Purpose**: Listens for post hide events and updates comments
 - **Annotations**:
   - `@Singleton`: Ensures single instance
   - `@Async`: Executes event handling asynchronously
 - **Behavior**:
   - For `PostHiddenEvent`: Updates all comments via `CommentRepository.updateByPostId(postId, true)`
-  - For `PostUnhiddenEvent`: Updates all comments via `CommentRepository.updateByPostId(postId, false)`
   - Logs errors but doesn't throw exceptions (fault-tolerant)
 
 ### 5. Repository Updates
@@ -58,15 +53,13 @@ Post Hide/Unhide → Event Published → Async Listener → Update Comments
 
 ```
 ┌─────────────────────┐
-│  Hide/Unhide Post   │
-│  Request            │
+│  Hide Post Request  │
 └──────────┬──────────┘
            │
            ▼
 ┌─────────────────────┐
 │  PostsServiceImpl   │
-│  .hidePost() or     │
-│  .unhidePost()      │
+│  .hidePost()        │
 └──────────┬──────────┘
            │
            ├─────────────────────────┐
@@ -74,7 +67,7 @@ Post Hide/Unhide → Event Published → Async Listener → Update Comments
            ▼                         ▼
 ┌─────────────────────┐    ┌────────────────────────┐
 │  Update Post        │    │  Publish Event         │
-│  (Synchronous)      │    │  PostHidden/Unhidden   │
+│  (Synchronous)      │    │  PostHiddenEvent       │
 └──────────┬──────────┘    └────────────┬───────────┘
            │                             │
            ▼                             │
@@ -93,7 +86,7 @@ Post Hide/Unhide → Event Published → Async Listener → Update Comments
                         │
                         ▼
             ┌───────────────────────────┐
-            │  Update Comments          │
+            │  Hide Comments            │
             │  (Asynchronous)           │
             └───────────────────────────┘
 ```
@@ -101,7 +94,7 @@ Post Hide/Unhide → Event Published → Async Listener → Update Comments
 ## Benefits
 
 ### ✅ Non-Blocking
-- User gets immediate response after hiding/unhiding a post
+- User gets immediate response after hiding a post
 - No waiting for bulk comment updates to complete
 
 ### ✅ Better UX
@@ -148,23 +141,23 @@ Post Hide/Unhide → Event Published → Async Listener → Update Comments
 
 ### Unit Tests
 1. **PostHiddenEventTest**: Tests event creation and data access
-2. **PostUnhiddenEventTest**: Tests event creation and data access
-3. **PostHideEventListenerTest**: Tests event listener behavior with mocks
+2. **PostHideEventListenerTest**: Tests event listener behavior with mocks
 
 ### Integration Tests
-1. **PostsServiceHidePostTests**: Tests service-level hide/unhide with async comment updates
-2. **PostsControllerHidePostTests**: Tests controller-level hide/unhide with async comment updates
+1. **PostsServiceHidePostTests**: Tests service-level hide with async comment updates (unhide remains synchronous)
+2. **PostsControllerHidePostTests**: Tests controller-level hide with async comment updates (unhide remains synchronous)
 
 ### Test Coverage
 - Event creation with various inputs
 - Event listener updates comments correctly
 - Event listener handles exceptions gracefully
-- Service publishes events correctly
+- Service publishes events correctly for hide operations
 - All edge cases covered (no comments, multiple comments, etc.)
 
 ### Test Considerations
-- Integration tests include 500ms wait for async processing
-- Tests verify eventual consistency of comment hidden state
+- Hide tests include 500ms wait for async processing
+- Unhide tests remain synchronous (no wait needed)
+- Tests verify eventual consistency of comment hidden state for hide operations
 - Tests verify idempotency of hide/unhide operations
 
 ## Performance Considerations
@@ -227,15 +220,21 @@ commentRepository.updateByPostId(postId, true);  // Blocks until complete
 return post;
 ```
 
-### After (Asynchronous)
+### After (Asynchronous for hide only)
 ```java
-// Hide post synchronously
+// Hide post synchronously, comments hidden async
 post.setHidden(true);
 Post updatedPost = postRepository.update(post);
 
 // Publish event for async comment hiding
 postHiddenEventPublisher.publishEvent(new PostHiddenEvent(postId, userId));
 return updatedPost;  // Returns immediately
+
+// Unhide remains synchronous
+post.setHidden(false);
+Post updatedPost = postRepository.update(post);
+commentRepository.updateByPostId(postId, false);  // Synchronous
+return updatedPost;
 ```
 
 ## Migration Guide
@@ -243,27 +242,27 @@ return updatedPost;  // Returns immediately
 ### Deployment Steps
 1. Deploy code changes (backward compatible)
 2. Monitor logs for event processing
-3. Verify hide/unhide operations work correctly
+3. Verify hide operations work correctly
 
 ### Rollback Plan
 1. Revert code changes
-2. Hide/unhide will work but comments won't update
-3. Manually update affected comments if needed
+2. Hide operations will revert to synchronous behavior
+3. No data inconsistency risk
 
 ### Data Consistency Check
 After deployment, verify:
 - Hidden posts have all comments hidden
-- Visible posts have all comments visible
-- No orphaned comment states
+- No orphaned comment states for hide operations
 
 ## Conclusion
 
 This implementation provides a balanced solution that:
-- Maintains good user experience (instant updates)
+- Maintains good user experience (instant hide operations)
 - Scales to medium-sized deployments
-- Uses industry-standard patterns
+- Uses industry-standard patterns for hide operations
+- Keeps unhide synchronous for data integrity (soft-delete pattern)
 - Requires no external dependencies
 - Is simple to understand and maintain
 - Follows existing architectural patterns in the codebase
 
-The eventual consistency trade-off is acceptable for hide/unhide operations, which are not critical data and don't require strict consistency guarantees.
+The eventual consistency trade-off is acceptable for hide operations, which are not critical data and don't require strict consistency guarantees. Unhide operations remain synchronous to ensure data integrity.
