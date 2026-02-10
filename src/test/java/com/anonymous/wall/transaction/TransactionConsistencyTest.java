@@ -220,7 +220,7 @@ public class TransactionConsistencyTest {
      * Verifies: Multiple operation types maintain consistency
      */
     @Test
-    void testComplexOperationSequence() {
+    void testComplexOperationSequence() throws InterruptedException {
         // Add comments
         Comment c1 = commentsService.addComment(testPost.getId(), new CreateCommentRequest("Comment 1"), testUser.getId());
         Comment c2 = commentsService.addComment(testPost.getId(), new CreateCommentRequest("Comment 2"), testUser.getId());
@@ -248,6 +248,10 @@ public class TransactionConsistencyTest {
 
         // Hide post (cascades)
         postsService.hidePost(testPost.getId(), testUser.getId());
+        
+        // Wait for async processing to complete
+        Thread.sleep(500);
+        
         Post s5 = postRepository.findById(testPost.getId()).orElseThrow();
         assertTrue(s5.isHidden());
         long visibleComments = commentRepository.findByPostIdAndHiddenFalse(testPost.getId()).size();

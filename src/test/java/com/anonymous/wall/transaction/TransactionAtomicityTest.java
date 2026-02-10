@@ -206,7 +206,7 @@ public class TransactionAtomicityTest {
      * Note: Comment count is total count, not visible count
      */
     @Test
-    void testPostHideCascadeAtomicity() {
+    void testPostHideCascadeAtomicity() throws InterruptedException {
         // Add multiple comments
         for (int i = 0; i < 3; i++) {
             CreateCommentRequest request = new CreateCommentRequest("Comment #" + i);
@@ -221,6 +221,9 @@ public class TransactionAtomicityTest {
 
         // Verify post is hidden
         assertTrue(hiddenPost.isHidden(), "Post should be hidden");
+
+        // Wait for async processing to complete
+        Thread.sleep(500);
 
         // Verify all comments are hidden (cascade)
         long visibleComments = commentRepository.findByPostIdAndHiddenFalse(testPost.getId()).size();
