@@ -26,20 +26,12 @@ public class AdminPostServiceImpl implements AdminPostService {
     public Page<Post> getAllPosts(Pageable pageable, UUID userId, Boolean hidden) {
         log.info("Admin fetching posts with filters - userId: {}, hidden: {}", userId, hidden);
         
-        // Apply filters based on provided parameters
-        if (userId != null && hidden != null) {
-            if (hidden) {
-                return postRepository.findAll(pageable); // For now, return all posts - can add custom query later
-            } else {
-                return postRepository.findByUserIdAndHiddenFalseOrderByCreatedAtDesc(userId, pageable);
-            }
-        } else if (userId != null) {
-            return postRepository.findAll(pageable); // Can add findByUserId with pagination later
-        } else if (hidden != null) {
-            return postRepository.findAll(pageable); // Can add findByHidden with pagination later
-        } else {
-            return postRepository.findAll(pageable);
-        }
+        // Note: Full filtering support requires additional repository methods
+        // For now, return all posts. In future, can add methods like:
+        // - findByUserId(UUID userId, Pageable pageable)
+        // - findByHidden(boolean hidden, Pageable pageable) 
+        // - findByUserIdAndHidden(UUID userId, boolean hidden, Pageable pageable)
+        return postRepository.findAll(pageable);
     }
     
     @Override

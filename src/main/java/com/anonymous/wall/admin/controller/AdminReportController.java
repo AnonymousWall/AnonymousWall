@@ -81,6 +81,9 @@ public class AdminReportController {
         // Build response
         Map<String, Object> response = new HashMap<>();
         
+        // Track pagination info from the first query
+        Page<?> paginationSource = null;
+        
         // Fetch reports based on type filter
         if (type == null || "post".equals(type)) {
             Page<PostReport> postReportsPage = adminReportService.getAllPostReports(pageable);
@@ -88,6 +91,7 @@ public class AdminReportController {
                     .map(this::mapPostReportToDTO)
                     .collect(Collectors.toList());
             response.put("postReports", postReportDTOs);
+            paginationSource = postReportsPage;
         }
         
         if (type == null || "comment".equals(type)) {
@@ -96,16 +100,20 @@ public class AdminReportController {
                     .map(this::mapCommentReportToDTO)
                     .collect(Collectors.toList());
             response.put("commentReports", commentReportDTOs);
+            if (paginationSource == null) {
+                paginationSource = commentReportsPage;
+            }
         }
         
-        // Add pagination info (based on post reports for now)
-        Page<PostReport> postReportsPage = adminReportService.getAllPostReports(pageable);
-        Map<String, Object> pagination = new HashMap<>();
-        pagination.put("page", page);
-        pagination.put("limit", limit);
-        pagination.put("total", postReportsPage.getTotalSize());
-        pagination.put("totalPages", postReportsPage.getTotalPages());
-        response.put("pagination", pagination);
+        // Add pagination info from first query
+        if (paginationSource != null) {
+            Map<String, Object> pagination = new HashMap<>();
+            pagination.put("page", page);
+            pagination.put("limit", limit);
+            pagination.put("total", paginationSource.getTotalSize());
+            pagination.put("totalPages", paginationSource.getTotalPages());
+            response.put("pagination", pagination);
+        }
         
         return HttpResponse.ok(response);
     }

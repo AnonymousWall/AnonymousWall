@@ -34,26 +34,6 @@ public class AdminUserController {
     private AdminUserService adminUserService;
     
     /**
-     * Helper to extract user ID from Principal
-     */
-    private UUID getUserIdFromRequest(HttpRequest<?> request) {
-        return request.getUserPrincipal()
-                .map(Principal::getName)
-                .map(UUID::fromString)
-                .orElseThrow(() -> new IllegalArgumentException("User not authenticated"));
-    }
-    
-    /**
-     * Helper to check if user has admin role from JWT attributes
-     */
-    private boolean isAdmin(HttpRequest<?> request) {
-        return request.getAttributes()
-                .get("role", String.class)
-                .map(role -> "ADMIN".equals(role) || "MODERATOR".equals(role))
-                .orElse(false);
-    }
-    
-    /**
      * Convert UserEntity to AdminUserDTO
      */
     private AdminUserDTO mapUserToDTO(UserEntity user) {
