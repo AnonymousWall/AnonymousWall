@@ -72,22 +72,30 @@ public class ChatService {
 
     /**
      * Find existing direct room between two users
+     * Uses a single optimized query to check if a room exists between the two users
      */
     private Optional<ChatRoom> findExistingDirectRoom(UUID user1Id, UUID user2Id) {
         // Get all rooms for user1
         List<RoomMember> user1Rooms = memberRepository.findByUserId(user1Id);
         
-        // Check each room to see if user2 is also a member
-        for (RoomMember membership : user1Rooms) {
-            UUID roomId = membership.getId().getRoomId();
-            List<RoomMember> roomMembers = memberRepository.findByRoomId(roomId);
-            
-            // Direct rooms should have exactly 2 members
-            if (roomMembers.size() == 2) {
-                boolean hasUser2 = roomMembers.stream()
-                    .anyMatch(m -> m.getId().getUserId().equals(user2Id));
-                
-                if (hasUser2) {
+        if (user1Rooms.isEmpty()) {
+            return Optional.empty();
+        }
+
+        // Get all room IDs for user1
+        List<UUID> roomIds = user1Rooms.stream()
+            .map(m -> m.getId().getRoomId())
+            .toList();
+
+        // Check if user2 is a member of any of these rooms
+        List<RoomMember> user2Memberships = memberRepository.findByUserId(user2Id);
+        
+        for (RoomMember user2Membership : user2Memberships) {
+            UUID roomId = user2Membership.getId().getRoomId();
+            if (roomIds.contains(roomId)) {
+                // Found a common room, verify it has exactly 2 members
+                List<RoomMember> roomMembers = memberRepository.findByRoomId(roomId);
+                if (roomMembers.size() == 2) {
                     return roomRepository.findById(roomId);
                 }
             }
@@ -98,6 +106,7 @@ public class ChatService {
 
     /**
      * Add a member to a room
+     * Direct chat rooms are limited to 2 members
      */
     @Transactional
     public void addMember(UUID roomId, UUID userId) {
@@ -109,6 +118,13 @@ public class ChatService {
         if (memberRepository.existsById(id)) {
             log.debug("User is already a member of this room");
             return;
+        }
+
+        // Check room member limit (direct chats limited to 2 members)
+        List<RoomMember> currentMembers = memberRepository.findByRoomId(roomId);
+        if (currentMembers.size() >= 2) {
+            log.error("Cannot add member: room already has maximum of 2 members");
+            throw new IllegalStateException("Direct chat rooms are limited to 2 members");
         }
 
         RoomMember member = new RoomMember(id);

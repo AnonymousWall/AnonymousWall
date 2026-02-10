@@ -156,8 +156,6 @@ public class ChatController {
     /**
      * Add a member to a room
      * POST /api/v1/chat/rooms/{roomId}/members
-     * 
-     * Note: For direct chats, rooms are limited to 2 members only
      */
     @Post("/rooms/{roomId}/members")
     public HttpResponse<?> addMember(
@@ -175,13 +173,7 @@ public class ChatController {
                 return HttpResponse.unauthorized();
             }
 
-            // Verify room only has 2 members (direct chat constraint)
-            List<RoomMember> members = chatService.getRoomMembers(roomUUID);
-            if (members.size() >= 2) {
-                return HttpResponse.badRequest(Map.of("error", "Direct chat rooms are limited to 2 members"));
-            }
-
-            // Add the new member
+            // Add the new member (service layer enforces 2-member limit)
             chatService.addMember(roomUUID, newMemberUUID);
 
             log.info("Member added to room: roomId={}, newMember={}, addedBy={}", roomId, request.getUserId(), userId);
@@ -189,6 +181,8 @@ public class ChatController {
 
         } catch (IllegalArgumentException e) {
             return HttpResponse.badRequest(Map.of("error", "Invalid ID format"));
+        } catch (IllegalStateException e) {
+            return HttpResponse.badRequest(Map.of("error", e.getMessage()));
         } catch (Exception e) {
             log.error("Error adding member: {}", e.getMessage(), e);
             return HttpResponse.serverError(Map.of("error", "Failed to add member"));
