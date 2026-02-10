@@ -39,11 +39,13 @@ Post Hide → Event Published → Async Listener → Hide Comments
 - **Annotations**:
   - `@Singleton`: Ensures single instance
   - `@Async`: Executes event handling asynchronously
+  - `@Transactional`: Ensures database operations run in their own transaction context
 - **Behavior**:
   - For `PostHiddenEvent`: Updates all comments via `CommentRepository.updateByPostId(postId, true)`
   - Logs errors but doesn't throw exceptions (fault-tolerant)
+- **Important**: The `@Transactional` annotation is critical to avoid "Closed Statement" errors when the async method tries to access the database after the original transaction has completed
 
-### 5. Repository Updates
+### 4. Repository Updates
 #### CommentRepository (`repository/CommentRepository.java`)
 - Uses existing `updateByPostId(UUID postId, boolean hidden)` method
 - Uses Micronaut Data's method naming convention for bulk updates
@@ -136,6 +138,11 @@ Post Hide → Event Published → Async Listener → Hide Comments
 ### ❌ Lost on Server Restart
 - In-memory events don't persist across restarts
 - For critical updates, consider using persistent message queue
+
+### ✅ Transaction Management
+- Async listener must use `@Transactional` to create new database connection
+- Without this, "Closed Statement" errors occur when async code tries to use the original transaction's closed connection
+- This pattern applies to all async event listeners that perform database operations
 
 ## Testing
 

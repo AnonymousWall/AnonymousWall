@@ -5,6 +5,7 @@ import com.anonymous.wall.repository.CommentRepository;
 import com.anonymous.wall.repository.PostRepository;
 import io.micronaut.context.event.ApplicationEventListener;
 import io.micronaut.scheduling.annotation.Async;
+import io.micronaut.transaction.annotation.Transactional;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import org.slf4j.Logger;
@@ -32,9 +33,11 @@ public class ProfileNameUpdateEventListener implements ApplicationEventListener<
      * Handles profile name change events asynchronously.
      * Updates all posts and comments by the user with the new profile name.
      * Uses fail-safe behavior: continues processing even if one update fails.
+     * Runs in its own transaction to avoid closed connection issues.
      */
     @Override
     @Async
+    @Transactional
     public void onApplicationEvent(ProfileNameChangedEvent event) {
         log.info("Processing profile name change event: userId={}, oldName={}, newName={}", 
                 event.getUserId(), event.getOldName(), event.getNewName());

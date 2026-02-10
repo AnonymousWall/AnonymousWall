@@ -4,6 +4,7 @@ import com.anonymous.wall.event.PostHiddenEvent;
 import com.anonymous.wall.repository.CommentRepository;
 import io.micronaut.context.event.ApplicationEventListener;
 import io.micronaut.scheduling.annotation.Async;
+import io.micronaut.transaction.annotation.Transactional;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import org.slf4j.Logger;
@@ -28,9 +29,11 @@ public class PostHideEventListener implements ApplicationEventListener<PostHidde
      * Handles post hide events asynchronously.
      * Updates all comments associated with the post.
      * Uses fail-safe behavior: logs errors but doesn't throw exceptions.
+     * Runs in its own transaction to avoid closed connection issues.
      */
     @Override
     @Async
+    @Transactional
     public void onApplicationEvent(PostHiddenEvent event) {
         log.info("Processing post hidden event: postId={}, userId={}", 
                 event.getPostId(), event.getUserId());
