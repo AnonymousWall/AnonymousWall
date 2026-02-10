@@ -180,7 +180,7 @@ class PostsControllerHidePostTests {
             assertEquals(HttpStatus.OK, response.getStatus());
 
             // Wait for async processing to complete
-            Thread.sleep(2000);
+            Thread.sleep(500);
 
             // Verify all comments are hidden
             List<Comment> visibleAfter = commentRepository.findByPostIdAndHiddenFalse(testPost.getId());
@@ -357,7 +357,7 @@ class PostsControllerHidePostTests {
             );
 
             // Wait for async processing to complete
-            Thread.sleep(2000);
+            Thread.sleep(500);
 
             // Verify comments are hidden
             List<Comment> hiddenComments = commentRepository.findByPostIdAndHiddenFalse(testPost.getId());
@@ -374,7 +374,7 @@ class PostsControllerHidePostTests {
             assertEquals(HttpStatus.OK, response.getStatus());
 
             // Wait for async processing to complete
-            Thread.sleep(2000);
+            Thread.sleep(500);
 
             // Verify all comments are restored
             List<Comment> restoredComments = commentRepository.findByPostIdAndHiddenFalse(testPost.getId());
@@ -537,7 +537,7 @@ class PostsControllerHidePostTests {
             );
 
             // Wait for async processing to complete
-            Thread.sleep(2000);
+            Thread.sleep(500);
 
             // Assert - Both comments should be hidden
             Comment hiddenAuthorComment = commentRepository.findById(authorComment.getId()).get();
@@ -573,7 +573,7 @@ class PostsControllerHidePostTests {
             );
 
             // Wait for async processing to complete
-            Thread.sleep(2000);
+            Thread.sleep(500);
 
             // Unhide post
             client.toBlocking().exchange(
@@ -583,7 +583,7 @@ class PostsControllerHidePostTests {
             );
 
             // Wait for async processing to complete
-            Thread.sleep(2000);
+            Thread.sleep(500);
 
             // Assert - Comment count should remain the same
             Post finalPost = postRepository.findById(testPost.getId()).get();
