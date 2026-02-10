@@ -13,15 +13,6 @@ public class ChatRoom {
     @AutoPopulated
     private UUID id;
 
-    @MappedProperty("name")
-    private String name;
-
-    @MappedProperty("type")
-    private String type; // DIRECT, GROUP, CAMPUS, NATIONAL
-
-    @MappedProperty("school_domain")
-    private String schoolDomain;
-
     @MappedProperty("created_by")
     private UUID createdBy;
 
@@ -34,10 +25,7 @@ public class ChatRoom {
     // Constructors
     public ChatRoom() {}
 
-    public ChatRoom(String name, String type, String schoolDomain, UUID createdBy) {
-        this.name = name;
-        this.type = type;
-        this.schoolDomain = schoolDomain;
+    public ChatRoom(UUID createdBy) {
         this.createdBy = createdBy;
     }
 
@@ -48,30 +36,6 @@ public class ChatRoom {
 
     public void setId(UUID id) {
         this.id = id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getType() {
-        return type;
-    }
-
-    public void setType(String type) {
-        this.type = type;
-    }
-
-    public String getSchoolDomain() {
-        return schoolDomain;
-    }
-
-    public void setSchoolDomain(String schoolDomain) {
-        this.schoolDomain = schoolDomain;
     }
 
     public UUID getCreatedBy() {

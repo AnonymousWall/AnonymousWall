@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document summarizes the implementation of WebSocket-based chat functionality for the AnonymousWall Micronaut backend. The implementation follows the research recommendations outlined in `CHAT_IMPLEMENTATION_RESEARCH.md`.
+This document summarizes the implementation of WebSocket-based **one-to-one chat functionality** for the AnonymousWall Micronaut backend. The chat system supports direct messaging between two users, regardless of their campus or national affiliation.
 
 ---
 
@@ -13,12 +13,13 @@ This document summarizes the implementation of WebSocket-based chat functionalit
 1. **Database Schema**
    - Created Liquibase migration (`02-chat-schema.xml`)
    - Tables: `chat_rooms`, `room_members`, `chat_messages`
+   - Simplified schema for direct chats (removed type, name, school_domain)
    - Proper foreign keys and indexes
 
 2. **Entity Layer**
-   - `ChatRoom.java` - Room information
+   - `ChatRoom.java` - Minimal room information (id, created_by, timestamps)
    - `ChatMessage.java` - Message data
-   - `RoomMember.java` - Membership tracking
+   - `RoomMember.java` - Membership tracking (limited to 2 members per room)
    - `RoomMemberId.java` - Composite key for memberships
 
 3. **Repository Layer**
@@ -28,9 +29,9 @@ This document summarizes the implementation of WebSocket-based chat functionalit
 
 4. **Service Layer**
    - `ChatService` - Complete business logic for:
-     - Room creation and management
+     - Direct room creation between two users
+     - Automatic detection of existing rooms
      - Message sending and retrieval
-     - Member management
      - Access control
      - Message history with pagination
 
@@ -45,11 +46,11 @@ This document summarizes the implementation of WebSocket-based chat functionalit
 6. **REST API**
    - `ChatController` at `/api/v1/chat`
    - Endpoints:
-     - `POST /rooms` - Create chat room
-     - `GET /rooms` - Get user's rooms
+     - `POST /rooms` - Create direct chat room with another user
+     - `GET /rooms` - Get user's chat rooms
      - `GET /rooms/{id}` - Get room details
      - `GET /rooms/{id}/messages` - Get message history
-     - `POST /rooms/{id}/members` - Add member to room
+     - `POST /rooms/{id}/members` - Add member (limited to 2 total)
      - `GET /rooms/{id}/members` - Get room members
      - `DELETE /messages/{id}` - Delete message
 
@@ -68,7 +69,7 @@ This document summarizes the implementation of WebSocket-based chat functionalit
 Client (Browser/Mobile)
     │
     ├── REST API (/api/v1/chat)
-    │   └── Room management, history retrieval
+    │   └── Direct room management, history retrieval
     │
     └── WebSocket (/ws/chat/{roomId}?token=JWT)
         └── Real-time messaging
@@ -79,7 +80,7 @@ Client (Browser/Mobile)
             │   └── Message broadcasting
             │
             └── ChatService
-                ├── Business logic
+                ├── Business logic (one-to-one only)
                 ├── Access control
                 └── Persistence
                     │
@@ -91,7 +92,7 @@ Client (Browser/Mobile)
 
 ## Usage Examples
 
-### 1. Create a Chat Room
+### 1. Create a Direct Chat Room
 
 ```bash
 POST /api/v1/chat/rooms
@@ -99,22 +100,26 @@ Authorization: Bearer {JWT}
 Content-Type: application/json
 
 {
-  "name": "General Chat",
-  "type": "CAMPUS",
-  "schoolDomain": "harvard.edu",
-  "memberIds": ["user-uuid-2", "user-uuid-3"]
+  "otherUserId": "user-uuid-2"
 }
 
-Response:
+Response (new room created):
 {
   "id": "room-uuid",
-  "name": "General Chat",
-  "type": "CAMPUS",
-  "schoolDomain": "harvard.edu",
   "createdBy": "user-uuid-1",
   "createdAt": "2024-01-15T10:00:00Z",
   "updatedAt": "2024-01-15T10:00:00Z"
 }
+
+Response (existing room returned):
+{
+  "id": "existing-room-uuid",
+  "createdBy": "user-uuid-2",
+  "createdAt": "2024-01-14T09:00:00Z",
+  "updatedAt": "2024-01-14T09:00:00Z"
+}
+
+Note: If a chat room already exists between the two users, the existing room is returned instead of creating a duplicate.
 ```
 
 ### 2. Connect to WebSocket
@@ -175,27 +180,28 @@ Response:
 [
   {
     "id": "room-uuid-1",
-    "name": "General Chat",
-    "type": "CAMPUS",
-    ...
+    "createdBy": "user-uuid-1",
+    "createdAt": "2024-01-15T10:00:00Z",
+    "updatedAt": "2024-01-15T10:00:00Z"
   },
   {
     "id": "room-uuid-2",
-    "name": "Study Group",
-    "type": "GROUP",
-    ...
+    "createdBy": "user-uuid-2",
+    "createdAt": "2024-01-14T09:00:00Z",
+    "updatedAt": "2024-01-14T09:00:00Z"
   }
 ]
 ```
 
 ---
 
-## Room Types
+## Chat Type
 
-1. **DIRECT** - One-on-one private chat
-2. **GROUP** - Private group chat
-3. **CAMPUS** - School-wide chat (requires `schoolDomain`)
-4. **NATIONAL** - Cross-campus public chat
+**One-to-One Direct Chat Only**
+- Each chat room contains exactly 2 members
+- No group chats, campus chats, or national chats
+- School domain does not affect chat functionality
+- Users from any campus can chat with each other
 
 ---
 
@@ -210,11 +216,13 @@ Response:
    - Users must be members to access room
    - Membership verified before connection
    - Users can only delete their own messages
+   - Direct chat rooms are limited to exactly 2 members
 
 3. **Input Validation**
    - Message length limited to 5000 characters
    - Empty messages rejected
    - Invalid room IDs rejected
+   - Cannot create room with yourself
 
 4. **Connection Security**
    - Sessions tracked and cleaned up properly
@@ -228,16 +236,9 @@ Response:
 ### chat_rooms
 ```sql
 - id (UUID, PK)
-- name (VARCHAR)
-- type (ENUM: DIRECT, GROUP, CAMPUS, NATIONAL)
-- school_domain (VARCHAR, nullable)
 - created_by (UUID, FK to users)
 - created_at (TIMESTAMP)
 - updated_at (TIMESTAMP)
-
-Indexes:
-- type
-- school_domain
 ```
 
 ### room_members

@@ -12,13 +12,6 @@
             <column name="id" type="CHAR(36)">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
-            <column name="name" type="VARCHAR(255)">
-                <constraints nullable="true"/>
-            </column>
-            <column name="type" type="VARCHAR(20)">
-                <constraints nullable="false"/>
-            </column>
-            <column name="school_domain" type="VARCHAR(255)"/>
             <column name="created_by" type="CHAR(36)">
                 <constraints nullable="false"/>
             </column>
@@ -28,12 +21,6 @@
         <addForeignKeyConstraint baseTableName="chat_rooms" baseColumnNames="created_by"
                                  constraintName="fk_chat_rooms_created_by"
                                  referencedTableName="users" referencedColumnNames="id"/>
-        <createIndex tableName="chat_rooms" indexName="idx_chat_rooms_type">
-            <column name="type"/>
-        </createIndex>
-        <createIndex tableName="chat_rooms" indexName="idx_chat_rooms_school_domain">
-            <column name="school_domain"/>
-        </createIndex>
     </changeSet>
 
     <!-- ================= Room Members ================= -->

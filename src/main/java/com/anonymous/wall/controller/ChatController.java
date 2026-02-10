@@ -35,7 +35,7 @@ public class ChatController {
     private ChatService chatService;
 
     /**
-     * Create a new chat room
+     * Create a new direct chat room with another user
      * POST /api/v1/chat/rooms
      */
     @Post("/rooms")
@@ -43,38 +43,27 @@ public class ChatController {
         try {
             UUID userId = UUID.fromString(authentication.getName());
 
-            // Validate request
-            if (request.getType() == null || request.getType().trim().isEmpty()) {
-                return HttpResponse.badRequest(Map.of("error", "Room type is required"));
+            // Validate other user ID
+            if (request.getOtherUserId() == null || request.getOtherUserId().trim().isEmpty()) {
+                return HttpResponse.badRequest(Map.of("error", "Other user ID is required"));
             }
 
-            String type = request.getType().toUpperCase();
-            if (!type.equals("DIRECT") && !type.equals("GROUP") && 
-                !type.equals("CAMPUS") && !type.equals("NATIONAL")) {
-                return HttpResponse.badRequest(Map.of("error", "Invalid room type"));
+            UUID otherUserId;
+            try {
+                otherUserId = UUID.fromString(request.getOtherUserId());
+            } catch (IllegalArgumentException e) {
+                return HttpResponse.badRequest(Map.of("error", "Invalid user ID format"));
             }
 
-            // Create room
-            ChatRoom room = chatService.createRoom(
-                userId,
-                type,
-                request.getName(),
-                request.getSchoolDomain()
-            );
-
-            // Add additional members if provided
-            if (request.getMemberIds() != null && !request.getMemberIds().isEmpty()) {
-                for (String memberId : request.getMemberIds()) {
-                    try {
-                        UUID memberUUID = UUID.fromString(memberId);
-                        chatService.addMember(room.getId(), memberUUID);
-                    } catch (IllegalArgumentException e) {
-                        log.warn("Invalid member ID: {}", memberId);
-                    }
-                }
+            // Cannot create room with yourself
+            if (userId.equals(otherUserId)) {
+                return HttpResponse.badRequest(Map.of("error", "Cannot create a chat room with yourself"));
             }
 
-            log.info("Chat room created: id={}, type={}, createdBy={}", room.getId(), type, userId);
+            // Create direct room
+            ChatRoom room = chatService.createDirectRoom(userId, otherUserId);
+
+            log.info("Direct chat room created: id={}, user1={}, user2={}", room.getId(), userId, otherUserId);
             return HttpResponse.created(room);
 
         } catch (Exception e) {
@@ -167,6 +156,8 @@ public class ChatController {
     /**
      * Add a member to a room
      * POST /api/v1/chat/rooms/{roomId}/members
+     * 
+     * Note: For direct chats, rooms are limited to 2 members only
      */
     @Post("/rooms/{roomId}/members")
     public HttpResponse<?> addMember(
@@ -182,6 +173,12 @@ public class ChatController {
             // Verify user has access to the room
             if (!chatService.canAccessRoom(userId, roomUUID)) {
                 return HttpResponse.unauthorized();
+            }
+
+            // Verify room only has 2 members (direct chat constraint)
+            List<RoomMember> members = chatService.getRoomMembers(roomUUID);
+            if (members.size() >= 2) {
+                return HttpResponse.badRequest(Map.of("error", "Direct chat rooms are limited to 2 members"));
             }
 
             // Add the new member
@@ -257,22 +254,10 @@ public class ChatController {
 
     // Request DTOs
     public static class CreateRoomRequest {
-        private String name;
-        private String type;
-        private String schoolDomain;
-        private List<String> memberIds;
+        private String otherUserId;
 
-        public String getName() { return name; }
-        public void setName(String name) { this.name = name; }
-
-        public String getType() { return type; }
-        public void setType(String type) { this.type = type; }
-
-        public String getSchoolDomain() { return schoolDomain; }
-        public void setSchoolDomain(String schoolDomain) { this.schoolDomain = schoolDomain; }
-
-        public List<String> getMemberIds() { return memberIds; }
-        public void setMemberIds(List<String> memberIds) { this.memberIds = memberIds; }
+        public String getOtherUserId() { return otherUserId; }
+        public void setOtherUserId(String otherUserId) { this.otherUserId = otherUserId; }
     }
 
     public static class AddMemberRequest {

@@ -41,27 +41,59 @@ public class ChatService {
     private UserRepository userRepository;
 
     /**
-     * Create a new chat room
+     * Create a new one-to-one chat room between two users
      */
     @Transactional
-    public ChatRoom createRoom(UUID createdBy, String type, String name, String schoolDomain) {
-        log.info("Creating chat room: type={}, name={}, createdBy={}", type, name, createdBy);
+    public ChatRoom createDirectRoom(UUID user1Id, UUID user2Id) {
+        log.info("Creating direct chat room: user1={}, user2={}", user1Id, user2Id);
 
+        // Check if a room already exists between these two users
+        Optional<ChatRoom> existingRoom = findExistingDirectRoom(user1Id, user2Id);
+        if (existingRoom.isPresent()) {
+            log.info("Direct chat room already exists: id={}", existingRoom.get().getId());
+            return existingRoom.get();
+        }
+
+        // Create new room
         ChatRoom room = new ChatRoom();
-        room.setType(type);
-        room.setName(name);
-        room.setSchoolDomain(schoolDomain);
-        room.setCreatedBy(createdBy);
+        room.setCreatedBy(user1Id);
         room.setCreatedAt(ZonedDateTime.now());
         room.setUpdatedAt(ZonedDateTime.now());
 
         ChatRoom savedRoom = roomRepository.save(room);
 
-        // Add creator as member
-        addMember(savedRoom.getId(), createdBy);
+        // Add both users as members
+        addMember(savedRoom.getId(), user1Id);
+        addMember(savedRoom.getId(), user2Id);
 
-        log.info("Chat room created: id={}", savedRoom.getId());
+        log.info("Direct chat room created: id={}", savedRoom.getId());
         return savedRoom;
+    }
+
+    /**
+     * Find existing direct room between two users
+     */
+    private Optional<ChatRoom> findExistingDirectRoom(UUID user1Id, UUID user2Id) {
+        // Get all rooms for user1
+        List<RoomMember> user1Rooms = memberRepository.findByUserId(user1Id);
+        
+        // Check each room to see if user2 is also a member
+        for (RoomMember membership : user1Rooms) {
+            UUID roomId = membership.getId().getRoomId();
+            List<RoomMember> roomMembers = memberRepository.findByRoomId(roomId);
+            
+            // Direct rooms should have exactly 2 members
+            if (roomMembers.size() == 2) {
+                boolean hasUser2 = roomMembers.stream()
+                    .anyMatch(m -> m.getId().getUserId().equals(user2Id));
+                
+                if (hasUser2) {
+                    return roomRepository.findById(roomId);
+                }
+            }
+        }
+        
+        return Optional.empty();
     }
 
     /**
