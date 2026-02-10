@@ -25,6 +25,12 @@
             <column name="password_hash" type="VARCHAR(255)"/>
             <column name="is_verified" type="BOOLEAN" defaultValueBoolean="false"/>
             <column name="password_set" type="BOOLEAN" defaultValueBoolean="false"/>
+            <column name="role" type="VARCHAR(20)" defaultValue="USER">
+                <constraints nullable="false"/>
+            </column>
+            <column name="blocked" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
             <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP"/>
             <column name="updated_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP"/>
         </createTable>
@@ -245,6 +251,14 @@
         <!-- Internships indexes -->
         <createIndex tableName="internships" indexName="idx_internships_user_id">
             <column name="user_id"/>
+        </createIndex>
+
+        <!-- Users indexes -->
+        <createIndex tableName="users" indexName="idx_users_role">
+            <column name="role"/>
+        </createIndex>
+        <createIndex tableName="users" indexName="idx_users_blocked">
+            <column name="blocked"/>
         </createIndex>
     </changeSet>
 
