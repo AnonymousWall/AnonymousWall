@@ -153,7 +153,7 @@ class PostsControllerHidePostTests {
 
         @Test
         @DisplayName("Hide post cascades to hide all comments")
-        void shouldHideAllCommentsCascade() {
+        void shouldHideAllCommentsCascade() throws InterruptedException {
             // Arrange - Create 3 comments on the post
             Comment comment1 = commentsService.addComment(testPost.getId(),
                     new com.anonymous.wall.model.CreateCommentRequest("Comment 1"),
@@ -178,6 +178,9 @@ class PostsControllerHidePostTests {
 
             // Assert
             assertEquals(HttpStatus.OK, response.getStatus());
+
+            // Wait for async processing to complete
+            Thread.sleep(2000);
 
             // Verify all comments are hidden
             List<Comment> visibleAfter = commentRepository.findByPostIdAndHiddenFalse(testPost.getId());
@@ -337,7 +340,7 @@ class PostsControllerHidePostTests {
 
         @Test
         @DisplayName("Unhide post restores all hidden comments")
-        void shouldRestoreAllCommentsWhenUnhiding() {
+        void shouldRestoreAllCommentsWhenUnhiding() throws InterruptedException {
             // Arrange - Create comments and hide post
             Comment comment1 = commentsService.addComment(testPost.getId(),
                     new com.anonymous.wall.model.CreateCommentRequest("Comment 1"),
@@ -353,6 +356,9 @@ class PostsControllerHidePostTests {
                     Map.class
             );
 
+            // Wait for async processing to complete
+            Thread.sleep(2000);
+
             // Verify comments are hidden
             List<Comment> hiddenComments = commentRepository.findByPostIdAndHiddenFalse(testPost.getId());
             assertEquals(0, hiddenComments.size());
@@ -366,6 +372,9 @@ class PostsControllerHidePostTests {
 
             // Assert
             assertEquals(HttpStatus.OK, response.getStatus());
+
+            // Wait for async processing to complete
+            Thread.sleep(2000);
 
             // Verify all comments are restored
             List<Comment> restoredComments = commentRepository.findByPostIdAndHiddenFalse(testPost.getId());
@@ -511,7 +520,7 @@ class PostsControllerHidePostTests {
 
         @Test
         @DisplayName("Hiding post hides all comments regardless of who created them")
-        void shouldHideAllCommentsRegardlessOfAuthor() {
+        void shouldHideAllCommentsRegardlessOfAuthor() throws InterruptedException {
             // Arrange - Create comments from different users
             Comment authorComment = commentsService.addComment(testPost.getId(),
                     new com.anonymous.wall.model.CreateCommentRequest("Author comment"),
@@ -527,6 +536,9 @@ class PostsControllerHidePostTests {
                     Map.class
             );
 
+            // Wait for async processing to complete
+            Thread.sleep(2000);
+
             // Assert - Both comments should be hidden
             Comment hiddenAuthorComment = commentRepository.findById(authorComment.getId()).get();
             Comment hiddenOtherComment = commentRepository.findById(otherComment.getId()).get();
@@ -536,7 +548,7 @@ class PostsControllerHidePostTests {
 
         @Test
         @DisplayName("Hiding then unhiding post preserves comment count")
-        void shouldPreserveCommentCountThroughHideUnhide() {
+        void shouldPreserveCommentCountThroughHideUnhide() throws InterruptedException {
             // Arrange - Create multiple comments
             commentsService.addComment(testPost.getId(),
                     new com.anonymous.wall.model.CreateCommentRequest("Comment 1"),
@@ -560,12 +572,18 @@ class PostsControllerHidePostTests {
                     Map.class
             );
 
+            // Wait for async processing to complete
+            Thread.sleep(2000);
+
             // Unhide post
             client.toBlocking().exchange(
                     HttpRequest.PATCH(BASE_PATH + "/" + testPost.getId() + "/unhide", "")
                             .bearerAuth(authorToken),
                     Map.class
             );
+
+            // Wait for async processing to complete
+            Thread.sleep(2000);
 
             // Assert - Comment count should remain the same
             Post finalPost = postRepository.findById(testPost.getId()).get();
