@@ -243,6 +243,9 @@ public class CommentsServiceImpl implements CommentsService {
      * National posts: visible/actionable by all users
      */
     private void validatePostVisibility(Post post, UUID userId) {
+        if (post.isHidden()) {
+            throw new IllegalArgumentException("Post not found");
+        }
         if (post.getWall().equals("national")) {
             log.debug("Validating national post access for user: {}", userId);
             return;
