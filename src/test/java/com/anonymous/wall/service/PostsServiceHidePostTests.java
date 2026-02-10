@@ -278,7 +278,7 @@ class PostsServiceHidePostTests {
 
         @Test
         @DisplayName("Should restore all comments when unhiding post")
-        void shouldRestoreAllCommentsWhenUnhidingPost() throws InterruptedException {
+        void shouldRestoreAllCommentsWhenUnhidingPost() {
             // Arrange - Create comments and hide post
             Comment comment1 = commentsService.addComment(testPost.getId(),
                     new CreateCommentRequest("Comment 1"), testUser.getId());
@@ -287,9 +287,6 @@ class PostsServiceHidePostTests {
 
             // Hide post (cascades to comments)
             postsService.hidePost(testPost.getId(), testUser.getId());
-            
-            // Wait for async processing to complete
-            Thread.sleep(500);
 
             // Verify comments are hidden
             List<Comment> hiddenComments = commentRepository.findByPostIdAndHiddenFalse(testPost.getId());
@@ -297,9 +294,6 @@ class PostsServiceHidePostTests {
 
             // Act - Unhide post
             postsService.unhidePost(testPost.getId(), testUser.getId());
-            
-            // Wait for async processing to complete
-            Thread.sleep(500);
 
             // Assert - Comments should be restored
             List<Comment> restoredComments = commentRepository.findByPostIdAndHiddenFalse(testPost.getId());
@@ -326,7 +320,7 @@ class PostsServiceHidePostTests {
 
         @Test
         @DisplayName("Should preserve comment count through hide/unhide cycle")
-        void shouldPreserveCommentCount() throws InterruptedException {
+        void shouldPreserveCommentCount() {
             // Arrange - Create comments
             commentsService.addComment(testPost.getId(),
                     new CreateCommentRequest("Comment 1"), testUser.getId());
@@ -340,9 +334,7 @@ class PostsServiceHidePostTests {
 
             // Act - Hide and unhide
             postsService.hidePost(testPost.getId(), testUser.getId());
-            Thread.sleep(500);  // Wait for async hide
             postsService.unhidePost(testPost.getId(), testUser.getId());
-            Thread.sleep(500);  // Wait for async unhide
 
             // Assert
             Post finalPost = postRepository.findById(testPost.getId()).get();
@@ -416,7 +408,9 @@ class PostsServiceHidePostTests {
 
             // Act - Hide post
             Post hiddenPost = postsService.hidePost(testPost.getId(), testUser.getId());
-            Thread.sleep(500);  // Wait for async processing
+
+            // Wait for async processing to complete
+            Thread.sleep(500);
 
             // Assert
             assertTrue(hiddenPost.isHidden());
@@ -436,7 +430,9 @@ class PostsServiceHidePostTests {
 
             // Act - Hide post
             Post hiddenPost = postsService.hidePost(nationalPost.getId(), testUser.getId());
-            Thread.sleep(500);  // Wait for async processing
+
+            // Wait for async processing to complete
+            Thread.sleep(500);
 
             // Assert
             assertTrue(hiddenPost.isHidden());
@@ -455,7 +451,9 @@ class PostsServiceHidePostTests {
 
             // Act - Hide post
             Post hiddenPost = postsService.hidePost(testPost.getId(), testUser.getId());
-            Thread.sleep(500);  // Wait for async processing
+
+            // Wait for async processing to complete
+            Thread.sleep(500);
 
             // Assert - All should be hidden atomically
             assertTrue(hiddenPost.isHidden());

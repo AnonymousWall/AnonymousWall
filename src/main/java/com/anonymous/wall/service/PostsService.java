@@ -62,7 +62,7 @@ public interface PostsService {
     /**
      * Unhide a post (undo soft-delete)
      * Only the post author can unhide their own post
-     * When a post is unhidden, all its comments are restored asynchronously
+     * When a post is unhidden, all its previously hidden comments are restored
      */
     Post unhidePost(UUID postId, UUID userId);
 

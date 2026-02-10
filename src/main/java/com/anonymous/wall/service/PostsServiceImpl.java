@@ -5,7 +5,6 @@ import com.anonymous.wall.entity.Comment;
 import com.anonymous.wall.entity.PostLike;
 import com.anonymous.wall.entity.UserEntity;
 import com.anonymous.wall.event.PostHiddenEvent;
-import com.anonymous.wall.event.PostUnhiddenEvent;
 import com.anonymous.wall.model.CreatePostRequest;
 import com.anonymous.wall.model.CreateCommentRequest;
 import com.anonymous.wall.model.SortBy;
@@ -56,9 +55,6 @@ public class PostsServiceImpl implements PostsService {
 
     @Inject
     private ApplicationEventPublisher<PostHiddenEvent> postHiddenEventPublisher;
-
-    @Inject
-    private ApplicationEventPublisher<PostUnhiddenEvent> postUnhiddenEventPublisher;
 
     /**
      * Create a new post
@@ -512,7 +508,7 @@ public class PostsServiceImpl implements PostsService {
     /**
      * Unhide a post (undo soft-delete)
      * Only the post author can unhide their own post
-     * When a post is unhidden, all its comments are restored asynchronously via event
+     * When a post is unhidden, all its comments are restored
      */
     @Override
     @Transactional
@@ -540,9 +536,8 @@ public class PostsServiceImpl implements PostsService {
         post.setHidden(false);
         Post updatedPost = postRepository.update(post);
 
-        // Publish event for async comment unhiding
-        postUnhiddenEventPublisher.publishEvent(new PostUnhiddenEvent(postId, userId));
-        log.debug("Published PostUnhiddenEvent for postId={}", postId);
+        // Unhide all comments associated with this post (within same transaction)
+        commentRepository.updateByPostId(postId, false);
 
         log.info("Post unhidden: id={}, user={}", postId, userId);
         return updatedPost;
