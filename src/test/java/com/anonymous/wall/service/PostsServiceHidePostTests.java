@@ -143,7 +143,7 @@ class PostsServiceHidePostTests {
 
         @Test
         @DisplayName("Should hide all comments when hiding post")
-        void shouldHideAllCommentsWhenHidingPost() {
+        void shouldHideAllCommentsWhenHidingPost() throws InterruptedException {
             // Arrange - Create 3 comments
             Comment comment1 = commentsService.addComment(testPost.getId(),
                     new CreateCommentRequest("Comment 1"), testUser.getId());
@@ -158,6 +158,9 @@ class PostsServiceHidePostTests {
 
             // Act - Hide post
             postsService.hidePost(testPost.getId(), testUser.getId());
+
+            // Wait for async processing to complete
+            Thread.sleep(500);
 
             // Assert - All comments should be hidden
             List<Comment> visibleAfter = commentRepository.findByPostIdAndHiddenFalse(testPost.getId());
@@ -182,7 +185,7 @@ class PostsServiceHidePostTests {
 
         @Test
         @DisplayName("Should hide comments from multiple users")
-        void shouldHideCommentsFromMultipleUsers() {
+        void shouldHideCommentsFromMultipleUsers() throws InterruptedException {
             // Arrange - Create comments from both users
             commentsService.addComment(testPost.getId(),
                     new CreateCommentRequest("User1 comment 1"), testUser.getId());
@@ -195,6 +198,9 @@ class PostsServiceHidePostTests {
 
             // Act - Hide post
             postsService.hidePost(testPost.getId(), testUser.getId());
+
+            // Wait for async processing to complete
+            Thread.sleep(500);
 
             // Assert - All comments hidden regardless of author
             List<Comment> visibleComments = commentRepository.findByPostIdAndHiddenFalse(testPost.getId());
@@ -395,13 +401,16 @@ class PostsServiceHidePostTests {
 
         @Test
         @DisplayName("Should handle hiding post with liked comments")
-        void shouldHidePostWithLikedComments() {
+        void shouldHidePostWithLikedComments() throws InterruptedException {
             // Arrange - Create comment and like (if applicable)
             Comment comment = commentsService.addComment(testPost.getId(),
                     new CreateCommentRequest("Test comment"), testUser.getId());
 
             // Act - Hide post
             Post hiddenPost = postsService.hidePost(testPost.getId(), testUser.getId());
+
+            // Wait for async processing to complete
+            Thread.sleep(500);
 
             // Assert
             assertTrue(hiddenPost.isHidden());
@@ -410,7 +419,7 @@ class PostsServiceHidePostTests {
 
         @Test
         @DisplayName("Should handle national posts")
-        void shouldHideNationalPost() {
+        void shouldHideNationalPost() throws InterruptedException {
             // Arrange - Create national post
             Post nationalPost = new Post(testUser.getId(), "Title", "National post", "national", null);
             nationalPost = postRepository.save(nationalPost);
@@ -422,6 +431,9 @@ class PostsServiceHidePostTests {
             // Act - Hide post
             Post hiddenPost = postsService.hidePost(nationalPost.getId(), testUser.getId());
 
+            // Wait for async processing to complete
+            Thread.sleep(500);
+
             // Assert
             assertTrue(hiddenPost.isHidden());
             assertTrue(commentRepository.findById(comment.getId()).get().isHidden());
@@ -429,7 +441,7 @@ class PostsServiceHidePostTests {
 
         @Test
         @DisplayName("Should maintain transaction integrity on hide")
-        void shouldMaintainTransactionIntegrity() {
+        void shouldMaintainTransactionIntegrity() throws InterruptedException {
             // Arrange - Create multiple comments
             for (int i = 0; i < 10; i++) {
                 commentsService.addComment(testPost.getId(),
@@ -439,6 +451,9 @@ class PostsServiceHidePostTests {
 
             // Act - Hide post
             Post hiddenPost = postsService.hidePost(testPost.getId(), testUser.getId());
+
+            // Wait for async processing to complete
+            Thread.sleep(500);
 
             // Assert - All should be hidden atomically
             assertTrue(hiddenPost.isHidden());

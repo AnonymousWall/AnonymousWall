@@ -4,6 +4,7 @@ import com.anonymous.wall.entity.Post;
 import com.anonymous.wall.entity.Comment;
 import com.anonymous.wall.entity.PostLike;
 import com.anonymous.wall.entity.UserEntity;
+import com.anonymous.wall.event.PostHiddenEvent;
 import com.anonymous.wall.model.CreatePostRequest;
 import com.anonymous.wall.model.CreateCommentRequest;
 import com.anonymous.wall.model.SortBy;
@@ -11,6 +12,7 @@ import com.anonymous.wall.repository.PostRepository;
 import com.anonymous.wall.repository.CommentRepository;
 import com.anonymous.wall.repository.PostLikeRepository;
 import com.anonymous.wall.repository.UserRepository;
+import io.micronaut.context.event.ApplicationEventPublisher;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
 import io.micronaut.transaction.annotation.Transactional;
@@ -50,6 +52,9 @@ public class PostsServiceImpl implements PostsService {
 
     @Inject
     private com.anonymous.wall.repository.PostReportRepository postReportRepository;
+
+    @Inject
+    private ApplicationEventPublisher<PostHiddenEvent> postHiddenEventPublisher;
 
     /**
      * Create a new post
@@ -464,7 +469,7 @@ public class PostsServiceImpl implements PostsService {
     /**
      * Hide a post (soft-delete)
      * Only the post author can hide their own post
-     * When a post is hidden, all its comments are also hidden
+     * When a post is hidden, all its comments are also hidden asynchronously via event
      */
     @Override
     @Transactional
@@ -492,8 +497,9 @@ public class PostsServiceImpl implements PostsService {
         post.setHidden(true);
         Post updatedPost = postRepository.update(post);
 
-        // Hide all comments associated with this post (within same transaction)
-        commentRepository.updateByPostId(postId, true);
+        // Publish event for async comment hiding
+        postHiddenEventPublisher.publishEvent(new PostHiddenEvent(postId, userId));
+        log.debug("Published PostHiddenEvent for postId={}", postId);
 
         log.info("Post hidden: id={}, user={}", postId, userId);
         return updatedPost;

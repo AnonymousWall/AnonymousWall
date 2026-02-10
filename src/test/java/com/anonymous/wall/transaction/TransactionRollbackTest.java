@@ -201,7 +201,7 @@ public class TransactionRollbackTest {
      * Verifies: Either all comments hidden or transaction rolls back
      */
     @Test
-    void testPostHideCascadeAtomicity() {
+    void testPostHideCascadeAtomicity() throws InterruptedException {
         // Add multiple comments
         for (int i = 0; i < 3; i++) {
             CreateCommentRequest req = new CreateCommentRequest("Comment " + i);
@@ -213,6 +213,9 @@ public class TransactionRollbackTest {
 
         // Hide post - should cascade hide all comments
         postsService.hidePost(testPost.getId(), testUser.getId());
+
+        // Wait for async processing to complete
+        Thread.sleep(500);
 
         Post after = postRepository.findById(testPost.getId()).orElseThrow();
         long visibleComments = commentRepository.findByPostIdAndHiddenFalse(testPost.getId()).size();

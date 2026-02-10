@@ -55,7 +55,7 @@ public interface PostsService {
     /**
      * Hide a post (soft-delete)
      * Only the post author can hide their own post
-     * When a post is hidden, all its comments are also hidden
+     * When a post is hidden, all its comments are also hidden asynchronously
      */
     Post hidePost(UUID postId, UUID userId);
 
