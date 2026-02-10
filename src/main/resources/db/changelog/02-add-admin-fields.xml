@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="
+       http://www.liquibase.org/xml/ns/dbchangelog
+       http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <!-- ================= Add Admin Fields to Users Table ================= -->
+    <changeSet id="15-add-admin-fields-to-users" author="copilot">
+        <comment>Add role and blocked fields to users table for admin functionality</comment>
+        <addColumn tableName="users">
+            <column name="role" type="VARCHAR(20)" defaultValue="USER">
+                <constraints nullable="false"/>
+            </column>
+            <column name="blocked" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+        <createIndex tableName="users" indexName="idx_users_role">
+            <column name="role"/>
+        </createIndex>
+        <createIndex tableName="users" indexName="idx_users_blocked">
+            <column name="blocked"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>

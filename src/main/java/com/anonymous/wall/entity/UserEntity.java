@@ -37,6 +37,12 @@ public class UserEntity {
     @MappedProperty("report_count")
     private int reportCount = 0;
 
+    @MappedProperty("role")
+    private String role = "USER";
+
+    @MappedProperty("blocked")
+    private boolean blocked = false;
+
     // ---------------- Getters & Setters ----------------
 
     public UUID getId() { return id; }
@@ -65,4 +71,10 @@ public class UserEntity {
 
     public int getReportCount() { return reportCount; }
     public void setReportCount(int reportCount) { this.reportCount = reportCount; }
+
+    public String getRole() { return role; }
+    public void setRole(String role) { this.role = role; }
+
+    public boolean isBlocked() { return blocked; }
+    public void setBlocked(boolean blocked) { this.blocked = blocked; }
 }

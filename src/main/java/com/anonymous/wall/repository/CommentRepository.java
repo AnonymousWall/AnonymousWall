@@ -105,5 +105,10 @@ public interface CommentRepository extends CrudRepository<Comment, UUID> {
      * Micronaut Data automatically generates: UPDATE comments SET profile_name = ? WHERE user_id = ?
      */
     void updateProfileNameByUserId(UUID userId, String profileName);
+    
+    /**
+     * Find all comments with pagination (for admin purposes)
+     */
+    Page<Comment> findAll(Pageable pageable);
 
 }
