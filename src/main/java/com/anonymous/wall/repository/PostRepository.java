@@ -155,4 +155,19 @@ public interface PostRepository extends CrudRepository<Post, UUID> {
      * Find all posts with pagination (for admin purposes)
      */
     Page<Post> findAll(Pageable pageable);
+
+    /**
+     * Find all posts by hidden status with pagination (for admin purposes)
+     */
+    Page<Post> findByHidden(boolean hidden, Pageable pageable);
+
+    /**
+     * Find all posts by user ID with pagination (for admin purposes)
+     */
+    Page<Post> findByUserId(UUID userId, Pageable pageable);
+
+    /**
+     * Find by hidden status with pagination (for admin purposes)
+     */
+    Page<Post> findByUserIdAndHidden(UUID userId, boolean hidden, Pageable pageable);
 }
