@@ -10,7 +10,9 @@ import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -38,18 +40,20 @@ public class JwtTokenService {
             claims.put("email", user.getEmail());
             claims.put("verified", user.isVerified());
             claims.put("passwordSet", user.isPasswordSet());
-            claims.put("role", user.getRole());
             
             // Add schoolDomain to JWT claims to avoid redundant database lookups
             if (user.getSchoolDomain() != null) {
                 claims.put("schoolDomain", user.getSchoolDomain());
             }
 
+            // Create roles list from user role
+            List<String> roles = Collections.singletonList(user.getRole());
+
             // Convert 24 hours to seconds (86400 seconds)
             Integer expirationSeconds = 86400;
 
             Optional<String> token = tokenGenerator.generateToken(
-                Authentication.build(user.getId().toString(), claims),
+                Authentication.build(user.getId().toString(), roles, claims),
                 expirationSeconds
             );
 
@@ -79,7 +83,6 @@ public class JwtTokenService {
             claims.put("email", user.getEmail());
             claims.put("verified", user.isVerified());
             claims.put("passwordSet", user.isPasswordSet());
-            claims.put("role", user.getRole());
             
             // Add schoolDomain to JWT claims to avoid redundant database lookups
             if (user.getSchoolDomain() != null) {
@@ -91,11 +94,14 @@ public class JwtTokenService {
                 claims.putAll(customClaims);
             }
 
+            // Create roles list from user role
+            List<String> roles = Collections.singletonList(user.getRole());
+
             // Convert 24 hours to seconds (86400 seconds)
             Integer expirationSeconds = 86400;
 
             Optional<String> token = tokenGenerator.generateToken(
-                Authentication.build(user.getId().toString(), claims),
+                Authentication.build(user.getId().toString(), roles, claims),
                 expirationSeconds
             );
 
