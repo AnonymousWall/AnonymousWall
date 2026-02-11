@@ -1,53 +1,22 @@
 package com.anonymous.wall.util;
 
-import java.util.HashSet;
-import java.util.Set;
+import com.anonymous.wall.service.SchoolDomainService;
 
 /**
  * Whitelist of approved school/university domains
  * This prevents registration with personal email domains like @gmail.com, @outlook.com, etc.
  *
- * Add legitimate school domains here. When deploying, load from database or config file.
+ * Now uses database for school domains instead of hardcoding.
  */
 public class SchoolDomainWhitelist {
 
+    private static volatile SchoolDomainService schoolDomainService;
+
     /**
-     * Approved US Universities & Schools
+     * Initialize the school domain service (called by Micronaut on startup)
      */
-    private static final Set<String> APPROVED_DOMAINS = new HashSet<>();
-
-    static {
-        // Ivy League
-        APPROVED_DOMAINS.add("harvard.edu");
-        APPROVED_DOMAINS.add("yale.edu");
-        APPROVED_DOMAINS.add("princeton.edu");
-        APPROVED_DOMAINS.add("upenn.edu");
-        APPROVED_DOMAINS.add("dartmouth.edu");
-        APPROVED_DOMAINS.add("brown.edu");
-        APPROVED_DOMAINS.add("columbia.edu");
-        APPROVED_DOMAINS.add("cornell.edu");
-
-        // Top Tech Schools
-        APPROVED_DOMAINS.add("mit.edu");
-        APPROVED_DOMAINS.add("stanford.edu");
-        APPROVED_DOMAINS.add("berkeley.edu");
-        APPROVED_DOMAINS.add("caltech.edu");
-        APPROVED_DOMAINS.add("cmu.edu");
-
-        // Other Major Universities
-        APPROVED_DOMAINS.add("nyu.edu");
-        APPROVED_DOMAINS.add("northwestern.edu");
-        APPROVED_DOMAINS.add("duke.edu");
-        APPROVED_DOMAINS.add("chicago.edu");
-        APPROVED_DOMAINS.add("jhu.edu");
-        APPROVED_DOMAINS.add("penn.edu");
-
-        // UK Universities
-        APPROVED_DOMAINS.add("ox.ac.uk");
-        APPROVED_DOMAINS.add("cam.ac.uk");
-        APPROVED_DOMAINS.add("lse.ac.uk");
-        APPROVED_DOMAINS.add("ucl.ac.uk");
-        APPROVED_DOMAINS.add("ic.ac.uk");
+    public static void initialize(SchoolDomainService service) {
+        schoolDomainService = service;
     }
 
     /**
@@ -60,7 +29,19 @@ public class SchoolDomainWhitelist {
         if (domain == null || domain.trim().isEmpty()) {
             return false;
         }
-        return APPROVED_DOMAINS.contains(domain.toLowerCase());
+        
+        SchoolDomainService service = schoolDomainService;
+        if (service == null) {
+            // Service not available - this can happen during tests or early initialization
+            return false;
+        }
+        
+        try {
+            return service.isDomainApproved(domain.toLowerCase());
+        } catch (Exception e) {
+            // If there's any error accessing the database, return false
+            return false;
+        }
     }
 
     /**
@@ -92,15 +73,6 @@ public class SchoolDomainWhitelist {
             || lowerDomain.equals("10minutemail.com")
             || lowerDomain.equals("tempmail.com")
             || lowerDomain.equals("guerrillamail.com");
-    }
-
-    /**
-     * Get size of whitelist (for testing/monitoring)
-     *
-     * @return Number of approved domains
-     */
-    public static int size() {
-        return APPROVED_DOMAINS.size();
     }
 
     /**

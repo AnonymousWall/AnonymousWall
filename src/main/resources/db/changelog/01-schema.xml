@@ -355,4 +355,157 @@
         </createIndex>
     </changeSet>
 
+    <!-- ================= School Domains ================= -->
+    <changeSet id="15-create-school-domains-table" author="copilot">
+        <comment>Create table for approved school email domains</comment>
+        <createTable tableName="school_domains">
+            <column name="id" type="CHAR(36)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="domain" type="VARCHAR(255)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="school_name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP"/>
+        </createTable>
+        <createIndex tableName="school_domains" indexName="idx_school_domains_domain">
+            <column name="domain"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- ================= Seed School Domains ================= -->
+    <changeSet id="16-seed-school-domains" author="copilot">
+        <comment>Seed initial school domains from previously hardcoded list</comment>
+        
+        <!-- Ivy League -->
+        <insert tableName="school_domains">
+            <column name="id" value="11111111-1111-1111-1111-111111111111"/>
+            <column name="domain" value="harvard.edu"/>
+            <column name="school_name" value="Harvard University"/>
+        </insert>
+        <insert tableName="school_domains">
+            <column name="id" value="22222222-2222-2222-2222-222222222222"/>
+            <column name="domain" value="yale.edu"/>
+            <column name="school_name" value="Yale University"/>
+        </insert>
+        <insert tableName="school_domains">
+            <column name="id" value="33333333-3333-3333-3333-333333333333"/>
+            <column name="domain" value="princeton.edu"/>
+            <column name="school_name" value="Princeton University"/>
+        </insert>
+        <insert tableName="school_domains">
+            <column name="id" value="44444444-4444-4444-4444-444444444444"/>
+            <column name="domain" value="upenn.edu"/>
+            <column name="school_name" value="University of Pennsylvania"/>
+        </insert>
+        <insert tableName="school_domains">
+            <column name="id" value="44444445-4444-4444-4444-444444444444"/>
+            <column name="domain" value="penn.edu"/>
+            <column name="school_name" value="University of Pennsylvania"/>
+        </insert>
+        <insert tableName="school_domains">
+            <column name="id" value="55555555-5555-5555-5555-555555555555"/>
+            <column name="domain" value="dartmouth.edu"/>
+            <column name="school_name" value="Dartmouth College"/>
+        </insert>
+        <insert tableName="school_domains">
+            <column name="id" value="66666666-6666-6666-6666-666666666666"/>
+            <column name="domain" value="brown.edu"/>
+            <column name="school_name" value="Brown University"/>
+        </insert>
+        <insert tableName="school_domains">
+            <column name="id" value="77777777-7777-7777-7777-777777777777"/>
+            <column name="domain" value="columbia.edu"/>
+            <column name="school_name" value="Columbia University"/>
+        </insert>
+        <insert tableName="school_domains">
+            <column name="id" value="88888888-8888-8888-8888-888888888888"/>
+            <column name="domain" value="cornell.edu"/>
+            <column name="school_name" value="Cornell University"/>
+        </insert>
+
+        <!-- Top Tech Schools -->
+        <insert tableName="school_domains">
+            <column name="id" value="99999999-9999-9999-9999-999999999999"/>
+            <column name="domain" value="mit.edu"/>
+            <column name="school_name" value="Massachusetts Institute of Technology"/>
+        </insert>
+        <insert tableName="school_domains">
+            <column name="id" value="aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"/>
+            <column name="domain" value="stanford.edu"/>
+            <column name="school_name" value="Stanford University"/>
+        </insert>
+        <insert tableName="school_domains">
+            <column name="id" value="bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"/>
+            <column name="domain" value="berkeley.edu"/>
+            <column name="school_name" value="University of California, Berkeley"/>
+        </insert>
+        <insert tableName="school_domains">
+            <column name="id" value="cccccccc-cccc-cccc-cccc-cccccccccccc"/>
+            <column name="domain" value="caltech.edu"/>
+            <column name="school_name" value="California Institute of Technology"/>
+        </insert>
+        <insert tableName="school_domains">
+            <column name="id" value="dddddddd-dddd-dddd-dddd-dddddddddddd"/>
+            <column name="domain" value="cmu.edu"/>
+            <column name="school_name" value="Carnegie Mellon University"/>
+        </insert>
+
+        <!-- Other Major Universities -->
+        <insert tableName="school_domains">
+            <column name="id" value="eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"/>
+            <column name="domain" value="nyu.edu"/>
+            <column name="school_name" value="New York University"/>
+        </insert>
+        <insert tableName="school_domains">
+            <column name="id" value="ffffffff-ffff-ffff-ffff-ffffffffffff"/>
+            <column name="domain" value="northwestern.edu"/>
+            <column name="school_name" value="Northwestern University"/>
+        </insert>
+        <insert tableName="school_domains">
+            <column name="id" value="10101010-1010-1010-1010-101010101010"/>
+            <column name="domain" value="duke.edu"/>
+            <column name="school_name" value="Duke University"/>
+        </insert>
+        <insert tableName="school_domains">
+            <column name="id" value="20202020-2020-2020-2020-202020202020"/>
+            <column name="domain" value="chicago.edu"/>
+            <column name="school_name" value="University of Chicago"/>
+        </insert>
+        <insert tableName="school_domains">
+            <column name="id" value="30303030-3030-3030-3030-303030303030"/>
+            <column name="domain" value="jhu.edu"/>
+            <column name="school_name" value="Johns Hopkins University"/>
+        </insert>
+
+        <!-- UK Universities -->
+        <insert tableName="school_domains">
+            <column name="id" value="50505050-5050-5050-5050-505050505050"/>
+            <column name="domain" value="ox.ac.uk"/>
+            <column name="school_name" value="University of Oxford"/>
+        </insert>
+        <insert tableName="school_domains">
+            <column name="id" value="60606060-6060-6060-6060-606060606060"/>
+            <column name="domain" value="cam.ac.uk"/>
+            <column name="school_name" value="University of Cambridge"/>
+        </insert>
+        <insert tableName="school_domains">
+            <column name="id" value="70707070-7070-7070-7070-707070707070"/>
+            <column name="domain" value="lse.ac.uk"/>
+            <column name="school_name" value="London School of Economics"/>
+        </insert>
+        <insert tableName="school_domains">
+            <column name="id" value="80808080-8080-8080-8080-808080808080"/>
+            <column name="domain" value="ucl.ac.uk"/>
+            <column name="school_name" value="University College London"/>
+        </insert>
+        <insert tableName="school_domains">
+            <column name="id" value="90909090-9090-9090-9090-909090909090"/>
+            <column name="domain" value="ic.ac.uk"/>
+            <column name="school_name" value="Imperial College London"/>
+        </insert>
+    </changeSet>
+
 </databaseChangeLog>
