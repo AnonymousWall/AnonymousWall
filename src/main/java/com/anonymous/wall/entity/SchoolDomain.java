@@ -13,11 +13,11 @@ public class SchoolDomain {
     @AutoPopulated
     private UUID id;
 
-    @MappedProperty("school_id")
-    private UUID schoolId;
-
     @MappedProperty("domain")
     private String domain;
+
+    @MappedProperty("school_name")
+    private String schoolName;
 
     @MappedProperty("created_at")
     private ZonedDateTime createdAt;
@@ -27,11 +27,11 @@ public class SchoolDomain {
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }
 
-    public UUID getSchoolId() { return schoolId; }
-    public void setSchoolId(UUID schoolId) { this.schoolId = schoolId; }
-
     public String getDomain() { return domain; }
     public void setDomain(String domain) { this.domain = domain; }
+
+    public String getSchoolName() { return schoolName; }
+    public void setSchoolName(String schoolName) { this.schoolName = schoolName; }
 
     public ZonedDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(ZonedDateTime createdAt) { this.createdAt = createdAt; }

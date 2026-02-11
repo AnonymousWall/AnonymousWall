@@ -1,6 +1,6 @@
 package com.anonymous.wall.util;
 
-import com.anonymous.wall.service.SchoolService;
+import com.anonymous.wall.service.SchoolDomainService;
 
 /**
  * Whitelist of approved school/university domains
@@ -10,13 +10,13 @@ import com.anonymous.wall.service.SchoolService;
  */
 public class SchoolDomainWhitelist {
 
-    private static volatile SchoolService schoolService;
+    private static volatile SchoolDomainService schoolDomainService;
 
     /**
-     * Initialize the school service (called by Micronaut on startup)
+     * Initialize the school domain service (called by Micronaut on startup)
      */
-    public static void initialize(SchoolService service) {
-        schoolService = service;
+    public static void initialize(SchoolDomainService service) {
+        schoolDomainService = service;
     }
 
     /**
@@ -30,10 +30,9 @@ public class SchoolDomainWhitelist {
             return false;
         }
         
-        SchoolService service = schoolService;
+        SchoolDomainService service = schoolDomainService;
         if (service == null) {
             // Service not available - this can happen during tests or early initialization
-            // Return false for safety
             return false;
         }
         
@@ -74,27 +73,6 @@ public class SchoolDomainWhitelist {
             || lowerDomain.equals("10minutemail.com")
             || lowerDomain.equals("tempmail.com")
             || lowerDomain.equals("guerrillamail.com");
-    }
-
-    /**
-     * Get size of whitelist (for testing/monitoring)
-     * Note: This method is deprecated as domains are now stored in database
-     *
-     * @return Number of approved domains, or -1 if service not available
-     */
-    @Deprecated
-    public static int size() {
-        if (schoolService == null) {
-            return -1;
-        }
-        // This is less efficient than before, but maintains backward compatibility
-        try {
-            return (int) schoolService.getAllSchools().stream()
-                    .mapToLong(school -> schoolService.getSchoolDomains(school.getId()).size())
-                    .sum();
-        } catch (Exception e) {
-            return -1;
-        }
     }
 
     /**

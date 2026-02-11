@@ -1439,6 +1439,88 @@ paths:
         "403":
           description: Forbidden - admin access required
 
+  /admin/school-domains:
+    get:
+      tags: [admin]
+      summary: Get all school domains
+      description: Admin endpoint to retrieve all approved school email domains
+      operationId: adminGetSchoolDomains
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: School domains retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SchoolDomainDTO"
+        "401":
+          description: Unauthorized - authentication required
+        "403":
+          description: Forbidden - admin access required
+    post:
+      tags: [admin]
+      summary: Add a school domain
+      description: Admin endpoint to add a new approved school email domain
+      operationId: adminAddSchoolDomain
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSchoolDomainRequest"
+      responses:
+        "200":
+          description: School domain added successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SchoolDomainDTO"
+        "400":
+          description: Invalid request or domain already exists
+        "401":
+          description: Unauthorized - authentication required
+        "403":
+          description: Forbidden - admin access required
+
+  /admin/school-domains/{id}:
+    delete:
+      tags: [admin]
+      summary: Delete a school domain
+      description: Admin endpoint to remove an approved school email domain
+      operationId: adminDeleteSchoolDomain
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: School domain ID
+      responses:
+        "200":
+          description: School domain deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "School domain deleted successfully"
+        "401":
+          description: Unauthorized - authentication required
+        "403":
+          description: Forbidden - admin access required
+        "404":
+          description: School domain not found
+
 components:
   schemas:
 
@@ -1916,6 +1998,37 @@ components:
         createdAt:
           type: string
           format: date-time
+
+    SchoolDomainDTO:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        domain:
+          type: string
+          description: Email domain (e.g., harvard.edu)
+        schoolName:
+          type: string
+          description: Name of the school
+        createdAt:
+          type: string
+          format: date-time
+
+    CreateSchoolDomainRequest:
+      type: object
+      required:
+        - domain
+        - schoolName
+      properties:
+        domain:
+          type: string
+          description: Email domain (e.g., harvard.edu)
+          example: "stanford.edu"
+        schoolName:
+          type: string
+          description: Name of the school
+          example: "Stanford University"
 
     # ----- Pagination -----
     PaginationInfo:
