@@ -370,9 +370,6 @@
             </column>
             <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP"/>
         </createTable>
-        <createIndex tableName="school_domains" indexName="idx_school_domains_domain">
-            <column name="domain"/>
-        </createIndex>
     </changeSet>
 
     <!-- ================= Seed School Domains ================= -->
