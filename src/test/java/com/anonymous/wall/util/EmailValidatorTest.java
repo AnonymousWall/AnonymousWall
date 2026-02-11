@@ -1,13 +1,40 @@
 package com.anonymous.wall.util;
 
+import com.anonymous.wall.service.SchoolService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 @DisplayName("EmailValidator Tests")
 class EmailValidatorTest {
+
+    private SchoolService schoolService;
+
+    @BeforeEach
+    void setUp() {
+        // Create mock service
+        schoolService = mock(SchoolService.class);
+        
+        // Setup mock responses for common school domains
+        when(schoolService.isDomainApproved("harvard.edu")).thenReturn(true);
+        when(schoolService.isDomainApproved("mit.edu")).thenReturn(true);
+        when(schoolService.isDomainApproved("stanford.edu")).thenReturn(true);
+        when(schoolService.isDomainApproved("yale.edu")).thenReturn(true);
+        when(schoolService.isDomainApproved(anyString())).thenReturn(false);
+        
+        // Specifically override the ones we set to true
+        when(schoolService.isDomainApproved("harvard.edu")).thenReturn(true);
+        when(schoolService.isDomainApproved("mit.edu")).thenReturn(true);
+        when(schoolService.isDomainApproved("stanford.edu")).thenReturn(true);
+        when(schoolService.isDomainApproved("yale.edu")).thenReturn(true);
+        
+        // Initialize SchoolDomainWhitelist with the mock service
+        SchoolDomainWhitelist.initialize(schoolService);
+    }
 
     @Nested
     @DisplayName("Valid School Emails")

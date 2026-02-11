@@ -1,7 +1,6 @@
 package com.anonymous.wall.util;
 
 import com.anonymous.wall.service.SchoolService;
-import io.micronaut.context.ApplicationContext;
 
 /**
  * Whitelist of approved school/university domains
@@ -11,7 +10,7 @@ import io.micronaut.context.ApplicationContext;
  */
 public class SchoolDomainWhitelist {
 
-    private static SchoolService schoolService;
+    private static volatile SchoolService schoolService;
 
     /**
      * Initialize the school service (called by Micronaut on startup)
@@ -31,18 +30,19 @@ public class SchoolDomainWhitelist {
             return false;
         }
         
-        // If service not initialized yet, try to get it from context
-        if (schoolService == null) {
-            try {
-                ApplicationContext context = ApplicationContext.run();
-                schoolService = context.getBean(SchoolService.class);
-            } catch (Exception e) {
-                // Service not available, return false
-                return false;
-            }
+        SchoolService service = schoolService;
+        if (service == null) {
+            // Service not available - this can happen during tests or early initialization
+            // Return false for safety
+            return false;
         }
         
-        return schoolService.isDomainApproved(domain.toLowerCase());
+        try {
+            return service.isDomainApproved(domain.toLowerCase());
+        } catch (Exception e) {
+            // If there's any error accessing the database, return false
+            return false;
+        }
     }
 
     /**
