@@ -94,6 +94,11 @@
             <column name="school_id" value="44444444-4444-4444-4444-444444444444"/>
             <column name="domain" value="upenn.edu"/>
         </insert>
+        <insert tableName="school_domains">
+            <column name="id" value="d4444445-4444-4444-4444-444444444444"/>
+            <column name="school_id" value="44444444-4444-4444-4444-444444444444"/>
+            <column name="domain" value="penn.edu"/>
+        </insert>
 
         <insert tableName="schools">
             <column name="id" value="55555555-5555-5555-5555-555555555555"/>
@@ -235,16 +240,6 @@
             <column name="id" value="d3030303-3030-3030-3030-303030303030"/>
             <column name="school_id" value="30303030-3030-3030-3030-303030303030"/>
             <column name="domain" value="jhu.edu"/>
-        </insert>
-
-        <insert tableName="schools">
-            <column name="id" value="40404040-4040-4040-4040-404040404040"/>
-            <column name="name" value="University of Pennsylvania (Penn)"/>
-        </insert>
-        <insert tableName="school_domains">
-            <column name="id" value="d4040404-4040-4040-4040-404040404040"/>
-            <column name="school_id" value="40404040-4040-4040-4040-404040404040"/>
-            <column name="domain" value="penn.edu"/>
         </insert>
 
         <!-- UK Universities -->

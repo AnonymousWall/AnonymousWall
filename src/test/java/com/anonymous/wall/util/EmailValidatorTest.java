@@ -19,14 +19,8 @@ class EmailValidatorTest {
         // Create mock service
         schoolService = mock(SchoolService.class);
         
-        // Setup mock responses for common school domains
-        when(schoolService.isDomainApproved("harvard.edu")).thenReturn(true);
-        when(schoolService.isDomainApproved("mit.edu")).thenReturn(true);
-        when(schoolService.isDomainApproved("stanford.edu")).thenReturn(true);
-        when(schoolService.isDomainApproved("yale.edu")).thenReturn(true);
+        // Setup mock responses - anyString() must come first, then specific overrides
         when(schoolService.isDomainApproved(anyString())).thenReturn(false);
-        
-        // Specifically override the ones we set to true
         when(schoolService.isDomainApproved("harvard.edu")).thenReturn(true);
         when(schoolService.isDomainApproved("mit.edu")).thenReturn(true);
         when(schoolService.isDomainApproved("stanford.edu")).thenReturn(true);
