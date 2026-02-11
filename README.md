@@ -12,9 +12,10 @@ A Micronaut-based REST API for anonymous campus social networking. Users registe
 4. [Technology Stack](#technology-stack)
 5. [Database Schema](#database-schema)
 6. [API Documentation](#api-documentation)
-7. [Authentication & Authorization](#authentication--authorization)
-8. [Setup & Running](#setup--running)
-9. [Known Flaws & Limitations](#known-flaws--limitations)
+7. [Admin API Documentation](#admin-api-documentation)
+8. [Authentication & Authorization](#authentication--authorization)
+9. [Setup & Running](#setup--running)
+10. [Known Flaws & Limitations](#known-flaws--limitations)
 
 ---
 
@@ -37,7 +38,11 @@ A Micronaut-based REST API for anonymous campus social networking. Users registe
 ✅ National cross-campus walls  
 ✅ Anonymous posting and commenting  
 ✅ Like/unlike functionality  
-✅ JWT-based authentication  
+✅ JWT-based authentication with role-based access control (RBAC)  
+✅ **Admin/Moderator system for content moderation**  
+✅ **User management (block/unblock users)**  
+✅ **Content moderation (soft-delete posts/comments)**  
+✅ **Report management system**  
 
 ---
 
@@ -52,20 +57,34 @@ src/main/java/com/anonymous/wall/
 │   ├── MarketplaceController.java   # Marketplace features
 │   └── CoinsController.java         # Coins/rewards features
 │
+├── admin/                            # Admin API module
+│   ├── controller/
+│   │   ├── AdminUserController.java      # User management
+│   │   ├── AdminPostController.java      # Post moderation
+│   │   ├── AdminCommentController.java   # Comment moderation
+│   │   └── AdminReportController.java    # Report viewing
+│   └── service/
+│       ├── AdminUserService.java         # User management logic
+│       ├── AdminPostService.java         # Post moderation logic
+│       ├── AdminCommentService.java      # Comment moderation logic
+│       └── AdminReportService.java       # Report handling logic
+│
 ├── service/
 │   ├── AuthService/AuthServiceImpl.java        # Auth business logic
 │   ├── PostsService/PostsServiceImpl.java      # Post operations
-│   ├── JwtTokenService.java                   # JWT token generation
+│   ├── JwtTokenService.java                   # JWT token generation (with RBAC)
 │   ├── InternshipService.java
 │   ├── MarketplaceService.java
 │   └── CoinsService.java
 │
 ├── entity/
-│   ├── UserEntity.java              # User model
+│   ├── UserEntity.java              # User model (with role & blocked fields)
 │   ├── Post.java                    # Post model
 │   ├── Comment.java                 # Comment model
 │   ├── PostLike.java                # Like model
 │   ├── EmailVerificationCode.java   # Email verification
+│   ├── PostReport.java              # Post reports
+│   ├── CommentReport.java           # Comment reports
 │   ├── CoinBalance.java
 │   ├── Internship.java
 │   ├── MarketplaceItem.java
@@ -76,6 +95,8 @@ src/main/java/com/anonymous/wall/
 │   ├── PostRepository.java
 │   ├── CommentRepository.java
 │   ├── PostLikeRepository.java
+│   ├── PostReportRepository.java
+│   ├── CommentReportRepository.java
 │   ├── EmailVerificationCodeRepository.java
 │   └── [Other repositories...]
 │
@@ -95,6 +116,11 @@ src/test/java/com/anonymous/wall/
 ├── controller/
 │   ├── AuthControllerTest.java
 │   └── PostsCreateControllerTest.java
+├── admin/controller/                 # Admin API tests
+│   ├── AdminUserControllerTest.java      # 12 tests
+│   ├── AdminPostControllerTest.java      # 9 tests
+│   ├── AdminCommentControllerTest.java   # 7 tests
+│   └── AdminReportControllerTest.java    # 5 tests
 ├── service/
 │   ├── AuthServiceImplTest.java
 │   ├── PostsServiceImplCreatePostTest.java
@@ -839,6 +865,338 @@ Response: 200 OK
 - Profile name changes are **asynchronously propagated** to all user's posts and comments
 - The API returns immediately after updating the user profile
 - Posts and comments are updated in the background for better performance
+
+---
+
+## Admin API Documentation
+
+### Overview
+
+The Admin API provides endpoints for moderators and administrators to manage users, moderate content, and handle reports. All admin endpoints are protected with role-based access control (RBAC).
+
+**Access Requirements:**
+- 🔐 **Authentication**: Valid JWT token required
+- 🛡️ **Authorization**: ADMIN or MODERATOR role required
+- ⚠️ Regular users (USER role) will receive `403 Forbidden`
+- ⚠️ Unauthenticated requests will receive `401 Unauthorized`
+
+**How to Grant Admin Access:**
+```sql
+-- Make a user an admin
+UPDATE users SET role = 'ADMIN' WHERE email = 'admin@example.com';
+
+-- Make a user a moderator
+UPDATE users SET role = 'MODERATOR' WHERE email = 'moderator@example.com';
+```
+
+**Note:** After updating the role in the database, the user must log in again to get a new JWT token with the updated role.
+
+---
+
+### Admin User Management Endpoints
+
+#### 1. List All Users
+```http
+GET /api/v1/admin/users?page=1&limit=20
+Authorization: Bearer {admin-jwt-token}
+
+Response: 200 OK
+{
+    "data": [
+        {
+            "id": "uuid",
+            "email": "student@harvard.edu",
+            "profileName": "John Doe",
+            "schoolDomain": "harvard.edu",
+            "role": "USER",
+            "blocked": false,
+            "verified": true,
+            "passwordSet": true,
+            "reportCount": 0,
+            "createdAt": "2026-01-28T..."
+        }
+    ],
+    "pagination": {
+        "page": 1,
+        "limit": 20,
+        "total": 150,
+        "totalPages": 8
+    }
+}
+```
+
+**Query Parameters:**
+- `page` (default: 1) - Page number (1-based)
+- `limit` (default: 20, max: 100) - Users per page
+
+**Access:** ADMIN or MODERATOR
+
+#### 2. Get User Details by ID
+```http
+GET /api/v1/admin/users/{userId}
+Authorization: Bearer {admin-jwt-token}
+
+Response: 200 OK
+{
+    "id": "uuid",
+    "email": "student@harvard.edu",
+    "profileName": "John Doe",
+    "schoolDomain": "harvard.edu",
+    "role": "USER",
+    "blocked": false,
+    "verified": true,
+    "passwordSet": true,
+    "reportCount": 2,
+    "createdAt": "2026-01-28T..."
+}
+```
+
+**Access:** ADMIN or MODERATOR
+
+#### 3. Block User
+```http
+POST /api/v1/admin/users/{userId}/block
+Authorization: Bearer {admin-jwt-token}
+
+Response: 200 OK
+{
+    "message": "User blocked successfully"
+}
+```
+
+**Effect:** Blocked users cannot:
+- Login to the system
+- Create posts or comments
+- Like posts
+- Access any authenticated endpoints
+
+**Access:** ADMIN or MODERATOR
+
+#### 4. Unblock User
+```http
+POST /api/v1/admin/users/{userId}/unblock
+Authorization: Bearer {admin-jwt-token}
+
+Response: 200 OK
+{
+    "message": "User unblocked successfully"
+}
+```
+
+**Access:** ADMIN or MODERATOR
+
+---
+
+### Admin Post Moderation Endpoints
+
+#### 1. List All Posts
+```http
+GET /api/v1/admin/posts?page=1&limit=20
+Authorization: Bearer {admin-jwt-token}
+
+Response: 200 OK
+{
+    "data": [
+        {
+            "id": "uuid",
+            "userId": "uuid",
+            "profileName": "Anonymous",
+            "title": "Post Title",
+            "content": "Post content...",
+            "wall": "campus",
+            "schoolDomain": "harvard.edu",
+            "likeCount": 42,
+            "commentCount": 15,
+            "hidden": false,
+            "createdAt": "2026-01-28T...",
+            "updatedAt": "2026-01-28T..."
+        }
+    ],
+    "pagination": {
+        "page": 1,
+        "limit": 20,
+        "total": 500,
+        "totalPages": 25
+    }
+}
+```
+
+**Query Parameters:**
+- `page` (default: 1) - Page number (1-based)
+- `limit` (default: 20, max: 100) - Posts per page
+- `userId` (optional) - Filter by user ID
+- `hidden` (optional) - Filter by hidden status (true/false)
+
+**Notes:**
+- Returns all posts including hidden (soft-deleted) posts
+- Shows complete user information including user IDs
+
+**Access:** ADMIN or MODERATOR
+
+#### 2. Delete Post (Soft Delete)
+```http
+DELETE /api/v1/admin/posts/{postId}
+Authorization: Bearer {admin-jwt-token}
+
+Response: 200 OK
+{
+    "message": "Post deleted successfully"
+}
+```
+
+**Effect:**
+- Post is marked as `hidden = true`
+- Post is no longer visible to regular users
+- Post is not physically deleted from database
+- Can be unhidden by database update if needed
+
+**Access:** ADMIN or MODERATOR
+
+---
+
+### Admin Comment Moderation Endpoints
+
+#### 1. List All Comments
+```http
+GET /api/v1/admin/comments?page=1&limit=20
+Authorization: Bearer {admin-jwt-token}
+
+Response: 200 OK
+{
+    "data": [
+        {
+            "id": "uuid",
+            "postId": "uuid",
+            "userId": "uuid",
+            "profileName": "Anonymous",
+            "text": "Comment text...",
+            "hidden": false,
+            "createdAt": "2026-01-28T..."
+        }
+    ],
+    "pagination": {
+        "page": 1,
+        "limit": 20,
+        "total": 1200,
+        "totalPages": 60
+    }
+}
+```
+
+**Query Parameters:**
+- `page` (default: 1) - Page number (1-based)
+- `limit` (default: 20, max: 100) - Comments per page
+
+**Notes:**
+- Returns all comments including hidden (soft-deleted) comments
+- Shows complete user information including user IDs and post IDs
+
+**Access:** ADMIN or MODERATOR
+
+#### 2. Delete Comment (Soft Delete)
+```http
+DELETE /api/v1/admin/comments/{commentId}
+Authorization: Bearer {admin-jwt-token}
+
+Response: 200 OK
+{
+    "message": "Comment deleted successfully"
+}
+```
+
+**Effect:**
+- Comment is marked as `hidden = true`
+- Comment is no longer visible to regular users
+- Comment count on the post is decremented
+- Not physically deleted from database
+
+**Access:** ADMIN or MODERATOR
+
+---
+
+### Admin Report Management Endpoints
+
+#### 1. List All Reports
+```http
+GET /api/v1/admin/reports?page=1&limit=20
+Authorization: Bearer {admin-jwt-token}
+
+Response: 200 OK
+{
+    "postReports": [
+        {
+            "id": "uuid",
+            "postId": "uuid",
+            "reporterUserId": "uuid",
+            "reason": "Inappropriate content",
+            "createdAt": "2026-01-28T..."
+        }
+    ],
+    "commentReports": [
+        {
+            "id": "uuid",
+            "commentId": "uuid",
+            "reporterUserId": "uuid",
+            "reason": "Spam",
+            "createdAt": "2026-01-28T..."
+        }
+    ],
+    "pagination": {
+        "page": 1,
+        "limit": 20,
+        "total": 50,
+        "totalPages": 3
+    }
+}
+```
+
+**Query Parameters:**
+- `page` (default: 1) - Page number (1-based)
+- `limit` (default: 20, max: 100) - Reports per page
+- `type` (optional) - Filter by report type: `post` or `comment`
+
+**Examples:**
+```http
+# Get only post reports
+GET /api/v1/admin/reports?type=post
+
+# Get only comment reports
+GET /api/v1/admin/reports?type=comment
+
+# Get all reports (default)
+GET /api/v1/admin/reports
+```
+
+**Access:** ADMIN or MODERATOR
+
+---
+
+### Admin API Security
+
+**Role-Based Access Control (RBAC):**
+- All admin endpoints require `ADMIN` or `MODERATOR` role
+- Role is stored in the JWT token as an authority
+- Regular users (`USER` role) receive `403 Forbidden`
+- Unauthenticated requests receive `401 Unauthorized`
+
+**JWT Token with Role:**
+```json
+{
+    "sub": "user-id",
+    "roles": ["ADMIN"],
+    "email": "admin@example.com",
+    "verified": true,
+    "passwordSet": true,
+    "exp": 1706486400
+}
+```
+
+**Important Notes:**
+1. ⚠️ Admin roles cannot be assigned via API (security measure)
+2. ⚠️ Must manually update database to grant admin privileges
+3. ⚠️ User must re-login after role change to get new JWT
+4. ✅ All admin actions are logged for audit purposes
+5. ✅ Soft-delete pattern preserves data for compliance
 
 ---
 
