@@ -31,7 +31,15 @@ public class AdminPostServiceImpl implements AdminPostService {
         // - findByUserId(UUID userId, Pageable pageable)
         // - findByHidden(boolean hidden, Pageable pageable) 
         // - findByUserIdAndHidden(UUID userId, boolean hidden, Pageable pageable)
-        return postRepository.findAll(pageable);
+        if (userId == null && hidden == null) {
+            return postRepository.findAll(pageable);
+        } else if (userId != null && hidden == null) {
+            return postRepository.findByUserId(userId, pageable);
+        } else if (userId == null && hidden != null) {
+            return postRepository.findByHidden(hidden, pageable);
+        } else {
+            return postRepository.findByUserIdAndHidden(userId, hidden, pageable);
+        }
     }
     
     @Override
