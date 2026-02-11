@@ -15,6 +15,7 @@ tags:
   - name: internships
   - name: marketplace
   - name: coins
+  - name: admin
 
 paths:
 
@@ -1066,6 +1067,378 @@ paths:
         "401":
           description: Unauthorized - authentication required
 
+  # =================== Admin APIs ===================
+
+  /admin/users:
+    get:
+      tags: [admin]
+      summary: Get all users
+      description: Admin endpoint to retrieve all users with pagination
+      operationId: adminGetUsers
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          description: Page number for pagination
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          description: Number of results per page
+      responses:
+        "200":
+          description: Users retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/AdminUserDTO"
+                  pagination:
+                    $ref: "#/components/schemas/PaginationInfo"
+        "401":
+          description: Unauthorized - authentication required
+        "403":
+          description: Forbidden - admin access required
+
+  /admin/users/{id}:
+    get:
+      tags: [admin]
+      summary: Get user by ID
+      description: Admin endpoint to retrieve specific user details
+      operationId: adminGetUserById
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: User ID
+      responses:
+        "200":
+          description: User retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUserDTO"
+        "401":
+          description: Unauthorized - authentication required
+        "403":
+          description: Forbidden - admin access required
+        "404":
+          description: User not found
+
+  /admin/users/{id}/block:
+    post:
+      tags: [admin]
+      summary: Block a user
+      description: Admin endpoint to block a user from logging in and posting
+      operationId: adminBlockUser
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: User ID to block
+      responses:
+        "200":
+          description: User blocked successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "User blocked successfully"
+        "401":
+          description: Unauthorized - authentication required
+        "403":
+          description: Forbidden - admin access required
+        "404":
+          description: User not found
+
+  /admin/users/{id}/unblock:
+    post:
+      tags: [admin]
+      summary: Unblock a user
+      description: Admin endpoint to unblock a previously blocked user
+      operationId: adminUnblockUser
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: User ID to unblock
+      responses:
+        "200":
+          description: User unblocked successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "User unblocked successfully"
+        "401":
+          description: Unauthorized - authentication required
+        "403":
+          description: Forbidden - admin access required
+        "404":
+          description: User not found
+
+  /admin/posts:
+    get:
+      tags: [admin]
+      summary: Get all posts
+      description: Admin endpoint to retrieve all posts with pagination and filters
+      operationId: adminGetPosts
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          description: Page number for pagination
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          description: Number of results per page
+        - in: query
+          name: userId
+          required: false
+          schema:
+            type: string
+            format: uuid
+          description: Filter posts by user ID
+        - in: query
+          name: hidden
+          required: false
+          schema:
+            type: boolean
+          description: Filter by hidden status
+      responses:
+        "200":
+          description: Posts retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/AdminPostDTO"
+                  pagination:
+                    $ref: "#/components/schemas/PaginationInfo"
+        "401":
+          description: Unauthorized - authentication required
+        "403":
+          description: Forbidden - admin access required
+
+  /admin/posts/{id}:
+    delete:
+      tags: [admin]
+      summary: Delete a post
+      description: Admin endpoint to soft-delete (hide) a post
+      operationId: adminDeletePost
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Post ID to delete
+      responses:
+        "200":
+          description: Post deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Post deleted successfully"
+        "401":
+          description: Unauthorized - authentication required
+        "403":
+          description: Forbidden - admin access required
+        "404":
+          description: Post not found
+
+  /admin/comments:
+    get:
+      tags: [admin]
+      summary: Get all comments
+      description: Admin endpoint to retrieve all comments with pagination
+      operationId: adminGetComments
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          description: Page number for pagination
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          description: Number of results per page
+      responses:
+        "200":
+          description: Comments retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/AdminCommentDTO"
+                  pagination:
+                    $ref: "#/components/schemas/PaginationInfo"
+        "401":
+          description: Unauthorized - authentication required
+        "403":
+          description: Forbidden - admin access required
+
+  /admin/comments/{id}:
+    delete:
+      tags: [admin]
+      summary: Delete a comment
+      description: Admin endpoint to soft-delete (hide) a comment
+      operationId: adminDeleteComment
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Comment ID to delete
+      responses:
+        "200":
+          description: Comment deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Comment deleted successfully"
+        "401":
+          description: Unauthorized - authentication required
+        "403":
+          description: Forbidden - admin access required
+        "404":
+          description: Comment not found
+
+  /admin/reports:
+    get:
+      tags: [admin]
+      summary: Get all reports
+      description: Admin endpoint to retrieve all post and comment reports with pagination
+      operationId: adminGetReports
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          description: Page number for pagination
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          description: Number of results per page
+        - in: query
+          name: type
+          required: false
+          schema:
+            type: string
+            enum: [post, comment]
+          description: Filter reports by type (post or comment)
+      responses:
+        "200":
+          description: Reports retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  postReports:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/AdminPostReportDTO"
+                  commentReports:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/AdminCommentReportDTO"
+                  pagination:
+                    $ref: "#/components/schemas/PaginationInfo"
+        "401":
+          description: Unauthorized - authentication required
+        "403":
+          description: Forbidden - admin access required
+
 components:
   schemas:
 
@@ -1423,6 +1796,126 @@ components:
           type: string
           maxLength: 500
           description: Optional reason for the report
+
+    # ----- Admin DTOs -----
+    AdminUserDTO:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        profileName:
+          type: string
+        schoolDomain:
+          type: string
+        role:
+          type: string
+          enum: [USER, ADMIN, MODERATOR]
+        blocked:
+          type: boolean
+        verified:
+          type: boolean
+        passwordSet:
+          type: boolean
+        reportCount:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+
+    AdminPostDTO:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        profileName:
+          type: string
+        title:
+          type: string
+        content:
+          type: string
+        wall:
+          type: string
+          enum: [campus, national]
+        schoolDomain:
+          type: string
+        likeCount:
+          type: integer
+        commentCount:
+          type: integer
+        hidden:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    AdminCommentDTO:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        postId:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        profileName:
+          type: string
+        text:
+          type: string
+        hidden:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+
+    AdminPostReportDTO:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        postId:
+          type: string
+          format: uuid
+        reporterUserId:
+          type: string
+          format: uuid
+        reason:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    AdminCommentReportDTO:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        commentId:
+          type: string
+          format: uuid
+        reporterUserId:
+          type: string
+          format: uuid
+        reason:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
 
     # ----- Pagination -----
     PaginationInfo:

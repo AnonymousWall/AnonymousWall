@@ -2,6 +2,8 @@ package com.anonymous.wall.repository;
 
 import com.anonymous.wall.entity.PostReport;
 import io.micronaut.data.jdbc.annotation.JdbcRepository;
+import io.micronaut.data.model.Page;
+import io.micronaut.data.model.Pageable;
 import io.micronaut.data.model.query.builder.sql.Dialect;
 import io.micronaut.data.repository.CrudRepository;
 
@@ -25,4 +27,9 @@ public interface PostReportRepository extends CrudRepository<PostReport, UUID> {
      * Count reports for a specific post
      */
     long countByPostId(UUID postId);
+    
+    /**
+     * Find all post reports with pagination
+     */
+    Page<PostReport> findAll(Pageable pageable);
 }

@@ -2,6 +2,8 @@ package com.anonymous.wall.repository;
 
 import com.anonymous.wall.entity.CommentReport;
 import io.micronaut.data.jdbc.annotation.JdbcRepository;
+import io.micronaut.data.model.Page;
+import io.micronaut.data.model.Pageable;
 import io.micronaut.data.model.query.builder.sql.Dialect;
 import io.micronaut.data.repository.CrudRepository;
 
@@ -25,4 +27,9 @@ public interface CommentReportRepository extends CrudRepository<CommentReport, U
      * Count reports for a specific comment
      */
     long countByCommentId(UUID commentId);
+    
+    /**
+     * Find all comment reports with pagination
+     */
+    Page<CommentReport> findAll(Pageable pageable);
 }

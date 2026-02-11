@@ -150,4 +150,9 @@ public interface PostRepository extends CrudRepository<Post, UUID> {
      * Micronaut Data automatically generates: UPDATE posts SET profile_name = ? WHERE user_id = ?
      */
     void updateProfileNameByUserId(UUID userId, String profileName);
+    
+    /**
+     * Find all posts with pagination (for admin purposes)
+     */
+    Page<Post> findAll(Pageable pageable);
 }
