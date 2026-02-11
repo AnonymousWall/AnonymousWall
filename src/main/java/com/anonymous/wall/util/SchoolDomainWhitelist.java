@@ -1,53 +1,23 @@
 package com.anonymous.wall.util;
 
-import java.util.HashSet;
-import java.util.Set;
+import com.anonymous.wall.service.SchoolService;
+import io.micronaut.context.ApplicationContext;
 
 /**
  * Whitelist of approved school/university domains
  * This prevents registration with personal email domains like @gmail.com, @outlook.com, etc.
  *
- * Add legitimate school domains here. When deploying, load from database or config file.
+ * Now uses database for school domains instead of hardcoding.
  */
 public class SchoolDomainWhitelist {
 
+    private static SchoolService schoolService;
+
     /**
-     * Approved US Universities & Schools
+     * Initialize the school service (called by Micronaut on startup)
      */
-    private static final Set<String> APPROVED_DOMAINS = new HashSet<>();
-
-    static {
-        // Ivy League
-        APPROVED_DOMAINS.add("harvard.edu");
-        APPROVED_DOMAINS.add("yale.edu");
-        APPROVED_DOMAINS.add("princeton.edu");
-        APPROVED_DOMAINS.add("upenn.edu");
-        APPROVED_DOMAINS.add("dartmouth.edu");
-        APPROVED_DOMAINS.add("brown.edu");
-        APPROVED_DOMAINS.add("columbia.edu");
-        APPROVED_DOMAINS.add("cornell.edu");
-
-        // Top Tech Schools
-        APPROVED_DOMAINS.add("mit.edu");
-        APPROVED_DOMAINS.add("stanford.edu");
-        APPROVED_DOMAINS.add("berkeley.edu");
-        APPROVED_DOMAINS.add("caltech.edu");
-        APPROVED_DOMAINS.add("cmu.edu");
-
-        // Other Major Universities
-        APPROVED_DOMAINS.add("nyu.edu");
-        APPROVED_DOMAINS.add("northwestern.edu");
-        APPROVED_DOMAINS.add("duke.edu");
-        APPROVED_DOMAINS.add("chicago.edu");
-        APPROVED_DOMAINS.add("jhu.edu");
-        APPROVED_DOMAINS.add("penn.edu");
-
-        // UK Universities
-        APPROVED_DOMAINS.add("ox.ac.uk");
-        APPROVED_DOMAINS.add("cam.ac.uk");
-        APPROVED_DOMAINS.add("lse.ac.uk");
-        APPROVED_DOMAINS.add("ucl.ac.uk");
-        APPROVED_DOMAINS.add("ic.ac.uk");
+    public static void initialize(SchoolService service) {
+        schoolService = service;
     }
 
     /**
@@ -60,7 +30,19 @@ public class SchoolDomainWhitelist {
         if (domain == null || domain.trim().isEmpty()) {
             return false;
         }
-        return APPROVED_DOMAINS.contains(domain.toLowerCase());
+        
+        // If service not initialized yet, try to get it from context
+        if (schoolService == null) {
+            try {
+                ApplicationContext context = ApplicationContext.run();
+                schoolService = context.getBean(SchoolService.class);
+            } catch (Exception e) {
+                // Service not available, return false
+                return false;
+            }
+        }
+        
+        return schoolService.isDomainApproved(domain.toLowerCase());
     }
 
     /**
@@ -96,11 +78,23 @@ public class SchoolDomainWhitelist {
 
     /**
      * Get size of whitelist (for testing/monitoring)
+     * Note: This method is deprecated as domains are now stored in database
      *
-     * @return Number of approved domains
+     * @return Number of approved domains, or -1 if service not available
      */
+    @Deprecated
     public static int size() {
-        return APPROVED_DOMAINS.size();
+        if (schoolService == null) {
+            return -1;
+        }
+        // This is less efficient than before, but maintains backward compatibility
+        try {
+            return (int) schoolService.getAllSchools().stream()
+                    .mapToLong(school -> schoolService.getSchoolDomains(school.getId()).size())
+                    .sum();
+        } catch (Exception e) {
+            return -1;
+        }
     }
 
     /**
