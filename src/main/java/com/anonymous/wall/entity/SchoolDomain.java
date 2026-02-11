@@ -20,7 +20,7 @@ public class SchoolDomain {
     private String domain;
 
     @MappedProperty("created_at")
-    private ZonedDateTime createdAt = ZonedDateTime.now();
+    private ZonedDateTime createdAt;
 
     // ---------------- Getters & Setters ----------------
 

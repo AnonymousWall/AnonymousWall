@@ -25,11 +25,6 @@ public interface SchoolDomainRepository extends CrudRepository<SchoolDomain, UUI
     List<SchoolDomain> findBySchoolId(UUID schoolId);
     
     /**
-     * Delete all domains for a school
-     */
-    void deleteBySchoolId(UUID schoolId);
-    
-    /**
      * Find all school domains with pagination
      */
     Page<SchoolDomain> findAll(Pageable pageable);
