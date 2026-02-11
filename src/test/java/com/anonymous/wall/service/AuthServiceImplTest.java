@@ -5,6 +5,7 @@ import com.anonymous.wall.entity.UserEntity;
 import com.anonymous.wall.model.*;
 import com.anonymous.wall.repository.EmailVerificationCodeRepository;
 import com.anonymous.wall.util.PasswordUtil;
+import com.anonymous.wall.util.SchoolDomainWhitelist;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -25,11 +26,21 @@ class AuthServiceImplTest {
     private AuthServiceImpl authService;
     private UserService userService;
     private EmailVerificationCodeRepository emailCodeRepository;
+    private SchoolDomainService schoolDomainService;
 
     @BeforeEach
     void setUp() {
         userService = mock(UserService.class);
         emailCodeRepository = mock(EmailVerificationCodeRepository.class);
+        schoolDomainService = mock(SchoolDomainService.class);
+        
+        // Setup school domain service mock to accept harvard.edu emails
+        when(schoolDomainService.isDomainApproved(anyString())).thenReturn(false);
+        when(schoolDomainService.isDomainApproved("harvard.edu")).thenReturn(true);
+        
+        // Initialize SchoolDomainWhitelist with mock service
+        SchoolDomainWhitelist.initialize(schoolDomainService);
+        
         authService = new AuthServiceImpl();
         // Use reflection to inject mocks
         try {
