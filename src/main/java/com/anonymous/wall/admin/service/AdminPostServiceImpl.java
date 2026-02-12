@@ -108,7 +108,9 @@ public class AdminPostServiceImpl implements AdminPostService {
             }
         }
         
-        // Fallback to findAll if somehow we reach here
+        // Fallback to findAll if somehow we reach here (should not happen)
+        log.warn("Unexpected code path reached in getAllPosts with parameters: userId={}, hidden={}, wall={}", 
+                 userId, hidden, wall);
         return postRepository.findAll(pageable);
     }
     
