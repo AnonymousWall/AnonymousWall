@@ -218,30 +218,4 @@ public interface PostRepository extends CrudRepository<Post, UUID> {
      * Find all posts sorted by user ID (author) descending - for admin
      */
     Page<Post> findAllOrderByUserIdDesc(Pageable pageable);
-    
-    // ===== Admin sorting by wall (includes both hidden and non-hidden posts) =====
-    
-    /**
-     * Find posts by wall sorted by creation time (newest first) - for admin
-     * Includes both hidden and non-hidden posts
-     */
-    Page<Post> findByWallOrderByCreatedAtDesc(String wall, Pageable pageable);
-    
-    /**
-     * Find posts by wall sorted by creation time (oldest first) - for admin
-     * Includes both hidden and non-hidden posts
-     */
-    Page<Post> findByWallOrderByCreatedAtAsc(String wall, Pageable pageable);
-    
-    /**
-     * Find posts by wall sorted by like count (most liked first) - for admin
-     * Includes both hidden and non-hidden posts
-     */
-    Page<Post> findByWallOrderByLikeCountDesc(String wall, Pageable pageable);
-    
-    /**
-     * Find posts by wall sorted by like count (least liked first) - for admin
-     * Includes both hidden and non-hidden posts
-     */
-    Page<Post> findByWallOrderByLikeCountAsc(String wall, Pageable pageable);
 }
