@@ -142,9 +142,14 @@ public interface CommentRepository extends CrudRepository<Comment, UUID> {
     // ===== Admin sorting - by author =====
     
     /**
-     * Find all comments sorted by user ID (author) - for admin
+     * Find all comments sorted by user ID (author) ascending - for admin
      */
-    Page<Comment> findAllOrderByUserId(Pageable pageable);
+    Page<Comment> findAllOrderByUserIdAsc(Pageable pageable);
+    
+    /**
+     * Find all comments sorted by user ID (author) descending - for admin
+     */
+    Page<Comment> findAllOrderByUserIdDesc(Pageable pageable);
     
     // ===== Admin sorting - by report count (requires JOIN with comment_reports table) =====
     

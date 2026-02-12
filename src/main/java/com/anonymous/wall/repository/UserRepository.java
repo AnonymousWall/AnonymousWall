@@ -33,9 +33,14 @@ public interface UserRepository extends CrudRepository<UserEntity, UUID> {
     Page<UserEntity> findAllOrderByCreatedAtAsc(Pageable pageable);
     
     /**
-     * Find all users sorted by school domain
+     * Find all users sorted by school domain (ascending)
      */
-    Page<UserEntity> findAllOrderBySchoolDomain(Pageable pageable);
+    Page<UserEntity> findAllOrderBySchoolDomainAsc(Pageable pageable);
+    
+    /**
+     * Find all users sorted by school domain (descending)
+     */
+    Page<UserEntity> findAllOrderBySchoolDomainDesc(Pageable pageable);
     
     /**
      * Find all users sorted by report count (most reports first)

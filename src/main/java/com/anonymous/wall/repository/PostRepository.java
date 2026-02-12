@@ -211,9 +211,14 @@ public interface PostRepository extends CrudRepository<Post, UUID> {
     // ===== Admin sorting - by author =====
     
     /**
-     * Find all posts sorted by user ID (author) - for admin
+     * Find all posts sorted by user ID (author) ascending - for admin
      */
-    Page<Post> findAllOrderByUserId(Pageable pageable);
+    Page<Post> findAllOrderByUserIdAsc(Pageable pageable);
+    
+    /**
+     * Find all posts sorted by user ID (author) descending - for admin
+     */
+    Page<Post> findAllOrderByUserIdDesc(Pageable pageable);
     
     // ===== Admin sorting - by report count (requires JOIN with post_reports table) =====
     

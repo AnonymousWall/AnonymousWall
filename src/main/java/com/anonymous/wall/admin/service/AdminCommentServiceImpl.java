@@ -72,7 +72,9 @@ public class AdminCommentServiceImpl implements AdminCommentService {
             
             case "userid":
             case "author":
-                return commentRepository.findAllOrderByUserId(pageable);
+                return isDesc ?
+                    commentRepository.findAllOrderByUserIdDesc(pageable) :
+                    commentRepository.findAllOrderByUserIdAsc(pageable);
             
             default:
                 return commentRepository.findAll(pageable);

@@ -83,7 +83,9 @@ public class AdminPostServiceImpl implements AdminPostService {
             
             case "userid":
             case "author":
-                return postRepository.findAllOrderByUserId(pageable);
+                return isDesc ?
+                    postRepository.findAllOrderByUserIdDesc(pageable) :
+                    postRepository.findAllOrderByUserIdAsc(pageable);
             
             default:
                 return postRepository.findAll(pageable);

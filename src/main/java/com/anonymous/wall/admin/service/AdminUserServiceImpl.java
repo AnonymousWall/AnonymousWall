@@ -65,7 +65,9 @@ public class AdminUserServiceImpl implements AdminUserService {
                     userRepository.findAllOrderByCreatedAtAsc(pageable);
             
             case "schooldomain":
-                return userRepository.findAllOrderBySchoolDomain(pageable);
+                return isDesc ?
+                    userRepository.findAllOrderBySchoolDomainDesc(pageable) :
+                    userRepository.findAllOrderBySchoolDomainAsc(pageable);
             
             case "reportcount":
                 return isDesc ?
