@@ -1073,7 +1073,7 @@ paths:
     get:
       tags: [admin]
       summary: Get all users
-      description: Admin endpoint to retrieve all users with pagination
+      description: Admin endpoint to retrieve all users with pagination, filtering, and sorting
       operationId: adminGetUsers
       security:
         - bearerAuth: []
@@ -1095,6 +1095,27 @@ paths:
             maximum: 100
             default: 20
           description: Number of results per page
+        - in: query
+          name: blocked
+          required: false
+          schema:
+            type: boolean
+          description: Filter by blocked status (true/false)
+        - in: query
+          name: sortBy
+          required: false
+          schema:
+            type: string
+            enum: [createdAt, schoolDomain, reportCount]
+          description: Field to sort by
+        - in: query
+          name: sortOrder
+          required: false
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+          description: Sort order (ascending or descending)
       responses:
         "200":
           description: Users retrieved successfully
@@ -1216,7 +1237,7 @@ paths:
     get:
       tags: [admin]
       summary: Get all posts
-      description: Admin endpoint to retrieve all posts with pagination and filters
+      description: Admin endpoint to retrieve all posts with pagination, filters, and sorting
       operationId: adminGetPosts
       security:
         - bearerAuth: []
@@ -1251,6 +1272,21 @@ paths:
           schema:
             type: boolean
           description: Filter by hidden status
+        - in: query
+          name: sortBy
+          required: false
+          schema:
+            type: string
+            enum: [createdAt, likeCount, commentCount, userId]
+          description: Field to sort by
+        - in: query
+          name: sortOrder
+          required: false
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+          description: Sort order (ascending or descending)
       responses:
         "200":
           description: Posts retrieved successfully
@@ -1308,7 +1344,7 @@ paths:
     get:
       tags: [admin]
       summary: Get all comments
-      description: Admin endpoint to retrieve all comments with pagination
+      description: Admin endpoint to retrieve all comments with pagination, filters, and sorting
       operationId: adminGetComments
       security:
         - bearerAuth: []
@@ -1336,13 +1372,28 @@ paths:
           schema:
             type: string
             format: uuid
-          description: Filter posts by user ID
+          description: Filter comments by user ID
         - in: query
           name: hidden
           required: false
           schema:
             type: boolean
           description: Filter by hidden status
+        - in: query
+          name: sortBy
+          required: false
+          schema:
+            type: string
+            enum: [createdAt, userId]
+          description: Field to sort by
+        - in: query
+          name: sortOrder
+          required: false
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+          description: Sort order (ascending or descending)
       responses:
         "200":
           description: Comments retrieved successfully

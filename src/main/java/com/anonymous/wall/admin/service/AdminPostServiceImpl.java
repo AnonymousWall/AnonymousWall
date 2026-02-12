@@ -31,7 +31,7 @@ public class AdminPostServiceImpl implements AdminPostService {
      * @param pageable Pagination parameters
      * @param userId Filter by author user ID (null = all authors)
      * @param hidden Filter by hidden status (null = all posts)
-     * @param sortBy Sort field (case-insensitive): "createdAt", "likeCount", "commentCount", "reportCount", "userId"
+     * @param sortBy Sort field (case-insensitive): "createdAt", "likeCount", "commentCount", "userId"
      * @param sortOrder Sort order (case-insensitive): "asc" or "desc" (default: desc)
      * @return Page of posts matching the criteria
      */
@@ -75,11 +75,6 @@ public class AdminPostServiceImpl implements AdminPostService {
                 return isDesc ?
                     postRepository.findAllOrderByCommentCountDesc(pageable) :
                     postRepository.findAllOrderByCommentCountAsc(pageable);
-            
-            case "reportcount":
-                return isDesc ?
-                    postRepository.findAllOrderByReportCountDesc(pageable) :
-                    postRepository.findAllOrderByReportCountAsc(pageable);
             
             case "userid":
             case "author":

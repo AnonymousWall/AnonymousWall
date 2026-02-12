@@ -30,7 +30,7 @@ public class AdminUserServiceImpl implements AdminUserService {
      * 
      * @param pageable Pagination parameters
      * @param blocked Filter by blocked status (null = all users)
-     * @param sortBy Sort field (case-insensitive): "createdAt", "schoolDomain", "reportCount", "postCount", "commentCount"
+     * @param sortBy Sort field (case-insensitive): "createdAt", "schoolDomain", "reportCount"
      * @param sortOrder Sort order (case-insensitive): "asc" or "desc" (default: desc)
      * @return Page of users matching the criteria
      */
@@ -73,16 +73,6 @@ public class AdminUserServiceImpl implements AdminUserService {
                 return isDesc ?
                     userRepository.findAllOrderByReportCountDesc(pageable) :
                     userRepository.findAllOrderByReportCountAsc(pageable);
-            
-            case "postcount":
-                return isDesc ?
-                    userRepository.findAllOrderByPostCountDesc(pageable) :
-                    userRepository.findAllOrderByPostCountAsc(pageable);
-            
-            case "commentcount":
-                return isDesc ?
-                    userRepository.findAllOrderByCommentCountDesc(pageable) :
-                    userRepository.findAllOrderByCommentCountAsc(pageable);
             
             default:
                 return userRepository.findAll(pageable);

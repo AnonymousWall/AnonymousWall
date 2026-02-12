@@ -436,38 +436,6 @@ class AdminUserControllerTest {
         }
 
         @Test
-        @DisplayName("Positive: Sort users by post count descending")
-        void sortUsersByPostCountDesc() {
-            // Act
-            HttpResponse<Map> response = client.toBlocking().exchange(
-                HttpRequest.GET(BASE_PATH + "?sortBy=postCount&sortOrder=desc")
-                    .bearerAuth(adminToken),
-                Map.class
-            );
-
-            // Assert
-            assertEquals(HttpStatus.OK, response.getStatus());
-            assertNotNull(response.body());
-            assertTrue(response.body().containsKey("data"));
-        }
-
-        @Test
-        @DisplayName("Positive: Sort users by comment count descending")
-        void sortUsersByCommentCountDesc() {
-            // Act
-            HttpResponse<Map> response = client.toBlocking().exchange(
-                HttpRequest.GET(BASE_PATH + "?sortBy=commentCount&sortOrder=desc")
-                    .bearerAuth(adminToken),
-                Map.class
-            );
-
-            // Assert
-            assertEquals(HttpStatus.OK, response.getStatus());
-            assertNotNull(response.body());
-            assertTrue(response.body().containsKey("data"));
-        }
-
-        @Test
         @DisplayName("Positive: Filter users by blocked status - blocked only")
         void filterUsersByBlockedTrue() {
             // First block a user

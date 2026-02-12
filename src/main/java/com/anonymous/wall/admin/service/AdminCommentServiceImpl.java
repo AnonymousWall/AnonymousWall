@@ -31,7 +31,7 @@ public class AdminCommentServiceImpl implements AdminCommentService {
      * @param pageable Pagination parameters
      * @param userId Filter by author user ID (null = all authors)
      * @param hidden Filter by hidden status (null = all comments)
-     * @param sortBy Sort field (case-insensitive): "createdAt", "reportCount", "userId"
+     * @param sortBy Sort field (case-insensitive): "createdAt", "userId"
      * @param sortOrder Sort order (case-insensitive): "asc" or "desc" (default: desc)
      * @return Page of comments matching the criteria
      */
@@ -64,11 +64,6 @@ public class AdminCommentServiceImpl implements AdminCommentService {
                 return isDesc ?
                     commentRepository.findAllOrderByCreatedAtDesc(pageable) :
                     commentRepository.findAllOrderByCreatedAtAsc(pageable);
-            
-            case "reportcount":
-                return isDesc ?
-                    commentRepository.findAllOrderByReportCountDesc(pageable) :
-                    commentRepository.findAllOrderByReportCountAsc(pageable);
             
             case "userid":
             case "author":

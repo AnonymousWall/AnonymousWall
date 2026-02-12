@@ -1,7 +1,6 @@
 package com.anonymous.wall.repository;
 
 import com.anonymous.wall.entity.Comment;
-import io.micronaut.data.annotation.Query;
 import io.micronaut.data.jdbc.annotation.JdbcRepository;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
@@ -150,25 +149,5 @@ public interface CommentRepository extends CrudRepository<Comment, UUID> {
      * Find all comments sorted by user ID (author) descending - for admin
      */
     Page<Comment> findAllOrderByUserIdDesc(Pageable pageable);
-    
-    // ===== Admin sorting - by report count (requires JOIN with comment_reports table) =====
-    
-    /**
-     * Find all comments with report count, sorted by report count (most reports first) - for admin
-     */
-    @Query(value = "SELECT c.* FROM comments c " +
-           "LEFT JOIN (SELECT comment_id, COUNT(*) as report_count FROM comment_reports GROUP BY comment_id) r ON c.id = r.comment_id " +
-           "ORDER BY COALESCE(r.report_count, 0) DESC",
-           countQuery = "SELECT COUNT(*) FROM comments")
-    Page<Comment> findAllOrderByReportCountDesc(Pageable pageable);
-    
-    /**
-     * Find all comments with report count, sorted by report count (least reports first) - for admin
-     */
-    @Query(value = "SELECT c.* FROM comments c " +
-           "LEFT JOIN (SELECT comment_id, COUNT(*) as report_count FROM comment_reports GROUP BY comment_id) r ON c.id = r.comment_id " +
-           "ORDER BY COALESCE(r.report_count, 0) ASC",
-           countQuery = "SELECT COUNT(*) FROM comments")
-    Page<Comment> findAllOrderByReportCountAsc(Pageable pageable);
 
 }

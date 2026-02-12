@@ -346,22 +346,6 @@ class AdminPostControllerTest {
         }
 
         @Test
-        @DisplayName("Positive: Sort posts by report count descending")
-        void sortPostsByReportCountDesc() {
-            // Act
-            HttpResponse<Map> response = client.toBlocking().exchange(
-                HttpRequest.GET(BASE_PATH + "?sortBy=reportCount&sortOrder=desc")
-                    .bearerAuth(adminToken),
-                Map.class
-            );
-
-            // Assert
-            assertEquals(HttpStatus.OK, response.getStatus());
-            assertNotNull(response.body());
-            assertTrue(response.body().containsKey("data"));
-        }
-
-        @Test
         @DisplayName("Positive: Sort posts by author (userId)")
         void sortPostsByAuthor() {
             // Act

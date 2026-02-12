@@ -262,38 +262,6 @@ class AdminCommentControllerTest {
         }
 
         @Test
-        @DisplayName("Positive: Sort comments by report count descending")
-        void sortCommentsByReportCountDesc() {
-            // Act
-            HttpResponse<Map> response = client.toBlocking().exchange(
-                HttpRequest.GET(BASE_PATH + "?sortBy=reportCount&sortOrder=desc")
-                    .bearerAuth(adminToken),
-                Map.class
-            );
-
-            // Assert
-            assertEquals(HttpStatus.OK, response.getStatus());
-            assertNotNull(response.body());
-            assertTrue(response.body().containsKey("data"));
-        }
-
-        @Test
-        @DisplayName("Positive: Sort comments by report count ascending")
-        void sortCommentsByReportCountAsc() {
-            // Act
-            HttpResponse<Map> response = client.toBlocking().exchange(
-                HttpRequest.GET(BASE_PATH + "?sortBy=reportCount&sortOrder=asc")
-                    .bearerAuth(adminToken),
-                Map.class
-            );
-
-            // Assert
-            assertEquals(HttpStatus.OK, response.getStatus());
-            assertNotNull(response.body());
-            assertTrue(response.body().containsKey("data"));
-        }
-
-        @Test
         @DisplayName("Positive: Sort comments by author (userId)")
         void sortCommentsByAuthor() {
             // Act

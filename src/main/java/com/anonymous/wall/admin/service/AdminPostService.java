@@ -16,7 +16,7 @@ public interface AdminPostService {
      * @param pageable Pagination parameters
      * @param userId Filter by author user ID (null = all authors)
      * @param hidden Filter by hidden status (null = all posts)
-     * @param sortBy Sort field: "createdAt", "likeCount", "commentCount", "reportCount", "userId"
+     * @param sortBy Sort field: "createdAt", "likeCount", "commentCount", "userId"
      * @param sortOrder Sort order: "asc" or "desc"
      */
     Page<Post> getAllPosts(Pageable pageable, UUID userId, Boolean hidden, String sortBy, String sortOrder);

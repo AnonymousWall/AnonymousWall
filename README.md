@@ -928,6 +928,21 @@ Response: 200 OK
 **Query Parameters:**
 - `page` (default: 1) - Page number (1-based)
 - `limit` (default: 20, max: 100) - Users per page
+- `blocked` (optional) - Filter by blocked status (true/false)
+- `sortBy` (optional) - Sort field: `createdAt`, `schoolDomain`, `reportCount`
+- `sortOrder` (optional, default: desc) - Sort order: `asc` or `desc`
+
+**Examples:**
+```http
+# Get blocked users sorted by report count
+GET /api/v1/admin/users?blocked=true&sortBy=reportCount&sortOrder=desc
+
+# Get all users sorted by school domain
+GET /api/v1/admin/users?sortBy=schoolDomain&sortOrder=asc
+
+# Get recent users (newest first)
+GET /api/v1/admin/users?sortBy=createdAt&sortOrder=desc
+```
 
 **Access:** ADMIN or MODERATOR
 
@@ -1026,6 +1041,20 @@ Response: 200 OK
 - `limit` (default: 20, max: 100) - Posts per page
 - `userId` (optional) - Filter by user ID
 - `hidden` (optional) - Filter by hidden status (true/false)
+- `sortBy` (optional) - Sort field: `createdAt`, `likeCount`, `commentCount`, `userId`
+- `sortOrder` (optional, default: desc) - Sort order: `asc` or `desc`
+
+**Examples:**
+```http
+# Get posts sorted by likes (most liked first)
+GET /api/v1/admin/posts?sortBy=likeCount&sortOrder=desc
+
+# Get posts by a specific user
+GET /api/v1/admin/posts?userId=<uuid>&sortBy=createdAt
+
+# Get hidden posts only
+GET /api/v1/admin/posts?hidden=true
+```
 
 **Notes:**
 - Returns all posts including hidden (soft-deleted) posts
@@ -1086,6 +1115,22 @@ Response: 200 OK
 **Query Parameters:**
 - `page` (default: 1) - Page number (1-based)
 - `limit` (default: 20, max: 100) - Comments per page
+- `userId` (optional) - Filter by user ID
+- `hidden` (optional) - Filter by hidden status (true/false)
+- `sortBy` (optional) - Sort field: `createdAt`, `userId`
+- `sortOrder` (optional, default: desc) - Sort order: `asc` or `desc`
+
+**Examples:**
+```http
+# Get comments sorted by creation time (newest first)
+GET /api/v1/admin/comments?sortBy=createdAt&sortOrder=desc
+
+# Get comments by a specific user
+GET /api/v1/admin/comments?userId=<uuid>
+
+# Get hidden comments only
+GET /api/v1/admin/comments?hidden=true
+```
 
 **Notes:**
 - Returns all comments including hidden (soft-deleted) comments

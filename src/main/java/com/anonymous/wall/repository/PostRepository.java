@@ -1,7 +1,6 @@
 package com.anonymous.wall.repository;
 
 import com.anonymous.wall.entity.Post;
-import io.micronaut.data.annotation.Query;
 import io.micronaut.data.jdbc.annotation.JdbcRepository;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
@@ -219,24 +218,4 @@ public interface PostRepository extends CrudRepository<Post, UUID> {
      * Find all posts sorted by user ID (author) descending - for admin
      */
     Page<Post> findAllOrderByUserIdDesc(Pageable pageable);
-    
-    // ===== Admin sorting - by report count (requires JOIN with post_reports table) =====
-    
-    /**
-     * Find all posts with report count, sorted by report count (most reports first) - for admin
-     */
-    @Query(value = "SELECT p.* FROM posts p " +
-           "LEFT JOIN (SELECT post_id, COUNT(*) as report_count FROM post_reports GROUP BY post_id) r ON p.id = r.post_id " +
-           "ORDER BY COALESCE(r.report_count, 0) DESC",
-           countQuery = "SELECT COUNT(*) FROM posts")
-    Page<Post> findAllOrderByReportCountDesc(Pageable pageable);
-    
-    /**
-     * Find all posts with report count, sorted by report count (least reports first) - for admin
-     */
-    @Query(value = "SELECT p.* FROM posts p " +
-           "LEFT JOIN (SELECT post_id, COUNT(*) as report_count FROM post_reports GROUP BY post_id) r ON p.id = r.post_id " +
-           "ORDER BY COALESCE(r.report_count, 0) ASC",
-           countQuery = "SELECT COUNT(*) FROM posts")
-    Page<Post> findAllOrderByReportCountAsc(Pageable pageable);
 }
