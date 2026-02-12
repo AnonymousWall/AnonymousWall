@@ -97,7 +97,7 @@ class PostsServiceOptimizedUserLookupTest {
 
             // Use optimized method with schoolDomain
             Pageable pageable = Pageable.from(0, 10);
-            Page<Post> result = postsService.getPostsByWall("campus", pageable, userId1, schoolDomain1);
+            Page<Post> result = postsService.getPostsByWall("campus", pageable, userId1, schoolDomain1, SortBy.NEWEST);
 
             assertEquals(3, result.getContent().size(), "Should return only Harvard posts");
             
@@ -115,7 +115,7 @@ class PostsServiceOptimizedUserLookupTest {
 
             // Use optimized method with null schoolDomain (user has no school)
             Pageable pageable = Pageable.from(0, 10);
-            Page<Post> result = postsService.getPostsByWall("campus", pageable, userId1, "");
+            Page<Post> result = postsService.getPostsByWall("campus", pageable, userId1, "", SortBy.NEWEST);
 
             assertTrue(result.getContent().isEmpty(), "Should return empty page when no school domain");
         }
@@ -129,7 +129,7 @@ class PostsServiceOptimizedUserLookupTest {
 
             // Use optimized method - schoolDomain should be ignored for national wall
             Pageable pageable = Pageable.from(0, 10);
-            Page<Post> result = postsService.getPostsByWall("national", pageable, userId1, schoolDomain1);
+            Page<Post> result = postsService.getPostsByWall("national", pageable, userId1, schoolDomain1, SortBy.NEWEST);
 
             assertEquals(2, result.getContent().size(), "Should return all national posts");
         }
@@ -146,7 +146,7 @@ class PostsServiceOptimizedUserLookupTest {
 
             // Use optimized method
             Pageable pageable = Pageable.from(0, 10);
-            Page<Post> result = postsService.getPostsByWall("campus", pageable, userId1, schoolDomain1);
+            Page<Post> result = postsService.getPostsByWall("campus", pageable, userId1, schoolDomain1, SortBy.NEWEST);
 
             assertEquals(2, result.getContent().size());
             
@@ -191,7 +191,7 @@ class PostsServiceOptimizedUserLookupTest {
 
             // Use optimized method with empty schoolDomain
             Pageable pageable = Pageable.from(0, 10);
-            Page<Post> result = postsService.getPostsByWall("campus", pageable, userId1, "");
+            Page<Post> result = postsService.getPostsByWall("campus", pageable, userId1, "", SortBy.NEWEST);
 
             assertTrue(result.getContent().isEmpty(), "Should return empty page for empty school domain");
         }
@@ -208,16 +208,16 @@ class PostsServiceOptimizedUserLookupTest {
             postRepository.save(new Post(userId1, "Title 1", "Post 1", "campus", "harvard.edu"));
             postRepository.save(new Post(userId1, "Title 2", "Post 2", "campus", "harvard.edu"));
 
-            // Use old method (requires user lookup)
+            // Use method with explicit schoolDomain
             Pageable pageable = Pageable.from(0, 10);
-            Page<Post> result = postsService.getPostsByWall("campus", pageable, userId1);
+            Page<Post> result = postsService.getPostsByWall("campus", pageable, userId1, schoolDomain1, SortBy.NEWEST);
 
-            assertEquals(2, result.getContent().size(), "Old method should still work");
+            assertEquals(2, result.getContent().size(), "Method should work with explicit schoolDomain");
         }
 
         @Test
-        @DisplayName("Old method with sorting should still work")
-        void oldMethodWithSortingShouldStillWork() {
+        @DisplayName("Method with explicit schoolDomain and sorting should work")
+        void methodWithSchoolDomainAndSortingShouldWork() {
             // Create posts
             Post post1 = new Post(userId1, "Title 1", "Post 1", "campus", "harvard.edu");
             post1.setLikeCount(10);
@@ -227,9 +227,9 @@ class PostsServiceOptimizedUserLookupTest {
             post2.setLikeCount(5);
             postRepository.save(post2);
 
-            // Use old method with sorting (requires user lookup)
+            // Use method with explicit schoolDomain and sorting
             Pageable pageable = Pageable.from(0, 10);
-            Page<Post> result = postsService.getPostsByWall("campus", pageable, userId1, SortBy.MOST_LIKED);
+            Page<Post> result = postsService.getPostsByWall("campus", pageable, userId1, schoolDomain1, SortBy.MOST_LIKED);
 
             assertEquals(2, result.getContent().size());
             assertEquals(10, result.getContent().get(0).getLikeCount(), "Should be sorted correctly");
@@ -241,8 +241,8 @@ class PostsServiceOptimizedUserLookupTest {
     class PerformanceTests {
 
         @Test
-        @DisplayName("Optimized method should produce same results as old method")
-        void optimizedMethodShouldMatchOldMethod() {
+        @DisplayName("Method with explicit schoolDomain produces correct results")
+        void methodWithSchoolDomainProducesCorrectResults() {
             // Create test data
             for (int i = 0; i < 10; i++) {
                 Post post = new Post(userId1, "Title " + i, "Content " + i, "campus", "harvard.edu");
@@ -256,22 +256,18 @@ class PostsServiceOptimizedUserLookupTest {
 
             Pageable pageable = Pageable.from(0, 5);
 
-            // Call both methods
-            Page<Post> resultOld = postsService.getPostsByWall("campus", pageable, userId1, SortBy.NEWEST);
-            Page<Post> resultNew = postsService.getPostsByWall("campus", pageable, userId1, schoolDomain1, SortBy.NEWEST);
+            // Call method with explicit schoolDomain
+            Page<Post> result = postsService.getPostsByWall("campus", pageable, userId1, schoolDomain1, SortBy.NEWEST);
 
-            // Results should be identical
-            assertEquals(resultOld.getContent().size(), resultNew.getContent().size(), "Both methods should return same number of posts");
-            assertEquals(resultOld.getTotalSize(), resultNew.getTotalSize(), "Both methods should have same total size");
+            // Verify results
+            assertEquals(5, result.getContent().size(), "Should return correct number of posts");
+            assertEquals(10, result.getTotalSize(), "Should have correct total size");
             
-            // Verify each post matches
-            for (int i = 0; i < resultOld.getContent().size(); i++) {
-                Post oldPost = resultOld.getContent().get(i);
-                Post newPost = resultNew.getContent().get(i);
-                
-                assertEquals(oldPost.getId(), newPost.getId(), "Posts should be in same order");
-                assertEquals(oldPost.isLiked(), newPost.isLiked(), "Like status should match");
-                assertEquals(oldPost.getLikeCount(), newPost.getLikeCount(), "Like count should match");
+            // Verify like status is correctly set
+            for (Post post : result.getContent()) {
+                // Posts with even index (i % 2 == 0) should be liked
+                boolean shouldBeLiked = post.getLikeCount() % 2 == 0;
+                assertEquals(shouldBeLiked, post.isLiked(), "Like status should match for post with like count " + post.getLikeCount());
             }
         }
     }

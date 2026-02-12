@@ -53,16 +53,15 @@ src/main/java/com/anonymous/wall/
 ├── controller/
 │   ├── AuthController.java          # Auth endpoints
 │   ├── PostsController.java         # Post, like, comment endpoints
-│   ├── InternshipController.java    # Internship features
-│   ├── MarketplaceController.java   # Marketplace features
-│   └── CoinsController.java         # Coins/rewards features
+│   └── UserController.java          # User profile endpoints
 │
 ├── admin/                            # Admin API module
 │   ├── controller/
 │   │   ├── AdminUserController.java      # User management
 │   │   ├── AdminPostController.java      # Post moderation
 │   │   ├── AdminCommentController.java   # Comment moderation
-│   │   └── AdminReportController.java    # Report viewing
+│   │   ├── AdminReportController.java    # Report viewing
+│   │   └── AdminSchoolDomainController.java  # School domain management
 │   └── service/
 │       ├── AdminUserService.java         # User management logic
 │       ├── AdminPostService.java         # Post moderation logic
@@ -70,12 +69,12 @@ src/main/java/com/anonymous/wall/
 │       └── AdminReportService.java       # Report handling logic
 │
 ├── service/
-│   ├── AuthService/AuthServiceImpl.java        # Auth business logic
-│   ├── PostsService/PostsServiceImpl.java      # Post operations
-│   ├── JwtTokenService.java                   # JWT token generation (with RBAC)
-│   ├── InternshipService.java
-│   ├── MarketplaceService.java
-│   └── CoinsService.java
+│   ├── AuthService/AuthServiceImpl.java           # Auth business logic
+│   ├── UserService/UserServiceImpl.java           # User management
+│   ├── PostsService/PostsServiceImpl.java         # Post operations
+│   ├── CommentsService/CommentsServiceImpl.java   # Comment operations
+│   ├── SchoolDomainService/SchoolDomainServiceImpl.java  # School domain logic
+│   └── JwtTokenService.java                       # JWT token generation (with RBAC)
 │
 ├── entity/
 │   ├── UserEntity.java              # User model (with role & blocked fields)
@@ -85,10 +84,8 @@ src/main/java/com/anonymous/wall/
 │   ├── EmailVerificationCode.java   # Email verification
 │   ├── PostReport.java              # Post reports
 │   ├── CommentReport.java           # Comment reports
-│   ├── CoinBalance.java
-│   ├── Internship.java
-│   ├── MarketplaceItem.java
-│   └── PostList.java
+│   ├── SchoolDomain.java            # School domain model
+│   └── PostList.java                # Post list model
 │
 ├── repository/
 │   ├── UserRepository.java
@@ -97,8 +94,8 @@ src/main/java/com/anonymous/wall/
 │   ├── PostLikeRepository.java
 │   ├── PostReportRepository.java
 │   ├── CommentReportRepository.java
-│   ├── EmailVerificationCodeRepository.java
-│   └── [Other repositories...]
+│   ├── SchoolDomainRepository.java
+│   └── EmailVerificationCodeRepository.java
 │
 ├── mapper/
 │   └── UserMapper.java              # DTO mapping utilities
@@ -107,26 +104,33 @@ src/main/java/com/anonymous/wall/
 │   ├── EmailValidator.java
 │   ├── CodeGenerator.java           # 6-digit verification code
 │   ├── PasswordUtil.java            # Password hashing
-│   ├── EmailUtil.java               # Email sending
-│   └── MarketItemValidator.java
+│   └── EmailUtil.java               # Email sending
 │
 └── Application.java                 # Main application class
 
 src/test/java/com/anonymous/wall/
-├── controller/
+├── controller/                        # Controller integration tests
 │   ├── AuthControllerTest.java
-│   └── PostsCreateControllerTest.java
-├── admin/controller/                 # Admin API tests
+│   ├── PostsCreateControllerTest.java
+│   ├── PostsControllerLikeTests.java
+│   ├── PostsControllerCommentTests.java
+│   └── [Other controller tests...]
+├── admin/controller/                  # Admin API tests
 │   ├── AdminUserControllerTest.java      # 12 tests
 │   ├── AdminPostControllerTest.java      # 9 tests
 │   ├── AdminCommentControllerTest.java   # 7 tests
 │   └── AdminReportControllerTest.java    # 5 tests
-├── service/
+├── service/                           # Service unit tests
 │   ├── AuthServiceImplTest.java
+│   ├── UserServiceImplTest.java
 │   ├── PostsServiceImplCreatePostTest.java
-│   └── PostEntityTest.java
-└── util/
-    └── [Utility tests...]
+│   └── [Other service tests...]
+├── entity/                            # Entity tests
+├── event/                             # Event handling tests
+├── listener/                          # Event listener tests
+├── transaction/                       # Transaction tests
+├── concurrency/                       # Concurrency tests
+└── util/                              # Utility tests
 ```
 
 ---
