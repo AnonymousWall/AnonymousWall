@@ -40,7 +40,7 @@ public class AdminUserServiceImpl implements AdminUserService {
         boolean isDesc = sortOrder == null || sortOrder.equalsIgnoreCase("desc");
         
         // Case 1: No filters, no custom sorting - return all with default pagination
-        // Uses database default ordering (typically by id)
+        // Note: Without explicit ORDER BY, the result order is database-dependent and not guaranteed
         if (blocked == null && sortBy == null) {
             return userRepository.findAll(pageable);
         }
@@ -72,13 +72,13 @@ public class AdminUserServiceImpl implements AdminUserService {
         // For blocked filter, we support createdAt sorting via dedicated repository methods.
         // Other sort fields are not supported with blocked filter due to lack of corresponding
         // repository methods (would need findByBlockedOrderBySchoolDomain, findByBlockedOrderByReportCount, etc.)
-        // When other sorts are requested, we fall back to findByBlocked which uses database default ordering.
+        // When other sorts are requested, result order is database-dependent without explicit ORDER BY.
         if (sortBy == null || sortBy.equalsIgnoreCase("createdAt")) {
             return isDesc ? 
                 userRepository.findByBlockedOrderByCreatedAtDesc(blocked, pageable) :
                 userRepository.findByBlockedOrderByCreatedAtAsc(blocked, pageable);
         }
-        // For other sort options with blocked filter, use default sort (by id)
+        // For other sort options with blocked filter, order is database-dependent
         return userRepository.findByBlocked(blocked, pageable);
     }
     

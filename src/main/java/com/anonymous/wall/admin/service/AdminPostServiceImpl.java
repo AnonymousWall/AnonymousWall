@@ -41,7 +41,7 @@ public class AdminPostServiceImpl implements AdminPostService {
         boolean isDesc = sortOrder == null || sortOrder.equalsIgnoreCase("desc");
         
         // Case 1: No filters, no custom sorting - return all with default pagination
-        // Uses database default ordering (typically by id)
+        // Note: Without explicit ORDER BY, the result order is database-dependent and not guaranteed
         if (userId == null && hidden == null && sortBy == null) {
             return postRepository.findAll(pageable);
         }
@@ -77,7 +77,7 @@ public class AdminPostServiceImpl implements AdminPostService {
         
         // Case 3: Filters specified (with or without sorting)
         // Note: Micronaut Data filter methods (findByHidden, findByUserId, findByUserIdAndHidden)
-        // don't support dynamic sorting, so they use database default ordering (typically by id).
+        // don't support dynamic sorting. Without explicit ORDER BY, result order is database-dependent.
         // To add custom sorting with filters, we would need repository methods like:
         // findByHiddenOrderByCreatedAtDesc, findByUserIdOrderByLikeCountDesc, etc.
         if (userId == null && hidden != null) {
