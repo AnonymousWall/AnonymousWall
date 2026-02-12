@@ -110,8 +110,7 @@ class CommentsServiceImplTest {
             UUID userId = UUID.randomUUID();
             Post post = createMockPost(postId, "national", null, UUID.randomUUID(), false);
             UserEntity user = createMockUser(userId, "user@harvard.edu", "harvard.edu", "TestUser");
-            CreateCommentRequest request = new CreateCommentRequest();
-            request.setText("Test comment");
+            CreateCommentRequest request = new CreateCommentRequest("Test comment");
             
             Comment savedComment = createMockComment(UUID.randomUUID(), postId, userId, "Test comment");
             
@@ -138,8 +137,7 @@ class CommentsServiceImplTest {
             UUID userId = UUID.randomUUID();
             Post post = createMockPost(postId, "campus", "harvard.edu", UUID.randomUUID(), false);
             UserEntity user = createMockUser(userId, "user@harvard.edu", "harvard.edu", "TestUser");
-            CreateCommentRequest request = new CreateCommentRequest();
-            request.setText("Campus comment");
+            CreateCommentRequest request = new CreateCommentRequest("Campus comment");
             
             Comment savedComment = createMockComment(UUID.randomUUID(), postId, userId, "Campus comment");
             
@@ -162,8 +160,7 @@ class CommentsServiceImplTest {
             // Arrange
             UUID postId = UUID.randomUUID();
             UUID userId = UUID.randomUUID();
-            CreateCommentRequest request = new CreateCommentRequest();
-            request.setText("Comment");
+            CreateCommentRequest request = new CreateCommentRequest("Comment");
             
             when(postRepository.findById(postId)).thenReturn(Optional.empty());
 
@@ -182,8 +179,7 @@ class CommentsServiceImplTest {
             UUID postId = UUID.randomUUID();
             UUID userId = UUID.randomUUID();
             Post post = createMockPost(postId, "national", null, UUID.randomUUID(), false);
-            CreateCommentRequest request = new CreateCommentRequest();
-            request.setText("");
+            CreateCommentRequest request = new CreateCommentRequest("");
             
             when(postRepository.findById(postId)).thenReturn(Optional.of(post));
 
@@ -202,8 +198,7 @@ class CommentsServiceImplTest {
             UUID postId = UUID.randomUUID();
             UUID userId = UUID.randomUUID();
             Post post = createMockPost(postId, "national", null, UUID.randomUUID(), false);
-            CreateCommentRequest request = new CreateCommentRequest();
-            request.setText(null);
+            CreateCommentRequest request = new CreateCommentRequest(null);
             
             when(postRepository.findById(postId)).thenReturn(Optional.of(post));
 
@@ -222,8 +217,7 @@ class CommentsServiceImplTest {
             UUID postId = UUID.randomUUID();
             UUID userId = UUID.randomUUID();
             Post post = createMockPost(postId, "national", null, UUID.randomUUID(), false);
-            CreateCommentRequest request = new CreateCommentRequest();
-            request.setText("a".repeat(5001)); // Exceeds 5000 character limit
+            CreateCommentRequest request = new CreateCommentRequest("a".repeat(5001)); // Exceeds 5000 character limit
             
             when(postRepository.findById(postId)).thenReturn(Optional.of(post));
 
@@ -243,9 +237,8 @@ class CommentsServiceImplTest {
             UUID userId = UUID.randomUUID();
             Post post = createMockPost(postId, "national", null, UUID.randomUUID(), false);
             UserEntity user = createMockUser(userId, "user@test.edu", "test.edu", "TestUser");
-            CreateCommentRequest request = new CreateCommentRequest();
             String maxLengthText = "a".repeat(5000);
-            request.setText(maxLengthText);
+            CreateCommentRequest request = new CreateCommentRequest(maxLengthText);
             
             Comment savedComment = createMockComment(UUID.randomUUID(), postId, userId, maxLengthText);
             
@@ -269,8 +262,7 @@ class CommentsServiceImplTest {
             UUID postId = UUID.randomUUID();
             UUID userId = UUID.randomUUID();
             Post post = createMockPost(postId, "national", null, UUID.randomUUID(), false);
-            CreateCommentRequest request = new CreateCommentRequest();
-            request.setText("   ");
+            CreateCommentRequest request = new CreateCommentRequest("   ");
             
             when(postRepository.findById(postId)).thenReturn(Optional.of(post));
 
@@ -289,8 +281,7 @@ class CommentsServiceImplTest {
             UUID postId = UUID.randomUUID();
             UUID userId = UUID.randomUUID();
             Post post = createMockPost(postId, "national", null, UUID.randomUUID(), false);
-            CreateCommentRequest request = new CreateCommentRequest();
-            request.setText("Valid comment");
+            CreateCommentRequest request = new CreateCommentRequest("Valid comment");
             
             when(postRepository.findById(postId)).thenReturn(Optional.of(post));
             when(userRepository.findById(userId)).thenReturn(Optional.empty());
@@ -312,8 +303,7 @@ class CommentsServiceImplTest {
             Post post = createMockPost(postId, "national", null, UUID.randomUUID(), false);
             post.setCommentCount(5);
             UserEntity user = createMockUser(userId, "user@test.edu", "test.edu", "TestUser");
-            CreateCommentRequest request = new CreateCommentRequest();
-            request.setText("Test comment");
+            CreateCommentRequest request = new CreateCommentRequest("Test comment");
             
             Comment savedComment = createMockComment(UUID.randomUUID(), postId, userId, "Test comment");
             
@@ -337,8 +327,7 @@ class CommentsServiceImplTest {
             UUID userId = UUID.randomUUID();
             Post post = createMockPost(postId, "national", null, UUID.randomUUID(), false);
             UserEntity user = createMockUser(userId, "user@test.edu", "test.edu", "MyProfileName");
-            CreateCommentRequest request = new CreateCommentRequest();
-            request.setText("Test");
+            CreateCommentRequest request = new CreateCommentRequest("Test");
             
             Comment savedComment = createMockComment(UUID.randomUUID(), postId, userId, "Test");
             
@@ -476,8 +465,7 @@ class CommentsServiceImplTest {
             UUID userId = UUID.randomUUID();
             Post post = createMockPost(postId, "national", null, UUID.randomUUID(), false);
             UserEntity user = createMockUser(userId, "user@test.edu", "test.edu", "TestUser");
-            CreateCommentRequest request = new CreateCommentRequest();
-            request.setText("x".repeat(5000));
+            CreateCommentRequest request = new CreateCommentRequest("x".repeat(5000));
             
             Comment savedComment = createMockComment(UUID.randomUUID(), postId, userId, request.getText());
             
@@ -502,8 +490,7 @@ class CommentsServiceImplTest {
             UUID userId = UUID.randomUUID();
             Post post = createMockPost(postId, "national", null, UUID.randomUUID(), false);
             UserEntity user = createMockUser(userId, "user@test.edu", "test.edu", "TestUser");
-            CreateCommentRequest request = new CreateCommentRequest();
-            request.setText("Test @#$%^&*() 你好 emoji 😀🎉");
+            CreateCommentRequest request = new CreateCommentRequest("Test @#$%^&*() 你好 emoji 😀🎉");
             
             Comment savedComment = createMockComment(UUID.randomUUID(), postId, userId, request.getText());
             
@@ -525,8 +512,7 @@ class CommentsServiceImplTest {
             // Arrange - UUID with all zeros
             UUID postId = UUID.fromString("00000000-0000-0000-0000-000000000000");
             UUID userId = UUID.randomUUID();
-            CreateCommentRequest request = new CreateCommentRequest();
-            request.setText("Test");
+            CreateCommentRequest request = new CreateCommentRequest("Test");
             
             when(postRepository.findById(postId)).thenReturn(Optional.empty());
 
