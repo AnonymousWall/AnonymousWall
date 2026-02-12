@@ -16,7 +16,7 @@ import jakarta.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 import java.util.Optional;
 
 @Singleton
@@ -46,7 +46,7 @@ public class AuthServiceImpl implements AuthService {
             request.getEmail(),
             code,
             purpose,
-            ZonedDateTime.now().plusMinutes(CODE_EXPIRATION_MINUTES)
+            OffsetDateTime.now().plusMinutes(CODE_EXPIRATION_MINUTES)
         );
         emailCodeRepository.save(emailCode);
         log.debug("Verification code stored in database, email: {}, purpose: {}", request.getEmail(), purpose);
@@ -88,7 +88,7 @@ public class AuthServiceImpl implements AuthService {
         }
 
         EmailVerificationCode code = codeRecord.get();
-        if (code.getExpiresAt().isBefore(ZonedDateTime.now())) {
+        if (code.getExpiresAt().isBefore(OffsetDateTime.now())) {
             log.warn("Registration failed - verification code expired for email: {}", request.getEmail());
             throw new IllegalArgumentException("Code has expired");
         }
@@ -100,7 +100,7 @@ public class AuthServiceImpl implements AuthService {
         user.setSchoolDomain(EmailValidator.extractSchoolDomain(request.getEmail()));
         user.setVerified(true);
         user.setPasswordSet(false);
-        user.setCreatedAt(ZonedDateTime.now());
+        user.setCreatedAt(OffsetDateTime.now());
 
         UserEntity savedUser = userService.save(user);
         log.debug("User account created, userId: {}, schoolDomain: {}", savedUser.getId(), savedUser.getSchoolDomain());
@@ -133,7 +133,7 @@ public class AuthServiceImpl implements AuthService {
         }
 
         EmailVerificationCode code = codeRecord.get();
-        if (code.getExpiresAt().isBefore(ZonedDateTime.now())) {
+        if (code.getExpiresAt().isBefore(OffsetDateTime.now())) {
             log.warn("Email login failed - verification code expired for email: {}", request.getEmail());
             throw new IllegalArgumentException("Code has expired");
         }
@@ -150,7 +150,7 @@ public class AuthServiceImpl implements AuthService {
             user.setEmail(request.getEmail());
             user.setVerified(true);
             user.setPasswordSet(false);
-            user.setCreatedAt(ZonedDateTime.now());
+            user.setCreatedAt(OffsetDateTime.now());
             user = userService.save(user);
             log.debug("Auto-created user account, userId: {}", user.getId());
         } else {
@@ -269,7 +269,7 @@ public class AuthServiceImpl implements AuthService {
             request.getEmail(),
             code,
             "reset_password",
-            ZonedDateTime.now().plusMinutes(CODE_EXPIRATION_MINUTES)
+            OffsetDateTime.now().plusMinutes(CODE_EXPIRATION_MINUTES)
         );
         emailCodeRepository.save(resetCode);
         log.debug("Password reset code saved in database for email: {}", request.getEmail());
@@ -307,7 +307,7 @@ public class AuthServiceImpl implements AuthService {
         }
 
         EmailVerificationCode code = codeRecord.get();
-        if (code.getExpiresAt().isBefore(ZonedDateTime.now())) {
+        if (code.getExpiresAt().isBefore(OffsetDateTime.now())) {
             log.warn("Password reset failed - reset code expired for email: {}", request.getEmail());
             throw new IllegalArgumentException("Reset code has expired");
         }

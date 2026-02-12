@@ -8,7 +8,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -57,7 +57,7 @@ public class AuthConcurrencyTest {
                         user.setSchoolDomain("university.edu");
                         user.setVerified(true);
                         user.setPasswordSet(false);
-                        user.setCreatedAt(ZonedDateTime.now());
+                        user.setCreatedAt(OffsetDateTime.now());
                         UserEntity saved = userRepository.save(user);
                         if (saved != null && saved.getId() != null) {
                             successCount.incrementAndGet();
@@ -94,7 +94,7 @@ public class AuthConcurrencyTest {
         user.setSchoolDomain("university.edu");
         user.setVerified(false);
         user.setPasswordSet(false);
-        user.setCreatedAt(ZonedDateTime.now());
+        user.setCreatedAt(OffsetDateTime.now());
         user = userRepository.save(user);
 
         // Update sequentially (simulates concurrent effect without thread issues)
@@ -136,7 +136,7 @@ public class AuthConcurrencyTest {
                             user.setSchoolDomain("university.edu");
                             user.setVerified(true);
                             user.setPasswordSet(false);
-                            user.setCreatedAt(ZonedDateTime.now());
+                            user.setCreatedAt(OffsetDateTime.now());
                             UserEntity saved = userRepository.save(user);
                             if (saved != null) {
                                 userRepository.deleteById(saved.getId());
@@ -178,7 +178,7 @@ public class AuthConcurrencyTest {
             user.setSchoolDomain("university.edu");
             user.setVerified(true);
             user.setPasswordSet(false);
-            user.setCreatedAt(ZonedDateTime.now());
+            user.setCreatedAt(OffsetDateTime.now());
             userRepository.save(user);
         }
 

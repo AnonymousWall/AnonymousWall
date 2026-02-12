@@ -23,6 +23,7 @@
         <micronaut.aot.packageName>com.anonymous.wall.aot.generated</micronaut.aot.packageName>
 <!--    https://guides.micronaut.io/latest/micronaut-openapi-generator-server-maven-java.html-->
         <micronaut.openapi.generate.server>true</micronaut.openapi.generate.server>
+        <micronaut.openapi.date.time.format>OFFSET_DATETIME</micronaut.openapi.date.time.format>
         <micronaut.openapi.definition>src/main/resources/api.yml</micronaut.openapi.definition>
         <micronaut.openapi.api.package.name>com.anonymous.wall.api</micronaut.openapi.api.package.name>
         <micronaut.openapi.model.package.name>com.anonymous.wall.model</micronaut.openapi.model.package.name>

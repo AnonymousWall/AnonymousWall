@@ -17,7 +17,7 @@ import io.micronaut.test.extensions.junit5.annotation.MicronautTest;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.*;
 
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -271,7 +271,7 @@ class AuthControllerTest {
 
             // Create verification code
             EmailVerificationCode verificationCode = new EmailVerificationCode(
-                testEmail, code, "register", ZonedDateTime.now().plusMinutes(15)
+                testEmail, code, "register", OffsetDateTime.now().plusMinutes(15)
             );
             emailCodeRepository.save(verificationCode);
 
@@ -305,7 +305,7 @@ class AuthControllerTest {
             String code = "123456";
 
             EmailVerificationCode verificationCode = new EmailVerificationCode(
-                testEmail, code, "register", ZonedDateTime.now().plusMinutes(15)
+                testEmail, code, "register", OffsetDateTime.now().plusMinutes(15)
             );
             emailCodeRepository.save(verificationCode);
 
@@ -405,7 +405,7 @@ class AuthControllerTest {
 
             String code = "123456";
             EmailVerificationCode verificationCode = new EmailVerificationCode(
-                existingEmail, code, "register", ZonedDateTime.now().plusMinutes(15)
+                existingEmail, code, "register", OffsetDateTime.now().plusMinutes(15)
             );
             emailCodeRepository.save(verificationCode);
 
@@ -429,7 +429,7 @@ class AuthControllerTest {
             String code = "999999";
 
             EmailVerificationCode expiredCode = new EmailVerificationCode(
-                testEmail, code, "register", ZonedDateTime.now().minusMinutes(1)
+                testEmail, code, "register", OffsetDateTime.now().minusMinutes(1)
             );
             emailCodeRepository.save(expiredCode);
 
@@ -454,7 +454,7 @@ class AuthControllerTest {
 
             // Create code with very near expiration (1 millisecond before)
             EmailVerificationCode boundaryCode = new EmailVerificationCode(
-                testEmail, code, "register", ZonedDateTime.now().plusNanos(1)
+                testEmail, code, "register", OffsetDateTime.now().plusNanos(1)
             );
             emailCodeRepository.save(boundaryCode);
 
@@ -493,7 +493,7 @@ class AuthControllerTest {
 
             String code = "654321";
             EmailVerificationCode verificationCode = new EmailVerificationCode(
-                testEmail, code, "login", ZonedDateTime.now().plusMinutes(15)
+                testEmail, code, "login", OffsetDateTime.now().plusMinutes(15)
             );
             emailCodeRepository.save(verificationCode);
 
@@ -521,7 +521,7 @@ class AuthControllerTest {
             String code = "111111";
 
             EmailVerificationCode verificationCode = new EmailVerificationCode(
-                testEmail, code, "login", ZonedDateTime.now().plusMinutes(15)
+                testEmail, code, "login", OffsetDateTime.now().plusMinutes(15)
             );
             emailCodeRepository.save(verificationCode);
 
@@ -570,7 +570,7 @@ class AuthControllerTest {
 
             String code = "654321";
             EmailVerificationCode verificationCode = new EmailVerificationCode(
-                testEmail, code, "login", ZonedDateTime.now().plusMinutes(15)
+                testEmail, code, "login", OffsetDateTime.now().plusMinutes(15)
             );
             emailCodeRepository.save(verificationCode);
 
@@ -632,7 +632,7 @@ class AuthControllerTest {
             String code = "777777";
 
             EmailVerificationCode expiredCode = new EmailVerificationCode(
-                testEmail, code, "login", ZonedDateTime.now().minusMinutes(20)
+                testEmail, code, "login", OffsetDateTime.now().minusMinutes(20)
             );
             emailCodeRepository.save(expiredCode);
 
@@ -657,7 +657,7 @@ class AuthControllerTest {
 
             // Create code for 'register' purpose
             EmailVerificationCode registerCode = new EmailVerificationCode(
-                testEmail, code, "register", ZonedDateTime.now().plusMinutes(15)
+                testEmail, code, "register", OffsetDateTime.now().plusMinutes(15)
             );
             emailCodeRepository.save(registerCode);
 
@@ -891,7 +891,7 @@ class AuthControllerTest {
 
             // Create verification code for registration
             EmailVerificationCode verificationCode = new EmailVerificationCode(
-                testEmail, code, "register", ZonedDateTime.now().plusMinutes(15)
+                testEmail, code, "register", OffsetDateTime.now().plusMinutes(15)
             );
             emailCodeRepository.save(verificationCode);
 
@@ -1008,7 +1008,7 @@ class AuthControllerTest {
             // Step 1: Register user
             String registerCode = "123456";
             EmailVerificationCode verificationCode = new EmailVerificationCode(
-                testEmail, registerCode, "register", ZonedDateTime.now().plusMinutes(15)
+                testEmail, registerCode, "register", OffsetDateTime.now().plusMinutes(15)
             );
             emailCodeRepository.save(verificationCode);
 
@@ -1104,7 +1104,7 @@ class AuthControllerTest {
             // Register and set password
             String registerCode = "234567";
             EmailVerificationCode verificationCode = new EmailVerificationCode(
-                testEmail, registerCode, "register", ZonedDateTime.now().plusMinutes(15)
+                testEmail, registerCode, "register", OffsetDateTime.now().plusMinutes(15)
             );
             emailCodeRepository.save(verificationCode);
 
@@ -1263,7 +1263,7 @@ class AuthControllerTest {
 
             String code = "expired";
             EmailVerificationCode expiredCode = new EmailVerificationCode(
-                testEmail, code, "reset_password", ZonedDateTime.now().minusMinutes(20)
+                testEmail, code, "reset_password", OffsetDateTime.now().minusMinutes(20)
             );
             emailCodeRepository.save(expiredCode);
 

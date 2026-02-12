@@ -3,7 +3,7 @@ package com.anonymous.wall.entity;
 import io.micronaut.data.annotation.*;
 import io.micronaut.data.model.naming.NamingStrategies;
 
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 @MappedEntity(value = "email_verification_codes", namingStrategy = NamingStrategies.Raw.class)
@@ -23,15 +23,15 @@ public class EmailVerificationCode {
     private String purpose; // register, login, reset_password
 
     @MappedProperty("expires_at")
-    private ZonedDateTime expiresAt;
+    private OffsetDateTime expiresAt;
 
     @MappedProperty("created_at")
-    private ZonedDateTime createdAt = ZonedDateTime.now();
+    private OffsetDateTime createdAt = OffsetDateTime.now();
 
     // -------- Constructors --------
     public EmailVerificationCode() {}
 
-    public EmailVerificationCode(String email, String code, String purpose, ZonedDateTime expiresAt) {
+    public EmailVerificationCode(String email, String code, String purpose, OffsetDateTime expiresAt) {
         this.email = email;
         this.code = code;
         this.purpose = purpose;
@@ -51,9 +51,9 @@ public class EmailVerificationCode {
     public String getPurpose() { return purpose; }
     public void setPurpose(String purpose) { this.purpose = purpose; }
 
-    public ZonedDateTime getExpiresAt() { return expiresAt; }
-    public void setExpiresAt(ZonedDateTime expiresAt) { this.expiresAt = expiresAt; }
+    public OffsetDateTime getExpiresAt() { return expiresAt; }
+    public void setExpiresAt(OffsetDateTime expiresAt) { this.expiresAt = expiresAt; }
 
-    public ZonedDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(ZonedDateTime createdAt) { this.createdAt = createdAt; }
+    public OffsetDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(OffsetDateTime createdAt) { this.createdAt = createdAt; }
 }

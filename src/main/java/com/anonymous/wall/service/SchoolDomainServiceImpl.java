@@ -6,6 +6,7 @@ import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import jakarta.transaction.Transactional;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -41,6 +42,7 @@ public class SchoolDomainServiceImpl implements SchoolDomainService {
         SchoolDomain schoolDomain = new SchoolDomain();
         schoolDomain.setDomain(normalizedDomain);
         schoolDomain.setSchoolName(schoolName.trim());
+        schoolDomain.setCreatedAt(OffsetDateTime.now());
         return schoolDomainRepository.save(schoolDomain);
     }
 

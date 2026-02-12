@@ -16,7 +16,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -57,7 +57,7 @@ public class TransactionAtomicityTest {
         testUser.setSchoolDomain("university.edu");
         testUser.setVerified(true);
         testUser.setPasswordSet(false);
-        testUser.setCreatedAt(ZonedDateTime.now());
+        testUser.setCreatedAt(OffsetDateTime.now());
         testUser = userRepository.save(testUser);
 
         testPost = new Post(testUser.getId(), "Title", "Atomicity test post", "national", null);

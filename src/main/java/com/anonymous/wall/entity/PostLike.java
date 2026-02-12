@@ -3,7 +3,7 @@ package com.anonymous.wall.entity;
 import io.micronaut.data.annotation.*;
 import io.micronaut.data.model.naming.NamingStrategies;
 
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 @MappedEntity(value = "post_likes", namingStrategy = NamingStrategies.Raw.class)
@@ -20,7 +20,7 @@ public class PostLike {
     private UUID userId;
 
     @MappedProperty("created_at")
-    private ZonedDateTime createdAt = ZonedDateTime.now();
+    private OffsetDateTime createdAt = OffsetDateTime.now();
 
     // ================= Constructors =================
 
@@ -30,7 +30,7 @@ public class PostLike {
     public PostLike(UUID postId, UUID userId) {
         this.postId = postId;
         this.userId = userId;
-        this.createdAt = ZonedDateTime.now();
+        this.createdAt = OffsetDateTime.now();
     }
 
     // ================= Getters & Setters =================
@@ -44,6 +44,6 @@ public class PostLike {
     public UUID getUserId() { return userId; }
     public void setUserId(UUID userId) { this.userId = userId; }
 
-    public ZonedDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(ZonedDateTime createdAt) { this.createdAt = createdAt; }
+    public OffsetDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(OffsetDateTime createdAt) { this.createdAt = createdAt; }
 }

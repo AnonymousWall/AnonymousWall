@@ -9,7 +9,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -290,7 +290,7 @@ class UserServiceImplTest {
         user.setProfileName("Anonymous");
         user.setVerified(true);
         user.setPasswordSet(false);
-        user.setCreatedAt(ZonedDateTime.now());
+        user.setCreatedAt(OffsetDateTime.now());
         return user;
     }
 }

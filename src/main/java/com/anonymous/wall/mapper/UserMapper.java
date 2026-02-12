@@ -4,7 +4,7 @@ import com.anonymous.wall.entity.UserEntity;
 import com.anonymous.wall.model.UserDTO;
 import jakarta.inject.Singleton;
 
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 @Singleton
@@ -36,7 +36,7 @@ public class UserMapper {
         entity.setVerified(Boolean.TRUE.equals(dto.getIsVerified()));
         entity.setPasswordSet(false);
         entity.setCreatedAt(
-                dto.getCreatedAt() != null ? dto.getCreatedAt() : ZonedDateTime.now()
+                dto.getCreatedAt() != null ? dto.getCreatedAt() : OffsetDateTime.now()
         );
 
         return entity;

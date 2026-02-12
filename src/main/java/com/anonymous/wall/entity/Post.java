@@ -3,7 +3,7 @@ package com.anonymous.wall.entity;
 import io.micronaut.data.annotation.*;
 import io.micronaut.data.model.naming.NamingStrategies;
 
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 @MappedEntity(value = "posts", namingStrategy = NamingStrategies.Raw.class)
@@ -41,10 +41,10 @@ public class Post {
     private boolean hidden = false; // Soft-delete flag
 
     @MappedProperty("created_at")
-    private ZonedDateTime createdAt = ZonedDateTime.now();
+    private OffsetDateTime createdAt = OffsetDateTime.now();
 
     @MappedProperty("updated_at")
-    private ZonedDateTime updatedAt = ZonedDateTime.now();
+    private OffsetDateTime updatedAt = OffsetDateTime.now();
 
     @Version
     @MappedProperty("version")
@@ -69,8 +69,8 @@ public class Post {
         this.likeCount = 0;
         this.commentCount = 0;
         this.hidden = false;
-        this.createdAt = ZonedDateTime.now();
-        this.updatedAt = ZonedDateTime.now();
+        this.createdAt = OffsetDateTime.now();
+        this.updatedAt = OffsetDateTime.now();
         this.version = 0L;
     }
 
@@ -97,11 +97,11 @@ public class Post {
     public String getSchoolDomain() { return schoolDomain; }
     public void setSchoolDomain(String schoolDomain) { this.schoolDomain = schoolDomain; }
 
-    public ZonedDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(ZonedDateTime createdAt) { this.createdAt = createdAt; }
+    public OffsetDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(OffsetDateTime createdAt) { this.createdAt = createdAt; }
 
-    public ZonedDateTime getUpdatedAt() { return updatedAt; }
-    public void setUpdatedAt(ZonedDateTime updatedAt) { this.updatedAt = updatedAt; }
+    public OffsetDateTime getUpdatedAt() { return updatedAt; }
+    public void setUpdatedAt(OffsetDateTime updatedAt) { this.updatedAt = updatedAt; }
 
     public int getLikeCount() { return likeCount; }
     public void setLikeCount(int likeCount) { this.likeCount = likeCount; }

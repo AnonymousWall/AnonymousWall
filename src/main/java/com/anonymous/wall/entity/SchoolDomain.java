@@ -3,7 +3,7 @@ package com.anonymous.wall.entity;
 import io.micronaut.data.annotation.*;
 import io.micronaut.data.model.naming.NamingStrategies;
 
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 @MappedEntity(value = "school_domains", namingStrategy = NamingStrategies.Raw.class)
@@ -20,7 +20,7 @@ public class SchoolDomain {
     private String schoolName;
 
     @MappedProperty("created_at")
-    private ZonedDateTime createdAt;
+    private OffsetDateTime createdAt;
 
     // ---------------- Getters & Setters ----------------
 
@@ -33,6 +33,6 @@ public class SchoolDomain {
     public String getSchoolName() { return schoolName; }
     public void setSchoolName(String schoolName) { this.schoolName = schoolName; }
 
-    public ZonedDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(ZonedDateTime createdAt) { this.createdAt = createdAt; }
+    public OffsetDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(OffsetDateTime createdAt) { this.createdAt = createdAt; }
 }

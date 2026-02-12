@@ -3,7 +3,7 @@ package com.anonymous.wall.entity;
 import io.micronaut.data.annotation.*;
 import io.micronaut.data.model.naming.NamingStrategies;
 
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 @MappedEntity(value = "comment_reports", namingStrategy = NamingStrategies.Raw.class)
@@ -23,7 +23,7 @@ public class CommentReport {
     private String reason;
 
     @MappedProperty("created_at")
-    private ZonedDateTime createdAt = ZonedDateTime.now();
+    private OffsetDateTime createdAt = OffsetDateTime.now();
 
     // ================= Constructors =================
 
@@ -34,7 +34,7 @@ public class CommentReport {
         this.commentId = commentId;
         this.reporterUserId = reporterUserId;
         this.reason = reason;
-        this.createdAt = ZonedDateTime.now();
+        this.createdAt = OffsetDateTime.now();
     }
 
     // ================= Getters & Setters =================
@@ -51,6 +51,6 @@ public class CommentReport {
     public String getReason() { return reason; }
     public void setReason(String reason) { this.reason = reason; }
 
-    public ZonedDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(ZonedDateTime createdAt) { this.createdAt = createdAt; }
+    public OffsetDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(OffsetDateTime createdAt) { this.createdAt = createdAt; }
 }

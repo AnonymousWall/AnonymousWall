@@ -3,7 +3,7 @@ package com.anonymous.wall.entity;
 import io.micronaut.data.annotation.*;
 import io.micronaut.data.model.naming.NamingStrategies;
 
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 @MappedEntity(value = "comments", namingStrategy = NamingStrategies.Raw.class)
@@ -29,7 +29,7 @@ public class Comment {
     private boolean hidden = false;
 
     @MappedProperty("created_at")
-    private ZonedDateTime createdAt = ZonedDateTime.now();
+    private OffsetDateTime createdAt = OffsetDateTime.now();
 
     @Version
     @MappedProperty("version")
@@ -46,7 +46,7 @@ public class Comment {
         this.text = text;
         this.profileName = "Anonymous";
         this.hidden = false;
-        this.createdAt = ZonedDateTime.now();
+        this.createdAt = OffsetDateTime.now();
         this.version = 0L;
     }
 
@@ -70,8 +70,8 @@ public class Comment {
     public boolean isHidden() { return hidden; }
     public void setHidden(boolean hidden) { this.hidden = hidden; }
 
-    public ZonedDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(ZonedDateTime createdAt) { this.createdAt = createdAt; }
+    public OffsetDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(OffsetDateTime createdAt) { this.createdAt = createdAt; }
 
     public Long getVersion() { return version; }
     public void setVersion(Long version) { this.version = version; }

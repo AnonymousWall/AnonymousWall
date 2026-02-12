@@ -3,7 +3,7 @@ package com.anonymous.wall.entity;
 import io.micronaut.data.annotation.*;
 import io.micronaut.data.model.naming.NamingStrategies;
 
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 @MappedEntity(value = "users", namingStrategy = NamingStrategies.Raw.class)
@@ -32,7 +32,7 @@ public class UserEntity {
     private boolean passwordSet = false;
 
     @MappedProperty("created_at")
-    private ZonedDateTime createdAt = ZonedDateTime.now();
+    private OffsetDateTime createdAt = OffsetDateTime.now();
 
     @MappedProperty("report_count")
     private int reportCount = 0;
@@ -66,8 +66,8 @@ public class UserEntity {
     public boolean isPasswordSet() { return passwordSet; }
     public void setPasswordSet(boolean passwordSet) { this.passwordSet = passwordSet; }
 
-    public ZonedDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(ZonedDateTime createdAt) { this.createdAt = createdAt; }
+    public OffsetDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(OffsetDateTime createdAt) { this.createdAt = createdAt; }
 
     public int getReportCount() { return reportCount; }
     public void setReportCount(int reportCount) { this.reportCount = reportCount; }

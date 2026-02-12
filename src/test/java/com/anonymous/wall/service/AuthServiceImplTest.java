@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -122,7 +122,7 @@ class AuthServiceImplTest {
             RegisterEmailRequest request = new RegisterEmailRequest(email, code);
 
             EmailVerificationCode verificationCode = new EmailVerificationCode(
-                email, code, "register", ZonedDateTime.now().plusMinutes(15)
+                email, code, "register", OffsetDateTime.now().plusMinutes(15)
             );
 
             UserEntity savedUser = new UserEntity();
@@ -156,7 +156,7 @@ class AuthServiceImplTest {
             RegisterEmailRequest request = new RegisterEmailRequest(email, code);
 
             EmailVerificationCode verificationCode = new EmailVerificationCode(
-                email, code, "register", ZonedDateTime.now().plusMinutes(15)
+                email, code, "register", OffsetDateTime.now().plusMinutes(15)
             );
 
             UserEntity createdUser = new UserEntity();
@@ -226,7 +226,7 @@ class AuthServiceImplTest {
             RegisterEmailRequest request = new RegisterEmailRequest(email, code);
 
             EmailVerificationCode expiredCode = new EmailVerificationCode(
-                email, code, "register", ZonedDateTime.now().minusMinutes(1)
+                email, code, "register", OffsetDateTime.now().minusMinutes(1)
             );
 
             when(userService.findByEmail(email)).thenReturn(Optional.empty());
@@ -256,7 +256,7 @@ class AuthServiceImplTest {
             LoginEmailRequest request = new LoginEmailRequest(email, code);
 
             EmailVerificationCode verificationCode = new EmailVerificationCode(
-                email, code, "login", ZonedDateTime.now().plusMinutes(15)
+                email, code, "login", OffsetDateTime.now().plusMinutes(15)
             );
 
             UserEntity existingUser = new UserEntity();
@@ -286,7 +286,7 @@ class AuthServiceImplTest {
             LoginEmailRequest request = new LoginEmailRequest(email, code);
 
             EmailVerificationCode verificationCode = new EmailVerificationCode(
-                email, code, "login", ZonedDateTime.now().plusMinutes(15)
+                email, code, "login", OffsetDateTime.now().plusMinutes(15)
             );
 
             UserEntity newUser = new UserEntity();
@@ -335,7 +335,7 @@ class AuthServiceImplTest {
             LoginEmailRequest request = new LoginEmailRequest(email, code);
 
             EmailVerificationCode expiredCode = new EmailVerificationCode(
-                email, code, "login", ZonedDateTime.now().minusMinutes(20)
+                email, code, "login", OffsetDateTime.now().minusMinutes(20)
             );
 
             when(emailCodeRepository.findByEmailAndCodeAndPurpose(email, code, "login"))
@@ -667,7 +667,7 @@ class AuthServiceImplTest {
             ResetPasswordRequest request = new ResetPasswordRequest(email, code, newPassword);
 
             EmailVerificationCode verificationCode = new EmailVerificationCode(
-                email, code, "reset_password", ZonedDateTime.now().plusMinutes(15)
+                email, code, "reset_password", OffsetDateTime.now().plusMinutes(15)
             );
 
             UserEntity user = new UserEntity();
@@ -741,7 +741,7 @@ class AuthServiceImplTest {
             ResetPasswordRequest request = new ResetPasswordRequest(email, code, "password");
 
             EmailVerificationCode expiredCode = new EmailVerificationCode(
-                email, code, "reset_password", ZonedDateTime.now().minusMinutes(20)
+                email, code, "reset_password", OffsetDateTime.now().minusMinutes(20)
             );
 
             UserEntity user = new UserEntity();
@@ -768,7 +768,7 @@ class AuthServiceImplTest {
             ResetPasswordRequest request = new ResetPasswordRequest(email, code, "NewPassword");
 
             EmailVerificationCode verificationCode = new EmailVerificationCode(
-                email, code, "reset_password", ZonedDateTime.now().plusMinutes(15)
+                email, code, "reset_password", OffsetDateTime.now().plusMinutes(15)
             );
 
             UserEntity user = new UserEntity();
@@ -818,7 +818,7 @@ class AuthServiceImplTest {
         void shouldSetExpirationTimeCorrectly() {
             // Arrange
             SendEmailCodeRequest request = new SendEmailCodeRequest("test@harvard.edu", SendEmailCodeRequestPurpose.REGISTER);
-            ZonedDateTime beforeTime = ZonedDateTime.now();
+            OffsetDateTime beforeTime = OffsetDateTime.now();
 
             ArgumentCaptor<EmailVerificationCode> captor = ArgumentCaptor.forClass(EmailVerificationCode.class);
 
@@ -828,7 +828,7 @@ class AuthServiceImplTest {
             // Assert
             verify(emailCodeRepository, times(1)).save(captor.capture());
             EmailVerificationCode savedCode = captor.getValue();
-            ZonedDateTime afterTime = ZonedDateTime.now().plusMinutes(16);
+            OffsetDateTime afterTime = OffsetDateTime.now().plusMinutes(16);
 
             assertTrue(savedCode.getExpiresAt().isBefore(afterTime));
             assertTrue(savedCode.getExpiresAt().isAfter(beforeTime.plusMinutes(14)));
@@ -850,7 +850,7 @@ class AuthServiceImplTest {
             RegisterEmailRequest registerRequest = new RegisterEmailRequest(email, code);
 
             EmailVerificationCode verificationCode = new EmailVerificationCode(
-                email, code, "register", ZonedDateTime.now().plusMinutes(15)
+                email, code, "register", OffsetDateTime.now().plusMinutes(15)
             );
 
             UserEntity registeredUser = new UserEntity();
@@ -929,7 +929,7 @@ class AuthServiceImplTest {
 
             // Register with code
             EmailVerificationCode registerCode = new EmailVerificationCode(
-                email, code, "register", ZonedDateTime.now().plusMinutes(15)
+                email, code, "register", OffsetDateTime.now().plusMinutes(15)
             );
 
             UserEntity user = new UserEntity();
@@ -1051,7 +1051,7 @@ class AuthServiceImplTest {
             RegisterEmailRequest request = new RegisterEmailRequest(email, code);
 
             EmailVerificationCode verificationCode = new EmailVerificationCode(
-                email, code, "register", ZonedDateTime.now().plusMinutes(15)
+                email, code, "register", OffsetDateTime.now().plusMinutes(15)
             );
 
             UserEntity createdUser = new UserEntity();

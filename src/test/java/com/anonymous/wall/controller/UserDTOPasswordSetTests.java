@@ -17,7 +17,7 @@ import io.micronaut.test.extensions.junit5.annotation.MicronautTest;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.*;
 
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -73,7 +73,7 @@ class UserDTOPasswordSetTests {
             String code = "123456";
 
             EmailVerificationCode verificationCode = new EmailVerificationCode(
-                testEmail, code, "register", ZonedDateTime.now().plusMinutes(15)
+                testEmail, code, "register", OffsetDateTime.now().plusMinutes(15)
             );
             emailCodeRepository.save(verificationCode);
 
@@ -109,7 +109,7 @@ class UserDTOPasswordSetTests {
             String code = "123456";
 
             EmailVerificationCode verificationCode = new EmailVerificationCode(
-                testEmail, code, "register", ZonedDateTime.now().plusMinutes(15)
+                testEmail, code, "register", OffsetDateTime.now().plusMinutes(15)
             );
             emailCodeRepository.save(verificationCode);
 
@@ -156,7 +156,7 @@ class UserDTOPasswordSetTests {
             String code = "123456";
 
             EmailVerificationCode verificationCode = new EmailVerificationCode(
-                testEmail, code, "login", ZonedDateTime.now().plusMinutes(15)
+                testEmail, code, "login", OffsetDateTime.now().plusMinutes(15)
             );
             emailCodeRepository.save(verificationCode);
 
@@ -192,7 +192,7 @@ class UserDTOPasswordSetTests {
 
             String code = "123456";
             EmailVerificationCode verificationCode = new EmailVerificationCode(
-                testEmail, code, "login", ZonedDateTime.now().plusMinutes(15)
+                testEmail, code, "login", OffsetDateTime.now().plusMinutes(15)
             );
             emailCodeRepository.save(verificationCode);
 
@@ -258,7 +258,7 @@ class UserDTOPasswordSetTests {
             String code = "123456";
 
             EmailVerificationCode verificationCode = new EmailVerificationCode(
-                testEmail, code, "register", ZonedDateTime.now().plusMinutes(15)
+                testEmail, code, "register", OffsetDateTime.now().plusMinutes(15)
             );
             emailCodeRepository.save(verificationCode);
 
@@ -353,7 +353,7 @@ class UserDTOPasswordSetTests {
             // Request password reset
             String resetCode = "654321";
             EmailVerificationCode resetVerification = new EmailVerificationCode(
-                testEmail, resetCode, "reset_password", ZonedDateTime.now().plusMinutes(15)
+                testEmail, resetCode, "reset_password", OffsetDateTime.now().plusMinutes(15)
             );
             emailCodeRepository.save(resetVerification);
 
@@ -392,7 +392,7 @@ class UserDTOPasswordSetTests {
             String code = "123456";
 
             EmailVerificationCode verificationCode = new EmailVerificationCode(
-                testEmail, code, "register", ZonedDateTime.now().plusMinutes(15)
+                testEmail, code, "register", OffsetDateTime.now().plusMinutes(15)
             );
             emailCodeRepository.save(verificationCode);
 
@@ -477,7 +477,7 @@ class UserDTOPasswordSetTests {
             String code = "123456";
 
             EmailVerificationCode verificationCode = new EmailVerificationCode(
-                testEmail, code, "register", ZonedDateTime.now().plusMinutes(15)
+                testEmail, code, "register", OffsetDateTime.now().plusMinutes(15)
             );
             emailCodeRepository.save(verificationCode);
 
