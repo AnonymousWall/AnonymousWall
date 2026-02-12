@@ -350,4 +350,188 @@ class AdminUserControllerTest {
             assertEquals(HttpStatus.FORBIDDEN, exception.getStatus());
         }
     }
+
+    @Nested
+    @DisplayName("User Sorting and Filtering Tests")
+    class UserSortingAndFilteringTests {
+
+        @Test
+        @DisplayName("Positive: Sort users by creation time descending")
+        void sortUsersByCreatedAtDesc() {
+            // Act
+            HttpResponse<Map> response = client.toBlocking().exchange(
+                HttpRequest.GET(BASE_PATH + "?sortBy=createdAt&sortOrder=desc")
+                    .bearerAuth(adminToken),
+                Map.class
+            );
+
+            // Assert
+            assertEquals(HttpStatus.OK, response.getStatus());
+            assertNotNull(response.body());
+            assertTrue(response.body().containsKey("data"));
+        }
+
+        @Test
+        @DisplayName("Positive: Sort users by creation time ascending")
+        void sortUsersByCreatedAtAsc() {
+            // Act
+            HttpResponse<Map> response = client.toBlocking().exchange(
+                HttpRequest.GET(BASE_PATH + "?sortBy=createdAt&sortOrder=asc")
+                    .bearerAuth(adminToken),
+                Map.class
+            );
+
+            // Assert
+            assertEquals(HttpStatus.OK, response.getStatus());
+            assertNotNull(response.body());
+            assertTrue(response.body().containsKey("data"));
+        }
+
+        @Test
+        @DisplayName("Positive: Sort users by school domain")
+        void sortUsersBySchoolDomain() {
+            // Act
+            HttpResponse<Map> response = client.toBlocking().exchange(
+                HttpRequest.GET(BASE_PATH + "?sortBy=schoolDomain")
+                    .bearerAuth(adminToken),
+                Map.class
+            );
+
+            // Assert
+            assertEquals(HttpStatus.OK, response.getStatus());
+            assertNotNull(response.body());
+            assertTrue(response.body().containsKey("data"));
+        }
+
+        @Test
+        @DisplayName("Positive: Sort users by report count descending")
+        void sortUsersByReportCountDesc() {
+            // Act
+            HttpResponse<Map> response = client.toBlocking().exchange(
+                HttpRequest.GET(BASE_PATH + "?sortBy=reportCount&sortOrder=desc")
+                    .bearerAuth(adminToken),
+                Map.class
+            );
+
+            // Assert
+            assertEquals(HttpStatus.OK, response.getStatus());
+            assertNotNull(response.body());
+            assertTrue(response.body().containsKey("data"));
+        }
+
+        @Test
+        @DisplayName("Positive: Sort users by report count ascending")
+        void sortUsersByReportCountAsc() {
+            // Act
+            HttpResponse<Map> response = client.toBlocking().exchange(
+                HttpRequest.GET(BASE_PATH + "?sortBy=reportCount&sortOrder=asc")
+                    .bearerAuth(adminToken),
+                Map.class
+            );
+
+            // Assert
+            assertEquals(HttpStatus.OK, response.getStatus());
+            assertNotNull(response.body());
+            assertTrue(response.body().containsKey("data"));
+        }
+
+        @Test
+        @DisplayName("Positive: Sort users by post count descending")
+        void sortUsersByPostCountDesc() {
+            // Act
+            HttpResponse<Map> response = client.toBlocking().exchange(
+                HttpRequest.GET(BASE_PATH + "?sortBy=postCount&sortOrder=desc")
+                    .bearerAuth(adminToken),
+                Map.class
+            );
+
+            // Assert
+            assertEquals(HttpStatus.OK, response.getStatus());
+            assertNotNull(response.body());
+            assertTrue(response.body().containsKey("data"));
+        }
+
+        @Test
+        @DisplayName("Positive: Sort users by comment count descending")
+        void sortUsersByCommentCountDesc() {
+            // Act
+            HttpResponse<Map> response = client.toBlocking().exchange(
+                HttpRequest.GET(BASE_PATH + "?sortBy=commentCount&sortOrder=desc")
+                    .bearerAuth(adminToken),
+                Map.class
+            );
+
+            // Assert
+            assertEquals(HttpStatus.OK, response.getStatus());
+            assertNotNull(response.body());
+            assertTrue(response.body().containsKey("data"));
+        }
+
+        @Test
+        @DisplayName("Positive: Filter users by blocked status - blocked only")
+        void filterUsersByBlockedTrue() {
+            // First block a user
+            client.toBlocking().exchange(
+                HttpRequest.POST(BASE_PATH + "/" + targetUser.getId() + "/block", null)
+                    .bearerAuth(adminToken),
+                Map.class
+            );
+
+            // Act
+            HttpResponse<Map> response = client.toBlocking().exchange(
+                HttpRequest.GET(BASE_PATH + "?blocked=true")
+                    .bearerAuth(adminToken),
+                Map.class
+            );
+
+            // Assert
+            assertEquals(HttpStatus.OK, response.getStatus());
+            assertNotNull(response.body());
+            assertTrue(response.body().containsKey("data"));
+            
+            List<Map> users = (List<Map>) response.body().get("data");
+            // Verify all returned users are blocked
+            for (Map user : users) {
+                assertTrue((Boolean) user.get("blocked"));
+            }
+        }
+
+        @Test
+        @DisplayName("Positive: Filter users by blocked status - active only")
+        void filterUsersByBlockedFalse() {
+            // Act
+            HttpResponse<Map> response = client.toBlocking().exchange(
+                HttpRequest.GET(BASE_PATH + "?blocked=false")
+                    .bearerAuth(adminToken),
+                Map.class
+            );
+
+            // Assert
+            assertEquals(HttpStatus.OK, response.getStatus());
+            assertNotNull(response.body());
+            assertTrue(response.body().containsKey("data"));
+            
+            List<Map> users = (List<Map>) response.body().get("data");
+            // Verify all returned users are not blocked
+            for (Map user : users) {
+                assertFalse((Boolean) user.get("blocked"));
+            }
+        }
+
+        @Test
+        @DisplayName("Positive: Combine filtering and sorting")
+        void combineFilteringAndSorting() {
+            // Act
+            HttpResponse<Map> response = client.toBlocking().exchange(
+                HttpRequest.GET(BASE_PATH + "?blocked=false&sortBy=createdAt&sortOrder=desc")
+                    .bearerAuth(adminToken),
+                Map.class
+            );
+
+            // Assert
+            assertEquals(HttpStatus.OK, response.getStatus());
+            assertNotNull(response.body());
+            assertTrue(response.body().containsKey("data"));
+        }
+    }
 }
