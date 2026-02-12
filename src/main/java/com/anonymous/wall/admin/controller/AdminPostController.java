@@ -4,6 +4,7 @@ import com.anonymous.wall.admin.service.AdminPostService;
 import com.anonymous.wall.entity.Post;
 import com.anonymous.wall.model.AdminPostDTO;
 import com.anonymous.wall.model.AdminPostDTOWall;
+import com.anonymous.wall.model.SortBy;
 import io.micronaut.core.annotation.Nullable;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
@@ -114,6 +115,55 @@ public class AdminPostController {
         
         Map<String, String> response = new HashMap<>();
         response.put("message", "Post deleted successfully");
+        
+        return HttpResponse.ok(response);
+    }
+    
+    /**
+     * GET /admin/posts/by-wall - Get posts by wall with sorting (admin version)
+     * Allows admin to filter by wall type (national/campus/all) and sort
+     * Does NOT filter by schoolDomain, includes both hidden and non-hidden posts
+     */
+    @Get("/by-wall")
+    @Secured({"ADMIN", "MODERATOR"})
+    public HttpResponse<Object> getPostsByWall(
+            @Nullable @QueryValue String wall,
+            @QueryValue(defaultValue = "1") int page,
+            @QueryValue(defaultValue = "20") int limit,
+            @Nullable @QueryValue String sortBy,
+            HttpRequest<?> request) {
+        
+        log.info("Admin fetching posts by wall - wall: {}, page: {}, limit: {}, sortBy: {}", 
+                 wall, page, limit, sortBy);
+        
+        // Validate pagination parameters
+        if (page < 1) page = 1;
+        if (limit < 1 || limit > 100) limit = 20;
+        
+        // Create Pageable (0-based indexing)
+        Pageable pageable = Pageable.from(page - 1, limit);
+        
+        // Parse sortBy parameter
+        SortBy sort = SortBy.parse(sortBy);
+        
+        // Fetch posts by wall with sorting
+        Page<Post> postsPage = adminPostService.getPostsByWall(wall, pageable, sort);
+        
+        // Map to DTOs
+        List<AdminPostDTO> postDTOs = postsPage.getContent().stream()
+                .map(this::mapPostToDTO)
+                .collect(Collectors.toList());
+        
+        // Build response
+        Map<String, Object> response = new HashMap<>();
+        response.put("data", postDTOs);
+        
+        Map<String, Object> pagination = new HashMap<>();
+        pagination.put("page", page);
+        pagination.put("limit", limit);
+        pagination.put("total", postsPage.getTotalSize());
+        pagination.put("totalPages", postsPage.getTotalPages());
+        response.put("pagination", pagination);
         
         return HttpResponse.ok(response);
     }

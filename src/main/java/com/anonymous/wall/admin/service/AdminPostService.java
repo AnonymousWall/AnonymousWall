@@ -1,6 +1,7 @@
 package com.anonymous.wall.admin.service;
 
 import com.anonymous.wall.entity.Post;
+import com.anonymous.wall.model.SortBy;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
 
@@ -20,6 +21,16 @@ public interface AdminPostService {
      * @param sortOrder Sort order: "asc" or "desc"
      */
     Page<Post> getAllPosts(Pageable pageable, UUID userId, Boolean hidden, String sortBy, String sortOrder);
+    
+    /**
+     * Get posts by wall with pagination and sorting
+     * Admin version: does NOT filter by schoolDomain, includes both hidden and non-hidden posts
+     * @param wall Wall type: "national", "campus", or null for all posts
+     * @param pageable Pagination parameters
+     * @param sortBy Sort type: NEWEST, OLDEST, MOST_LIKED, LEAST_LIKED
+     * @return Page of posts matching the criteria
+     */
+    Page<Post> getPostsByWall(String wall, Pageable pageable, SortBy sortBy);
     
     /**
      * Soft delete a post (hide it)

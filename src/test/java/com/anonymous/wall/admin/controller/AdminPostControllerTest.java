@@ -409,4 +409,215 @@ class AdminPostControllerTest {
             assertTrue(response.body().containsKey("data"));
         }
     }
+
+    @Nested
+    @DisplayName("Post By Wall Endpoint Tests")
+    class PostsByWallTests {
+
+        @BeforeEach
+        void setupWallTests() {
+            // Create national posts
+            Post nationalPost1 = new Post();
+            nationalPost1.setUserId(regularUser.getId());
+            nationalPost1.setTitle("National Post 1");
+            nationalPost1.setContent("National content 1");
+            nationalPost1.setWall("national");
+            nationalPost1.setSchoolDomain(null);
+            nationalPost1.setLikeCount(5);
+            postRepository.save(nationalPost1);
+
+            Post nationalPost2 = new Post();
+            nationalPost2.setUserId(regularUser.getId());
+            nationalPost2.setTitle("National Post 2");
+            nationalPost2.setContent("National content 2");
+            nationalPost2.setWall("national");
+            nationalPost2.setSchoolDomain(null);
+            nationalPost2.setLikeCount(10);
+            postRepository.save(nationalPost2);
+
+            // Create campus posts
+            Post campusPost1 = new Post();
+            campusPost1.setUserId(regularUser.getId());
+            campusPost1.setTitle("Campus Post 1");
+            campusPost1.setContent("Campus content 1");
+            campusPost1.setWall("campus");
+            campusPost1.setSchoolDomain("test.edu");
+            campusPost1.setLikeCount(3);
+            postRepository.save(campusPost1);
+        }
+
+        @Test
+        @DisplayName("Positive: Admin can get all national posts with default sorting")
+        void adminCanGetNationalPosts() {
+            // Act
+            HttpResponse<Map> response = client.toBlocking().exchange(
+                HttpRequest.GET(BASE_PATH + "/by-wall?wall=national")
+                    .bearerAuth(adminToken),
+                Map.class
+            );
+
+            // Assert
+            assertEquals(HttpStatus.OK, response.getStatus());
+            assertNotNull(response.body());
+            assertTrue(response.body().containsKey("data"));
+            assertTrue(response.body().containsKey("pagination"));
+            
+            List<Map> posts = (List<Map>) response.body().get("data");
+            assertTrue(posts.size() >= 2); // At least 2 national posts
+            
+            // Verify all posts are national
+            for (Map post : posts) {
+                assertEquals("national", post.get("wall"));
+            }
+        }
+
+        @Test
+        @DisplayName("Positive: Admin can get all campus posts with default sorting")
+        void adminCanGetCampusPosts() {
+            // Act
+            HttpResponse<Map> response = client.toBlocking().exchange(
+                HttpRequest.GET(BASE_PATH + "/by-wall?wall=campus")
+                    .bearerAuth(adminToken),
+                Map.class
+            );
+
+            // Assert
+            assertEquals(HttpStatus.OK, response.getStatus());
+            assertNotNull(response.body());
+            assertTrue(response.body().containsKey("data"));
+            
+            List<Map> posts = (List<Map>) response.body().get("data");
+            assertTrue(posts.size() >= 2); // At least 2 campus posts (including test post)
+            
+            // Verify all posts are campus
+            for (Map post : posts) {
+                assertEquals("campus", post.get("wall"));
+            }
+        }
+
+        @Test
+        @DisplayName("Positive: Admin can get all posts when wall is null")
+        void adminCanGetAllPostsWithNullWall() {
+            // Act
+            HttpResponse<Map> response = client.toBlocking().exchange(
+                HttpRequest.GET(BASE_PATH + "/by-wall")
+                    .bearerAuth(adminToken),
+                Map.class
+            );
+
+            // Assert
+            assertEquals(HttpStatus.OK, response.getStatus());
+            assertNotNull(response.body());
+            assertTrue(response.body().containsKey("data"));
+            
+            List<Map> posts = (List<Map>) response.body().get("data");
+            assertTrue(posts.size() >= 4); // At least 4 posts total
+        }
+
+        @Test
+        @DisplayName("Positive: Admin can sort national posts by MOST_LIKED")
+        void adminCanSortNationalPostsByMostLiked() {
+            // Act
+            HttpResponse<Map> response = client.toBlocking().exchange(
+                HttpRequest.GET(BASE_PATH + "/by-wall?wall=national&sortBy=MOST_LIKED")
+                    .bearerAuth(adminToken),
+                Map.class
+            );
+
+            // Assert
+            assertEquals(HttpStatus.OK, response.getStatus());
+            List<Map> posts = (List<Map>) response.body().get("data");
+            assertTrue(posts.size() >= 2);
+            
+            // Verify sorting (first post should have more likes than second)
+            if (posts.size() >= 2) {
+                int firstLikes = (int) posts.get(0).get("likeCount");
+                int secondLikes = (int) posts.get(1).get("likeCount");
+                assertTrue(firstLikes >= secondLikes);
+            }
+        }
+
+        @Test
+        @DisplayName("Positive: Admin can sort posts by OLDEST")
+        void adminCanSortPostsByOldest() {
+            // Act
+            HttpResponse<Map> response = client.toBlocking().exchange(
+                HttpRequest.GET(BASE_PATH + "/by-wall?wall=national&sortBy=OLDEST")
+                    .bearerAuth(adminToken),
+                Map.class
+            );
+
+            // Assert
+            assertEquals(HttpStatus.OK, response.getStatus());
+            assertNotNull(response.body());
+            assertTrue(response.body().containsKey("data"));
+        }
+
+        @Test
+        @DisplayName("Positive: Admin can sort posts by LEAST_LIKED")
+        void adminCanSortPostsByLeastLiked() {
+            // Act
+            HttpResponse<Map> response = client.toBlocking().exchange(
+                HttpRequest.GET(BASE_PATH + "/by-wall?wall=campus&sortBy=LEAST_LIKED")
+                    .bearerAuth(adminToken),
+                Map.class
+            );
+
+            // Assert
+            assertEquals(HttpStatus.OK, response.getStatus());
+            assertNotNull(response.body());
+            assertTrue(response.body().containsKey("data"));
+        }
+
+        @Test
+        @DisplayName("Positive: Pagination works with wall filtering")
+        void paginationWorksWithWallFiltering() {
+            // Act
+            HttpResponse<Map> response = client.toBlocking().exchange(
+                HttpRequest.GET(BASE_PATH + "/by-wall?wall=national&page=1&limit=1")
+                    .bearerAuth(adminToken),
+                Map.class
+            );
+
+            // Assert
+            assertEquals(HttpStatus.OK, response.getStatus());
+            Map pagination = (Map) response.body().get("pagination");
+            assertEquals(1, pagination.get("page"));
+            assertEquals(1, pagination.get("limit"));
+            
+            List<Map> posts = (List<Map>) response.body().get("data");
+            assertTrue(posts.size() <= 1);
+        }
+
+        @Test
+        @DisplayName("Negative: Regular user cannot access by-wall endpoint")
+        void regularUserCannotAccessByWallEndpoint() {
+            // Act & Assert
+            HttpClientResponseException exception = assertThrows(
+                HttpClientResponseException.class,
+                () -> client.toBlocking().exchange(
+                    HttpRequest.GET(BASE_PATH + "/by-wall?wall=national")
+                        .bearerAuth(userToken),
+                    Map.class
+                )
+            );
+
+            assertEquals(HttpStatus.FORBIDDEN, exception.getStatus());
+        }
+
+        @Test
+        @DisplayName("Negative: Unauthenticated user cannot access by-wall endpoint")
+        void unauthenticatedUserCannotAccessByWallEndpoint() {
+            // Act & Assert
+            HttpClientResponseException exception = assertThrows(
+                HttpClientResponseException.class,
+                () -> client.toBlocking().exchange(
+                    HttpRequest.GET(BASE_PATH + "/by-wall?wall=national"),
+                    Map.class
+                )
+            );
+
+            assertEquals(HttpStatus.UNAUTHORIZED, exception.getStatus());
+        }
+    }
 }
