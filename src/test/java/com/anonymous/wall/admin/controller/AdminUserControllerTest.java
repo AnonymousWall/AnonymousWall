@@ -490,6 +490,8 @@ class AdminUserControllerTest {
             assertTrue(response.body().containsKey("data"));
             
             List<Map> users = (List<Map>) response.body().get("data");
+            // Verify we have at least one blocked user (since we just blocked one)
+            assertFalse(users.isEmpty(), "Should have at least one blocked user");
             // Verify all returned users are blocked
             for (Map user : users) {
                 assertTrue((Boolean) user.get("blocked"));
@@ -512,6 +514,8 @@ class AdminUserControllerTest {
             assertTrue(response.body().containsKey("data"));
             
             List<Map> users = (List<Map>) response.body().get("data");
+            // Verify we have at least one active user (our test users)
+            assertFalse(users.isEmpty(), "Should have at least one active user");
             // Verify all returned users are not blocked
             for (Map user : users) {
                 assertFalse((Boolean) user.get("blocked"));
