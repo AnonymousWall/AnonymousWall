@@ -70,6 +70,12 @@ public class AdminCommentServiceImpl implements AdminCommentService {
         // don't support dynamic sorting. Without explicit ORDER BY, result order is database-dependent.
         // To add custom sorting with filters, we would need repository methods like:
         // findByHiddenOrderByCreatedAtDesc, findByUserIdOrderByCreatedAtDesc, etc.
+        
+        if (sortBy != null) {
+            log.warn("sortBy parameter '{}' is not supported with filter parameters (userId={}, hidden={}) and will be ignored",
+                     sortBy, userId, hidden);
+        }
+        
         if (userId == null && hidden != null) {
             // Filter by hidden status only
             return commentRepository.findByHidden(hidden, pageable);

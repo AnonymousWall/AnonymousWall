@@ -78,7 +78,10 @@ public class AdminUserServiceImpl implements AdminUserService {
                 userRepository.findByBlockedOrderByCreatedAtDesc(blocked, pageable) :
                 userRepository.findByBlockedOrderByCreatedAtAsc(blocked, pageable);
         }
+        
         // For other sort options with blocked filter, order is database-dependent
+        log.warn("sortBy parameter '{}' is not fully supported with blocked filter and will use database-dependent ordering. " +
+                 "Only 'createdAt' sorting is supported with blocked filter.", sortBy);
         return userRepository.findByBlocked(blocked, pageable);
     }
     
