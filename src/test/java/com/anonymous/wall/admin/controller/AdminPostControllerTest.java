@@ -408,5 +408,177 @@ class AdminPostControllerTest {
             assertNotNull(response.body());
             assertTrue(response.body().containsKey("data"));
         }
+
+        @Test
+        @DisplayName("Positive: Filter posts by wall type - campus")
+        void filterPostsByWallCampus() {
+            // Create campus and national posts
+            Post campusPost = new Post();
+            campusPost.setUserId(regularUser.getId());
+            campusPost.setTitle("Campus Post");
+            campusPost.setContent("Campus content");
+            campusPost.setWall("campus");
+            campusPost.setSchoolDomain("test.edu");
+            postRepository.save(campusPost);
+
+            Post nationalPost = new Post();
+            nationalPost.setUserId(regularUser.getId());
+            nationalPost.setTitle("National Post");
+            nationalPost.setContent("National content");
+            nationalPost.setWall("national");
+            nationalPost.setSchoolDomain("test.edu");
+            postRepository.save(nationalPost);
+
+            // Act
+            HttpResponse<Map> response = client.toBlocking().exchange(
+                HttpRequest.GET(BASE_PATH + "?wall=campus")
+                    .bearerAuth(adminToken),
+                Map.class
+            );
+
+            // Assert
+            assertEquals(HttpStatus.OK, response.getStatus());
+            assertNotNull(response.body());
+            assertTrue(response.body().containsKey("data"));
+            
+            List<Map> posts = (List<Map>) response.body().get("data");
+            // All returned posts should be campus posts
+            for (Map post : posts) {
+                assertEquals("campus", post.get("wall"));
+            }
+        }
+
+        @Test
+        @DisplayName("Positive: Filter posts by wall type - national")
+        void filterPostsByWallNational() {
+            // Create campus and national posts
+            Post campusPost = new Post();
+            campusPost.setUserId(regularUser.getId());
+            campusPost.setTitle("Campus Post");
+            campusPost.setContent("Campus content");
+            campusPost.setWall("campus");
+            campusPost.setSchoolDomain("test.edu");
+            postRepository.save(campusPost);
+
+            Post nationalPost = new Post();
+            nationalPost.setUserId(regularUser.getId());
+            nationalPost.setTitle("National Post");
+            nationalPost.setContent("National content");
+            nationalPost.setWall("national");
+            nationalPost.setSchoolDomain("test.edu");
+            postRepository.save(nationalPost);
+
+            // Act
+            HttpResponse<Map> response = client.toBlocking().exchange(
+                HttpRequest.GET(BASE_PATH + "?wall=national")
+                    .bearerAuth(adminToken),
+                Map.class
+            );
+
+            // Assert
+            assertEquals(HttpStatus.OK, response.getStatus());
+            assertNotNull(response.body());
+            assertTrue(response.body().containsKey("data"));
+            
+            List<Map> posts = (List<Map>) response.body().get("data");
+            // All returned posts should be national posts
+            for (Map post : posts) {
+                assertEquals("national", post.get("wall"));
+            }
+        }
+
+        @Test
+        @DisplayName("Positive: Combine wall filter with other filters")
+        void combineWallFilterWithOtherFilters() {
+            // Create posts with different combinations
+            Post hiddenCampusPost = new Post();
+            hiddenCampusPost.setUserId(regularUser.getId());
+            hiddenCampusPost.setTitle("Hidden Campus Post");
+            hiddenCampusPost.setContent("Content");
+            hiddenCampusPost.setWall("campus");
+            hiddenCampusPost.setSchoolDomain("test.edu");
+            hiddenCampusPost.setHidden(true);
+            postRepository.save(hiddenCampusPost);
+
+            Post visibleCampusPost = new Post();
+            visibleCampusPost.setUserId(regularUser.getId());
+            visibleCampusPost.setTitle("Visible Campus Post");
+            visibleCampusPost.setContent("Content");
+            visibleCampusPost.setWall("campus");
+            visibleCampusPost.setSchoolDomain("test.edu");
+            visibleCampusPost.setHidden(false);
+            postRepository.save(visibleCampusPost);
+
+            Post visibleNationalPost = new Post();
+            visibleNationalPost.setUserId(regularUser.getId());
+            visibleNationalPost.setTitle("Visible National Post");
+            visibleNationalPost.setContent("Content");
+            visibleNationalPost.setWall("national");
+            visibleNationalPost.setSchoolDomain("test.edu");
+            visibleNationalPost.setHidden(false);
+            postRepository.save(visibleNationalPost);
+
+            // Act - filter by campus and not hidden
+            HttpResponse<Map> response = client.toBlocking().exchange(
+                HttpRequest.GET(BASE_PATH + "?wall=campus&hidden=false")
+                    .bearerAuth(adminToken),
+                Map.class
+            );
+
+            // Assert
+            assertEquals(HttpStatus.OK, response.getStatus());
+            assertNotNull(response.body());
+            assertTrue(response.body().containsKey("data"));
+            
+            List<Map> posts = (List<Map>) response.body().get("data");
+            // All returned posts should be campus and not hidden
+            for (Map post : posts) {
+                assertEquals("campus", post.get("wall"));
+                assertFalse((Boolean) post.get("hidden"));
+            }
+        }
+
+        @Test
+        @DisplayName("Positive: Filter by wall, userId, and hidden status")
+        void filterByWallUserIdAndHidden() {
+            // Create posts with different combinations
+            Post campusPost = new Post();
+            campusPost.setUserId(regularUser.getId());
+            campusPost.setTitle("Campus Post by Regular User");
+            campusPost.setContent("Content");
+            campusPost.setWall("campus");
+            campusPost.setSchoolDomain("test.edu");
+            campusPost.setHidden(false);
+            postRepository.save(campusPost);
+
+            Post nationalPost = new Post();
+            nationalPost.setUserId(adminUser.getId());
+            nationalPost.setTitle("National Post by Admin");
+            nationalPost.setContent("Content");
+            nationalPost.setWall("national");
+            nationalPost.setSchoolDomain("test.edu");
+            nationalPost.setHidden(false);
+            postRepository.save(nationalPost);
+
+            // Act - filter by campus, specific user, and not hidden
+            HttpResponse<Map> response = client.toBlocking().exchange(
+                HttpRequest.GET(BASE_PATH + "?wall=campus&userId=" + regularUser.getId() + "&hidden=false")
+                    .bearerAuth(adminToken),
+                Map.class
+            );
+
+            // Assert
+            assertEquals(HttpStatus.OK, response.getStatus());
+            assertNotNull(response.body());
+            assertTrue(response.body().containsKey("data"));
+            
+            List<Map> posts = (List<Map>) response.body().get("data");
+            // All returned posts should match all three filters
+            for (Map post : posts) {
+                assertEquals("campus", post.get("wall"));
+                assertEquals(regularUser.getId().toString(), post.get("userId"));
+                assertFalse((Boolean) post.get("hidden"));
+            }
+        }
     }
 }

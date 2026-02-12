@@ -1273,6 +1273,13 @@ paths:
             type: boolean
           description: Filter by hidden status
         - in: query
+          name: wall
+          required: false
+          schema:
+            type: string
+            enum: [campus, national]
+          description: Filter by wall type (campus or national)
+        - in: query
           name: sortBy
           required: false
           schema:
