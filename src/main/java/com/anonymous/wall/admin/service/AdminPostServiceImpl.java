@@ -41,6 +41,7 @@ public class AdminPostServiceImpl implements AdminPostService {
         boolean isDesc = sortOrder == null || sortOrder.equalsIgnoreCase("desc");
         
         // Case 1: No filters, no custom sorting - return all with default pagination
+        // Uses database default ordering (typically by id)
         if (userId == null && hidden == null && sortBy == null) {
             return postRepository.findAll(pageable);
         }

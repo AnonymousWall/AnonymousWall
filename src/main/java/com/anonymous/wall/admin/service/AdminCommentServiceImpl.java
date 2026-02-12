@@ -41,6 +41,7 @@ public class AdminCommentServiceImpl implements AdminCommentService {
         boolean isDesc = sortOrder == null || sortOrder.equalsIgnoreCase("desc");
         
         // Case 1: No filters, no custom sorting - return all with default pagination
+        // Uses database default ordering (typically by id)
         if (userId == null && hidden == null && sortBy == null) {
             return commentRepository.findAll(pageable);
         }
