@@ -87,28 +87,6 @@ public class CommentsServiceImpl implements CommentsService {
     }
 
     /**
-     * Get all comments for a post
-     */
-    @Override
-    public List<Comment> getComments(UUID postId) {
-        log.debug("Fetching all comments for post: {}", postId);
-        List<Comment> comments = commentRepository.findByPostIdAndHiddenFalse(postId);
-        log.info("Retrieved {} comments for post: {}", comments.size(), postId);
-        return comments;
-    }
-
-    /**
-     * Get comments for a post with pagination
-     */
-    @Override
-    public Page<Comment> getCommentsWithPagination(UUID postId, Pageable pageable) {
-        log.debug("Fetching comments for post: {}, page: {}, limit: {}", postId, pageable.getNumber() + 1, pageable.getSize());
-        Page<Comment> comments = commentRepository.findByPostIdAndHiddenFalse(postId, pageable);
-        log.info("Retrieved {} comments for post: {}, total: {}", comments.getNumberOfElements(), postId, comments.getTotalSize());
-        return comments;
-    }
-
-    /**
      * Get comments for a post with pagination and sorting
      */
     @Override

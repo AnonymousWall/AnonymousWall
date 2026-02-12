@@ -106,7 +106,7 @@ class PostsServiceBatchEnrichmentTest {
 
             // Fetch posts as user1
             Pageable pageable = Pageable.from(0, 10);
-            Page<Post> result = postsService.getPostsByWall("campus", pageable, userId1);
+            Page<Post> result = postsService.getPostsByWall("campus", pageable, userId1, "harvard.edu", SortBy.NEWEST);
 
             // Verify we got all posts
             assertEquals(5, result.getContent().size(), "Should return 5 posts");
@@ -140,7 +140,7 @@ class PostsServiceBatchEnrichmentTest {
 
             // Fetch posts as user1 (who hasn't liked anything)
             Pageable pageable = Pageable.from(0, 10);
-            Page<Post> result = postsService.getPostsByWall("campus", pageable, userId1);
+            Page<Post> result = postsService.getPostsByWall("campus", pageable, userId1, "harvard.edu", SortBy.NEWEST);
 
             assertEquals(3, result.getContent().size());
             
@@ -165,7 +165,7 @@ class PostsServiceBatchEnrichmentTest {
 
             // Fetch posts as user1
             Pageable pageable = Pageable.from(0, 10);
-            Page<Post> result = postsService.getPostsByWall("campus", pageable, userId1);
+            Page<Post> result = postsService.getPostsByWall("campus", pageable, userId1, "harvard.edu", SortBy.NEWEST);
 
             assertEquals(3, result.getContent().size());
             
@@ -187,7 +187,7 @@ class PostsServiceBatchEnrichmentTest {
 
             // Fetch with sorting
             Pageable pageable = Pageable.from(0, 10);
-            Page<Post> result = postsService.getPostsByWall("campus", pageable, userId1, SortBy.NEWEST);
+            Page<Post> result = postsService.getPostsByWall("campus", pageable, userId1, "harvard.edu", SortBy.NEWEST);
 
             assertEquals(2, result.getContent().size());
             
@@ -218,7 +218,7 @@ class PostsServiceBatchEnrichmentTest {
 
             // Fetch with sorting by most liked
             Pageable pageable = Pageable.from(0, 10);
-            Page<Post> result = postsService.getPostsByWall("campus", pageable, userId1, SortBy.MOST_LIKED);
+            Page<Post> result = postsService.getPostsByWall("campus", pageable, userId1, "harvard.edu", SortBy.MOST_LIKED);
 
             assertEquals(2, result.getContent().size());
             
@@ -252,7 +252,7 @@ class PostsServiceBatchEnrichmentTest {
 
             // Fetch first page (20 posts)
             Pageable pageable1 = Pageable.from(0, 20);
-            Page<Post> page1 = postsService.getPostsByWall("campus", pageable1, userId1);
+            Page<Post> page1 = postsService.getPostsByWall("campus", pageable1, userId1, "harvard.edu", SortBy.NEWEST);
 
             assertEquals(20, page1.getContent().size(), "First page should have 20 posts");
             
@@ -262,7 +262,7 @@ class PostsServiceBatchEnrichmentTest {
 
             // Fetch second page (5 posts)
             Pageable pageable2 = Pageable.from(1, 20);
-            Page<Post> page2 = postsService.getPostsByWall("campus", pageable2, userId1);
+            Page<Post> page2 = postsService.getPostsByWall("campus", pageable2, userId1, "harvard.edu", SortBy.NEWEST);
 
             assertEquals(5, page2.getContent().size(), "Second page should have 5 posts");
             
@@ -283,7 +283,7 @@ class PostsServiceBatchEnrichmentTest {
 
             // Request page beyond available data
             Pageable pageable = Pageable.from(5, 20);
-            Page<Post> result = postsService.getPostsByWall("campus", pageable, userId1);
+            Page<Post> result = postsService.getPostsByWall("campus", pageable, userId1, "harvard.edu", SortBy.NEWEST);
 
             assertTrue(result.getContent().isEmpty(), "Should return empty page");
         }
@@ -306,7 +306,7 @@ class PostsServiceBatchEnrichmentTest {
 
             // Fetch national posts
             Pageable pageable = Pageable.from(0, 10);
-            Page<Post> result = postsService.getPostsByWall("national", pageable, userId1);
+            Page<Post> result = postsService.getPostsByWall("national", pageable, userId1, "harvard.edu", SortBy.NEWEST);
 
             assertEquals(3, result.getContent().size());
             

@@ -85,7 +85,7 @@ class PostsServiceCommentsPaginationSortingTests {
         @DisplayName("Should return first page of comments with default parameters")
         void shouldReturnFirstPageDefault() {
             Pageable pageable = Pageable.from(0, 20);
-            Page<Comment> result = commentsService.getCommentsWithPagination(testPost.getId(), pageable);
+            Page<Comment> result = commentsService.getCommentsWithPagination(testPost.getId(), pageable, SortBy.NEWEST);
 
             assertEquals(20, result.getContent().size(), "Should return 20 items");
             assertEquals(40, result.getTotalSize(), "Total should be 40");
@@ -96,7 +96,7 @@ class PostsServiceCommentsPaginationSortingTests {
         @DisplayName("Should return second page of comments")
         void shouldReturnSecondPage() {
             Pageable pageable = Pageable.from(1, 20); // Page 2 (0-based)
-            Page<Comment> result = commentsService.getCommentsWithPagination(testPost.getId(), pageable);
+            Page<Comment> result = commentsService.getCommentsWithPagination(testPost.getId(), pageable, SortBy.NEWEST);
 
             assertEquals(20, result.getContent().size(), "Second page should have 20 items");
             assertEquals(40, result.getTotalSize(), "Total should be 40");
@@ -106,7 +106,7 @@ class PostsServiceCommentsPaginationSortingTests {
         @DisplayName("Should respect custom limit for comments")
         void shouldRespectCustomLimit() {
             Pageable pageable = Pageable.from(0, 10);
-            Page<Comment> result = commentsService.getCommentsWithPagination(testPost.getId(), pageable);
+            Page<Comment> result = commentsService.getCommentsWithPagination(testPost.getId(), pageable, SortBy.NEWEST);
 
             assertEquals(10, result.getContent().size());
             assertEquals(4, result.getTotalPages(), "Should have 4 pages with limit 10");
@@ -116,7 +116,7 @@ class PostsServiceCommentsPaginationSortingTests {
         @DisplayName("Should handle max limit for comments")
         void shouldHandleMaxLimit() {
             Pageable pageable = Pageable.from(0, 100);
-            Page<Comment> result = commentsService.getCommentsWithPagination(testPost.getId(), pageable);
+            Page<Comment> result = commentsService.getCommentsWithPagination(testPost.getId(), pageable, SortBy.NEWEST);
 
             assertEquals(40, result.getContent().size(), "Should return all 40 items");
             assertEquals(1, result.getTotalPages());
@@ -131,7 +131,7 @@ class PostsServiceCommentsPaginationSortingTests {
         @DisplayName("Should handle page beyond available pages")
         void shouldHandlePageBeyondAvailable() {
             Pageable pageable = Pageable.from(10, 20);
-            Page<Comment> result = commentsService.getCommentsWithPagination(testPost.getId(), pageable);
+            Page<Comment> result = commentsService.getCommentsWithPagination(testPost.getId(), pageable, SortBy.NEWEST);
 
             assertEquals(0, result.getContent().size(), "Should return empty for page beyond available");
         }
@@ -144,7 +144,7 @@ class PostsServiceCommentsPaginationSortingTests {
             emptyPost = postRepository.save(emptyPost);
 
             Pageable pageable = Pageable.from(0, 20);
-            Page<Comment> result = commentsService.getCommentsWithPagination(emptyPost.getId(), pageable);
+            Page<Comment> result = commentsService.getCommentsWithPagination(emptyPost.getId(), pageable, SortBy.NEWEST);
 
             assertEquals(0, result.getContent().size());
             assertEquals(0, result.getTotalSize());
@@ -159,7 +159,7 @@ class PostsServiceCommentsPaginationSortingTests {
         @DisplayName("Should handle limit=1 for comments")
         void shouldHandleLimit1() {
             Pageable pageable = Pageable.from(0, 1);
-            Page<Comment> result = commentsService.getCommentsWithPagination(testPost.getId(), pageable);
+            Page<Comment> result = commentsService.getCommentsWithPagination(testPost.getId(), pageable, SortBy.NEWEST);
 
             assertEquals(1, result.getContent().size());
             assertEquals(40, result.getTotalPages(), "Should have 40 pages with limit 1");
@@ -170,7 +170,7 @@ class PostsServiceCommentsPaginationSortingTests {
         void shouldHandleExactPageBoundary() {
             // 40 comments, limit 20 = exactly 2 pages
             Pageable pageable = Pageable.from(1, 20);
-            Page<Comment> result = commentsService.getCommentsWithPagination(testPost.getId(), pageable);
+            Page<Comment> result = commentsService.getCommentsWithPagination(testPost.getId(), pageable, SortBy.NEWEST);
 
             assertEquals(20, result.getContent().size());
             assertEquals(2, result.getTotalPages());

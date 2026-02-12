@@ -16,16 +16,6 @@ public interface CommentsService {
     Comment addComment(UUID postId, CreateCommentRequest request, UUID userId);
 
     /**
-     * Get all comments for a post
-     */
-    List<Comment> getComments(UUID postId);
-
-    /**
-     * Get comments for a post with pagination
-     */
-    Page<Comment> getCommentsWithPagination(UUID postId, Pageable pageable);
-
-    /**
      * Get comments for a post with pagination and sorting
      */
     Page<Comment> getCommentsWithPagination(UUID postId, Pageable pageable, SortBy sortBy);

@@ -98,7 +98,7 @@ class PostsServicePaginationSortingTests {
         @DisplayName("Should return first page of campus posts with default parameters")
         void shouldReturnFirstPageDefault() {
             Pageable pageable = Pageable.from(0, 20);
-            Page<Post> result = postsService.getPostsByWall("campus", pageable, campusUserId);
+            Page<Post> result = postsService.getPostsByWall("campus", pageable, campusUserId, "harvard.edu", SortBy.NEWEST);
 
             assertEquals(20, result.getContent().size(), "Should return 20 items");
             assertEquals(35, result.getTotalSize(), "Total should be 35");
@@ -110,7 +110,7 @@ class PostsServicePaginationSortingTests {
         @DisplayName("Should return second page of campus posts")
         void shouldReturnSecondPage() {
             Pageable pageable = Pageable.from(1, 20); // Page 2 (0-based)
-            Page<Post> result = postsService.getPostsByWall("campus", pageable, campusUserId);
+            Page<Post> result = postsService.getPostsByWall("campus", pageable, campusUserId, "harvard.edu", SortBy.NEWEST);
 
             assertEquals(15, result.getContent().size(), "Second page should have 15 items");
             assertEquals(35, result.getTotalSize(), "Total should be 35");
@@ -120,7 +120,7 @@ class PostsServicePaginationSortingTests {
         @DisplayName("Should respect custom limit for campus posts")
         void shouldRespectCustomLimit() {
             Pageable pageable = Pageable.from(0, 10);
-            Page<Post> result = postsService.getPostsByWall("campus", pageable, campusUserId);
+            Page<Post> result = postsService.getPostsByWall("campus", pageable, campusUserId, "harvard.edu", SortBy.NEWEST);
 
             assertEquals(10, result.getContent().size());
             assertEquals(4, result.getTotalPages(), "Should have 4 pages with limit 10");
@@ -130,7 +130,7 @@ class PostsServicePaginationSortingTests {
         @DisplayName("Should return national posts with pagination")
         void shouldReturnNationalPostsWithPagination() {
             Pageable pageable = Pageable.from(0, 20);
-            Page<Post> result = postsService.getPostsByWall("national", pageable, nationalUserId);
+            Page<Post> result = postsService.getPostsByWall("national", pageable, nationalUserId, null, SortBy.NEWEST);
 
             assertEquals(20, result.getContent().size());
             assertEquals(25, result.getTotalSize(), "Total should be 25");
@@ -148,7 +148,7 @@ class PostsServicePaginationSortingTests {
             Pageable pageable = Pageable.from(0, 20);
 
             assertThrows(IllegalArgumentException.class, () ->
-                postsService.getPostsByWall("invalid_wall", pageable, campusUserId)
+                postsService.getPostsByWall("invalid_wall", pageable, campusUserId, "harvard.edu", SortBy.NEWEST)
             );
         }
 
@@ -159,7 +159,7 @@ class PostsServicePaginationSortingTests {
             UUID nonExistentUserId = UUID.randomUUID();
 
             assertThrows(IllegalArgumentException.class, () ->
-                postsService.getPostsByWall("campus", pageable, nonExistentUserId)
+                postsService.getPostsByWall("campus", pageable, nonExistentUserId, "harvard.edu", SortBy.NEWEST)
             );
         }
 
@@ -177,7 +177,7 @@ class PostsServicePaginationSortingTests {
             userNoSchool = userRepository.save(userNoSchool);
 
             Pageable pageable = Pageable.from(0, 20);
-            Page<Post> result = postsService.getPostsByWall("campus", pageable, userNoSchool.getId());
+            Page<Post> result = postsService.getPostsByWall("campus", pageable, userNoSchool.getId(), "", SortBy.NEWEST);
 
             assertTrue(result.isEmpty(), "Should return empty page for user without school domain");
         }
@@ -191,7 +191,7 @@ class PostsServicePaginationSortingTests {
         @DisplayName("Should handle page beyond available pages")
         void shouldHandlePageBeyondAvailable() {
             Pageable pageable = Pageable.from(10, 20); // Way beyond
-            Page<Post> result = postsService.getPostsByWall("campus", pageable, campusUserId);
+            Page<Post> result = postsService.getPostsByWall("campus", pageable, campusUserId, "harvard.edu", SortBy.NEWEST);
 
             assertEquals(0, result.getContent().size(), "Should return empty for page beyond available");
         }
@@ -200,7 +200,7 @@ class PostsServicePaginationSortingTests {
         @DisplayName("Should handle limit=1")
         void shouldHandleLimit1() {
             Pageable pageable = Pageable.from(0, 1);
-            Page<Post> result = postsService.getPostsByWall("campus", pageable, campusUserId);
+            Page<Post> result = postsService.getPostsByWall("campus", pageable, campusUserId, "harvard.edu", SortBy.NEWEST);
 
             assertEquals(1, result.getContent().size());
             assertEquals(35, result.getTotalPages(), "Should have 35 pages with limit 1");
@@ -215,7 +215,7 @@ class PostsServicePaginationSortingTests {
         @DisplayName("Should sort by NEWEST (default)")
         void shouldSortByNewest() {
             Pageable pageable = Pageable.from(0, 10);
-            Page<Post> result = postsService.getPostsByWall("campus", pageable, campusUserId, SortBy.NEWEST);
+            Page<Post> result = postsService.getPostsByWall("campus", pageable, campusUserId, "harvard.edu", SortBy.NEWEST);
 
             assertEquals(10, result.getContent().size());
             // Verify newest first by checking creation times are descending
@@ -233,7 +233,7 @@ class PostsServicePaginationSortingTests {
         @DisplayName("Should sort by OLDEST")
         void shouldSortByOldest() {
             Pageable pageable = Pageable.from(0, 10);
-            Page<Post> result = postsService.getPostsByWall("campus", pageable, campusUserId, SortBy.OLDEST);
+            Page<Post> result = postsService.getPostsByWall("campus", pageable, campusUserId, "harvard.edu", SortBy.OLDEST);
 
             assertEquals(10, result.getContent().size());
             // Verify oldest first by checking creation times are ascending
@@ -251,7 +251,7 @@ class PostsServicePaginationSortingTests {
         @DisplayName("Should sort by MOST_LIKED")
         void shouldSortByMostLiked() {
             Pageable pageable = Pageable.from(0, 10);
-            Page<Post> result = postsService.getPostsByWall("campus", pageable, campusUserId, SortBy.MOST_LIKED);
+            Page<Post> result = postsService.getPostsByWall("campus", pageable, campusUserId, "harvard.edu", SortBy.MOST_LIKED);
 
             assertEquals(10, result.getContent().size());
             // Verify most liked first (descending likes)
@@ -268,7 +268,7 @@ class PostsServicePaginationSortingTests {
         @DisplayName("Should sort by LEAST_LIKED")
         void shouldSortByLeastLiked() {
             Pageable pageable = Pageable.from(0, 10);
-            Page<Post> result = postsService.getPostsByWall("campus", pageable, campusUserId, SortBy.LEAST_LIKED);
+            Page<Post> result = postsService.getPostsByWall("campus", pageable, campusUserId, "harvard.edu", SortBy.LEAST_LIKED);
 
             assertEquals(10, result.getContent().size());
             // Verify least liked first (ascending likes)
@@ -285,7 +285,7 @@ class PostsServicePaginationSortingTests {
         @DisplayName("Should apply sorting for national posts")
         void shouldApplySortingForNationalPosts() {
             Pageable pageable = Pageable.from(0, 10);
-            Page<Post> result = postsService.getPostsByWall("national", pageable, nationalUserId, SortBy.MOST_LIKED);
+            Page<Post> result = postsService.getPostsByWall("national", pageable, nationalUserId, null, SortBy.MOST_LIKED);
 
             assertEquals(10, result.getContent().size());
             List<Post> posts = result.getContent();
@@ -306,7 +306,7 @@ class PostsServicePaginationSortingTests {
         @DisplayName("Should handle null SortBy with default")
         void shouldHandleNullSortBy() {
             Pageable pageable = Pageable.from(0, 10);
-            Page<Post> result = postsService.getPostsByWall("campus", pageable, campusUserId, (SortBy) null);
+            Page<Post> result = postsService.getPostsByWall("campus", pageable, campusUserId, "harvard.edu", (SortBy) null);
 
             assertNotNull(result, "Should return results even with null SortBy");
             assertEquals(10, result.getContent().size());
@@ -318,7 +318,7 @@ class PostsServicePaginationSortingTests {
             Pageable pageable = Pageable.from(0, 20);
 
             assertThrows(IllegalArgumentException.class, () ->
-                postsService.getPostsByWall("invalid", pageable, campusUserId, SortBy.NEWEST)
+                postsService.getPostsByWall("invalid", pageable, campusUserId, "harvard.edu", SortBy.NEWEST)
             );
         }
     }
@@ -331,7 +331,7 @@ class PostsServicePaginationSortingTests {
         @DisplayName("Should handle sorting with limit=1")
         void shouldHandleSortingWithLimit1() {
             Pageable pageable = Pageable.from(0, 1);
-            Page<Post> result = postsService.getPostsByWall("campus", pageable, campusUserId, SortBy.MOST_LIKED);
+            Page<Post> result = postsService.getPostsByWall("campus", pageable, campusUserId, "harvard.edu", SortBy.MOST_LIKED);
 
             assertEquals(1, result.getContent().size());
             // Should have the most liked post
@@ -343,12 +343,12 @@ class PostsServicePaginationSortingTests {
         void shouldMaintainSortingConsistencyAcrossPages() {
             // Get first page
             Pageable pageable1 = Pageable.from(0, 10);
-            Page<Post> page1 = postsService.getPostsByWall("campus", pageable1, campusUserId, SortBy.MOST_LIKED);
+            Page<Post> page1 = postsService.getPostsByWall("campus", pageable1, campusUserId, "harvard.edu", SortBy.MOST_LIKED);
             int lastLikesPage1 = page1.getContent().get(page1.getContent().size() - 1).getLikeCount();
 
             // Get second page
             Pageable pageable2 = Pageable.from(1, 10);
-            Page<Post> page2 = postsService.getPostsByWall("campus", pageable2, campusUserId, SortBy.MOST_LIKED);
+            Page<Post> page2 = postsService.getPostsByWall("campus", pageable2, campusUserId, "harvard.edu", SortBy.MOST_LIKED);
             int firstLikesPage2 = page2.getContent().get(0).getLikeCount();
 
             // Page 2 first item should have <= likes than page 1 last item
@@ -370,7 +370,7 @@ class PostsServicePaginationSortingTests {
             }
 
             Pageable pageable = Pageable.from(0, 20);
-            Page<Post> result = postsService.getPostsByWall("campus", pageable, campusUserId, SortBy.MOST_LIKED);
+            Page<Post> result = postsService.getPostsByWall("campus", pageable, campusUserId, "harvard.edu", SortBy.MOST_LIKED);
 
             assertNotNull(result);
             assertTrue(result.getContent().size() > 0, "Should return posts even with same like counts");
@@ -380,7 +380,7 @@ class PostsServicePaginationSortingTests {
         @DisplayName("Should handle combination of pagination and sorting")
         void shouldHandlePaginationWithSorting() {
             Pageable pageable1 = Pageable.from(0, 15);
-            Page<Post> page1 = postsService.getPostsByWall("campus", pageable1, campusUserId, SortBy.LEAST_LIKED);
+            Page<Post> page1 = postsService.getPostsByWall("campus", pageable1, campusUserId, "harvard.edu", SortBy.LEAST_LIKED);
 
             assertEquals(15, page1.getContent().size());
             assertEquals(3, page1.getTotalPages(), "Should have 3 pages with 35 posts and limit 15");
@@ -404,7 +404,7 @@ class PostsServicePaginationSortingTests {
         @DisplayName("Should combine pagination, sorting, and permission checks")
         void shouldCombineAllFeatures() {
             Pageable pageable = Pageable.from(0, 10);
-            Page<Post> result = postsService.getPostsByWall("campus", pageable, campusUserId, SortBy.MOST_LIKED);
+            Page<Post> result = postsService.getPostsByWall("campus", pageable, campusUserId, "harvard.edu", SortBy.MOST_LIKED);
 
             assertNotNull(result);
             assertEquals(10, result.getContent().size());
@@ -432,7 +432,7 @@ class PostsServicePaginationSortingTests {
 
             // Test each sort option
             for (SortBy sortBy : SortBy.values()) {
-                Page<Post> result = postsService.getPostsByWall("campus", pageable, campusUserId, sortBy);
+                Page<Post> result = postsService.getPostsByWall("campus", pageable, campusUserId, "harvard.edu", sortBy);
 
                 assertNotNull(result, "Should return result for " + sortBy);
                 assertEquals(10, result.getContent().size(), "Should have 10 posts for " + sortBy);
@@ -444,8 +444,8 @@ class PostsServicePaginationSortingTests {
         void shouldReturnSameTotalRegardlessOfSorting() {
             Pageable pageable = Pageable.from(0, 20);
 
-            Page<Post> newestResult = postsService.getPostsByWall("campus", pageable, campusUserId, SortBy.NEWEST);
-            Page<Post> mostLikedResult = postsService.getPostsByWall("campus", pageable, campusUserId, SortBy.MOST_LIKED);
+            Page<Post> newestResult = postsService.getPostsByWall("campus", pageable, campusUserId, "harvard.edu", SortBy.NEWEST);
+            Page<Post> mostLikedResult = postsService.getPostsByWall("campus", pageable, campusUserId, "harvard.edu", SortBy.MOST_LIKED);
 
             assertEquals(newestResult.getTotalSize(), mostLikedResult.getTotalSize(),
                 "Total should be same regardless of sort");

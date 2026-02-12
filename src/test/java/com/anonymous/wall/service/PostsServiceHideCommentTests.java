@@ -3,10 +3,13 @@ package com.anonymous.wall.service;
 import com.anonymous.wall.entity.Post;
 import com.anonymous.wall.entity.Comment;
 import com.anonymous.wall.entity.UserEntity;
+import com.anonymous.wall.model.SortBy;
 import com.anonymous.wall.repository.CommentRepository;
 import com.anonymous.wall.repository.PostRepository;
 import com.anonymous.wall.repository.PostLikeRepository;
 import com.anonymous.wall.repository.UserRepository;
+import io.micronaut.data.model.Page;
+import io.micronaut.data.model.Pageable;
 import io.micronaut.test.extensions.junit5.annotation.MicronautTest;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.*;
@@ -509,7 +512,9 @@ class PostsServiceHideCommentTests {
             commentsService.hideComment(campusPost.getId(), campusComment.getId(), userCampusId);
 
             // Get comments should exclude hidden ones
-            List<Comment> visibleComments = commentsService.getComments(campusPost.getId());
+            Pageable pageable = Pageable.from(0, 100);
+            Page<Comment> visibleCommentsPage = commentsService.getCommentsWithPagination(campusPost.getId(), pageable, SortBy.NEWEST);
+            List<Comment> visibleComments = visibleCommentsPage.getContent();
 
             assertEquals(2, visibleComments.size(), "Should only return visible comments");
             assertTrue(visibleComments.stream().anyMatch(c -> c.getId().equals(comment2Id)));
@@ -529,7 +534,9 @@ class PostsServiceHideCommentTests {
             assertTrue(dbComment.get().isHidden());
 
             // Verify it's not in the visible comments list
-            List<Comment> visibleComments = commentsService.getComments(campusPost.getId());
+            Pageable pageable = Pageable.from(0, 100);
+            Page<Comment> visibleCommentsPage = commentsService.getCommentsWithPagination(campusPost.getId(), pageable, SortBy.NEWEST);
+            List<Comment> visibleComments = visibleCommentsPage.getContent();
             assertFalse(visibleComments.stream().anyMatch(c -> c.getId().equals(campusComment.getId())));
         }
 
@@ -553,7 +560,9 @@ class PostsServiceHideCommentTests {
                 "Post comment count should be decremented when hiding");
 
             // Verify visible comments also decreased
-            int visibleCommentCount = commentsService.getComments(campusPost.getId()).size();
+            Pageable pageable = Pageable.from(0, 100);
+            Page<Comment> visibleCommentsPage = commentsService.getCommentsWithPagination(campusPost.getId(), pageable, SortBy.NEWEST);
+            int visibleCommentCount = visibleCommentsPage.getContent().size();
             assertEquals(initialCount - 1, visibleCommentCount,
                 "Visible comment count should match post comment count");
         }
@@ -577,7 +586,9 @@ class PostsServiceHideCommentTests {
                 "Post comment count should be incremented when unhiding");
 
             // Verify visible comments increased
-            int visibleCommentCount = commentsService.getComments(campusPost.getId()).size();
+            Pageable pageable = Pageable.from(0, 100);
+            Page<Comment> visibleCommentsPage = commentsService.getCommentsWithPagination(campusPost.getId(), pageable, SortBy.NEWEST);
+            int visibleCommentCount = visibleCommentsPage.getContent().size();
             assertEquals(countAfterHide + 1, visibleCommentCount,
                 "Visible comment count should match post comment count");
         }

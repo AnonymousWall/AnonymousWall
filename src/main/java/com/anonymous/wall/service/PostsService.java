@@ -19,21 +19,6 @@ public interface PostsService {
     Post createPost(CreatePostRequest request, UUID userId);
 
     /**
-     * Get posts by wall type with pagination
-     */
-    Page<Post> getPostsByWall(String wall, Pageable pageable, UUID currentUserId);
-
-    /**
-     * Get posts by wall type with pagination (optimized with schoolDomain from JWT)
-     */
-    Page<Post> getPostsByWall(String wall, Pageable pageable, UUID currentUserId, String schoolDomain);
-
-    /**
-     * Get posts by wall type with pagination and sorting
-     */
-    Page<Post> getPostsByWall(String wall, Pageable pageable, UUID currentUserId, SortBy sortBy);
-
-    /**
      * Get posts by wall type with pagination and sorting (optimized with schoolDomain from JWT)
      */
     Page<Post> getPostsByWall(String wall, Pageable pageable, UUID currentUserId, String schoolDomain, SortBy sortBy);
