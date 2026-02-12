@@ -1340,6 +1340,66 @@ paths:
         "404":
           description: Post not found
 
+  /admin/posts/by-wall:
+    get:
+      tags: [admin]
+      summary: Get posts by wall type with sorting
+      description: Admin endpoint to retrieve posts filtered by wall type (national/campus/all) with sorting. Does NOT filter by schoolDomain and includes both hidden and non-hidden posts.
+      operationId: adminGetPostsByWall
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: wall
+          required: false
+          schema:
+            type: string
+            enum: [national, campus]
+          description: Filter posts by wall type. If null, returns all posts.
+        - in: query
+          name: page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          description: Page number for pagination
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          description: Number of results per page
+        - in: query
+          name: sortBy
+          required: false
+          schema:
+            type: string
+            enum: [NEWEST, OLDEST, MOST_LIKED, LEAST_LIKED]
+            default: NEWEST
+          description: Sort order for posts
+      responses:
+        "200":
+          description: Posts retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/AdminPostDTO"
+                  pagination:
+                    $ref: "#/components/schemas/PaginationInfo"
+        "401":
+          description: Unauthorized - authentication required
+        "403":
+          description: Forbidden - admin access required
+
   /admin/comments:
     get:
       tags: [admin]

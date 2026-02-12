@@ -1,6 +1,7 @@
 package com.anonymous.wall.admin.service;
 
 import com.anonymous.wall.entity.Post;
+import com.anonymous.wall.model.SortBy;
 import com.anonymous.wall.repository.PostRepository;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
@@ -107,5 +108,47 @@ public class AdminPostServiceImpl implements AdminPostService {
         post.setHidden(true);
         postRepository.update(post);
         log.info("Post soft-deleted successfully: {}", postId);
+    }
+    
+    /**
+     * Get posts by wall with pagination and sorting (admin version)
+     * Admin can see all posts (both hidden and non-hidden) without schoolDomain filtering
+     * 
+     * @param wall Wall type: "national", "campus", or null for all posts
+     * @param pageable Pagination parameters
+     * @param sortBy Sort type: NEWEST, OLDEST, MOST_LIKED, LEAST_LIKED
+     * @return Page of posts matching the criteria
+     */
+    @Override
+    public Page<Post> getPostsByWall(String wall, Pageable pageable, SortBy sortBy) {
+        if (sortBy == null) {
+            sortBy = SortBy.NEWEST; // Default sorting
+        }
+        
+        log.info("Admin fetching posts by wall - wall={}, sortBy={}", wall, sortBy);
+        
+        // Validate wall parameter if provided
+        if (wall != null && !wall.equals("national") && !wall.equals("campus")) {
+            throw new IllegalArgumentException("Wall must be 'national', 'campus', or null");
+        }
+        
+        // If wall is null, return all posts with sorting
+        if (wall == null) {
+            return switch (sortBy) {
+                case NEWEST -> postRepository.findAllOrderByCreatedAtDesc(pageable);
+                case OLDEST -> postRepository.findAllOrderByCreatedAtAsc(pageable);
+                case MOST_LIKED -> postRepository.findAllOrderByLikeCountDesc(pageable);
+                case LEAST_LIKED -> postRepository.findAllOrderByLikeCountAsc(pageable);
+            };
+        }
+        
+        // Return posts filtered by wall type with sorting
+        // Admin sees all posts (both hidden and non-hidden) without schoolDomain filter
+        return switch (sortBy) {
+            case NEWEST -> postRepository.findByWallOrderByCreatedAtDesc(wall, pageable);
+            case OLDEST -> postRepository.findByWallOrderByCreatedAtAsc(wall, pageable);
+            case MOST_LIKED -> postRepository.findByWallOrderByLikeCountDesc(wall, pageable);
+            case LEAST_LIKED -> postRepository.findByWallOrderByLikeCountAsc(wall, pageable);
+        };
     }
 }
