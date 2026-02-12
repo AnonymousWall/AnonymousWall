@@ -73,10 +73,13 @@ public class AdminCommentServiceImpl implements AdminCommentService {
         } else if (userId != null && hidden == null) {
             // Filter by userId only
             return commentRepository.findByUserId(userId, pageable);
-        } else {
+        } else if (userId != null && hidden != null) {
             // Filter by both userId and hidden
             return commentRepository.findByUserIdAndHidden(userId, hidden, pageable);
         }
+        
+        // This should never be reached due to Case 1 handling, but kept for safety
+        return commentRepository.findAll(pageable);
     }
     
     @Override
