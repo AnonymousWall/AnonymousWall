@@ -83,13 +83,10 @@ public class AdminPostServiceImpl implements AdminPostService {
         } else if (userId != null && hidden == null) {
             // Filter by userId only
             return postRepository.findByUserId(userId, pageable);
-        } else if (userId != null && hidden != null) {
-            // Filter by both userId and hidden
-            return postRepository.findByUserIdAndHidden(userId, hidden, pageable);
         }
         
-        // This should never be reached due to Case 1 handling, but kept for safety
-        return postRepository.findAll(pageable);
+        // Filter by both userId and hidden (both are non-null if we reach here)
+        return postRepository.findByUserIdAndHidden(userId, hidden, pageable);
     }
     
     @Override
