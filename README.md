@@ -1041,6 +1041,7 @@ Response: 200 OK
 - `limit` (default: 20, max: 100) - Posts per page
 - `userId` (optional) - Filter by user ID
 - `hidden` (optional) - Filter by hidden status (true/false)
+- `wall` (optional) - Filter by wall type: `campus` or `national`
 - `sortBy` (optional) - Sort field: `createdAt`, `likeCount`, `commentCount`, `userId`
 - `sortOrder` (optional, default: desc) - Sort order: `asc` or `desc`
 
@@ -1054,6 +1055,15 @@ GET /api/v1/admin/posts?userId=<uuid>&sortBy=createdAt
 
 # Get hidden posts only
 GET /api/v1/admin/posts?hidden=true
+
+# Get campus posts only
+GET /api/v1/admin/posts?wall=campus
+
+# Get national posts only
+GET /api/v1/admin/posts?wall=national
+
+# Get non-hidden campus posts
+GET /api/v1/admin/posts?wall=campus&hidden=false
 ```
 
 **Notes:**
