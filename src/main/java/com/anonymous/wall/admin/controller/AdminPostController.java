@@ -3,7 +3,7 @@ package com.anonymous.wall.admin.controller;
 import com.anonymous.wall.admin.service.AdminPostService;
 import com.anonymous.wall.entity.Post;
 import com.anonymous.wall.model.AdminPostDTO;
-import com.anonymous.wall.model.AdminPostDTOWall;
+import com.anonymous.wall.model.AdminGetPostsWallParameter;
 import io.micronaut.core.annotation.Nullable;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
@@ -42,7 +42,7 @@ public class AdminPostController {
         dto.setProfileName(post.getProfileName());
         dto.setTitle(post.getTitle());
         dto.setContent(post.getContent());
-        dto.setWall(AdminPostDTOWall.fromValue(post.getWall()));
+        dto.setWall(AdminGetPostsWallParameter.fromValue(post.getWall()));
         dto.setSchoolDomain(post.getSchoolDomain());
         dto.setLikeCount(post.getLikeCount());
         dto.setCommentCount(post.getCommentCount());
@@ -62,12 +62,13 @@ public class AdminPostController {
             @QueryValue(defaultValue = "20") int limit,
             @Nullable @QueryValue String userId,
             @Nullable @QueryValue Boolean hidden,
+            @Nullable @QueryValue String wall,
             @Nullable @QueryValue String sortBy,
             @Nullable @QueryValue String sortOrder,
             HttpRequest<?> request) {
         
-        log.info("Admin fetching posts - page: {}, limit: {}, userId: {}, hidden: {}, sortBy: {}, sortOrder: {}", 
-                 page, limit, userId, hidden, sortBy, sortOrder);
+        log.info("Admin fetching posts - page: {}, limit: {}, userId: {}, hidden: {}, wall: {}, sortBy: {}, sortOrder: {}", 
+                 page, limit, userId, hidden, wall, sortBy, sortOrder);
         
         // Validate pagination parameters
         if (page < 1) page = 1;
@@ -80,7 +81,7 @@ public class AdminPostController {
         UUID userIdUuid = userId != null ? UUID.fromString(userId) : null;
         
         // Fetch posts with filters and sorting
-        Page<Post> postsPage = adminPostService.getAllPosts(pageable, userIdUuid, hidden, sortBy, sortOrder);
+        Page<Post> postsPage = adminPostService.getAllPosts(pageable, userIdUuid, hidden, wall, sortBy, sortOrder);
         
         // Map to DTOs
         List<AdminPostDTO> postDTOs = postsPage.getContent().stream()

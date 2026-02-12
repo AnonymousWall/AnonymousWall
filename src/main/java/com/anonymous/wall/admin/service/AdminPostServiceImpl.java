@@ -28,26 +28,27 @@ public class AdminPostServiceImpl implements AdminPostService {
      * @param pageable Pagination parameters
      * @param userId Filter by author user ID (null = all authors)
      * @param hidden Filter by hidden status (null = all posts)
+     * @param wall Filter by wall type (null = all walls, "campus" = campus posts, "national" = national posts)
      * @param sortBy Sort field (case-insensitive): "createdAt", "likeCount", "commentCount", "userId"
      * @param sortOrder Sort order (case-insensitive): "asc" or "desc" (default: desc)
      * @return Page of posts matching the criteria
      */
     @Override
-    public Page<Post> getAllPosts(Pageable pageable, UUID userId, Boolean hidden, String sortBy, String sortOrder) {
-        log.info("Admin fetching posts - userId={}, hidden={}, sortBy={}, sortOrder={}", 
-                 userId, hidden, sortBy, sortOrder);
+    public Page<Post> getAllPosts(Pageable pageable, UUID userId, Boolean hidden, String wall, String sortBy, String sortOrder) {
+        log.info("Admin fetching posts - userId={}, hidden={}, wall={}, sortBy={}, sortOrder={}", 
+                 userId, hidden, wall, sortBy, sortOrder);
         
         // Determine sort order (default to desc)
         boolean isDesc = sortOrder == null || sortOrder.equalsIgnoreCase("desc");
         
         // Case 1: No filters, no custom sorting - return all with default pagination
         // Note: Without explicit ORDER BY, the result order is database-dependent and not guaranteed
-        if (userId == null && hidden == null && sortBy == null) {
+        if (userId == null && hidden == null && wall == null && sortBy == null) {
             return postRepository.findAll(pageable);
         }
         
         // Case 2: No filters, but custom sorting specified - use sorting methods
-        if (userId == null && hidden == null && sortBy != null) {
+        if (userId == null && hidden == null && wall == null && sortBy != null) {
             switch (sortBy.toLowerCase()) {
                 case "createdat":
                     return isDesc ?
@@ -76,26 +77,39 @@ public class AdminPostServiceImpl implements AdminPostService {
         }
         
         // Case 3: Filters specified (with or without sorting)
-        // Note: Micronaut Data filter methods (findByHidden, findByUserId, findByUserIdAndHidden)
-        // don't support dynamic sorting. Without explicit ORDER BY, result order is database-dependent.
-        // To add custom sorting with filters, we would need repository methods like:
-        // findByHiddenOrderByCreatedAtDesc, findByUserIdOrderByLikeCountDesc, etc.
+        // Note: Micronaut Data filter methods don't support dynamic sorting.
+        // Without explicit ORDER BY, result order is database-dependent.
         
         if (sortBy != null) {
-            log.warn("sortBy parameter '{}' is not supported with filter parameters (userId={}, hidden={}) and will be ignored",
-                     sortBy, userId, hidden);
+            log.warn("sortBy parameter '{}' is not supported with filter parameters (userId={}, hidden={}, wall={}) and will be ignored",
+                     sortBy, userId, hidden, wall);
         }
         
-        if (userId == null && hidden != null) {
-            // Filter by hidden status only
-            return postRepository.findByHidden(hidden, pageable);
-        } else if (userId != null && hidden == null) {
-            // Filter by userId only
-            return postRepository.findByUserId(userId, pageable);
+        // Apply filters based on combinations
+        if (wall == null) {
+            // No wall filter - existing logic
+            if (userId == null && hidden != null) {
+                return postRepository.findByHidden(hidden, pageable);
+            } else if (userId != null && hidden == null) {
+                return postRepository.findByUserId(userId, pageable);
+            } else if (userId != null && hidden != null) {
+                return postRepository.findByUserIdAndHidden(userId, hidden, pageable);
+            }
+        } else {
+            // Wall filter specified
+            if (userId == null && hidden == null) {
+                return postRepository.findByWall(wall, pageable);
+            } else if (userId == null && hidden != null) {
+                return postRepository.findByWallAndHidden(wall, hidden, pageable);
+            } else if (userId != null && hidden == null) {
+                return postRepository.findByWallAndUserId(wall, userId, pageable);
+            } else {
+                return postRepository.findByWallAndUserIdAndHidden(wall, userId, hidden, pageable);
+            }
         }
         
-        // Filter by both userId and hidden (both are non-null if we reach here)
-        return postRepository.findByUserIdAndHidden(userId, hidden, pageable);
+        // Fallback to findAll if somehow we reach here
+        return postRepository.findAll(pageable);
     }
     
     @Override
