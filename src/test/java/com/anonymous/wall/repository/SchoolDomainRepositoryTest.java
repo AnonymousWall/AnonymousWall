@@ -228,11 +228,8 @@ class SchoolDomainRepositoryTest {
         @Test
         @DisplayName("Edge: Should handle null domain")
         void shouldHandleNullDomain() {
-            // Act
-            boolean exists = repository.existsByDomain(null);
-
-            // Assert
-            assertFalse(exists);
+            // Act & Assert - Micronaut Data doesn't accept null for non-nullable parameters
+            assertThrows(IllegalArgumentException.class, () -> repository.existsByDomain(null));
         }
 
         @Test
