@@ -1081,6 +1081,72 @@ Response: 200 OK
 
 **Access:** ADMIN or MODERATOR
 
+#### 3. Get Posts by Wall Type with Sorting
+```http
+GET /api/v1/admin/posts/by-wall?wall=national&sortBy=NEWEST&page=1&limit=20
+Authorization: Bearer {admin-jwt-token}
+
+Response: 200 OK
+{
+    "data": [
+        {
+            "id": "uuid",
+            "userId": "uuid",
+            "profileName": "Anonymous",
+            "title": "Post Title",
+            "content": "Post content...",
+            "wall": "national",
+            "schoolDomain": null,
+            "likeCount": 42,
+            "commentCount": 15,
+            "hidden": false,
+            "createdAt": "2026-01-28T...",
+            "updatedAt": "2026-01-28T..."
+        }
+    ],
+    "pagination": {
+        "page": 1,
+        "limit": 20,
+        "total": 150,
+        "totalPages": 8
+    }
+}
+```
+
+**Query Parameters:**
+- `wall` (optional) - Filter by wall type: `national` or `campus`. If omitted, returns all posts.
+- `sortBy` (optional, default: NEWEST) - Sort order: `NEWEST`, `OLDEST`, `MOST_LIKED`, `LEAST_LIKED`
+- `page` (default: 1) - Page number (1-based)
+- `limit` (default: 20, max: 100) - Posts per page
+
+**Examples:**
+```http
+# Get national posts sorted by newest first
+GET /api/v1/admin/posts/by-wall?wall=national&sortBy=NEWEST
+
+# Get campus posts sorted by most liked
+GET /api/v1/admin/posts/by-wall?wall=campus&sortBy=MOST_LIKED
+
+# Get all posts (both national and campus) sorted by oldest first
+GET /api/v1/admin/posts/by-wall?sortBy=OLDEST
+
+# Get national posts with pagination
+GET /api/v1/admin/posts/by-wall?wall=national&page=2&limit=50
+```
+
+**Key Features:**
+- ✅ Returns posts from specified wall type (national/campus) across all schools
+- ✅ Does NOT filter by schoolDomain (unlike regular user endpoints)
+- ✅ Includes both hidden and non-hidden posts
+- ✅ When `wall` is omitted, returns all posts regardless of wall type
+- ✅ Supports same sorting options as regular users: NEWEST, OLDEST, MOST_LIKED, LEAST_LIKED
+
+**Comparison with Regular User Endpoint:**
+- Regular users: Posts filtered by their school domain (can only see posts from their school)
+- Admins: Can see posts from all schools without domain restrictions
+
+**Access:** ADMIN or MODERATOR
+
 ---
 
 ### Admin Comment Moderation Endpoints
