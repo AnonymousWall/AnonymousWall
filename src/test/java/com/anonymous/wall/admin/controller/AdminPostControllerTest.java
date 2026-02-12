@@ -260,4 +260,153 @@ class AdminPostControllerTest {
             );
         }
     }
+
+    @Nested
+    @DisplayName("Post Sorting and Filtering Tests")
+    class PostSortingAndFilteringTests {
+
+        @Test
+        @DisplayName("Positive: Sort posts by creation time descending")
+        void sortPostsByCreatedAtDesc() {
+            // Act
+            HttpResponse<Map> response = client.toBlocking().exchange(
+                HttpRequest.GET(BASE_PATH + "?sortBy=createdAt&sortOrder=desc")
+                    .bearerAuth(adminToken),
+                Map.class
+            );
+
+            // Assert
+            assertEquals(HttpStatus.OK, response.getStatus());
+            assertNotNull(response.body());
+            assertTrue(response.body().containsKey("data"));
+        }
+
+        @Test
+        @DisplayName("Positive: Sort posts by creation time ascending")
+        void sortPostsByCreatedAtAsc() {
+            // Act
+            HttpResponse<Map> response = client.toBlocking().exchange(
+                HttpRequest.GET(BASE_PATH + "?sortBy=createdAt&sortOrder=asc")
+                    .bearerAuth(adminToken),
+                Map.class
+            );
+
+            // Assert
+            assertEquals(HttpStatus.OK, response.getStatus());
+            assertNotNull(response.body());
+            assertTrue(response.body().containsKey("data"));
+        }
+
+        @Test
+        @DisplayName("Positive: Sort posts by like count descending")
+        void sortPostsByLikeCountDesc() {
+            // Act
+            HttpResponse<Map> response = client.toBlocking().exchange(
+                HttpRequest.GET(BASE_PATH + "?sortBy=likeCount&sortOrder=desc")
+                    .bearerAuth(adminToken),
+                Map.class
+            );
+
+            // Assert
+            assertEquals(HttpStatus.OK, response.getStatus());
+            assertNotNull(response.body());
+            assertTrue(response.body().containsKey("data"));
+        }
+
+        @Test
+        @DisplayName("Positive: Sort posts by like count ascending")
+        void sortPostsByLikeCountAsc() {
+            // Act
+            HttpResponse<Map> response = client.toBlocking().exchange(
+                HttpRequest.GET(BASE_PATH + "?sortBy=likeCount&sortOrder=asc")
+                    .bearerAuth(adminToken),
+                Map.class
+            );
+
+            // Assert
+            assertEquals(HttpStatus.OK, response.getStatus());
+            assertNotNull(response.body());
+            assertTrue(response.body().containsKey("data"));
+        }
+
+        @Test
+        @DisplayName("Positive: Sort posts by comment count descending")
+        void sortPostsByCommentCountDesc() {
+            // Act
+            HttpResponse<Map> response = client.toBlocking().exchange(
+                HttpRequest.GET(BASE_PATH + "?sortBy=commentCount&sortOrder=desc")
+                    .bearerAuth(adminToken),
+                Map.class
+            );
+
+            // Assert
+            assertEquals(HttpStatus.OK, response.getStatus());
+            assertNotNull(response.body());
+            assertTrue(response.body().containsKey("data"));
+        }
+
+        @Test
+        @DisplayName("Positive: Sort posts by author (userId)")
+        void sortPostsByAuthor() {
+            // Act
+            HttpResponse<Map> response = client.toBlocking().exchange(
+                HttpRequest.GET(BASE_PATH + "?sortBy=userId")
+                    .bearerAuth(adminToken),
+                Map.class
+            );
+
+            // Assert
+            assertEquals(HttpStatus.OK, response.getStatus());
+            assertNotNull(response.body());
+            assertTrue(response.body().containsKey("data"));
+        }
+
+        @Test
+        @DisplayName("Positive: Filter posts by author userId")
+        void filterPostsByUserId() {
+            // Act
+            HttpResponse<Map> response = client.toBlocking().exchange(
+                HttpRequest.GET(BASE_PATH + "?userId=" + regularUser.getId())
+                    .bearerAuth(adminToken),
+                Map.class
+            );
+
+            // Assert
+            assertEquals(HttpStatus.OK, response.getStatus());
+            assertNotNull(response.body());
+            assertTrue(response.body().containsKey("data"));
+        }
+
+        @Test
+        @DisplayName("Positive: Filter posts by hidden status")
+        void filterPostsByHidden() {
+            // Act
+            HttpResponse<Map> response = client.toBlocking().exchange(
+                HttpRequest.GET(BASE_PATH + "?hidden=false")
+                    .bearerAuth(adminToken),
+                Map.class
+            );
+
+            // Assert
+            assertEquals(HttpStatus.OK, response.getStatus());
+            assertNotNull(response.body());
+            assertTrue(response.body().containsKey("data"));
+        }
+
+        @Test
+        @DisplayName("Positive: Combine filtering and sorting")
+        void combineFilteringAndSorting() {
+            // Act
+            HttpResponse<Map> response = client.toBlocking().exchange(
+                HttpRequest.GET(BASE_PATH + "?hidden=false&sortBy=likeCount&sortOrder=desc")
+                    .bearerAuth(adminToken),
+                Map.class
+            );
+
+            // Assert
+            assertEquals(HttpStatus.OK, response.getStatus());
+            assertNotNull(response.body());
+            assertTrue(response.body().containsKey("data"));
+        }
+    }
 }

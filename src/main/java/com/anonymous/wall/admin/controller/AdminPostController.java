@@ -62,10 +62,12 @@ public class AdminPostController {
             @QueryValue(defaultValue = "20") int limit,
             @Nullable @QueryValue String userId,
             @Nullable @QueryValue Boolean hidden,
+            @Nullable @QueryValue String sortBy,
+            @Nullable @QueryValue String sortOrder,
             HttpRequest<?> request) {
         
-        log.info("Admin fetching posts - page: {}, limit: {}, userId: {}, hidden: {}", 
-                 page, limit, userId, hidden);
+        log.info("Admin fetching posts - page: {}, limit: {}, userId: {}, hidden: {}, sortBy: {}, sortOrder: {}", 
+                 page, limit, userId, hidden, sortBy, sortOrder);
         
         // Validate pagination parameters
         if (page < 1) page = 1;
@@ -77,8 +79,8 @@ public class AdminPostController {
         // Parse userId if provided
         UUID userIdUuid = userId != null ? UUID.fromString(userId) : null;
         
-        // Fetch posts
-        Page<Post> postsPage = adminPostService.getAllPosts(pageable, userIdUuid, hidden);
+        // Fetch posts with filters and sorting
+        Page<Post> postsPage = adminPostService.getAllPosts(pageable, userIdUuid, hidden, sortBy, sortOrder);
         
         // Map to DTOs
         List<AdminPostDTO> postDTOs = postsPage.getContent().stream()

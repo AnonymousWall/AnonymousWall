@@ -12,9 +12,14 @@ import java.util.UUID;
 public interface AdminPostService {
     
     /**
-     * Get all posts with pagination and optional filters
+     * Get all posts with pagination and optional filters/sorting
+     * @param pageable Pagination parameters
+     * @param userId Filter by author user ID (null = all authors)
+     * @param hidden Filter by hidden status (null = all posts)
+     * @param sortBy Sort field: "createdAt", "likeCount", "commentCount", "userId"
+     * @param sortOrder Sort order: "asc" or "desc"
      */
-    Page<Post> getAllPosts(Pageable pageable, UUID userId, Boolean hidden);
+    Page<Post> getAllPosts(Pageable pageable, UUID userId, Boolean hidden, String sortBy, String sortOrder);
     
     /**
      * Soft delete a post (hide it)

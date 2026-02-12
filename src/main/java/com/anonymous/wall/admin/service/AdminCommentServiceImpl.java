@@ -22,20 +22,70 @@ public class AdminCommentServiceImpl implements AdminCommentService {
     @Inject
     private CommentRepository commentRepository;
     
+    /**
+     * Get all comments with pagination and optional filters/sorting.
+     * 
+     * @param pageable Pagination parameters
+     * @param userId Filter by author user ID (null = all authors)
+     * @param hidden Filter by hidden status (null = all comments)
+     * @param sortBy Sort field (case-insensitive): "createdAt", "userId"
+     * @param sortOrder Sort order (case-insensitive): "asc" or "desc" (default: desc)
+     * @return Page of comments matching the criteria
+     */
     @Override
-    public Page<Comment> getAllComments(Pageable pageable, UUID userId, Boolean hidden) {
-        log.info("Admin fetching all comments with pagination: page={}, size={}, userId={}, hidden={}",
-                 pageable.getNumber(), pageable.getSize(), userId, hidden);
-
-        if (userId == null && hidden == null) {
+    public Page<Comment> getAllComments(Pageable pageable, UUID userId, Boolean hidden, String sortBy, String sortOrder) {
+        log.info("Admin fetching comments - userId={}, hidden={}, sortBy={}, sortOrder={}",
+                 userId, hidden, sortBy, sortOrder);
+        
+        // Determine sort order (default to desc)
+        boolean isDesc = sortOrder == null || sortOrder.equalsIgnoreCase("desc");
+        
+        // Case 1: No filters, no custom sorting - return all with default pagination
+        // Note: Without explicit ORDER BY, the result order is database-dependent and not guaranteed
+        if (userId == null && hidden == null && sortBy == null) {
             return commentRepository.findAll(pageable);
-        } else if (userId != null && hidden == null) {
-            return commentRepository.findByUserId(userId, pageable);
-        } else if (userId == null && hidden != null) {
-            return commentRepository.findByHidden(hidden, pageable);
-        } else {
-            return commentRepository.findByUserIdAndHidden(userId, hidden, pageable);
         }
+        
+        // Case 2: No filters, but custom sorting specified - use sorting methods
+        if (userId == null && hidden == null && sortBy != null) {
+            switch (sortBy.toLowerCase()) {
+                case "createdat":
+                    return isDesc ?
+                        commentRepository.findAllOrderByCreatedAtDesc(pageable) :
+                        commentRepository.findAllOrderByCreatedAtAsc(pageable);
+                
+                case "userid":
+                case "author":
+                    return isDesc ?
+                        commentRepository.findAllOrderByUserIdDesc(pageable) :
+                        commentRepository.findAllOrderByUserIdAsc(pageable);
+                
+                default:
+                    return commentRepository.findAll(pageable);
+            }
+        }
+        
+        // Case 3: Filters specified (with or without sorting)
+        // Note: Micronaut Data filter methods (findByHidden, findByUserId, findByUserIdAndHidden)
+        // don't support dynamic sorting. Without explicit ORDER BY, result order is database-dependent.
+        // To add custom sorting with filters, we would need repository methods like:
+        // findByHiddenOrderByCreatedAtDesc, findByUserIdOrderByCreatedAtDesc, etc.
+        
+        if (sortBy != null) {
+            log.warn("sortBy parameter '{}' is not supported with filter parameters (userId={}, hidden={}) and will be ignored",
+                     sortBy, userId, hidden);
+        }
+        
+        if (userId == null && hidden != null) {
+            // Filter by hidden status only
+            return commentRepository.findByHidden(hidden, pageable);
+        } else if (userId != null && hidden == null) {
+            // Filter by userId only
+            return commentRepository.findByUserId(userId, pageable);
+        }
+        
+        // Filter by both userId and hidden (both are non-null if we reach here)
+        return commentRepository.findByUserIdAndHidden(userId, hidden, pageable);
     }
     
     @Override

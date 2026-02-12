@@ -22,11 +22,67 @@ public class AdminUserServiceImpl implements AdminUserService {
     @Inject
     private UserRepository userRepository;
     
+    /**
+     * Get all users with pagination and optional filters/sorting.
+     * 
+     * @param pageable Pagination parameters
+     * @param blocked Filter by blocked status (null = all users)
+     * @param sortBy Sort field (case-insensitive): "createdAt", "schoolDomain", "reportCount"
+     * @param sortOrder Sort order (case-insensitive): "asc" or "desc" (default: desc)
+     * @return Page of users matching the criteria
+     */
     @Override
-    public Page<UserEntity> getAllUsers(Pageable pageable) {
-        log.info("Admin fetching all users with pagination: page={}, size={}", 
-                 pageable.getNumber(), pageable.getSize());
-        return userRepository.findAll(pageable);
+    public Page<UserEntity> getAllUsers(Pageable pageable, Boolean blocked, String sortBy, String sortOrder) {
+        log.info("Admin fetching users - page={}, size={}, blocked={}, sortBy={}, sortOrder={}", 
+                 pageable.getNumber(), pageable.getSize(), blocked, sortBy, sortOrder);
+        
+        // Determine sort order (default to desc)
+        boolean isDesc = sortOrder == null || sortOrder.equalsIgnoreCase("desc");
+        
+        // Case 1: No filters, no custom sorting - return all with default pagination
+        // Note: Without explicit ORDER BY, the result order is database-dependent and not guaranteed
+        if (blocked == null && sortBy == null) {
+            return userRepository.findAll(pageable);
+        }
+        
+        // Case 2: No filters, but custom sorting specified - use sorting methods
+        if (blocked == null && sortBy != null) {
+            switch (sortBy.toLowerCase()) {
+                case "createdat":
+                    return isDesc ? 
+                        userRepository.findAllOrderByCreatedAtDesc(pageable) :
+                        userRepository.findAllOrderByCreatedAtAsc(pageable);
+                
+                case "schooldomain":
+                    return isDesc ?
+                        userRepository.findAllOrderBySchoolDomainDesc(pageable) :
+                        userRepository.findAllOrderBySchoolDomainAsc(pageable);
+                
+                case "reportcount":
+                    return isDesc ?
+                        userRepository.findAllOrderByReportCountDesc(pageable) :
+                        userRepository.findAllOrderByReportCountAsc(pageable);
+                
+                default:
+                    return userRepository.findAll(pageable);
+            }
+        }
+        
+        // Case 3: Filter by blocked status (with or without sorting)
+        // For blocked filter, we support createdAt sorting via dedicated repository methods.
+        // Other sort fields are not supported with blocked filter due to lack of corresponding
+        // repository methods (would need findByBlockedOrderBySchoolDomain, findByBlockedOrderByReportCount, etc.)
+        // When other sorts are requested, result order is database-dependent without explicit ORDER BY.
+        if (sortBy == null || sortBy.equalsIgnoreCase("createdAt")) {
+            return isDesc ? 
+                userRepository.findByBlockedOrderByCreatedAtDesc(blocked, pageable) :
+                userRepository.findByBlockedOrderByCreatedAtAsc(blocked, pageable);
+        }
+        
+        // For other sort options with blocked filter, order is database-dependent
+        log.warn("sortBy parameter '{}' is not fully supported with blocked filter and will use database-dependent ordering. " +
+                 "Only 'createdAt' sorting is supported with blocked filter.", sortBy);
+        return userRepository.findByBlocked(blocked, pageable);
     }
     
     @Override

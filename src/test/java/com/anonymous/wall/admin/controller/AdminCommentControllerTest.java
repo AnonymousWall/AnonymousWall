@@ -224,4 +224,105 @@ class AdminCommentControllerTest {
             assertEquals(HttpStatus.UNAUTHORIZED, exception.getStatus());
         }
     }
+
+    @Nested
+    @DisplayName("Comment Sorting and Filtering Tests")
+    class CommentSortingAndFilteringTests {
+
+        @Test
+        @DisplayName("Positive: Sort comments by creation time descending")
+        void sortCommentsByCreatedAtDesc() {
+            // Act
+            HttpResponse<Map> response = client.toBlocking().exchange(
+                HttpRequest.GET(BASE_PATH + "?sortBy=createdAt&sortOrder=desc")
+                    .bearerAuth(adminToken),
+                Map.class
+            );
+
+            // Assert
+            assertEquals(HttpStatus.OK, response.getStatus());
+            assertNotNull(response.body());
+            assertTrue(response.body().containsKey("data"));
+        }
+
+        @Test
+        @DisplayName("Positive: Sort comments by creation time ascending")
+        void sortCommentsByCreatedAtAsc() {
+            // Act
+            HttpResponse<Map> response = client.toBlocking().exchange(
+                HttpRequest.GET(BASE_PATH + "?sortBy=createdAt&sortOrder=asc")
+                    .bearerAuth(adminToken),
+                Map.class
+            );
+
+            // Assert
+            assertEquals(HttpStatus.OK, response.getStatus());
+            assertNotNull(response.body());
+            assertTrue(response.body().containsKey("data"));
+        }
+
+        @Test
+        @DisplayName("Positive: Sort comments by author (userId)")
+        void sortCommentsByAuthor() {
+            // Act
+            HttpResponse<Map> response = client.toBlocking().exchange(
+                HttpRequest.GET(BASE_PATH + "?sortBy=userId")
+                    .bearerAuth(adminToken),
+                Map.class
+            );
+
+            // Assert
+            assertEquals(HttpStatus.OK, response.getStatus());
+            assertNotNull(response.body());
+            assertTrue(response.body().containsKey("data"));
+        }
+
+        @Test
+        @DisplayName("Positive: Filter comments by author userId")
+        void filterCommentsByUserId() {
+            // Act
+            HttpResponse<Map> response = client.toBlocking().exchange(
+                HttpRequest.GET(BASE_PATH + "?userId=" + regularUser.getId())
+                    .bearerAuth(adminToken),
+                Map.class
+            );
+
+            // Assert
+            assertEquals(HttpStatus.OK, response.getStatus());
+            assertNotNull(response.body());
+            assertTrue(response.body().containsKey("data"));
+        }
+
+        @Test
+        @DisplayName("Positive: Filter comments by hidden status")
+        void filterCommentsByHidden() {
+            // Act
+            HttpResponse<Map> response = client.toBlocking().exchange(
+                HttpRequest.GET(BASE_PATH + "?hidden=false")
+                    .bearerAuth(adminToken),
+                Map.class
+            );
+
+            // Assert
+            assertEquals(HttpStatus.OK, response.getStatus());
+            assertNotNull(response.body());
+            assertTrue(response.body().containsKey("data"));
+        }
+
+        @Test
+        @DisplayName("Positive: Combine filtering and sorting")
+        void combineFilteringAndSorting() {
+            // Act
+            HttpResponse<Map> response = client.toBlocking().exchange(
+                HttpRequest.GET(BASE_PATH + "?hidden=false&sortBy=createdAt&sortOrder=desc")
+                    .bearerAuth(adminToken),
+                Map.class
+            );
+
+            // Assert
+            assertEquals(HttpStatus.OK, response.getStatus());
+            assertNotNull(response.body());
+            assertTrue(response.body().containsKey("data"));
+        }
+    }
 }

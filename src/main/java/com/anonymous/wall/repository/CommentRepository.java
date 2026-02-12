@@ -125,5 +125,29 @@ public interface CommentRepository extends CrudRepository<Comment, UUID> {
      * Find all comments for a user with pagination and hidden status (for admin purposes)
      */
     Page<Comment> findByUserIdAndHidden(UUID userId, boolean hidden, Pageable pageable);
+    
+    // ===== Admin sorting - by creation time =====
+    
+    /**
+     * Find all comments sorted by creation time (newest first) - for admin
+     */
+    Page<Comment> findAllOrderByCreatedAtDesc(Pageable pageable);
+    
+    /**
+     * Find all comments sorted by creation time (oldest first) - for admin
+     */
+    Page<Comment> findAllOrderByCreatedAtAsc(Pageable pageable);
+    
+    // ===== Admin sorting - by author =====
+    
+    /**
+     * Find all comments sorted by user ID (author) ascending - for admin
+     */
+    Page<Comment> findAllOrderByUserIdAsc(Pageable pageable);
+    
+    /**
+     * Find all comments sorted by user ID (author) descending - for admin
+     */
+    Page<Comment> findAllOrderByUserIdDesc(Pageable pageable);
 
 }

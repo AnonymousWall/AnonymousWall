@@ -4,6 +4,7 @@ import com.anonymous.wall.admin.service.AdminUserService;
 import com.anonymous.wall.entity.UserEntity;
 import com.anonymous.wall.model.AdminUserDTO;
 import com.anonymous.wall.model.AdminUserDTORole;
+import io.micronaut.core.annotation.Nullable;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
 import io.micronaut.http.HttpResponse;
@@ -59,9 +60,13 @@ public class AdminUserController {
     public HttpResponse<Object> getAllUsers(
             @QueryValue(defaultValue = "1") int page,
             @QueryValue(defaultValue = "20") int limit,
+            @Nullable @QueryValue Boolean blocked,
+            @Nullable @QueryValue String sortBy,
+            @Nullable @QueryValue String sortOrder,
             HttpRequest<?> request) {
         
-        log.info("Admin fetching all users - page: {}, limit: {}", page, limit);
+        log.info("Admin fetching users - page: {}, limit: {}, blocked: {}, sortBy: {}, sortOrder: {}", 
+                 page, limit, blocked, sortBy, sortOrder);
         
         // Validate pagination parameters
         if (page < 1) page = 1;
@@ -70,8 +75,8 @@ public class AdminUserController {
         // Create Pageable (0-based indexing)
         Pageable pageable = Pageable.from(page - 1, limit);
         
-        // Fetch users
-        Page<UserEntity> usersPage = adminUserService.getAllUsers(pageable);
+        // Fetch users with filters and sorting
+        Page<UserEntity> usersPage = adminUserService.getAllUsers(pageable, blocked, sortBy, sortOrder);
         
         // Map to DTOs
         List<AdminUserDTO> userDTOs = usersPage.getContent().stream()

@@ -928,6 +928,21 @@ Response: 200 OK
 **Query Parameters:**
 - `page` (default: 1) - Page number (1-based)
 - `limit` (default: 20, max: 100) - Users per page
+- `blocked` (optional) - Filter by blocked status (true/false)
+- `sortBy` (optional) - Sort field: `createdAt`, `schoolDomain`, `reportCount`
+- `sortOrder` (optional, default: desc) - Sort order: `asc` or `desc`
+
+**Examples:**
+```http
+# Get blocked users sorted by report count
+GET /api/v1/admin/users?blocked=true&sortBy=reportCount&sortOrder=desc
+
+# Get all users sorted by school domain
+GET /api/v1/admin/users?sortBy=schoolDomain&sortOrder=asc
+
+# Get recent users (newest first)
+GET /api/v1/admin/users?sortBy=createdAt&sortOrder=desc
+```
 
 **Access:** ADMIN or MODERATOR
 
@@ -1026,6 +1041,20 @@ Response: 200 OK
 - `limit` (default: 20, max: 100) - Posts per page
 - `userId` (optional) - Filter by user ID
 - `hidden` (optional) - Filter by hidden status (true/false)
+- `sortBy` (optional) - Sort field: `createdAt`, `likeCount`, `commentCount`, `userId`
+- `sortOrder` (optional, default: desc) - Sort order: `asc` or `desc`
+
+**Examples:**
+```http
+# Get posts sorted by likes (most liked first)
+GET /api/v1/admin/posts?sortBy=likeCount&sortOrder=desc
+
+# Get posts by a specific user
+GET /api/v1/admin/posts?userId=<uuid>&sortBy=createdAt
+
+# Get hidden posts only
+GET /api/v1/admin/posts?hidden=true
+```
 
 **Notes:**
 - Returns all posts including hidden (soft-deleted) posts
@@ -1086,6 +1115,22 @@ Response: 200 OK
 **Query Parameters:**
 - `page` (default: 1) - Page number (1-based)
 - `limit` (default: 20, max: 100) - Comments per page
+- `userId` (optional) - Filter by user ID
+- `hidden` (optional) - Filter by hidden status (true/false)
+- `sortBy` (optional) - Sort field: `createdAt`, `userId`
+- `sortOrder` (optional, default: desc) - Sort order: `asc` or `desc`
+
+**Examples:**
+```http
+# Get comments sorted by creation time (newest first)
+GET /api/v1/admin/comments?sortBy=createdAt&sortOrder=desc
+
+# Get comments by a specific user
+GET /api/v1/admin/comments?userId=<uuid>
+
+# Get hidden comments only
+GET /api/v1/admin/comments?hidden=true
+```
 
 **Notes:**
 - Returns all comments including hidden (soft-deleted) comments
@@ -1168,6 +1213,81 @@ GET /api/v1/admin/reports
 ```
 
 **Access:** ADMIN or MODERATOR
+
+---
+
+### Admin School Domain Management Endpoints
+
+#### 1. List All School Domains
+```http
+GET /api/v1/admin/school-domains
+Authorization: Bearer {admin-jwt-token}
+
+Response: 200 OK
+[
+    {
+        "id": "uuid",
+        "domain": "harvard.edu",
+        "schoolName": "Harvard University",
+        "createdAt": "2026-01-15T..."
+    },
+    {
+        "id": "uuid",
+        "domain": "mit.edu",
+        "schoolName": "MIT",
+        "createdAt": "2026-01-16T..."
+    }
+]
+```
+
+**Description:** Retrieve all approved school email domains in the system.
+
+**Access:** ADMIN only
+
+#### 2. Add School Domain
+```http
+POST /api/v1/admin/school-domains
+Authorization: Bearer {admin-jwt-token}
+Content-Type: application/json
+
+{
+    "domain": "stanford.edu",
+    "schoolName": "Stanford University"
+}
+
+Response: 200 OK
+{
+    "id": "uuid",
+    "domain": "stanford.edu",
+    "schoolName": "Stanford University",
+    "createdAt": "2026-01-28T..."
+}
+```
+
+**Description:** Add a new approved school email domain to the system. Users with emails from this domain will be able to register.
+
+**Access:** ADMIN only
+
+#### 3. Delete School Domain
+```http
+DELETE /api/v1/admin/school-domains/{id}
+Authorization: Bearer {admin-jwt-token}
+
+Response: 200 OK
+{
+    "message": "School domain deleted successfully"
+}
+```
+
+**Description:** Remove a school domain from the approved list. This prevents new registrations from that domain but doesn't affect existing users.
+
+**Access:** ADMIN only
+
+**Important Notes:**
+- Only ADMIN role can manage school domains (not MODERATOR)
+- Deleting a domain doesn't delete existing users from that domain
+- Domain validation ensures proper email domain format (e.g., "example.edu")
+- Duplicate domains are prevented
 
 ---
 

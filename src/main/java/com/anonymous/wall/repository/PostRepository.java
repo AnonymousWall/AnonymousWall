@@ -170,4 +170,52 @@ public interface PostRepository extends CrudRepository<Post, UUID> {
      * Find by hidden status with pagination (for admin purposes)
      */
     Page<Post> findByUserIdAndHidden(UUID userId, boolean hidden, Pageable pageable);
+    
+    // ===== Admin sorting - by creation time =====
+    
+    /**
+     * Find all posts sorted by creation time (newest first) - for admin
+     */
+    Page<Post> findAllOrderByCreatedAtDesc(Pageable pageable);
+    
+    /**
+     * Find all posts sorted by creation time (oldest first) - for admin
+     */
+    Page<Post> findAllOrderByCreatedAtAsc(Pageable pageable);
+    
+    // ===== Admin sorting - by like count =====
+    
+    /**
+     * Find all posts sorted by like count (most likes first) - for admin
+     */
+    Page<Post> findAllOrderByLikeCountDesc(Pageable pageable);
+    
+    /**
+     * Find all posts sorted by like count (least likes first) - for admin
+     */
+    Page<Post> findAllOrderByLikeCountAsc(Pageable pageable);
+    
+    // ===== Admin sorting - by comment count =====
+    
+    /**
+     * Find all posts sorted by comment count (most comments first) - for admin
+     */
+    Page<Post> findAllOrderByCommentCountDesc(Pageable pageable);
+    
+    /**
+     * Find all posts sorted by comment count (least comments first) - for admin
+     */
+    Page<Post> findAllOrderByCommentCountAsc(Pageable pageable);
+    
+    // ===== Admin sorting - by author =====
+    
+    /**
+     * Find all posts sorted by user ID (author) ascending - for admin
+     */
+    Page<Post> findAllOrderByUserIdAsc(Pageable pageable);
+    
+    /**
+     * Find all posts sorted by user ID (author) descending - for admin
+     */
+    Page<Post> findAllOrderByUserIdDesc(Pageable pageable);
 }
