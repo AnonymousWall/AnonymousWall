@@ -12,9 +12,13 @@ import java.util.UUID;
 public interface AdminUserService {
     
     /**
-     * Get all users with pagination
+     * Get all users with pagination and optional filters/sorting
+     * @param pageable Pagination parameters
+     * @param blocked Filter by blocked status (null = all users)
+     * @param sortBy Sort field: "createdAt", "schoolDomain", "reportCount", "postCount", "commentCount"
+     * @param sortOrder Sort order: "asc" or "desc"
      */
-    Page<UserEntity> getAllUsers(Pageable pageable);
+    Page<UserEntity> getAllUsers(Pageable pageable, Boolean blocked, String sortBy, String sortOrder);
     
     /**
      * Get user by ID

@@ -23,10 +23,56 @@ public class AdminUserServiceImpl implements AdminUserService {
     private UserRepository userRepository;
     
     @Override
-    public Page<UserEntity> getAllUsers(Pageable pageable) {
-        log.info("Admin fetching all users with pagination: page={}, size={}", 
-                 pageable.getNumber(), pageable.getSize());
-        return userRepository.findAll(pageable);
+    public Page<UserEntity> getAllUsers(Pageable pageable, Boolean blocked, String sortBy, String sortOrder) {
+        log.info("Admin fetching users - page={}, size={}, blocked={}, sortBy={}, sortOrder={}", 
+                 pageable.getNumber(), pageable.getSize(), blocked, sortBy, sortOrder);
+        
+        // Determine sort order (default to desc)
+        boolean isDesc = sortOrder == null || sortOrder.equalsIgnoreCase("desc");
+        
+        // Handle filtering by blocked status
+        if (blocked != null) {
+            if (sortBy == null || sortBy.equalsIgnoreCase("createdAt")) {
+                return isDesc ? 
+                    userRepository.findByBlockedOrderByCreatedAtDesc(blocked, pageable) :
+                    userRepository.findByBlockedOrderByCreatedAtAsc(blocked, pageable);
+            }
+            // For other sort options with blocked filter, just filter and use default sort
+            return userRepository.findByBlocked(blocked, pageable);
+        }
+        
+        // Handle sorting without filtering
+        if (sortBy == null) {
+            return userRepository.findAll(pageable);
+        }
+        
+        switch (sortBy.toLowerCase()) {
+            case "createdat":
+                return isDesc ? 
+                    userRepository.findAllOrderByCreatedAtDesc(pageable) :
+                    userRepository.findAllOrderByCreatedAtAsc(pageable);
+            
+            case "schooldomain":
+                return userRepository.findAllOrderBySchoolDomain(pageable);
+            
+            case "reportcount":
+                return isDesc ?
+                    userRepository.findAllOrderByReportCountDesc(pageable) :
+                    userRepository.findAllOrderByReportCountAsc(pageable);
+            
+            case "postcount":
+                return isDesc ?
+                    userRepository.findAllOrderByPostCountDesc(pageable) :
+                    userRepository.findAllOrderByPostCountAsc(pageable);
+            
+            case "commentcount":
+                return isDesc ?
+                    userRepository.findAllOrderByCommentCountDesc(pageable) :
+                    userRepository.findAllOrderByCommentCountAsc(pageable);
+            
+            default:
+                return userRepository.findAll(pageable);
+        }
     }
     
     @Override

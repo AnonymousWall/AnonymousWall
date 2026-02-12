@@ -12,9 +12,14 @@ import java.util.UUID;
 public interface AdminCommentService {
     
     /**
-     * Get all comments with pagination
+     * Get all comments with pagination and optional filters/sorting
+     * @param pageable Pagination parameters
+     * @param userId Filter by author user ID (null = all authors)
+     * @param hidden Filter by hidden status (null = all comments)
+     * @param sortBy Sort field: "createdAt", "reportCount", "userId"
+     * @param sortOrder Sort order: "asc" or "desc"
      */
-    Page<Comment> getAllComments(Pageable pageable, UUID userId, Boolean hidden);
+    Page<Comment> getAllComments(Pageable pageable, UUID userId, Boolean hidden, String sortBy, String sortOrder);
     
     /**
      * Soft delete a comment (hide it)

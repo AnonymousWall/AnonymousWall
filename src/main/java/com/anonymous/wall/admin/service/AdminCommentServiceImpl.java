@@ -23,18 +23,46 @@ public class AdminCommentServiceImpl implements AdminCommentService {
     private CommentRepository commentRepository;
     
     @Override
-    public Page<Comment> getAllComments(Pageable pageable, UUID userId, Boolean hidden) {
-        log.info("Admin fetching all comments with pagination: page={}, size={}, userId={}, hidden={}",
-                 pageable.getNumber(), pageable.getSize(), userId, hidden);
-
-        if (userId == null && hidden == null) {
+    public Page<Comment> getAllComments(Pageable pageable, UUID userId, Boolean hidden, String sortBy, String sortOrder) {
+        log.info("Admin fetching comments - userId={}, hidden={}, sortBy={}, sortOrder={}",
+                 userId, hidden, sortBy, sortOrder);
+        
+        // Determine sort order (default to desc)
+        boolean isDesc = sortOrder == null || sortOrder.equalsIgnoreCase("desc");
+        
+        // If userId or hidden filters are specified, use the existing filter methods
+        if (userId != null || hidden != null) {
+            if (userId == null && hidden != null) {
+                return commentRepository.findByHidden(hidden, pageable);
+            } else if (userId != null && hidden == null) {
+                return commentRepository.findByUserId(userId, pageable);
+            } else {
+                return commentRepository.findByUserIdAndHidden(userId, hidden, pageable);
+            }
+        }
+        
+        // Handle sorting without filtering
+        if (sortBy == null) {
             return commentRepository.findAll(pageable);
-        } else if (userId != null && hidden == null) {
-            return commentRepository.findByUserId(userId, pageable);
-        } else if (userId == null && hidden != null) {
-            return commentRepository.findByHidden(hidden, pageable);
-        } else {
-            return commentRepository.findByUserIdAndHidden(userId, hidden, pageable);
+        }
+        
+        switch (sortBy.toLowerCase()) {
+            case "createdat":
+                return isDesc ?
+                    commentRepository.findAllOrderByCreatedAtDesc(pageable) :
+                    commentRepository.findAllOrderByCreatedAtAsc(pageable);
+            
+            case "reportcount":
+                return isDesc ?
+                    commentRepository.findAllOrderByReportCountDesc(pageable) :
+                    commentRepository.findAllOrderByReportCountAsc(pageable);
+            
+            case "userid":
+            case "author":
+                return commentRepository.findAllOrderByUserId(pageable);
+            
+            default:
+                return commentRepository.findAll(pageable);
         }
     }
     

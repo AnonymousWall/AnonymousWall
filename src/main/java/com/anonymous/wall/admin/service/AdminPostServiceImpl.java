@@ -23,22 +23,57 @@ public class AdminPostServiceImpl implements AdminPostService {
     private PostRepository postRepository;
     
     @Override
-    public Page<Post> getAllPosts(Pageable pageable, UUID userId, Boolean hidden) {
-        log.info("Admin fetching posts with filters - userId: {}, hidden: {}", userId, hidden);
+    public Page<Post> getAllPosts(Pageable pageable, UUID userId, Boolean hidden, String sortBy, String sortOrder) {
+        log.info("Admin fetching posts - userId={}, hidden={}, sortBy={}, sortOrder={}", 
+                 userId, hidden, sortBy, sortOrder);
         
-        // Note: Full filtering support requires additional repository methods
-        // For now, return all posts. In future, can add methods like:
-        // - findByUserId(UUID userId, Pageable pageable)
-        // - findByHidden(boolean hidden, Pageable pageable) 
-        // - findByUserIdAndHidden(UUID userId, boolean hidden, Pageable pageable)
-        if (userId == null && hidden == null) {
+        // Determine sort order (default to desc)
+        boolean isDesc = sortOrder == null || sortOrder.equalsIgnoreCase("desc");
+        
+        // If userId or hidden filters are specified, use the existing filter methods
+        // (Note: for simplicity, we don't combine filtering with custom sorting in this implementation)
+        if (userId != null || hidden != null) {
+            if (userId == null && hidden != null) {
+                return postRepository.findByHidden(hidden, pageable);
+            } else if (userId != null && hidden == null) {
+                return postRepository.findByUserId(userId, pageable);
+            } else {
+                return postRepository.findByUserIdAndHidden(userId, hidden, pageable);
+            }
+        }
+        
+        // Handle sorting without filtering
+        if (sortBy == null) {
             return postRepository.findAll(pageable);
-        } else if (userId != null && hidden == null) {
-            return postRepository.findByUserId(userId, pageable);
-        } else if (userId == null && hidden != null) {
-            return postRepository.findByHidden(hidden, pageable);
-        } else {
-            return postRepository.findByUserIdAndHidden(userId, hidden, pageable);
+        }
+        
+        switch (sortBy.toLowerCase()) {
+            case "createdat":
+                return isDesc ?
+                    postRepository.findAllOrderByCreatedAtDesc(pageable) :
+                    postRepository.findAllOrderByCreatedAtAsc(pageable);
+            
+            case "likecount":
+                return isDesc ?
+                    postRepository.findAllOrderByLikeCountDesc(pageable) :
+                    postRepository.findAllOrderByLikeCountAsc(pageable);
+            
+            case "commentcount":
+                return isDesc ?
+                    postRepository.findAllOrderByCommentCountDesc(pageable) :
+                    postRepository.findAllOrderByCommentCountAsc(pageable);
+            
+            case "reportcount":
+                return isDesc ?
+                    postRepository.findAllOrderByReportCountDesc(pageable) :
+                    postRepository.findAllOrderByReportCountAsc(pageable);
+            
+            case "userid":
+            case "author":
+                return postRepository.findAllOrderByUserId(pageable);
+            
+            default:
+                return postRepository.findAll(pageable);
         }
     }
     

@@ -56,9 +56,12 @@ public class AdminCommentController {
             @QueryValue(defaultValue = "20") int limit,
             @Nullable @QueryValue String userId,
             @Nullable @QueryValue Boolean hidden,
+            @Nullable @QueryValue String sortBy,
+            @Nullable @QueryValue String sortOrder,
             HttpRequest<?> request) {
         
-        log.info("Admin fetching comments - page: {}, limit: {}", page, limit);
+        log.info("Admin fetching comments - page: {}, limit: {}, userId: {}, hidden: {}, sortBy: {}, sortOrder: {}", 
+                 page, limit, userId, hidden, sortBy, sortOrder);
         
         // Validate pagination parameters
         if (page < 1) page = 1;
@@ -70,8 +73,8 @@ public class AdminCommentController {
         // Parse userId if provided
         UUID userIdUuid = userId != null ? UUID.fromString(userId) : null;
         
-        // Fetch comments
-        Page<Comment> commentsPage = adminCommentService.getAllComments(pageable, userIdUuid, hidden);
+        // Fetch comments with filters and sorting
+        Page<Comment> commentsPage = adminCommentService.getAllComments(pageable, userIdUuid, hidden, sortBy, sortOrder);
         
         // Map to DTOs
         List<AdminCommentDTO> commentDTOs = commentsPage.getContent().stream()
