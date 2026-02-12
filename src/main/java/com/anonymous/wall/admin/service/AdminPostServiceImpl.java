@@ -25,9 +25,6 @@ public class AdminPostServiceImpl implements AdminPostService {
     /**
      * Get all posts with pagination and optional filters/sorting.
      * 
-     * Note: When userId or hidden filters are active, custom sorting parameters are not applied.
-     * For custom sorting, omit the filter parameters.
-     * 
      * @param pageable Pagination parameters
      * @param userId Filter by author user ID (null = all authors)
      * @param hidden Filter by hidden status (null = all posts)
@@ -43,47 +40,52 @@ public class AdminPostServiceImpl implements AdminPostService {
         // Determine sort order (default to desc)
         boolean isDesc = sortOrder == null || sortOrder.equalsIgnoreCase("desc");
         
-        // If userId or hidden filters are specified, use the existing filter methods
-        // (Note: for simplicity, we don't combine filtering with custom sorting in this implementation)
-        if (userId != null || hidden != null) {
-            if (userId == null && hidden != null) {
-                return postRepository.findByHidden(hidden, pageable);
-            } else if (userId != null && hidden == null) {
-                return postRepository.findByUserId(userId, pageable);
-            } else {
-                return postRepository.findByUserIdAndHidden(userId, hidden, pageable);
-            }
-        }
-        
-        // Handle sorting without filtering
-        if (sortBy == null) {
+        // Case 1: No filters, no custom sorting - return all with default pagination
+        if (userId == null && hidden == null && sortBy == null) {
             return postRepository.findAll(pageable);
         }
         
-        switch (sortBy.toLowerCase()) {
-            case "createdat":
-                return isDesc ?
-                    postRepository.findAllOrderByCreatedAtDesc(pageable) :
-                    postRepository.findAllOrderByCreatedAtAsc(pageable);
-            
-            case "likecount":
-                return isDesc ?
-                    postRepository.findAllOrderByLikeCountDesc(pageable) :
-                    postRepository.findAllOrderByLikeCountAsc(pageable);
-            
-            case "commentcount":
-                return isDesc ?
-                    postRepository.findAllOrderByCommentCountDesc(pageable) :
-                    postRepository.findAllOrderByCommentCountAsc(pageable);
-            
-            case "userid":
-            case "author":
-                return isDesc ?
-                    postRepository.findAllOrderByUserIdDesc(pageable) :
-                    postRepository.findAllOrderByUserIdAsc(pageable);
-            
-            default:
-                return postRepository.findAll(pageable);
+        // Case 2: No filters, but custom sorting specified - use sorting methods
+        if (userId == null && hidden == null && sortBy != null) {
+            switch (sortBy.toLowerCase()) {
+                case "createdat":
+                    return isDesc ?
+                        postRepository.findAllOrderByCreatedAtDesc(pageable) :
+                        postRepository.findAllOrderByCreatedAtAsc(pageable);
+                
+                case "likecount":
+                    return isDesc ?
+                        postRepository.findAllOrderByLikeCountDesc(pageable) :
+                        postRepository.findAllOrderByLikeCountAsc(pageable);
+                
+                case "commentcount":
+                    return isDesc ?
+                        postRepository.findAllOrderByCommentCountDesc(pageable) :
+                        postRepository.findAllOrderByCommentCountAsc(pageable);
+                
+                case "userid":
+                case "author":
+                    return isDesc ?
+                        postRepository.findAllOrderByUserIdDesc(pageable) :
+                        postRepository.findAllOrderByUserIdAsc(pageable);
+                
+                default:
+                    return postRepository.findAll(pageable);
+            }
+        }
+        
+        // Case 3: Filters specified (with or without sorting)
+        // Note: Micronaut Data filter methods don't support dynamic sorting,
+        // so we use the filter methods which apply their own default ordering
+        if (userId == null && hidden != null) {
+            // Filter by hidden status only
+            return postRepository.findByHidden(hidden, pageable);
+        } else if (userId != null && hidden == null) {
+            // Filter by userId only
+            return postRepository.findByUserId(userId, pageable);
+        } else {
+            // Filter by both userId and hidden
+            return postRepository.findByUserIdAndHidden(userId, hidden, pageable);
         }
     }
     

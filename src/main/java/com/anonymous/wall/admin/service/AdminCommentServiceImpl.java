@@ -25,9 +25,6 @@ public class AdminCommentServiceImpl implements AdminCommentService {
     /**
      * Get all comments with pagination and optional filters/sorting.
      * 
-     * Note: When userId or hidden filters are active, custom sorting parameters are not applied.
-     * For custom sorting, omit the filter parameters.
-     * 
      * @param pageable Pagination parameters
      * @param userId Filter by author user ID (null = all authors)
      * @param hidden Filter by hidden status (null = all comments)
@@ -43,36 +40,42 @@ public class AdminCommentServiceImpl implements AdminCommentService {
         // Determine sort order (default to desc)
         boolean isDesc = sortOrder == null || sortOrder.equalsIgnoreCase("desc");
         
-        // If userId or hidden filters are specified, use the existing filter methods
-        if (userId != null || hidden != null) {
-            if (userId == null && hidden != null) {
-                return commentRepository.findByHidden(hidden, pageable);
-            } else if (userId != null && hidden == null) {
-                return commentRepository.findByUserId(userId, pageable);
-            } else {
-                return commentRepository.findByUserIdAndHidden(userId, hidden, pageable);
-            }
-        }
-        
-        // Handle sorting without filtering
-        if (sortBy == null) {
+        // Case 1: No filters, no custom sorting - return all with default pagination
+        if (userId == null && hidden == null && sortBy == null) {
             return commentRepository.findAll(pageable);
         }
         
-        switch (sortBy.toLowerCase()) {
-            case "createdat":
-                return isDesc ?
-                    commentRepository.findAllOrderByCreatedAtDesc(pageable) :
-                    commentRepository.findAllOrderByCreatedAtAsc(pageable);
-            
-            case "userid":
-            case "author":
-                return isDesc ?
-                    commentRepository.findAllOrderByUserIdDesc(pageable) :
-                    commentRepository.findAllOrderByUserIdAsc(pageable);
-            
-            default:
-                return commentRepository.findAll(pageable);
+        // Case 2: No filters, but custom sorting specified - use sorting methods
+        if (userId == null && hidden == null && sortBy != null) {
+            switch (sortBy.toLowerCase()) {
+                case "createdat":
+                    return isDesc ?
+                        commentRepository.findAllOrderByCreatedAtDesc(pageable) :
+                        commentRepository.findAllOrderByCreatedAtAsc(pageable);
+                
+                case "userid":
+                case "author":
+                    return isDesc ?
+                        commentRepository.findAllOrderByUserIdDesc(pageable) :
+                        commentRepository.findAllOrderByUserIdAsc(pageable);
+                
+                default:
+                    return commentRepository.findAll(pageable);
+            }
+        }
+        
+        // Case 3: Filters specified (with or without sorting)
+        // Note: Micronaut Data filter methods don't support dynamic sorting,
+        // so we use the filter methods which apply their own default ordering
+        if (userId == null && hidden != null) {
+            // Filter by hidden status only
+            return commentRepository.findByHidden(hidden, pageable);
+        } else if (userId != null && hidden == null) {
+            // Filter by userId only
+            return commentRepository.findByUserId(userId, pageable);
+        } else {
+            // Filter by both userId and hidden
+            return commentRepository.findByUserIdAndHidden(userId, hidden, pageable);
         }
     }
     

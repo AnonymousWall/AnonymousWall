@@ -25,9 +25,6 @@ public class AdminUserServiceImpl implements AdminUserService {
     /**
      * Get all users with pagination and optional filters/sorting.
      * 
-     * Note: When the 'blocked' filter is active, only basic sorting is supported (createdAt).
-     * For advanced sorting options, omit the 'blocked' filter parameter.
-     * 
      * @param pageable Pagination parameters
      * @param blocked Filter by blocked status (null = all users)
      * @param sortBy Sort field (case-insensitive): "createdAt", "schoolDomain", "reportCount"
@@ -42,41 +39,48 @@ public class AdminUserServiceImpl implements AdminUserService {
         // Determine sort order (default to desc)
         boolean isDesc = sortOrder == null || sortOrder.equalsIgnoreCase("desc");
         
-        // Handle filtering by blocked status
+        // Case 1: No filters, no custom sorting - return all with default pagination
+        if (blocked == null && sortBy == null) {
+            return userRepository.findAll(pageable);
+        }
+        
+        // Case 2: No filters, but custom sorting specified - use sorting methods
+        if (blocked == null && sortBy != null) {
+            switch (sortBy.toLowerCase()) {
+                case "createdat":
+                    return isDesc ? 
+                        userRepository.findAllOrderByCreatedAtDesc(pageable) :
+                        userRepository.findAllOrderByCreatedAtAsc(pageable);
+                
+                case "schooldomain":
+                    return isDesc ?
+                        userRepository.findAllOrderBySchoolDomainDesc(pageable) :
+                        userRepository.findAllOrderBySchoolDomainAsc(pageable);
+                
+                case "reportcount":
+                    return isDesc ?
+                        userRepository.findAllOrderByReportCountDesc(pageable) :
+                        userRepository.findAllOrderByReportCountAsc(pageable);
+                
+                default:
+                    return userRepository.findAll(pageable);
+            }
+        }
+        
+        // Case 3: Filter by blocked status (with or without sorting)
+        // For blocked filter, we support createdAt sorting; other sorts use default ordering
         if (blocked != null) {
             if (sortBy == null || sortBy.equalsIgnoreCase("createdAt")) {
                 return isDesc ? 
                     userRepository.findByBlockedOrderByCreatedAtDesc(blocked, pageable) :
                     userRepository.findByBlockedOrderByCreatedAtAsc(blocked, pageable);
             }
-            // For other sort options with blocked filter, just filter and use default sort
+            // For other sort options with blocked filter, use default sort
             return userRepository.findByBlocked(blocked, pageable);
         }
         
-        // Handle sorting without filtering
-        if (sortBy == null) {
-            return userRepository.findAll(pageable);
-        }
-        
-        switch (sortBy.toLowerCase()) {
-            case "createdat":
-                return isDesc ? 
-                    userRepository.findAllOrderByCreatedAtDesc(pageable) :
-                    userRepository.findAllOrderByCreatedAtAsc(pageable);
-            
-            case "schooldomain":
-                return isDesc ?
-                    userRepository.findAllOrderBySchoolDomainDesc(pageable) :
-                    userRepository.findAllOrderBySchoolDomainAsc(pageable);
-            
-            case "reportcount":
-                return isDesc ?
-                    userRepository.findAllOrderByReportCountDesc(pageable) :
-                    userRepository.findAllOrderByReportCountAsc(pageable);
-            
-            default:
-                return userRepository.findAll(pageable);
-        }
+        // Default fallback (should not reach here based on logic above)
+        return userRepository.findAll(pageable);
     }
     
     @Override
