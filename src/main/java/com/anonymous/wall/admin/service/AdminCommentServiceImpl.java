@@ -65,8 +65,10 @@ public class AdminCommentServiceImpl implements AdminCommentService {
         }
         
         // Case 3: Filters specified (with or without sorting)
-        // Note: Micronaut Data filter methods don't support dynamic sorting,
-        // so we use the filter methods which apply their own default ordering
+        // Note: Micronaut Data filter methods (findByHidden, findByUserId, findByUserIdAndHidden)
+        // don't support dynamic sorting, so they use database default ordering (typically by id).
+        // To add custom sorting with filters, we would need repository methods like:
+        // findByHiddenOrderByCreatedAtDesc, findByUserIdOrderByCreatedAtDesc, etc.
         if (userId == null && hidden != null) {
             // Filter by hidden status only
             return commentRepository.findByHidden(hidden, pageable);

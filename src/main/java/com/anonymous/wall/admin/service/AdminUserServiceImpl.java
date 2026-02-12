@@ -68,13 +68,16 @@ public class AdminUserServiceImpl implements AdminUserService {
         }
         
         // Case 3: Filter by blocked status (with or without sorting)
-        // For blocked filter, we support createdAt sorting; other sorts use default ordering
+        // For blocked filter, we support createdAt sorting via dedicated repository methods.
+        // Other sort fields are not supported with blocked filter due to lack of corresponding
+        // repository methods (would need findByBlockedOrderBySchoolDomain, findByBlockedOrderByReportCount, etc.)
+        // When other sorts are requested, we fall back to findByBlocked which uses database default ordering.
         if (sortBy == null || sortBy.equalsIgnoreCase("createdAt")) {
             return isDesc ? 
                 userRepository.findByBlockedOrderByCreatedAtDesc(blocked, pageable) :
                 userRepository.findByBlockedOrderByCreatedAtAsc(blocked, pageable);
         }
-        // For other sort options with blocked filter, use default sort
+        // For other sort options with blocked filter, use default sort (by id)
         return userRepository.findByBlocked(blocked, pageable);
     }
     
