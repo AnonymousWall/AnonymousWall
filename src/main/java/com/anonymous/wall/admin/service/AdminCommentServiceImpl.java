@@ -22,6 +22,19 @@ public class AdminCommentServiceImpl implements AdminCommentService {
     @Inject
     private CommentRepository commentRepository;
     
+    /**
+     * Get all comments with pagination and optional filters/sorting.
+     * 
+     * Note: When userId or hidden filters are active, custom sorting parameters are not applied.
+     * For custom sorting, omit the filter parameters.
+     * 
+     * @param pageable Pagination parameters
+     * @param userId Filter by author user ID (null = all authors)
+     * @param hidden Filter by hidden status (null = all comments)
+     * @param sortBy Sort field (case-insensitive): "createdAt", "reportCount", "userId"
+     * @param sortOrder Sort order (case-insensitive): "asc" or "desc" (default: desc)
+     * @return Page of comments matching the criteria
+     */
     @Override
     public Page<Comment> getAllComments(Pageable pageable, UUID userId, Boolean hidden, String sortBy, String sortOrder) {
         log.info("Admin fetching comments - userId={}, hidden={}, sortBy={}, sortOrder={}",

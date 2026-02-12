@@ -22,6 +22,19 @@ public class AdminPostServiceImpl implements AdminPostService {
     @Inject
     private PostRepository postRepository;
     
+    /**
+     * Get all posts with pagination and optional filters/sorting.
+     * 
+     * Note: When userId or hidden filters are active, custom sorting parameters are not applied.
+     * For custom sorting, omit the filter parameters.
+     * 
+     * @param pageable Pagination parameters
+     * @param userId Filter by author user ID (null = all authors)
+     * @param hidden Filter by hidden status (null = all posts)
+     * @param sortBy Sort field (case-insensitive): "createdAt", "likeCount", "commentCount", "reportCount", "userId"
+     * @param sortOrder Sort order (case-insensitive): "asc" or "desc" (default: desc)
+     * @return Page of posts matching the criteria
+     */
     @Override
     public Page<Post> getAllPosts(Pageable pageable, UUID userId, Boolean hidden, String sortBy, String sortOrder) {
         log.info("Admin fetching posts - userId={}, hidden={}, sortBy={}, sortOrder={}", 

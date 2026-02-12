@@ -22,6 +22,18 @@ public class AdminUserServiceImpl implements AdminUserService {
     @Inject
     private UserRepository userRepository;
     
+    /**
+     * Get all users with pagination and optional filters/sorting.
+     * 
+     * Note: When the 'blocked' filter is active, only basic sorting is supported (createdAt).
+     * For advanced sorting options, omit the 'blocked' filter parameter.
+     * 
+     * @param pageable Pagination parameters
+     * @param blocked Filter by blocked status (null = all users)
+     * @param sortBy Sort field (case-insensitive): "createdAt", "schoolDomain", "reportCount", "postCount", "commentCount"
+     * @param sortOrder Sort order (case-insensitive): "asc" or "desc" (default: desc)
+     * @return Page of users matching the criteria
+     */
     @Override
     public Page<UserEntity> getAllUsers(Pageable pageable, Boolean blocked, String sortBy, String sortOrder) {
         log.info("Admin fetching users - page={}, size={}, blocked={}, sortBy={}, sortOrder={}", 
