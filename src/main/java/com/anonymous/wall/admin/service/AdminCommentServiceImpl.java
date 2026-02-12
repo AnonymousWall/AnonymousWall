@@ -23,10 +23,19 @@ public class AdminCommentServiceImpl implements AdminCommentService {
     private CommentRepository commentRepository;
     
     @Override
-    public Page<Comment> getAllComments(Pageable pageable) {
-        log.info("Admin fetching all comments with pagination: page={}, size={}", 
-                 pageable.getNumber(), pageable.getSize());
-        return commentRepository.findAll(pageable);
+    public Page<Comment> getAllComments(Pageable pageable, UUID userId, Boolean hidden) {
+        log.info("Admin fetching all comments with pagination: page={}, size={}, userId={}, hidden={}",
+                 pageable.getNumber(), pageable.getSize(), userId, hidden);
+
+        if (userId == null && hidden == null) {
+            return commentRepository.findAll(pageable);
+        } else if (userId != null && hidden == null) {
+            return commentRepository.findByUserId(userId, pageable);
+        } else if (userId == null && hidden != null) {
+            return commentRepository.findByHidden(hidden, pageable);
+        } else {
+            return commentRepository.findByUserIdAndHidden(userId, hidden, pageable);
+        }
     }
     
     @Override

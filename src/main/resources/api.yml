@@ -1330,6 +1330,19 @@ paths:
             maximum: 100
             default: 20
           description: Number of results per page
+        - in: query
+          name: userId
+          required: false
+          schema:
+            type: string
+            format: uuid
+          description: Filter posts by user ID
+        - in: query
+          name: hidden
+          required: false
+          schema:
+            type: boolean
+          description: Filter by hidden status
       responses:
         "200":
           description: Comments retrieved successfully

@@ -3,6 +3,7 @@ package com.anonymous.wall.admin.controller;
 import com.anonymous.wall.admin.service.AdminCommentService;
 import com.anonymous.wall.entity.Comment;
 import com.anonymous.wall.model.AdminCommentDTO;
+import io.micronaut.core.annotation.Nullable;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
 import io.micronaut.http.HttpResponse;
@@ -53,6 +54,8 @@ public class AdminCommentController {
     public HttpResponse<Object> getAllComments(
             @QueryValue(defaultValue = "1") int page,
             @QueryValue(defaultValue = "20") int limit,
+            @Nullable @QueryValue String userId,
+            @Nullable @QueryValue Boolean hidden,
             HttpRequest<?> request) {
         
         log.info("Admin fetching comments - page: {}, limit: {}", page, limit);
@@ -63,9 +66,12 @@ public class AdminCommentController {
         
         // Create Pageable (0-based indexing)
         Pageable pageable = Pageable.from(page - 1, limit);
+
+        // Parse userId if provided
+        UUID userIdUuid = userId != null ? UUID.fromString(userId) : null;
         
         // Fetch comments
-        Page<Comment> commentsPage = adminCommentService.getAllComments(pageable);
+        Page<Comment> commentsPage = adminCommentService.getAllComments(pageable, userIdUuid, hidden);
         
         // Map to DTOs
         List<AdminCommentDTO> commentDTOs = commentsPage.getContent().stream()

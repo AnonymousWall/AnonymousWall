@@ -14,7 +14,7 @@ public interface AdminCommentService {
     /**
      * Get all comments with pagination
      */
-    Page<Comment> getAllComments(Pageable pageable);
+    Page<Comment> getAllComments(Pageable pageable, UUID userId, Boolean hidden);
     
     /**
      * Soft delete a comment (hide it)

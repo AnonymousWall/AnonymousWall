@@ -111,4 +111,19 @@ public interface CommentRepository extends CrudRepository<Comment, UUID> {
      */
     Page<Comment> findAll(Pageable pageable);
 
+    /**
+     * Find all comments by hidden status with pagination (for admin purposes)
+     */
+    Page<Comment> findByHidden(boolean hidden, Pageable pageable);
+
+    /**
+     * Find all comments for a user with pagination (for admin purposes)
+     */
+    Page<Comment> findByUserId(UUID userId, Pageable pageable);
+
+    /**
+     * Find all comments for a user with pagination and hidden status (for admin purposes)
+     */
+    Page<Comment> findByUserIdAndHidden(UUID userId, boolean hidden, Pageable pageable);
+
 }
