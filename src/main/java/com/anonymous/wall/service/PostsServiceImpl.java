@@ -124,6 +124,12 @@ public class PostsServiceImpl implements PostsService {
             throw new IllegalArgumentException("Wall must be 'campus' or 'national'");
         }
 
+        // Fetch user
+        Optional<UserEntity> userOpt = userRepository.findById(currentUserId);
+        if (userOpt.isEmpty()) {
+            throw new IllegalArgumentException("User not found");
+        }
+
         if (sortBy == null) {
             sortBy = SortBy.NEWEST; // Default sorting
         }
