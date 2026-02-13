@@ -274,4 +274,53 @@ class JwtTokenServiceTest {
             assertNotNull(extractedSchoolDomain, "Extracted schoolDomain should not be null");
         }
     }
+
+    @Nested
+    @DisplayName("Blocked User Tests")
+    class BlockedUserTests {
+
+        @Test
+        @DisplayName("Should reject token generation for blocked user")
+        void shouldRejectTokenGenerationForBlockedUser() {
+            // Arrange
+            testUser.setBlocked(true);
+
+            // Act & Assert
+            IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> jwtTokenService.generateToken(testUser)
+            );
+            assertTrue(exception.getMessage().contains("blocked"));
+        }
+
+        @Test
+        @DisplayName("Should reject token generation with custom claims for blocked user")
+        void shouldRejectTokenGenerationWithCustomClaimsForBlockedUser() {
+            // Arrange
+            testUser.setBlocked(true);
+            Map<String, Object> customClaims = new HashMap<>();
+            customClaims.put("customKey", "customValue");
+
+            // Act & Assert
+            IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> jwtTokenService.generateToken(testUser, customClaims)
+            );
+            assertTrue(exception.getMessage().contains("blocked"));
+        }
+
+        @Test
+        @DisplayName("Should allow token generation for non-blocked user")
+        void shouldAllowTokenGenerationForNonBlockedUser() {
+            // Arrange
+            testUser.setBlocked(false);
+
+            // Act
+            String token = jwtTokenService.generateToken(testUser);
+
+            // Assert
+            assertNotNull(token);
+            assertFalse(token.isEmpty());
+        }
+    }
 }

@@ -156,6 +156,12 @@ public class AuthServiceImpl implements AuthService {
         } else {
             user = userOpt.get();
             log.debug("User account found, userId: {}", user.getId());
+            
+            // Check if user is blocked
+            if (user.isBlocked()) {
+                log.warn("Email login failed - user account is blocked: email={}, userId={}", request.getEmail(), user.getId());
+                throw new IllegalArgumentException("Access denied. Your account has been blocked.");
+            }
         }
 
         // Clean up used code
@@ -181,6 +187,12 @@ public class AuthServiceImpl implements AuthService {
         }
 
         UserEntity user = userOpt.get();
+
+        // Check if user is blocked
+        if (user.isBlocked()) {
+            log.warn("Password login failed - user account is blocked: email={}, userId={}", request.getEmail(), user.getId());
+            throw new IllegalArgumentException("Access denied. Your account has been blocked.");
+        }
 
         if (!user.isPasswordSet() || user.getPasswordHash() == null) {
             log.warn("Password login failed - password not set for user: {}", request.getEmail());
@@ -262,6 +274,14 @@ public class AuthServiceImpl implements AuthService {
             throw new IllegalArgumentException("Email not found");
         }
 
+        UserEntity user = userOpt.get();
+        
+        // Check if user is blocked
+        if (user.isBlocked()) {
+            log.warn("Password reset request denied - user account is blocked: email={}, userId={}", request.getEmail(), user.getId());
+            throw new IllegalArgumentException("Access denied. Your account has been blocked.");
+        }
+
         // Send reset code
         log.debug("Generating password reset code for email: {}", request.getEmail());
         String code = CodeGenerator.generateCode();
@@ -277,7 +297,7 @@ public class AuthServiceImpl implements AuthService {
         EmailUtil.sendVerificationCodeEmail(request.getEmail(), code, "reset_password");
         log.info("Password reset code sent to email: {}", request.getEmail());
 
-        return userOpt.get();
+        return user;
     }
 
     /**
@@ -294,6 +314,14 @@ public class AuthServiceImpl implements AuthService {
         if (userOpt.isEmpty()) {
             log.warn("Password reset failed - user not found for email: {}", request.getEmail());
             throw new IllegalArgumentException("Email not found");
+        }
+
+        UserEntity user = userOpt.get();
+        
+        // Check if user is blocked
+        if (user.isBlocked()) {
+            log.warn("Password reset denied - user account is blocked: email={}, userId={}", request.getEmail(), user.getId());
+            throw new IllegalArgumentException("Access denied. Your account has been blocked.");
         }
 
         // Verify the code
@@ -314,7 +342,6 @@ public class AuthServiceImpl implements AuthService {
 
         // Update password
         log.debug("Updating password for user email: {}", request.getEmail());
-        UserEntity user = userOpt.get();
         String hashedPassword = PasswordUtil.hashPassword(request.getNewPassword());
         user.setPasswordHash(hashedPassword);
         user.setPasswordSet(true);

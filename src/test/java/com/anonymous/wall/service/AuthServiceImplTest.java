@@ -1073,4 +1073,141 @@ class AuthServiceImplTest {
             assertFalse(result.isPasswordSet());
         }
     }
+
+    @Nested
+    @DisplayName("Blocked User Enforcement Tests")
+    class BlockedUserEnforcementTests {
+
+        @Test
+        @DisplayName("Negative: Should reject login with email for blocked user")
+        void shouldRejectLoginWithEmailForBlockedUser() {
+            // Arrange
+            String email = "blocked@harvard.edu";
+            String code = "123456";
+            LoginEmailRequest request = new LoginEmailRequest(email, code);
+
+            EmailVerificationCode verificationCode = new EmailVerificationCode(
+                email, code, "login", OffsetDateTime.now().plusMinutes(15)
+            );
+
+            UserEntity blockedUser = new UserEntity();
+            blockedUser.setId(UUID.randomUUID());
+            blockedUser.setEmail(email);
+            blockedUser.setBlocked(true);
+
+            when(emailCodeRepository.findByEmailAndCodeAndPurpose(email, code, "login"))
+                .thenReturn(Optional.of(verificationCode));
+            when(userService.findByEmail(email)).thenReturn(Optional.of(blockedUser));
+
+            // Act & Assert
+            IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> authService.loginWithEmail(request)
+            );
+            assertTrue(exception.getMessage().contains("blocked"));
+        }
+
+        @Test
+        @DisplayName("Negative: Should reject login with password for blocked user")
+        void shouldRejectLoginWithPasswordForBlockedUser() {
+            // Arrange
+            String email = "blocked@harvard.edu";
+            String password = "password123";
+            PasswordLoginRequest request = new PasswordLoginRequest(email, password);
+
+            UserEntity blockedUser = new UserEntity();
+            blockedUser.setId(UUID.randomUUID());
+            blockedUser.setEmail(email);
+            blockedUser.setBlocked(true);
+            blockedUser.setPasswordSet(true);
+            blockedUser.setPasswordHash(PasswordUtil.hashPassword(password));
+
+            when(userService.findByEmail(email)).thenReturn(Optional.of(blockedUser));
+
+            // Act & Assert
+            IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> authService.loginWithPassword(request)
+            );
+            assertTrue(exception.getMessage().contains("blocked"));
+        }
+
+        @Test
+        @DisplayName("Negative: Should reject password reset request for blocked user")
+        void shouldRejectPasswordResetRequestForBlockedUser() {
+            // Arrange
+            String email = "blocked@harvard.edu";
+            PasswordResetRequestRequest request = new PasswordResetRequestRequest(email);
+
+            UserEntity blockedUser = new UserEntity();
+            blockedUser.setId(UUID.randomUUID());
+            blockedUser.setEmail(email);
+            blockedUser.setBlocked(true);
+
+            when(userService.findByEmail(email)).thenReturn(Optional.of(blockedUser));
+
+            // Act & Assert
+            IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> authService.requestPasswordReset(request)
+            );
+            assertTrue(exception.getMessage().contains("blocked"));
+        }
+
+        @Test
+        @DisplayName("Negative: Should reject password reset for blocked user")
+        void shouldRejectPasswordResetForBlockedUser() {
+            // Arrange
+            String email = "blocked@harvard.edu";
+            String code = "123456";
+            String newPassword = "newpassword123";
+            ResetPasswordRequest request = new ResetPasswordRequest(email, code, newPassword);
+
+            EmailVerificationCode verificationCode = new EmailVerificationCode(
+                email, code, "reset_password", OffsetDateTime.now().plusMinutes(15)
+            );
+
+            UserEntity blockedUser = new UserEntity();
+            blockedUser.setId(UUID.randomUUID());
+            blockedUser.setEmail(email);
+            blockedUser.setBlocked(true);
+
+            when(userService.findByEmail(email)).thenReturn(Optional.of(blockedUser));
+            when(emailCodeRepository.findByEmailAndCodeAndPurpose(email, code, "reset_password"))
+                .thenReturn(Optional.of(verificationCode));
+
+            // Act & Assert
+            IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> authService.resetPassword(request)
+            );
+            assertTrue(exception.getMessage().contains("blocked"));
+        }
+
+        @Test
+        @DisplayName("Positive: Should allow login for non-blocked user")
+        void shouldAllowLoginForNonBlockedUser() {
+            // Arrange
+            String email = "user@harvard.edu";
+            String password = "password123";
+            PasswordLoginRequest request = new PasswordLoginRequest(email, password);
+
+            UserEntity user = new UserEntity();
+            user.setId(UUID.randomUUID());
+            user.setEmail(email);
+            user.setBlocked(false);
+            user.setPasswordSet(true);
+            user.setPasswordHash(PasswordUtil.hashPassword(password));
+
+            when(userService.findByEmail(email)).thenReturn(Optional.of(user));
+
+            // Act
+            UserEntity result = authService.loginWithPassword(request);
+
+            // Assert
+            assertNotNull(result);
+            assertEquals(email, result.getEmail());
+            assertFalse(result.isBlocked());
+        }
+    }
 }

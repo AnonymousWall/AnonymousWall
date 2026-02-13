@@ -35,6 +35,12 @@ public class JwtTokenService {
             throw new IllegalArgumentException("User and user ID cannot be null");
         }
 
+        // Prevent token generation for blocked users
+        if (user.isBlocked()) {
+            log.warn("Token generation denied for blocked user: userId={}, email={}", user.getId(), user.getEmail());
+            throw new IllegalArgumentException("Access denied. Your account has been blocked.");
+        }
+
         try {
             Map<String, Object> claims = new HashMap<>();
             claims.put("email", user.getEmail());
@@ -76,6 +82,12 @@ public class JwtTokenService {
     public String generateToken(UserEntity user, Map<String, Object> customClaims) {
         if (user == null || user.getId() == null) {
             throw new IllegalArgumentException("User and user ID cannot be null");
+        }
+
+        // Prevent token generation for blocked users
+        if (user.isBlocked()) {
+            log.warn("Token generation denied for blocked user: userId={}, email={}", user.getId(), user.getEmail());
+            throw new IllegalArgumentException("Access denied. Your account has been blocked.");
         }
 
         try {
