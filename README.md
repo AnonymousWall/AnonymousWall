@@ -1068,7 +1068,39 @@ GET /api/v1/admin/posts?hidden=true
 
 **Access:** ADMIN or MODERATOR
 
-#### 2. Delete Post (Soft Delete)
+#### 2. Get Post by ID
+```http
+GET /api/v1/admin/posts/{postId}
+Authorization: Bearer {admin-jwt-token}
+
+Response: 200 OK
+{
+    "id": "uuid",
+    "userId": "uuid",
+    "profileName": "Anonymous",
+    "title": "Post Title",
+    "content": "Post content...",
+    "wall": "campus",
+    "schoolDomain": "harvard.edu",
+    "likeCount": 42,
+    "commentCount": 15,
+    "hidden": false,
+    "createdAt": "2026-01-28T...",
+    "updatedAt": "2026-01-28T..."
+}
+```
+
+**Effect:**
+- Retrieves a specific post by its UUID
+- Returns all post details including hidden status
+- Useful for investigating reported posts or reviewing specific content
+
+**Error Responses:**
+- `404 Not Found` - Post with specified ID does not exist
+
+**Access:** ADMIN or MODERATOR
+
+#### 3. Delete Post (Soft Delete)
 ```http
 DELETE /api/v1/admin/posts/{postId}
 Authorization: Bearer {admin-jwt-token}
@@ -1087,7 +1119,7 @@ Response: 200 OK
 
 **Access:** ADMIN or MODERATOR
 
-#### 3. Get Posts by Wall Type with Sorting
+#### 4. Get Posts by Wall Type with Sorting
 ```http
 GET /api/v1/admin/posts/by-wall?wall=national&sortBy=NEWEST&page=1&limit=20
 Authorization: Bearer {admin-jwt-token}
@@ -1210,7 +1242,34 @@ GET /api/v1/admin/comments?hidden=true
 
 **Access:** ADMIN or MODERATOR
 
-#### 2. Delete Comment (Soft Delete)
+#### 2. Get Comment by ID
+```http
+GET /api/v1/admin/comments/{commentId}
+Authorization: Bearer {admin-jwt-token}
+
+Response: 200 OK
+{
+    "id": "uuid",
+    "postId": "uuid",
+    "userId": "uuid",
+    "profileName": "Anonymous",
+    "text": "Comment text...",
+    "hidden": false,
+    "createdAt": "2026-01-28T..."
+}
+```
+
+**Effect:**
+- Retrieves a specific comment by its UUID
+- Returns all comment details including hidden status
+- Useful for investigating reported comments or reviewing specific content
+
+**Error Responses:**
+- `404 Not Found` - Comment with specified ID does not exist
+
+**Access:** ADMIN or MODERATOR
+
+#### 3. Delete Comment (Soft Delete)
 ```http
 DELETE /api/v1/admin/comments/{commentId}
 Authorization: Bearer {admin-jwt-token}
