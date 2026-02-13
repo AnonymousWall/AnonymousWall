@@ -108,11 +108,11 @@ class AdminReportControllerTest {
         testComment = commentRepository.save(testComment);
 
         // Create post report
-        PostReport postReport = new PostReport(testPost.getId(), reporterUser.getId(), "Inappropriate content");
+        PostReport postReport = new PostReport(testPost.getId(), reporterUser.getId(), regularUser.getId(), "Inappropriate content");
         postReportRepository.save(postReport);
 
         // Create comment report
-        CommentReport commentReport = new CommentReport(testComment.getId(), reporterUser.getId(), "Spam");
+        CommentReport commentReport = new CommentReport(testComment.getId(), reporterUser.getId(), regularUser.getId(), "Spam");
         commentReportRepository.save(commentReport);
     }
 

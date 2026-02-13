@@ -226,6 +226,7 @@ CREATE TABLE post_reports (
     id UUID PRIMARY KEY,
     post_id UUID NOT NULL REFERENCES posts(id),
     reporter_user_id UUID NOT NULL REFERENCES users(id),
+    reported_user_id UUID NOT NULL REFERENCES users(id),  -- ID of the user being reported (post author)
     reason VARCHAR(500),                 -- Optional reason for the report
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(post_id, reporter_user_id)    -- One report per user per post
@@ -238,6 +239,7 @@ CREATE TABLE comment_reports (
     id UUID PRIMARY KEY,
     comment_id UUID NOT NULL REFERENCES comments(id),
     reporter_user_id UUID NOT NULL REFERENCES users(id),
+    reported_user_id UUID NOT NULL REFERENCES users(id),  -- ID of the user being reported (comment author)
     reason VARCHAR(500),                 -- Optional reason for the report
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(comment_id, reporter_user_id) -- One report per user per comment
@@ -1243,6 +1245,7 @@ Response: 200 OK
             "id": "uuid",
             "postId": "uuid",
             "reporterUserId": "uuid",
+            "reportedUserId": "uuid",
             "reason": "Inappropriate content",
             "createdAt": "2026-01-28T..."
         }
@@ -1252,6 +1255,7 @@ Response: 200 OK
             "id": "uuid",
             "commentId": "uuid",
             "reporterUserId": "uuid",
+            "reportedUserId": "uuid",
             "reason": "Spam",
             "createdAt": "2026-01-28T..."
         }

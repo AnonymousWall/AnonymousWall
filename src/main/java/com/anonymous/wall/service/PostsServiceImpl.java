@@ -452,7 +452,7 @@ public class PostsServiceImpl implements PostsService {
         }
 
         // Create the report
-        com.anonymous.wall.entity.PostReport report = new com.anonymous.wall.entity.PostReport(postId, reporterUserId, reason);
+        com.anonymous.wall.entity.PostReport report = new com.anonymous.wall.entity.PostReport(postId, reporterUserId, post.getUserId(), reason);
         postReportRepository.save(report);
 
         // Increment report count for the post author

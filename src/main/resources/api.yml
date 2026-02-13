@@ -2099,6 +2099,9 @@ components:
         reporterUserId:
           type: string
           format: uuid
+        reportedUserId:
+          type: string
+          format: uuid
         reason:
           type: string
         createdAt:
@@ -2115,6 +2118,9 @@ components:
           type: string
           format: uuid
         reporterUserId:
+          type: string
+          format: uuid
+        reportedUserId:
           type: string
           format: uuid
         reason:

@@ -145,6 +145,8 @@ class CommentsServiceReportCommentTests {
                 testComment.getId(), reporter.getId());
             assertTrue(report.isPresent(), "Report should exist");
             assertEquals(reason, report.get().getReason(), "Report reason should match");
+            assertEquals(commentAuthor.getId(), report.get().getReportedUserId(), 
+                "Report should have the correct reported user ID");
 
             // Verify author's report count was incremented
             Optional<UserEntity> updatedAuthor = userRepository.findById(commentAuthor.getId());

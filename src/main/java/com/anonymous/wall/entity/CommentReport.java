@@ -19,6 +19,9 @@ public class CommentReport {
     @MappedProperty("reporter_user_id")
     private UUID reporterUserId;
 
+    @MappedProperty("reported_user_id")
+    private UUID reportedUserId;
+
     @MappedProperty("reason")
     private String reason;
 
@@ -30,9 +33,10 @@ public class CommentReport {
     public CommentReport() {
     }
 
-    public CommentReport(UUID commentId, UUID reporterUserId, String reason) {
+    public CommentReport(UUID commentId, UUID reporterUserId, UUID reportedUserId, String reason) {
         this.commentId = commentId;
         this.reporterUserId = reporterUserId;
+        this.reportedUserId = reportedUserId;
         this.reason = reason;
         this.createdAt = OffsetDateTime.now();
     }
@@ -47,6 +51,9 @@ public class CommentReport {
 
     public UUID getReporterUserId() { return reporterUserId; }
     public void setReporterUserId(UUID reporterUserId) { this.reporterUserId = reporterUserId; }
+
+    public UUID getReportedUserId() { return reportedUserId; }
+    public void setReportedUserId(UUID reportedUserId) { this.reportedUserId = reportedUserId; }
 
     public String getReason() { return reason; }
     public void setReason(String reason) { this.reason = reason; }

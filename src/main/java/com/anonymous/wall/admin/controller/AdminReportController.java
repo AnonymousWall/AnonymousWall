@@ -40,6 +40,7 @@ public class AdminReportController {
         dto.setId(report.getId());
         dto.setPostId(report.getPostId());
         dto.setReporterUserId(report.getReporterUserId());
+        dto.setReportedUserId(report.getReportedUserId());
         dto.setReason(report.getReason());
         dto.setCreatedAt(report.getCreatedAt());
         return dto;
@@ -53,6 +54,7 @@ public class AdminReportController {
         dto.setId(report.getId());
         dto.setCommentId(report.getCommentId());
         dto.setReporterUserId(report.getReporterUserId());
+        dto.setReportedUserId(report.getReportedUserId());
         dto.setReason(report.getReason());
         dto.setCreatedAt(report.getCreatedAt());
         return dto;
