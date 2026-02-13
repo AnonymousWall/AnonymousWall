@@ -35,9 +35,12 @@ public class AdminUserServiceImpl implements AdminUserService {
     public Page<UserEntity> getAllUsers(Pageable pageable, Boolean blocked, String sortBy, String sortOrder) {
         log.info("Admin fetching users - page={}, size={}, blocked={}, sortBy={}, sortOrder={}", 
                  pageable.getNumber(), pageable.getSize(), blocked, sortBy, sortOrder);
-        
+        if (sortOrder == null || sortOrder.isEmpty()) {
+            sortOrder = "desc"; // default to descending
+        }
+
         // Determine sort order (default to desc)
-        boolean isDesc = sortOrder == null || sortOrder.equalsIgnoreCase("desc");
+        boolean isDesc = sortOrder.equalsIgnoreCase("desc");
         
         // Case 1: No filters, no custom sorting - return all with default pagination
         // Note: Without explicit ORDER BY, the result order is database-dependent and not guaranteed

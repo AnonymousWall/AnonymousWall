@@ -616,7 +616,7 @@ class PostsControllerHidePostTests {
 
         @Test
         @DisplayName("Hide/Unhide operations are transactional (atomic)")
-        void shouldBeAtomicOperation() {
+        void shouldBeAtomicOperation() throws InterruptedException {
             // Arrange - Create comments
             commentsService.addComment(testPost.getId(),
                     new com.anonymous.wall.model.CreateCommentRequest("Comment 1"),
@@ -631,6 +631,7 @@ class PostsControllerHidePostTests {
                             .bearerAuth(authorToken),
                     Map.class
             );
+            Thread.sleep(500);
 
             // Assert - Both post and comments should be hidden (atomic)
             Post hiddenPost = postRepository.findById(testPost.getId()).get();

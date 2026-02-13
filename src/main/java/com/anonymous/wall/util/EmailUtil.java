@@ -18,6 +18,7 @@ public class EmailUtil {
             case "register" -> "Campus Wall - Verify Your Email";
             case "login" -> "Campus Wall - Login Code";
             case "reset_password" -> "Campus Wall - Reset Your Password";
+            case null -> "Campus Wall - Verification Code";
             default -> "Campus Wall - Verification Code";
         };
 
@@ -42,6 +43,7 @@ public class EmailUtil {
                 "If you didn't request this, you can ignore this email.",
                 code
             );
+            case null -> String.format("Your verification code is: %s", code);
             default -> String.format("Your verification code is: %s", code);
         };
 
