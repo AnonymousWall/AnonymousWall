@@ -1307,6 +1307,34 @@ paths:
           description: Forbidden - admin access required
 
   /admin/posts/{id}:
+    get:
+      tags: [admin]
+      summary: Get a post by ID
+      description: Admin endpoint to retrieve a specific post by its ID
+      operationId: adminGetPostById
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Post ID to retrieve
+      responses:
+        "200":
+          description: Post retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminPostDTO"
+        "401":
+          description: Unauthorized - authentication required
+        "403":
+          description: Forbidden - admin access required
+        "404":
+          description: Post not found
     delete:
       tags: [admin]
       summary: Delete a post
@@ -1474,6 +1502,34 @@ paths:
           description: Forbidden - admin access required
 
   /admin/comments/{id}:
+    get:
+      tags: [admin]
+      summary: Get a comment by ID
+      description: Admin endpoint to retrieve a specific comment by its ID
+      operationId: adminGetCommentById
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Comment ID to retrieve
+      responses:
+        "200":
+          description: Comment retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminCommentDTO"
+        "401":
+          description: Unauthorized - authentication required
+        "403":
+          description: Forbidden - admin access required
+        "404":
+          description: Comment not found
     delete:
       tags: [admin]
       summary: Delete a comment

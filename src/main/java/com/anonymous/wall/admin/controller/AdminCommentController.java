@@ -96,6 +96,22 @@ public class AdminCommentController {
     }
     
     /**
+     * GET /admin/comments/{id} - Get a comment by ID
+     */
+    @Get("/{id}")
+    @Secured({"ADMIN", "MODERATOR"})
+    public HttpResponse<AdminCommentDTO> getCommentById(@PathVariable String id) {
+        log.info("Admin fetching comment by id: {}", id);
+        
+        UUID commentId = UUID.fromString(id);
+        Comment comment = adminCommentService.getCommentById(commentId);
+        
+        AdminCommentDTO dto = mapCommentToDTO(comment);
+        
+        return HttpResponse.ok(dto);
+    }
+    
+    /**
      * DELETE /admin/comments/{id} - Soft delete a comment
      */
     @Delete("/{id}")

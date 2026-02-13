@@ -22,6 +22,13 @@ public interface AdminCommentService {
     Page<Comment> getAllComments(Pageable pageable, UUID userId, Boolean hidden, String sortBy, String sortOrder);
     
     /**
+     * Get a comment by its ID
+     * @param commentId The ID of the comment to retrieve
+     * @return The comment with the specified ID
+     */
+    Comment getCommentById(UUID commentId);
+    
+    /**
      * Soft delete a comment (hide it)
      */
     void deleteComment(UUID commentId);

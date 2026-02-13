@@ -100,6 +100,13 @@ public class AdminPostServiceImpl implements AdminPostService {
     }
     
     @Override
+    public Post getPostById(UUID postId) {
+        log.info("Admin fetching post by id: {}", postId);
+        return postRepository.findById(postId)
+                .orElseThrow(() -> new IllegalArgumentException("Post not found with ID: " + postId));
+    }
+    
+    @Override
     public void deletePost(UUID postId) {
         log.info("Admin soft-deleting post: {}", postId);
         Post post = postRepository.findById(postId)
