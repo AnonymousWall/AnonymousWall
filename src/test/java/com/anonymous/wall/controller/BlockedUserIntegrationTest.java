@@ -1,11 +1,8 @@
 package com.anonymous.wall.controller;
 
 import com.anonymous.wall.entity.UserEntity;
-import com.anonymous.wall.model.CreatePostRequest;
-import com.anonymous.wall.model.LoginEmailRequest;
 import com.anonymous.wall.model.PasswordLoginRequest;
 import com.anonymous.wall.model.PasswordResetRequestRequest;
-import com.anonymous.wall.model.ResetPasswordRequest;
 import com.anonymous.wall.repository.UserRepository;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpStatus;
@@ -19,7 +16,6 @@ import org.junit.jupiter.api.*;
 import java.time.OffsetDateTime;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -41,13 +37,15 @@ class BlockedUserIntegrationTest {
 
     private UserEntity blockedUser;
     private UserEntity normalUser;
-    private String normalUserToken;
 
     @BeforeEach
     void setUp() {
+        // Create unique test users to avoid conflicts
+        String timestamp = String.valueOf(System.currentTimeMillis());
+        
         // Create a blocked user
         blockedUser = new UserEntity();
-        blockedUser.setEmail("blocked@harvard.edu");
+        blockedUser.setEmail("blocked" + timestamp + "@harvard.edu");
         blockedUser.setSchoolDomain("harvard.edu");
         blockedUser.setVerified(true);
         blockedUser.setPasswordSet(true);
@@ -58,7 +56,7 @@ class BlockedUserIntegrationTest {
 
         // Create a normal user for comparison
         normalUser = new UserEntity();
-        normalUser.setEmail("normal@harvard.edu");
+        normalUser.setEmail("normal" + timestamp + "@harvard.edu");
         normalUser.setSchoolDomain("harvard.edu");
         normalUser.setVerified(true);
         normalUser.setPasswordSet(true);
@@ -69,7 +67,7 @@ class BlockedUserIntegrationTest {
     }
 
     @AfterEach
-    void cleanup() {
+    void tearDown() {
         // Clean up test data
         if (blockedUser != null && blockedUser.getId() != null) {
             userRepository.findById(blockedUser.getId()).ifPresent(userRepository::delete);
@@ -84,7 +82,6 @@ class BlockedUserIntegrationTest {
     class AuthenticationTests {
 
         @Test
-        @Order(1)
         @DisplayName("Blocked user should not be able to login with password")
         void blockedUserCannotLoginWithPassword() {
             // Arrange
@@ -111,7 +108,6 @@ class BlockedUserIntegrationTest {
         }
 
         @Test
-        @Order(2)
         @DisplayName("Normal user should be able to login with password")
         void normalUserCanLoginWithPassword() {
             // This test would require actual password authentication setup
@@ -127,7 +123,6 @@ class BlockedUserIntegrationTest {
     class PasswordResetTests {
 
         @Test
-        @Order(1)
         @DisplayName("Blocked user should not be able to request password reset")
         void blockedUserCannotRequestPasswordReset() {
             // Arrange
@@ -166,7 +161,6 @@ class BlockedUserIntegrationTest {
     class DatabaseStateTests {
 
         @Test
-        @Order(1)
         @DisplayName("Verify blocked user is correctly marked in database")
         void verifyBlockedUserInDatabase() {
             Optional<UserEntity> userOpt = userRepository.findById(blockedUser.getId());
@@ -175,7 +169,6 @@ class BlockedUserIntegrationTest {
         }
 
         @Test
-        @Order(2)
         @DisplayName("Verify normal user is not blocked in database")
         void verifyNormalUserInDatabase() {
             Optional<UserEntity> userOpt = userRepository.findById(normalUser.getId());
@@ -184,7 +177,6 @@ class BlockedUserIntegrationTest {
         }
 
         @Test
-        @Order(3)
         @DisplayName("User can be blocked after creation")
         void userCanBeBlockedAfterCreation() {
             // Get the normal user
