@@ -22,7 +22,17 @@ public enum SortBy {
     /**
      * Sort by least likes, lowest first
      */
-    LEAST_LIKED("like_count", "ASC");
+    LEAST_LIKED("like_count", "ASC"),
+
+    /**
+     * Sort by most comments, highest first
+     */
+    MOST_COMMENTED("comment_count", "DESC"),
+
+    /**
+     * Sort by least comments, lowest first
+     */
+    LEAST_COMMENTED("comment_count", "ASC");
 
     private final String column;
     private final String direction;

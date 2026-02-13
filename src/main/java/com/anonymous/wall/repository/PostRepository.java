@@ -118,6 +118,26 @@ public interface PostRepository extends CrudRepository<Post, UUID> {
      */
     Page<Post> findByWallAndSchoolDomainAndHiddenFalseOrderByLikeCountAsc(String wall, String schoolDomain, Pageable pageable);
 
+    /**
+     * Find non-hidden posts by wall, sorted by comment count (most comments first)
+     */
+    Page<Post> findByWallAndHiddenFalseOrderByCommentCountDesc(String wall, Pageable pageable);
+
+    /**
+     * Find non-hidden posts by wall, sorted by comment count (least comments first)
+     */
+    Page<Post> findByWallAndHiddenFalseOrderByCommentCountAsc(String wall, Pageable pageable);
+
+    /**
+     * Find non-hidden campus posts by wall and domain, sorted by comment count (most comments first)
+     */
+    Page<Post> findByWallAndSchoolDomainAndHiddenFalseOrderByCommentCountDesc(String wall, String schoolDomain, Pageable pageable);
+
+    /**
+     * Find non-hidden campus posts by wall and domain, sorted by comment count (least comments first)
+     */
+    Page<Post> findByWallAndSchoolDomainAndHiddenFalseOrderByCommentCountAsc(String wall, String schoolDomain, Pageable pageable);
+
     // ===== User's Own Posts =====
     /**
      * Find non-hidden posts by a user with pagination, sorted by created time (newest first)
@@ -138,6 +158,16 @@ public interface PostRepository extends CrudRepository<Post, UUID> {
      * Find non-hidden posts by a user with pagination, sorted by like count (least liked first)
      */
     Page<Post> findByUserIdAndHiddenFalseOrderByLikeCountAsc(UUID userId, Pageable pageable);
+
+    /**
+     * Find non-hidden posts by a user with pagination, sorted by comment count (most comments first)
+     */
+    Page<Post> findByUserIdAndHiddenFalseOrderByCommentCountDesc(UUID userId, Pageable pageable);
+
+    /**
+     * Find non-hidden posts by a user with pagination, sorted by comment count (least comments first)
+     */
+    Page<Post> findByUserIdAndHiddenFalseOrderByCommentCountAsc(UUID userId, Pageable pageable);
 
     /**
      * Count non-hidden posts by a user

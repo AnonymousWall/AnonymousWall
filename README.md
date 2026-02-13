@@ -536,7 +536,7 @@ Response: 200 OK
 - `wall` (default: "campus") - Filter by "campus" or "national"
 - `page` (default: 1) - Page number (1-based)
 - `limit` (default: 20) - Posts per page (max: 100)
-- `sort` (default: "NEWEST") - Sort order: NEWEST, OLDEST, MOST_LIKED, LEAST_LIKED
+- `sort` (default: "NEWEST") - Sort order: NEWEST, OLDEST, MOST_LIKED, LEAST_LIKED, MOST_COMMENTED, LEAST_COMMENTED
 
 #### 3. Get Post by ID
 ```http
@@ -855,14 +855,14 @@ Response: 200 OK
 **Query Parameters:**
 - `page` (default: 1) - Page number (1-based)
 - `limit` (default: 20) - Posts per page (max: 100)
-- `sort` (default: "NEWEST") - Sort order: NEWEST, OLDEST, MOST_LIKED, LEAST_LIKED
+- `sort` (default: "NEWEST") - Sort order: NEWEST, OLDEST, MOST_LIKED, LEAST_LIKED, MOST_COMMENTED, LEAST_COMMENTED
 
 **Notes:**
 - Returns all posts created by the authenticated user
 - Hidden (soft-deleted) posts are automatically excluded
 - Uses optimized queries with composite database indexes for efficient retrieval
 - Performance: O(log K) where K is the user's total post count
-- Supports sorting by creation time or like count
+- Supports sorting by creation time, like count, or comment count
 
 #### 3. Update Profile Name (Requires Authentication)
 ```http

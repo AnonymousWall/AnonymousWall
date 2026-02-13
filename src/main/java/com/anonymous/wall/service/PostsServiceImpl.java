@@ -172,6 +172,8 @@ public class PostsServiceImpl implements PostsService {
                 case OLDEST -> postRepository.findByWallAndHiddenFalseOrderByCreatedAtAsc(wall, pageable);
                 case MOST_LIKED -> postRepository.findByWallAndHiddenFalseOrderByLikeCountDesc(wall, pageable);
                 case LEAST_LIKED -> postRepository.findByWallAndHiddenFalseOrderByLikeCountAsc(wall, pageable);
+                case MOST_COMMENTED -> postRepository.findByWallAndHiddenFalseOrderByCommentCountDesc(wall, pageable);
+                case LEAST_COMMENTED -> postRepository.findByWallAndHiddenFalseOrderByCommentCountAsc(wall, pageable);
             };
         } else {
             // Campus posts (filter hidden)
@@ -180,6 +182,8 @@ public class PostsServiceImpl implements PostsService {
                 case OLDEST -> postRepository.findByWallAndSchoolDomainAndHiddenFalseOrderByCreatedAtAsc(wall, schoolDomain, pageable);
                 case MOST_LIKED -> postRepository.findByWallAndSchoolDomainAndHiddenFalseOrderByLikeCountDesc(wall, schoolDomain, pageable);
                 case LEAST_LIKED -> postRepository.findByWallAndSchoolDomainAndHiddenFalseOrderByLikeCountAsc(wall, schoolDomain, pageable);
+                case MOST_COMMENTED -> postRepository.findByWallAndSchoolDomainAndHiddenFalseOrderByCommentCountDesc(wall, schoolDomain, pageable);
+                case LEAST_COMMENTED -> postRepository.findByWallAndSchoolDomainAndHiddenFalseOrderByCommentCountAsc(wall, schoolDomain, pageable);
             };
         }
     }
@@ -426,6 +430,8 @@ public class PostsServiceImpl implements PostsService {
             case OLDEST -> postRepository.findByUserIdAndHiddenFalseOrderByCreatedAtAsc(userId, pageable);
             case MOST_LIKED -> postRepository.findByUserIdAndHiddenFalseOrderByLikeCountDesc(userId, pageable);
             case LEAST_LIKED -> postRepository.findByUserIdAndHiddenFalseOrderByLikeCountAsc(userId, pageable);
+            case MOST_COMMENTED -> postRepository.findByUserIdAndHiddenFalseOrderByCommentCountDesc(userId, pageable);
+            case LEAST_COMMENTED -> postRepository.findByUserIdAndHiddenFalseOrderByCommentCountAsc(userId, pageable);
         };
 
         log.info("Retrieved {} posts for user: {}, sort: {}, total: {}", 
