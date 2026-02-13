@@ -86,9 +86,8 @@ class CommentsServiceTest {
         @DisplayName("Should add comment to national post successfully")
         void shouldAddCommentToNationalPost() {
             // Arrange
-            CreateCommentRequest request = new CreateCommentRequest();
-            request.setText("This is a test comment");
-            
+            CreateCommentRequest request = new CreateCommentRequest("This is a test comment");
+
             when(postRepository.findById(testPostId)).thenReturn(Optional.of(testPost));
             when(userRepository.findById(testUserId)).thenReturn(Optional.of(testUser));
             when(commentRepository.save(any(Comment.class))).thenAnswer(invocation -> {
@@ -113,9 +112,8 @@ class CommentsServiceTest {
             testPost.setWall("campus");
             testPost.setSchoolDomain("harvard.edu");
             
-            CreateCommentRequest request = new CreateCommentRequest();
-            request.setText("Campus comment");
-            
+            CreateCommentRequest request = new CreateCommentRequest("Campus comment");
+
             when(postRepository.findById(testPostId)).thenReturn(Optional.of(testPost));
             when(userRepository.findById(testUserId)).thenReturn(Optional.of(testUser));
             when(commentRepository.save(any(Comment.class))).thenAnswer(invocation -> {
@@ -136,9 +134,8 @@ class CommentsServiceTest {
         @DisplayName("Should set profile name on comment")
         void shouldSetProfileNameOnComment() {
             // Arrange
-            CreateCommentRequest request = new CreateCommentRequest();
-            request.setText("Test");
-            
+            CreateCommentRequest request = new CreateCommentRequest("Test");
+
             when(postRepository.findById(testPostId)).thenReturn(Optional.of(testPost));
             when(userRepository.findById(testUserId)).thenReturn(Optional.of(testUser));
             
@@ -166,8 +163,7 @@ class CommentsServiceTest {
         @DisplayName("Should throw exception for non-existent post")
         void shouldThrowForNonExistentPost() {
             // Arrange
-            CreateCommentRequest request = new CreateCommentRequest();
-            request.setText("Test");
+            CreateCommentRequest request = new CreateCommentRequest("Test");
             when(postRepository.findById(testPostId)).thenReturn(Optional.empty());
 
             // Act & Assert
@@ -181,8 +177,7 @@ class CommentsServiceTest {
         @DisplayName("Should throw exception for empty comment text")
         void shouldThrowForEmptyText() {
             // Arrange
-            CreateCommentRequest request = new CreateCommentRequest();
-            request.setText("");
+            CreateCommentRequest request = new CreateCommentRequest("");
             when(postRepository.findById(testPostId)).thenReturn(Optional.of(testPost));
 
             // Act & Assert
@@ -195,8 +190,7 @@ class CommentsServiceTest {
         @DisplayName("Should throw exception for null comment text")
         void shouldThrowForNullText() {
             // Arrange
-            CreateCommentRequest request = new CreateCommentRequest();
-            request.setText(null);
+            CreateCommentRequest request = new CreateCommentRequest(null);
             when(postRepository.findById(testPostId)).thenReturn(Optional.of(testPost));
 
             // Act & Assert
@@ -209,8 +203,7 @@ class CommentsServiceTest {
         @DisplayName("Should throw exception for whitespace-only text")
         void shouldThrowForWhitespaceOnlyText() {
             // Arrange
-            CreateCommentRequest request = new CreateCommentRequest();
-            request.setText("   ");
+            CreateCommentRequest request = new CreateCommentRequest("   ");
             when(postRepository.findById(testPostId)).thenReturn(Optional.of(testPost));
 
             // Act & Assert
@@ -222,8 +215,7 @@ class CommentsServiceTest {
         @DisplayName("Should throw exception for text exceeding max length")
         void shouldThrowForTextTooLong() {
             // Arrange
-            CreateCommentRequest request = new CreateCommentRequest();
-            request.setText("a".repeat(5001));
+            CreateCommentRequest request = new CreateCommentRequest("a".repeat(5001));
             when(postRepository.findById(testPostId)).thenReturn(Optional.of(testPost));
 
             // Act & Assert
@@ -236,8 +228,7 @@ class CommentsServiceTest {
         @DisplayName("Should throw exception for non-existent user")
         void shouldThrowForNonExistentUser() {
             // Arrange
-            CreateCommentRequest request = new CreateCommentRequest();
-            request.setText("Test");
+            CreateCommentRequest request = new CreateCommentRequest("Test");
             when(postRepository.findById(testPostId)).thenReturn(Optional.of(testPost));
             when(userRepository.findById(testUserId)).thenReturn(Optional.empty());
 
@@ -252,8 +243,7 @@ class CommentsServiceTest {
         void shouldThrowForHiddenPost() {
             // Arrange
             testPost.setHidden(true);
-            CreateCommentRequest request = new CreateCommentRequest();
-            request.setText("Test");
+            CreateCommentRequest request = new CreateCommentRequest("Test");
             when(postRepository.findById(testPostId)).thenReturn(Optional.of(testPost));
 
             // Act & Assert
@@ -269,8 +259,7 @@ class CommentsServiceTest {
             testPost.setSchoolDomain("mit.edu");
             testUser.setSchoolDomain("harvard.edu");
             
-            CreateCommentRequest request = new CreateCommentRequest();
-            request.setText("Test");
+            CreateCommentRequest request = new CreateCommentRequest("Test");
             
             when(postRepository.findById(testPostId)).thenReturn(Optional.of(testPost));
             when(userRepository.findById(testUserId)).thenReturn(Optional.of(testUser));
@@ -289,8 +278,7 @@ class CommentsServiceTest {
             testPost.setSchoolDomain("harvard.edu");
             testUser.setSchoolDomain(null);
             
-            CreateCommentRequest request = new CreateCommentRequest();
-            request.setText("Test");
+            CreateCommentRequest request = new CreateCommentRequest("Test");
             
             when(postRepository.findById(testPostId)).thenReturn(Optional.of(testPost));
             when(userRepository.findById(testUserId)).thenReturn(Optional.of(testUser));
@@ -309,8 +297,7 @@ class CommentsServiceTest {
         @DisplayName("Should handle comment at max length (5000 chars)")
         void shouldHandleMaxLengthComment() {
             // Arrange
-            CreateCommentRequest request = new CreateCommentRequest();
-            request.setText("a".repeat(5000));
+            CreateCommentRequest request = new CreateCommentRequest("a".repeat(5000));
             
             when(postRepository.findById(testPostId)).thenReturn(Optional.of(testPost));
             when(userRepository.findById(testUserId)).thenReturn(Optional.of(testUser));
@@ -331,8 +318,7 @@ class CommentsServiceTest {
         @DisplayName("Should handle comment with special characters")
         void shouldHandleSpecialCharacters() {
             // Arrange
-            CreateCommentRequest request = new CreateCommentRequest();
-            request.setText("Test !@#$%^&*()_+-=[]{}|;':\",./<>?");
+            CreateCommentRequest request = new CreateCommentRequest("Test !@#$%^&*()_+-=[]{}|;':\",./<>?");
             
             when(postRepository.findById(testPostId)).thenReturn(Optional.of(testPost));
             when(userRepository.findById(testUserId)).thenReturn(Optional.of(testUser));
@@ -353,8 +339,7 @@ class CommentsServiceTest {
         @DisplayName("Should handle comment with Unicode characters")
         void shouldHandleUnicodeCharacters() {
             // Arrange
-            CreateCommentRequest request = new CreateCommentRequest();
-            request.setText("测试评论 こんにちは 🎉🎊");
+            CreateCommentRequest request = new CreateCommentRequest("测试评论 こんにちは 🎉🎊");
             
             when(postRepository.findById(testPostId)).thenReturn(Optional.of(testPost));
             when(userRepository.findById(testUserId)).thenReturn(Optional.of(testUser));
@@ -375,8 +360,7 @@ class CommentsServiceTest {
         @DisplayName("Should handle comment with newlines")
         void shouldHandleNewlines() {
             // Arrange
-            CreateCommentRequest request = new CreateCommentRequest();
-            request.setText("Line 1\nLine 2\nLine 3");
+            CreateCommentRequest request = new CreateCommentRequest("Line 1\nLine 2\nLine 3");
             
             when(postRepository.findById(testPostId)).thenReturn(Optional.of(testPost));
             when(userRepository.findById(testUserId)).thenReturn(Optional.of(testUser));
