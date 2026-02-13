@@ -16,6 +16,8 @@ import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Mono;
 
 import java.security.Principal;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -27,7 +29,7 @@ import java.util.UUID;
 public class BlockedUserFilter implements HttpServerFilter {
 
     private static final Logger log = LoggerFactory.getLogger(BlockedUserFilter.class);
-    private static final String BLOCKED_USER_ERROR_MESSAGE = "{\"error\": \"Access denied. Your account has been blocked.\"}";
+    private static final String BLOCKED_USER_ERROR_MESSAGE = "Access denied. Your account has been blocked.";
 
     private final UserService userService;
 
@@ -53,9 +55,11 @@ public class BlockedUserFilter implements HttpServerFilter {
                     log.warn("Blocked user attempted to access: userId={}, path={}", userId, request.getPath());
                     
                     // Return 403 Forbidden for blocked users
-                    MutableHttpResponse<String> response = HttpResponse.status(HttpStatus.FORBIDDEN)
-                        .body(BLOCKED_USER_ERROR_MESSAGE);
-                    response.contentType("application/json");
+                    Map<String, String> errorResponse = new HashMap<>();
+                    errorResponse.put("error", BLOCKED_USER_ERROR_MESSAGE);
+                    
+                    MutableHttpResponse<Map<String, String>> response = HttpResponse.status(HttpStatus.FORBIDDEN)
+                        .body(errorResponse);
                     return Mono.just(response);
                 }
             } catch (IllegalArgumentException e) {
