@@ -1233,6 +1233,144 @@ paths:
         "404":
           description: User not found
 
+  /admin/users/{id}/posts:
+    get:
+      tags: [admin]
+      summary: Get all posts by a user
+      description: Admin endpoint to retrieve all posts created by a specific user with pagination and sorting
+      operationId: adminGetUserPosts
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: User ID
+        - in: query
+          name: page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          description: Page number for pagination
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          description: Number of results per page
+        - in: query
+          name: sortBy
+          required: false
+          schema:
+            type: string
+            enum: [createdAt, likeCount, commentCount, userId]
+          description: Field to sort by
+        - in: query
+          name: sortOrder
+          required: false
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+          description: Sort order (ascending or descending)
+      responses:
+        "200":
+          description: User posts retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/AdminPostDTO"
+                  pagination:
+                    $ref: "#/components/schemas/PaginationInfo"
+        "401":
+          description: Unauthorized - authentication required
+        "403":
+          description: Forbidden - admin access required
+        "404":
+          description: User not found
+
+  /admin/users/{id}/comments:
+    get:
+      tags: [admin]
+      summary: Get all comments by a user
+      description: Admin endpoint to retrieve all comments created by a specific user with pagination and sorting
+      operationId: adminGetUserComments
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: User ID
+        - in: query
+          name: page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          description: Page number for pagination
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          description: Number of results per page
+        - in: query
+          name: sortBy
+          required: false
+          schema:
+            type: string
+            enum: [createdAt, userId]
+          description: Field to sort by
+        - in: query
+          name: sortOrder
+          required: false
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+          description: Sort order (ascending or descending)
+      responses:
+        "200":
+          description: User comments retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/AdminCommentDTO"
+                  pagination:
+                    $ref: "#/components/schemas/PaginationInfo"
+        "401":
+          description: Unauthorized - authentication required
+        "403":
+          description: Forbidden - admin access required
+        "404":
+          description: User not found
+
   /admin/posts:
     get:
       tags: [admin]

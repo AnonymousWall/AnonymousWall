@@ -1,8 +1,12 @@
 package com.anonymous.wall.admin.controller;
 
 import com.anonymous.wall.entity.UserEntity;
+import com.anonymous.wall.entity.Post;
+import com.anonymous.wall.entity.Comment;
 import com.anonymous.wall.model.AdminUserDTO;
 import com.anonymous.wall.repository.UserRepository;
+import com.anonymous.wall.repository.PostRepository;
+import com.anonymous.wall.repository.CommentRepository;
 import com.anonymous.wall.service.JwtTokenService;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpResponse;
@@ -31,6 +35,12 @@ class AdminUserControllerTest {
 
     @Inject
     UserRepository userRepository;
+
+    @Inject
+    PostRepository postRepository;
+
+    @Inject
+    CommentRepository commentRepository;
 
     @Inject
     private JwtTokenService jwtTokenService;
@@ -496,6 +506,234 @@ class AdminUserControllerTest {
             // Act
             HttpResponse<Map> response = client.toBlocking().exchange(
                 HttpRequest.GET(BASE_PATH + "?blocked=false&sortBy=createdAt&sortOrder=desc")
+                    .bearerAuth(adminToken),
+                Map.class
+            );
+
+            // Assert
+            assertEquals(HttpStatus.OK, response.getStatus());
+            assertNotNull(response.body());
+            assertTrue(response.body().containsKey("data"));
+        }
+    }
+
+    @Nested
+    @DisplayName("Get User Posts Endpoint Tests")
+    class GetUserPostsTests {
+
+        private Post testPost;
+
+        @BeforeEach
+        void setUpPosts() {
+            // Create a test post for the target user
+            testPost = new Post();
+            testPost.setUserId(targetUser.getId());
+            testPost.setProfileName(targetUser.getProfileName());
+            testPost.setTitle("Test Post");
+            testPost.setContent("Test post content");
+            testPost.setWall("campus");
+            testPost.setSchoolDomain(targetUser.getSchoolDomain());
+            testPost.setLikeCount(0);
+            testPost.setCommentCount(0);
+            testPost.setHidden(false);
+            testPost = postRepository.save(testPost);
+        }
+
+        @Test
+        @DisplayName("Positive: Admin can get user's posts")
+        void adminCanGetUserPosts() {
+            // Act
+            HttpResponse<Map> response = client.toBlocking().exchange(
+                HttpRequest.GET(BASE_PATH + "/" + targetUser.getId() + "/posts")
+                    .bearerAuth(adminToken),
+                Map.class
+            );
+
+            // Assert
+            assertEquals(HttpStatus.OK, response.getStatus());
+            assertNotNull(response.body());
+            assertTrue(response.body().containsKey("data"));
+            assertTrue(response.body().containsKey("pagination"));
+            
+            List<Map> posts = (List<Map>) response.body().get("data");
+            assertNotNull(posts);
+        }
+
+        @Test
+        @DisplayName("Positive: Moderator can get user's posts")
+        void moderatorCanGetUserPosts() {
+            // Act
+            HttpResponse<Map> response = client.toBlocking().exchange(
+                HttpRequest.GET(BASE_PATH + "/" + targetUser.getId() + "/posts")
+                    .bearerAuth(moderatorToken),
+                Map.class
+            );
+
+            // Assert
+            assertEquals(HttpStatus.OK, response.getStatus());
+            assertNotNull(response.body());
+            assertTrue(response.body().containsKey("data"));
+        }
+
+        @Test
+        @DisplayName("Negative: Regular user cannot get user's posts")
+        void regularUserCannotGetUserPosts() {
+            // Act & Assert
+            HttpClientResponseException exception = assertThrows(
+                HttpClientResponseException.class,
+                () -> client.toBlocking().exchange(
+                    HttpRequest.GET(BASE_PATH + "/" + targetUser.getId() + "/posts")
+                        .bearerAuth(userToken),
+                    Map.class
+                )
+            );
+
+            assertEquals(HttpStatus.FORBIDDEN, exception.getStatus());
+        }
+
+        @Test
+        @DisplayName("Positive: Pagination works for user posts")
+        void paginationWorksForUserPosts() {
+            // Act
+            HttpResponse<Map> response = client.toBlocking().exchange(
+                HttpRequest.GET(BASE_PATH + "/" + targetUser.getId() + "/posts?page=1&limit=10")
+                    .bearerAuth(adminToken),
+                Map.class
+            );
+
+            // Assert
+            assertEquals(HttpStatus.OK, response.getStatus());
+            Map<String, Object> pagination = (Map<String, Object>) response.body().get("pagination");
+            assertNotNull(pagination);
+            assertEquals(1, pagination.get("page"));
+            assertEquals(10, pagination.get("limit"));
+        }
+
+        @Test
+        @DisplayName("Positive: Sorting works for user posts")
+        void sortingWorksForUserPosts() {
+            // Act
+            HttpResponse<Map> response = client.toBlocking().exchange(
+                HttpRequest.GET(BASE_PATH + "/" + targetUser.getId() + "/posts?sortBy=createdAt&sortOrder=desc")
+                    .bearerAuth(adminToken),
+                Map.class
+            );
+
+            // Assert
+            assertEquals(HttpStatus.OK, response.getStatus());
+            assertNotNull(response.body());
+            assertTrue(response.body().containsKey("data"));
+        }
+    }
+
+    @Nested
+    @DisplayName("Get User Comments Endpoint Tests")
+    class GetUserCommentsTests {
+
+        private Post testPost;
+        private Comment testComment;
+
+        @BeforeEach
+        void setUpComments() {
+            // Create a test post
+            testPost = new Post();
+            testPost.setUserId(adminUser.getId());
+            testPost.setProfileName(adminUser.getProfileName());
+            testPost.setTitle("Test Post for Comments");
+            testPost.setContent("Test post content");
+            testPost.setWall("campus");
+            testPost.setSchoolDomain(adminUser.getSchoolDomain());
+            testPost.setLikeCount(0);
+            testPost.setCommentCount(0);
+            testPost.setHidden(false);
+            testPost = postRepository.save(testPost);
+
+            // Create a test comment for the target user
+            testComment = new Comment();
+            testComment.setPostId(testPost.getId());
+            testComment.setUserId(targetUser.getId());
+            testComment.setProfileName(targetUser.getProfileName());
+            testComment.setText("Test comment");
+            testComment.setHidden(false);
+            testComment = commentRepository.save(testComment);
+        }
+
+        @Test
+        @DisplayName("Positive: Admin can get user's comments")
+        void adminCanGetUserComments() {
+            // Act
+            HttpResponse<Map> response = client.toBlocking().exchange(
+                HttpRequest.GET(BASE_PATH + "/" + targetUser.getId() + "/comments")
+                    .bearerAuth(adminToken),
+                Map.class
+            );
+
+            // Assert
+            assertEquals(HttpStatus.OK, response.getStatus());
+            assertNotNull(response.body());
+            assertTrue(response.body().containsKey("data"));
+            assertTrue(response.body().containsKey("pagination"));
+            
+            List<Map> comments = (List<Map>) response.body().get("data");
+            assertNotNull(comments);
+        }
+
+        @Test
+        @DisplayName("Positive: Moderator can get user's comments")
+        void moderatorCanGetUserComments() {
+            // Act
+            HttpResponse<Map> response = client.toBlocking().exchange(
+                HttpRequest.GET(BASE_PATH + "/" + targetUser.getId() + "/comments")
+                    .bearerAuth(moderatorToken),
+                Map.class
+            );
+
+            // Assert
+            assertEquals(HttpStatus.OK, response.getStatus());
+            assertNotNull(response.body());
+            assertTrue(response.body().containsKey("data"));
+        }
+
+        @Test
+        @DisplayName("Negative: Regular user cannot get user's comments")
+        void regularUserCannotGetUserComments() {
+            // Act & Assert
+            HttpClientResponseException exception = assertThrows(
+                HttpClientResponseException.class,
+                () -> client.toBlocking().exchange(
+                    HttpRequest.GET(BASE_PATH + "/" + targetUser.getId() + "/comments")
+                        .bearerAuth(userToken),
+                    Map.class
+                )
+            );
+
+            assertEquals(HttpStatus.FORBIDDEN, exception.getStatus());
+        }
+
+        @Test
+        @DisplayName("Positive: Pagination works for user comments")
+        void paginationWorksForUserComments() {
+            // Act
+            HttpResponse<Map> response = client.toBlocking().exchange(
+                HttpRequest.GET(BASE_PATH + "/" + targetUser.getId() + "/comments?page=1&limit=10")
+                    .bearerAuth(adminToken),
+                Map.class
+            );
+
+            // Assert
+            assertEquals(HttpStatus.OK, response.getStatus());
+            Map<String, Object> pagination = (Map<String, Object>) response.body().get("pagination");
+            assertNotNull(pagination);
+            assertEquals(1, pagination.get("page"));
+            assertEquals(10, pagination.get("limit"));
+        }
+
+        @Test
+        @DisplayName("Positive: Sorting works for user comments")
+        void sortingWorksForUserComments() {
+            // Act
+            HttpResponse<Map> response = client.toBlocking().exchange(
+                HttpRequest.GET(BASE_PATH + "/" + targetUser.getId() + "/comments?sortBy=createdAt&sortOrder=desc")
                     .bearerAuth(adminToken),
                 Map.class
             );
