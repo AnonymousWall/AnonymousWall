@@ -1599,12 +1599,12 @@ Response: 200 OK
 **Centralized Security Architecture:**
 - Blocked user checks are enforced at multiple layers:
   - **Authentication Layer**: Login and password reset operations check blocked status
-  - **HTTP Filter Layer**: All authenticated requests are intercepted by `BlockedUserFilter`
+  - **HTTP Filter Layer**: All authenticated requests are intercepted by `BlockedUserFilter` (runs after SECURITY phase)
   - **Token Generation**: JWT token service refuses to generate tokens for blocked users
 
 **Blocked User Restrictions:**
 When a user is blocked by an administrator:
-1. **Immediate Effect**: Existing JWT tokens are rejected with 403 Forbidden
+1. **Immediate Effect**: Existing JWT tokens are rejected with 403 Forbidden on the next request
 2. **Authentication Denied**: Cannot login via email code or password
 3. **Password Reset Denied**: Cannot request or complete password reset
 4. **All Protected Endpoints Blocked**: Returns `403 Forbidden` for any authenticated request
@@ -1612,9 +1612,17 @@ When a user is blocked by an administrator:
 
 **Implementation:**
 - HTTP Server Filter (`BlockedUserFilter`) intercepts all authenticated requests
-- Checks user's blocked status from database on each request
+- Filter executes after authentication (SECURITY phase + 10) to ensure user principal is available
+- Checks user's blocked status from database on each request (fresh data, not cached from token)
 - Returns 403 Forbidden immediately if user is blocked
 - No controller-level code duplication required (single responsibility principle)
+
+**How It Works:**
+1. User makes request with valid JWT token
+2. Micronaut security validates the JWT and extracts user ID
+3. BlockedUserFilter checks the database for current blocked status
+4. If blocked, request is stopped with 403 Forbidden
+5. If not blocked, request proceeds normally
 
 ### Visibility Rules
 

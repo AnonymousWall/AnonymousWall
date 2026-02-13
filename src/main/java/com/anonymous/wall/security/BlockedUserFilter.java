@@ -2,6 +2,7 @@ package com.anonymous.wall.security;
 
 import com.anonymous.wall.entity.UserEntity;
 import com.anonymous.wall.service.UserService;
+import io.micronaut.core.order.Ordered;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.HttpStatus;
@@ -9,6 +10,7 @@ import io.micronaut.http.MutableHttpResponse;
 import io.micronaut.http.annotation.Filter;
 import io.micronaut.http.filter.HttpServerFilter;
 import io.micronaut.http.filter.ServerFilterChain;
+import io.micronaut.http.filter.ServerFilterPhase;
 import jakarta.inject.Inject;
 import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
@@ -24,9 +26,10 @@ import java.util.UUID;
 /**
  * HTTP Server Filter to enforce blocked user restrictions.
  * This filter intercepts all authenticated requests and blocks access for blocked users.
+ * Runs after SECURITY phase to ensure authentication has been processed first.
  */
 @Filter("/**")
-public class BlockedUserFilter implements HttpServerFilter {
+public class BlockedUserFilter implements HttpServerFilter, Ordered {
 
     private static final Logger log = LoggerFactory.getLogger(BlockedUserFilter.class);
     private static final String BLOCKED_USER_ERROR_MESSAGE = "Access denied. Your account has been blocked.";
@@ -36,6 +39,12 @@ public class BlockedUserFilter implements HttpServerFilter {
     @Inject
     public BlockedUserFilter(UserService userService) {
         this.userService = userService;
+    }
+
+    @Override
+    public int getOrder() {
+        // Run after SECURITY phase (0) but before application logic
+        return ServerFilterPhase.SECURITY.order() + 10;
     }
 
     @Override
