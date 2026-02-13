@@ -250,6 +250,27 @@ CREATE TABLE comment_reports (
 
 ## API Documentation
 
+### Common Response Codes
+
+- `200 OK` - Request successful
+- `201 Created` - Resource created successfully
+- `400 Bad Request` - Invalid request parameters or validation failed
+- `401 Unauthorized` - Missing or invalid authentication token
+- `403 Forbidden` - Access denied (insufficient permissions or blocked user)
+- `404 Not Found` - Resource not found
+- `500 Internal Server Error` - Server error
+
+**Blocked User Response:**
+When a blocked user attempts any authenticated operation, they receive:
+```json
+HTTP/1.1 403 Forbidden
+Content-Type: application/json
+
+{
+    "error": "Access denied. Your account has been blocked."
+}
+```
+
 ### Authentication Endpoints
 
 #### 1. Send Email Verification Code
@@ -985,11 +1006,19 @@ Response: 200 OK
 }
 ```
 
-**Effect:** Blocked users cannot:
-- Login to the system
-- Create posts or comments
-- Like posts
-- Access any authenticated endpoints
+**Effect:** Blocked users are immediately restricted from:
+- **Authentication**: Cannot login via email or password, cannot refresh tokens
+- **Password Management**: Cannot request or complete password reset
+- **Content Access**: Cannot view posts or comments (protected endpoints only)
+- **Content Creation**: Cannot create posts, comments, or reactions
+- **Interactions**: Cannot like posts, report content, or perform any authenticated actions
+- **Token Generation**: Cannot obtain new JWT tokens
+
+**Enforcement:**
+- Blocked status is checked at authentication layer (login, password reset)
+- Blocked status is enforced via HTTP server filter for all authenticated requests
+- Existing JWT tokens for blocked users return 403 Forbidden on all requests
+- Returns `403 Forbidden` with message: `{"error": "Access denied. Your account has been blocked."}`
 
 **Access:** ADMIN or MODERATOR
 
@@ -1563,6 +1592,29 @@ Response: 200 OK
 - Include token in `Authorization: Bearer {token}` header
 - Token contains user ID as principal name
 - Tokens expire after configured duration
+- **Blocked users cannot obtain new tokens and existing tokens are rejected**
+
+### Blocked User Enforcement
+
+**Centralized Security Architecture:**
+- Blocked user checks are enforced at multiple layers:
+  - **Authentication Layer**: Login and password reset operations check blocked status
+  - **HTTP Filter Layer**: All authenticated requests are intercepted by `BlockedUserFilter`
+  - **Token Generation**: JWT token service refuses to generate tokens for blocked users
+
+**Blocked User Restrictions:**
+When a user is blocked by an administrator:
+1. **Immediate Effect**: Existing JWT tokens are rejected with 403 Forbidden
+2. **Authentication Denied**: Cannot login via email code or password
+3. **Password Reset Denied**: Cannot request or complete password reset
+4. **All Protected Endpoints Blocked**: Returns `403 Forbidden` for any authenticated request
+5. **Error Message**: `{"error": "Access denied. Your account has been blocked."}`
+
+**Implementation:**
+- HTTP Server Filter (`BlockedUserFilter`) intercepts all authenticated requests
+- Checks user's blocked status from database on each request
+- Returns 403 Forbidden immediately if user is blocked
+- No controller-level code duplication required (single responsibility principle)
 
 ### Visibility Rules
 
