@@ -33,6 +33,13 @@ public interface AdminPostService {
     Page<Post> getPostsByWall(String wall, Pageable pageable, SortBy sortBy);
     
     /**
+     * Get a post by its ID
+     * @param postId The ID of the post to retrieve
+     * @return The post with the specified ID
+     */
+    Post getPostById(UUID postId);
+    
+    /**
      * Soft delete a post (hide it)
      */
     void deletePost(UUID postId);

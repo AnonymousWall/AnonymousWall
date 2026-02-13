@@ -103,6 +103,22 @@ public class AdminPostController {
     }
     
     /**
+     * GET /admin/posts/{id} - Get a post by ID
+     */
+    @Get("/{id}")
+    @Secured({"ADMIN", "MODERATOR"})
+    public HttpResponse<AdminPostDTO> getPostById(@PathVariable String id) {
+        log.info("Admin fetching post by id: {}", id);
+        
+        UUID postId = UUID.fromString(id);
+        Post post = adminPostService.getPostById(postId);
+        
+        AdminPostDTO dto = mapPostToDTO(post);
+        
+        return HttpResponse.ok(dto);
+    }
+    
+    /**
      * DELETE /admin/posts/{id} - Soft delete a post
      */
     @Delete("/{id}")

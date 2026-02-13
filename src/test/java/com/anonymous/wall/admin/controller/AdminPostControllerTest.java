@@ -189,6 +189,75 @@ class AdminPostControllerTest {
 
         @Test
         @Order(1)
+        @DisplayName("Positive: Admin can get a post by ID")
+        void adminCanGetPostById() {
+            // Act
+            HttpResponse<Map> response = client.toBlocking().exchange(
+                HttpRequest.GET(BASE_PATH + "/" + testPost.getId())
+                    .bearerAuth(adminToken),
+                Map.class
+            );
+
+            // Assert
+            assertEquals(HttpStatus.OK, response.getStatus());
+            assertNotNull(response.body());
+            assertEquals(testPost.getId().toString(), response.body().get("id"));
+            assertEquals(testPost.getTitle(), response.body().get("title"));
+            assertEquals(testPost.getContent(), response.body().get("content"));
+            assertEquals(testPost.getWall(), response.body().get("wall"));
+        }
+
+        @Test
+        @Order(2)
+        @DisplayName("Negative: Regular user cannot get post by ID via admin endpoint")
+        void regularUserCannotGetPostById() {
+            // Act & Assert
+            HttpClientResponseException exception = assertThrows(
+                HttpClientResponseException.class,
+                () -> client.toBlocking().exchange(
+                    HttpRequest.GET(BASE_PATH + "/" + testPost.getId())
+                        .bearerAuth(userToken),
+                    Map.class
+                )
+            );
+
+            assertEquals(HttpStatus.FORBIDDEN, exception.getStatus());
+        }
+
+        @Test
+        @Order(3)
+        @DisplayName("Negative: Unauthenticated user cannot get post by ID")
+        void unauthenticatedUserCannotGetPostById() {
+            // Act & Assert
+            HttpClientResponseException exception = assertThrows(
+                HttpClientResponseException.class,
+                () -> client.toBlocking().exchange(
+                    HttpRequest.GET(BASE_PATH + "/" + testPost.getId()),
+                    Map.class
+                )
+            );
+
+            assertEquals(HttpStatus.UNAUTHORIZED, exception.getStatus());
+        }
+
+        @Test
+        @Order(4)
+        @DisplayName("Negative: Admin gets error for non-existent post when getting by ID")
+        void adminGetsErrorForNonExistentPostOnGet() {
+            // Act & Assert
+            UUID randomId = UUID.randomUUID();
+            assertThrows(
+                HttpClientResponseException.class,
+                () -> client.toBlocking().exchange(
+                    HttpRequest.GET(BASE_PATH + "/" + randomId)
+                        .bearerAuth(adminToken),
+                    Map.class
+                )
+            );
+        }
+
+        @Test
+        @Order(5)
         @DisplayName("Positive: Admin can soft-delete a post")
         void adminCanSoftDeletePost() {
             // Act

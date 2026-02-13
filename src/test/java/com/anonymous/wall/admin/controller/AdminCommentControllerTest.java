@@ -169,6 +169,74 @@ class AdminCommentControllerTest {
 
         @Test
         @Order(1)
+        @DisplayName("Positive: Admin can get a comment by ID")
+        void adminCanGetCommentById() {
+            // Act
+            HttpResponse<Map> response = client.toBlocking().exchange(
+                HttpRequest.GET(BASE_PATH + "/" + testComment.getId())
+                    .bearerAuth(adminToken),
+                Map.class
+            );
+
+            // Assert
+            assertEquals(HttpStatus.OK, response.getStatus());
+            assertNotNull(response.body());
+            assertEquals(testComment.getId().toString(), response.body().get("id"));
+            assertEquals(testComment.getText(), response.body().get("text"));
+            assertEquals(testComment.getPostId().toString(), response.body().get("postId"));
+        }
+
+        @Test
+        @Order(2)
+        @DisplayName("Negative: Regular user cannot get comment by ID via admin endpoint")
+        void regularUserCannotGetCommentById() {
+            // Act & Assert
+            HttpClientResponseException exception = assertThrows(
+                HttpClientResponseException.class,
+                () -> client.toBlocking().exchange(
+                    HttpRequest.GET(BASE_PATH + "/" + testComment.getId())
+                        .bearerAuth(userToken),
+                    Map.class
+                )
+            );
+
+            assertEquals(HttpStatus.FORBIDDEN, exception.getStatus());
+        }
+
+        @Test
+        @Order(3)
+        @DisplayName("Negative: Unauthenticated user cannot get comment by ID")
+        void unauthenticatedUserCannotGetCommentById() {
+            // Act & Assert
+            HttpClientResponseException exception = assertThrows(
+                HttpClientResponseException.class,
+                () -> client.toBlocking().exchange(
+                    HttpRequest.GET(BASE_PATH + "/" + testComment.getId()),
+                    Map.class
+                )
+            );
+
+            assertEquals(HttpStatus.UNAUTHORIZED, exception.getStatus());
+        }
+
+        @Test
+        @Order(4)
+        @DisplayName("Negative: Admin gets error for non-existent comment when getting by ID")
+        void adminGetsErrorForNonExistentCommentOnGet() {
+            // Act & Assert
+            UUID randomId = UUID.randomUUID();
+            assertThrows(
+                HttpClientResponseException.class,
+                () -> client.toBlocking().exchange(
+                    HttpRequest.GET(BASE_PATH + "/" + randomId)
+                        .bearerAuth(adminToken),
+                    Map.class
+                )
+            );
+        }
+
+        @Test
+        @Order(5)
         @DisplayName("Positive: Admin can soft-delete a comment")
         void adminCanSoftDeleteComment() {
             // Act

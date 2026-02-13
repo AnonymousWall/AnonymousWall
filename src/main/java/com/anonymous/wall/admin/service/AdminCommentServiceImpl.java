@@ -89,6 +89,13 @@ public class AdminCommentServiceImpl implements AdminCommentService {
     }
     
     @Override
+    public Comment getCommentById(UUID commentId) {
+        log.info("Admin fetching comment by id: {}", commentId);
+        return commentRepository.findById(commentId)
+                .orElseThrow(() -> new IllegalArgumentException("Comment not found with ID: " + commentId));
+    }
+    
+    @Override
     public void deleteComment(UUID commentId) {
         log.info("Admin soft-deleting comment: {}", commentId);
         Comment comment = commentRepository.findById(commentId)
