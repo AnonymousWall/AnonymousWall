@@ -99,8 +99,8 @@ public class CommentsServiceImpl implements CommentsService {
 
         // Comments only support sorting by created time
         Page<Comment> comments = switch (sortBy) {
-            case NEWEST, MOST_LIKED -> commentRepository.findByPostIdAndHiddenFalseOrderByCreatedAtDesc(postId, pageable);
-            case OLDEST, LEAST_LIKED -> commentRepository.findByPostIdAndHiddenFalseOrderByCreatedAtAsc(postId, pageable);
+            case NEWEST, MOST_LIKED, MOST_COMMENTED -> commentRepository.findByPostIdAndHiddenFalseOrderByCreatedAtDesc(postId, pageable);
+            case OLDEST, LEAST_LIKED, LEAST_COMMENTED -> commentRepository.findByPostIdAndHiddenFalseOrderByCreatedAtAsc(postId, pageable);
         };
 
         log.info("Retrieved {} comments for post: {}, sort: {}, total: {}", comments.getNumberOfElements(), postId, sortBy, comments.getTotalSize());
@@ -265,12 +265,12 @@ public class CommentsServiceImpl implements CommentsService {
             userId, pageable.getNumber() + 1, pageable.getSize(), sortBy);
 
         // Comments only support sorting by created time
-        // MOST_LIKED/LEAST_LIKED are mapped to NEWEST/OLDEST for consistency with API
-        // since comments don't have a like count field
+        // MOST_LIKED/LEAST_LIKED and MOST_COMMENTED/LEAST_COMMENTED are mapped to NEWEST/OLDEST for consistency with API
+        // since comments don't have a like count field or comment count field
         // Only non-hidden comments are returned
         Page<Comment> comments = switch (sortBy) {
-            case NEWEST, MOST_LIKED -> commentRepository.findByUserIdAndHiddenFalseOrderByCreatedAtDesc(userId, pageable);
-            case OLDEST, LEAST_LIKED -> commentRepository.findByUserIdAndHiddenFalseOrderByCreatedAtAsc(userId, pageable);
+            case NEWEST, MOST_LIKED, MOST_COMMENTED -> commentRepository.findByUserIdAndHiddenFalseOrderByCreatedAtDesc(userId, pageable);
+            case OLDEST, LEAST_LIKED, LEAST_COMMENTED -> commentRepository.findByUserIdAndHiddenFalseOrderByCreatedAtAsc(userId, pageable);
         };
 
         log.info("Retrieved {} comments for user: {}, sort: {}, total: {}", 

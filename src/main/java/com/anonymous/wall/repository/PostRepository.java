@@ -56,6 +56,27 @@ public interface PostRepository extends CrudRepository<Post, UUID> {
      */
     Page<Post> findByWallAndSchoolDomainOrderByLikeCountAsc(String wall, String schoolDomain, Pageable pageable);
 
+    // ===== Sorting by Comment Count =====
+    /**
+     * Find posts by wall, sorted by comment count (most comments first)
+     */
+    Page<Post> findByWallOrderByCommentCountDesc(String wall, Pageable pageable);
+
+    /**
+     * Find posts by wall, sorted by comment count (least comments first)
+     */
+    Page<Post> findByWallOrderByCommentCountAsc(String wall, Pageable pageable);
+
+    /**
+     * Find campus posts by wall and domain, sorted by comment count (most comments first)
+     */
+    Page<Post> findByWallAndSchoolDomainOrderByCommentCountDesc(String wall, String schoolDomain, Pageable pageable);
+
+    /**
+     * Find campus posts by wall and domain, sorted by comment count (least comments first)
+     */
+    Page<Post> findByWallAndSchoolDomainOrderByCommentCountAsc(String wall, String schoolDomain, Pageable pageable);
+
     // ===== Other methods =====
     /**
      * Count posts by wall type
