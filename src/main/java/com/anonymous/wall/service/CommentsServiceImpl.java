@@ -297,7 +297,7 @@ public class CommentsServiceImpl implements CommentsService {
         }
 
         // Create the report
-        com.anonymous.wall.entity.CommentReport report = new com.anonymous.wall.entity.CommentReport(commentId, reporterUserId, reason);
+        com.anonymous.wall.entity.CommentReport report = new com.anonymous.wall.entity.CommentReport(commentId, reporterUserId, comment.getUserId(), reason);
         commentReportRepository.save(report);
 
         // Increment report count for the comment author

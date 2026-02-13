@@ -304,6 +304,9 @@
             <column name="reporter_user_id" type="CHAR(36)">
                 <constraints nullable="false"/>
             </column>
+            <column name="reported_user_id" type="CHAR(36)">
+                <constraints nullable="false"/>
+            </column>
             <column name="reason" type="VARCHAR(500)"/>
             <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP"/>
         </createTable>
@@ -313,6 +316,9 @@
         <addForeignKeyConstraint baseTableName="post_reports" baseColumnNames="reporter_user_id"
                                  constraintName="fk_post_reports_user"
                                  referencedTableName="users" referencedColumnNames="id"/>
+        <addForeignKeyConstraint baseTableName="post_reports" baseColumnNames="reported_user_id"
+                                 constraintName="fk_post_reports_reported_user"
+                                 referencedTableName="users" referencedColumnNames="id"/>
         <addUniqueConstraint tableName="post_reports" columnNames="post_id,reporter_user_id"
                              constraintName="uk_post_reports_user_post"/>
         <createIndex tableName="post_reports" indexName="idx_post_reports_post_id">
@@ -320,6 +326,9 @@
         </createIndex>
         <createIndex tableName="post_reports" indexName="idx_post_reports_reporter_user_id">
             <column name="reporter_user_id"/>
+        </createIndex>
+        <createIndex tableName="post_reports" indexName="idx_post_reports_reported_user_id">
+            <column name="reported_user_id"/>
         </createIndex>
     </changeSet>
 
@@ -336,6 +345,9 @@
             <column name="reporter_user_id" type="CHAR(36)">
                 <constraints nullable="false"/>
             </column>
+            <column name="reported_user_id" type="CHAR(36)">
+                <constraints nullable="false"/>
+            </column>
             <column name="reason" type="VARCHAR(500)"/>
             <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP"/>
         </createTable>
@@ -345,6 +357,9 @@
         <addForeignKeyConstraint baseTableName="comment_reports" baseColumnNames="reporter_user_id"
                                  constraintName="fk_comment_reports_user"
                                  referencedTableName="users" referencedColumnNames="id"/>
+        <addForeignKeyConstraint baseTableName="comment_reports" baseColumnNames="reported_user_id"
+                                 constraintName="fk_comment_reports_reported_user"
+                                 referencedTableName="users" referencedColumnNames="id"/>
         <addUniqueConstraint tableName="comment_reports" columnNames="comment_id,reporter_user_id"
                              constraintName="uk_comment_reports_user_comment"/>
         <createIndex tableName="comment_reports" indexName="idx_comment_reports_comment_id">
@@ -352,6 +367,9 @@
         </createIndex>
         <createIndex tableName="comment_reports" indexName="idx_comment_reports_reporter_user_id">
             <column name="reporter_user_id"/>
+        </createIndex>
+        <createIndex tableName="comment_reports" indexName="idx_comment_reports_reported_user_id">
+            <column name="reported_user_id"/>
         </createIndex>
     </changeSet>
 
