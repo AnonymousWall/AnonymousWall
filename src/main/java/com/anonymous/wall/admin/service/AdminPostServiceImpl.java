@@ -146,6 +146,8 @@ public class AdminPostServiceImpl implements AdminPostService {
                 case OLDEST -> postRepository.findAllOrderByCreatedAtAsc(pageable);
                 case MOST_LIKED -> postRepository.findAllOrderByLikeCountDesc(pageable);
                 case LEAST_LIKED -> postRepository.findAllOrderByLikeCountAsc(pageable);
+                case MOST_COMMENTED -> postRepository.findAllOrderByCommentCountDesc(pageable);
+                case LEAST_COMMENTED -> postRepository.findAllOrderByCommentCountAsc(pageable);
             };
         }
         
@@ -156,6 +158,8 @@ public class AdminPostServiceImpl implements AdminPostService {
             case OLDEST -> postRepository.findByWallOrderByCreatedAtAsc(wall, pageable);
             case MOST_LIKED -> postRepository.findByWallOrderByLikeCountDesc(wall, pageable);
             case LEAST_LIKED -> postRepository.findByWallOrderByLikeCountAsc(wall, pageable);
+            case MOST_COMMENTED -> postRepository.findByWallOrderByCommentCountDesc(wall, pageable);
+            case LEAST_COMMENTED -> postRepository.findByWallOrderByCommentCountAsc(wall, pageable);
         };
     }
 }

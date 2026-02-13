@@ -71,6 +71,7 @@ class PostsPaginationSortingTests {
         for (int i = 0; i < 25; i++) {
             Post post = new Post(testUser.getId(), "Test Title " + i, "Test post " + i, "campus", "harvard.edu");
             post.setLikeCount(i); // Vary like counts
+            post.setCommentCount(25 - i); // Vary comment counts in reverse order
             testPosts.add(postRepository.save(post));
         }
     }
@@ -347,6 +348,46 @@ class PostsPaginationSortingTests {
                 Integer likes1 = (Integer) data.get(i).get("likes");
                 Integer likes2 = (Integer) data.get(i + 1).get("likes");
                 assertTrue(likes1 <= likes2, "Posts should be sorted by likes ascending");
+            }
+        }
+
+        @Test
+        @DisplayName("Should sort by MOST_COMMENTED")
+        void shouldSortByMostCommented() {
+            HttpResponse<Map> response = client.toBlocking().exchange(
+                HttpRequest.GET(BASE_PATH + "?sort=MOST_COMMENTED&limit=10")
+                    .header("Authorization", "Bearer " + jwtToken),
+                Map.class
+            );
+
+            assertEquals(HttpStatus.OK, response.getStatus());
+            List<Map> data = (List<Map>) response.body().get("data");
+
+            // Check if posts are sorted by comments in descending order
+            for (int i = 0; i < data.size() - 1; i++) {
+                Integer comments1 = (Integer) data.get(i).get("comments");
+                Integer comments2 = (Integer) data.get(i + 1).get("comments");
+                assertTrue(comments1 >= comments2, "Posts should be sorted by comments descending");
+            }
+        }
+
+        @Test
+        @DisplayName("Should sort by LEAST_COMMENTED")
+        void shouldSortByLeastCommented() {
+            HttpResponse<Map> response = client.toBlocking().exchange(
+                HttpRequest.GET(BASE_PATH + "?sort=LEAST_COMMENTED&limit=10")
+                    .header("Authorization", "Bearer " + jwtToken),
+                Map.class
+            );
+
+            assertEquals(HttpStatus.OK, response.getStatus());
+            List<Map> data = (List<Map>) response.body().get("data");
+
+            // Check if posts are sorted by comments in ascending order
+            for (int i = 0; i < data.size() - 1; i++) {
+                Integer comments1 = (Integer) data.get(i).get("comments");
+                Integer comments2 = (Integer) data.get(i + 1).get("comments");
+                assertTrue(comments1 <= comments2, "Posts should be sorted by comments ascending");
             }
         }
 
