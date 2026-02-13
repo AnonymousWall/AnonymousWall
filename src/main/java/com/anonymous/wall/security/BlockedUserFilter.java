@@ -27,9 +27,14 @@ import java.util.UUID;
 public class BlockedUserFilter implements HttpServerFilter {
 
     private static final Logger log = LoggerFactory.getLogger(BlockedUserFilter.class);
+    private static final String BLOCKED_USER_ERROR_MESSAGE = "{\"error\": \"Access denied. Your account has been blocked.\"}";
+
+    private final UserService userService;
 
     @Inject
-    UserService userService;
+    public BlockedUserFilter(UserService userService) {
+        this.userService = userService;
+    }
 
     @Override
     public Publisher<MutableHttpResponse<?>> doFilter(HttpRequest<?> request, ServerFilterChain chain) {
@@ -49,7 +54,7 @@ public class BlockedUserFilter implements HttpServerFilter {
                     
                     // Return 403 Forbidden for blocked users
                     MutableHttpResponse<String> response = HttpResponse.status(HttpStatus.FORBIDDEN)
-                        .body("{\"error\": \"Access denied. Your account has been blocked.\"}");
+                        .body(BLOCKED_USER_ERROR_MESSAGE);
                     response.contentType("application/json");
                     return Mono.just(response);
                 }

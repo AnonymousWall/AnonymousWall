@@ -42,8 +42,7 @@ class BlockedUserFilterTest {
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        filter = new BlockedUserFilter();
-        filter.userService = userService;
+        filter = new BlockedUserFilter(userService);
     }
 
     @Nested
