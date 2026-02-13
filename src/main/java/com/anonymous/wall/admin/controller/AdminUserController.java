@@ -163,7 +163,7 @@ public class AdminUserController {
     /**
      * POST /admin/users/{id}/block - Block a user
      */
-    @Post("/{id}/block")
+    @io.micronaut.http.annotation.Post("/{id}/block")
     @Secured({"ADMIN", "MODERATOR"})
     public HttpResponse<Object> blockUser(@PathVariable String id) {
         log.info("Admin blocking user: {}", id);
@@ -180,7 +180,7 @@ public class AdminUserController {
     /**
      * POST /admin/users/{id}/unblock - Unblock a user
      */
-    @Post("/{id}/unblock")
+    @io.micronaut.http.annotation.Post("/{id}/unblock")
     @Secured({"ADMIN", "MODERATOR"})
     public HttpResponse<Object> unblockUser(@PathVariable String id) {
         log.info("Admin unblocking user: {}", id);
