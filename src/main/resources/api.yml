@@ -12,6 +12,7 @@ tags:
   - name: posts
   - name: walls
   - name: users
+  - name: chat
   - name: internships
   - name: marketplace
   - name: coins
@@ -1073,6 +1074,163 @@ paths:
           description: Invalid profile name or user not found
         "401":
           description: Unauthorized - authentication required
+
+  # =================== Chat ===================
+
+  /chat/conversations:
+    get:
+      tags: [chat]
+      summary: Get list of conversations
+      description: Get list of users with whom the authenticated user has had conversations, including unread message counts
+      operationId: getConversations
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: List of conversations
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  conversations:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ConversationDTO"
+        "401":
+          description: Unauthorized - authentication required
+
+  /chat/messages/{otherUserId}:
+    get:
+      tags: [chat]
+      summary: Get message history with a user
+      description: Retrieve chat message history between the authenticated user and another user
+      operationId: getMessageHistory
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: otherUserId
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: UUID of the other user
+        - in: query
+          name: page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          description: Page number for pagination
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+          description: Number of messages per page
+      responses:
+        "200":
+          description: Message history retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  messages:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ChatMessageDTO"
+                  pagination:
+                    $ref: "#/components/schemas/PaginationInfo"
+        "400":
+          description: Invalid user ID or user is blocked
+        "401":
+          description: Unauthorized - authentication required
+        "404":
+          description: User not found
+
+  /chat/messages:
+    post:
+      tags: [chat]
+      summary: Send a chat message
+      description: Send a message to another user. Messages cannot be sent to blocked users.
+      operationId: sendMessage
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SendMessageRequest"
+      responses:
+        "201":
+          description: Message sent successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChatMessageDTO"
+        "400":
+          description: Invalid request or receiver is blocked
+        "401":
+          description: Unauthorized - authentication required
+        "404":
+          description: Receiver not found
+
+  /chat/messages/{messageId}/read:
+    put:
+      tags: [chat]
+      summary: Mark message as read
+      description: Mark a specific message as read
+      operationId: markMessageAsRead
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: messageId
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: UUID of the message
+      responses:
+        "200":
+          description: Message marked as read
+        "401":
+          description: Unauthorized - authentication required
+        "403":
+          description: Forbidden - user is not the receiver of this message
+        "404":
+          description: Message not found
+
+  /chat/conversations/{otherUserId}/read:
+    put:
+      tags: [chat]
+      summary: Mark all messages from a user as read
+      description: Mark all messages from a specific user as read
+      operationId: markConversationAsRead
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: otherUserId
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: UUID of the other user
+      responses:
+        "200":
+          description: All messages marked as read
+        "401":
+          description: Unauthorized - authentication required
+        "404":
+          description: User not found
 
   # =================== Admin APIs ===================
 
@@ -2360,6 +2518,61 @@ components:
           type: string
           description: Name of the school
           example: "Stanford University"
+
+    # ----- Chat DTOs -----
+    ChatMessageDTO:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        senderId:
+          type: string
+          format: uuid
+        receiverId:
+          type: string
+          format: uuid
+        content:
+          type: string
+          description: Message content
+        readStatus:
+          type: boolean
+          description: Whether the message has been read
+        createdAt:
+          type: string
+          format: date-time
+
+    SendMessageRequest:
+      type: object
+      required:
+        - receiverId
+        - content
+      properties:
+        receiverId:
+          type: string
+          format: uuid
+          description: UUID of the message receiver
+        content:
+          type: string
+          minLength: 1
+          maxLength: 5000
+          description: Message content
+
+    ConversationDTO:
+      type: object
+      properties:
+        userId:
+          type: string
+          format: uuid
+          description: The other user's ID
+        profileName:
+          type: string
+          description: The other user's profile name
+        lastMessage:
+          $ref: "#/components/schemas/ChatMessageDTO"
+        unreadCount:
+          type: integer
+          description: Number of unread messages from this user
 
     # ----- Pagination -----
     PaginationInfo:
