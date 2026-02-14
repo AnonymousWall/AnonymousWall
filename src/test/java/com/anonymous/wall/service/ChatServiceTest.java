@@ -307,7 +307,8 @@ class ChatServiceTest {
             
             when(userRepository.existsById(testUser1Id)).thenReturn(true);
             when(userRepository.existsById(testUser2Id)).thenReturn(true);
-            when(chatMessageRepository.findConversationBetweenUsers(testUser1Id, testUser2Id, pageable))
+            when(chatMessageRepository.findBySenderIdAndReceiverIdOrSenderIdAndReceiverIdOrderByCreatedAtAsc(
+                    testUser1Id, testUser2Id, testUser2Id, testUser1Id, pageable))
                 .thenReturn(mockPage);
 
             // Act
@@ -316,7 +317,8 @@ class ChatServiceTest {
             // Assert
             assertNotNull(result);
             verify(chatMessageRepository, times(1))
-                .findConversationBetweenUsers(testUser1Id, testUser2Id, pageable);
+                .findBySenderIdAndReceiverIdOrSenderIdAndReceiverIdOrderByCreatedAtAsc(
+                        testUser1Id, testUser2Id, testUser2Id, testUser1Id, pageable);
         }
 
         @Test
