@@ -41,6 +41,7 @@ public class ChatMessage {
     public ChatMessage(UUID senderId, UUID receiverId, String content) {
         this.senderId = senderId;
         this.receiverId = receiverId;
+        this.conversationId = com.anonymous.wall.util.ConversationIdGenerator.generate(senderId, receiverId);
         this.content = content;
         this.readStatus = false;
         this.createdAt = OffsetDateTime.now();

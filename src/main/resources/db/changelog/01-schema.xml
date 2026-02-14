@@ -558,7 +558,7 @@
                                  referencedTableName="users" referencedColumnNames="id"/>
 
         <!-- Primary index for conversation message history queries -->
-        <createIndex tableName="chat_messages" indexName="idx_chat_conversation_created">
+        <createIndex tableName="chat_messages" indexName="idx_chat_conversation_created_asc">
             <column name="conversation_id"/>
             <column name="created_at" descending="false"/>
         </createIndex>
