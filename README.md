@@ -43,6 +43,7 @@ A Micronaut-based REST API for anonymous campus social networking. Users registe
 ✅ **User management (block/unblock users)**  
 ✅ **Content moderation (soft-delete posts/comments)**  
 ✅ **Report management system**  
+✅ **One-to-One Chat with WebSocket** (real-time messaging)  
 
 ---
 
@@ -51,9 +52,11 @@ A Micronaut-based REST API for anonymous campus social networking. Users registe
 ```
 src/main/java/com/anonymous/wall/
 ├── controller/
-│   ├── AuthController.java          # Auth endpoints
-│   ├── PostsController.java         # Post, like, comment endpoints
-│   └── UserController.java          # User profile endpoints
+│   ├── AuthController.java           # Auth endpoints
+│   ├── PostsController.java          # Post, like, comment endpoints
+│   ├── UserController.java           # User profile endpoints
+│   ├── ChatController.java           # Chat REST endpoints
+│   └── ChatWebSocketHandler.java     # WebSocket chat handler
 │
 ├── admin/                            # Admin API module
 │   ├── controller/
@@ -73,6 +76,7 @@ src/main/java/com/anonymous/wall/
 │   ├── UserService/UserServiceImpl.java           # User management
 │   ├── PostsService/PostsServiceImpl.java         # Post operations
 │   ├── CommentsService/CommentsServiceImpl.java   # Comment operations
+│   ├── ChatService/ChatServiceImpl.java           # Chat operations
 │   ├── SchoolDomainService/SchoolDomainServiceImpl.java  # School domain logic
 │   └── JwtTokenService.java                       # JWT token generation (with RBAC)
 │
@@ -80,6 +84,7 @@ src/main/java/com/anonymous/wall/
 │   ├── UserEntity.java              # User model (with role & blocked fields)
 │   ├── Post.java                    # Post model
 │   ├── Comment.java                 # Comment model
+│   ├── ChatMessage.java             # Chat message model
 │   ├── PostLike.java                # Like model
 │   ├── EmailVerificationCode.java   # Email verification
 │   ├── PostReport.java              # Post reports
@@ -91,6 +96,7 @@ src/main/java/com/anonymous/wall/
 │   ├── UserRepository.java
 │   ├── PostRepository.java
 │   ├── CommentRepository.java
+│   ├── ChatMessageRepository.java
 │   ├── PostLikeRepository.java
 │   ├── PostReportRepository.java
 │   ├── CommentReportRepository.java
@@ -892,6 +898,401 @@ Response: 200 OK
 - Profile name changes are **asynchronously propagated** to all user's posts and comments
 - The API returns immediately after updating the user profile
 - Posts and comments are updated in the background for better performance
+
+---
+
+## Chat API Documentation
+
+### Overview
+
+The Chat API provides **one-to-one messaging** capabilities with both REST endpoints and real-time WebSocket support. Users can send direct messages to other users (except blocked users), view conversation history, and receive real-time notifications.
+
+### Features
+
+✅ **Real-time messaging** via WebSocket  
+✅ **Message persistence** in database  
+✅ **Blocked user enforcement** (cannot send/receive from blocked users)  
+✅ **Read receipts** and unread message counts  
+✅ **Conversation list** with last message preview  
+✅ **Message history** with pagination  
+✅ **WebSocket authentication** with JWT  
+✅ **Session management** and automatic reconnection support  
+
+### REST Endpoints
+
+#### 1. Send Message
+```http
+POST /api/v1/chat/messages
+Authorization: Bearer {jwt-token}
+Content-Type: application/json
+
+{
+  "receiverId": "uuid-of-receiver",
+  "content": "Hello! This is a test message."
+}
+
+Response: 201 Created
+{
+  "id": "message-uuid",
+  "senderId": "sender-uuid",
+  "receiverId": "receiver-uuid",
+  "content": "Hello! This is a test message.",
+  "readStatus": false,
+  "createdAt": "2026-02-14T08:00:00Z"
+}
+```
+
+**Validations:**
+- Message content: 1-5000 characters
+- Receiver must exist and not be blocked
+- Sender must not be blocked
+
+#### 2. Get Message History
+```http
+GET /api/v1/chat/messages/{otherUserId}?page=1&limit=50
+Authorization: Bearer {jwt-token}
+
+Response: 200 OK
+{
+  "messages": [
+    {
+      "id": "message-uuid",
+      "senderId": "user1-uuid",
+      "receiverId": "user2-uuid",
+      "content": "First message",
+      "readStatus": true,
+      "createdAt": "2026-02-14T07:00:00Z"
+    },
+    {
+      "id": "message-uuid-2",
+      "senderId": "user2-uuid",
+      "receiverId": "user1-uuid",
+      "content": "Reply message",
+      "readStatus": false,
+      "createdAt": "2026-02-14T07:01:00Z"
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 50,
+    "total": 2,
+    "totalPages": 1
+  }
+}
+```
+
+**Notes:**
+- Messages are returned in chronological order (oldest first)
+- Default page size: 50 messages
+- Maximum page size: 100 messages
+
+#### 3. Get Conversations
+```http
+GET /api/v1/chat/conversations
+Authorization: Bearer {jwt-token}
+
+Response: 200 OK
+{
+  "conversations": [
+    {
+      "userId": "other-user-uuid",
+      "profileName": "John Doe",
+      "lastMessage": {
+        "id": "message-uuid",
+        "senderId": "other-user-uuid",
+        "receiverId": "current-user-uuid",
+        "content": "Last message in conversation",
+        "readStatus": false,
+        "createdAt": "2026-02-14T08:00:00Z"
+      },
+      "unreadCount": 3
+    }
+  ]
+}
+```
+
+**Notes:**
+- Conversations are sorted by last message timestamp (most recent first)
+- Only includes conversations with at least one message
+- Shows unread message count from each user
+
+#### 4. Mark Message as Read
+```http
+PUT /api/v1/chat/messages/{messageId}/read
+Authorization: Bearer {jwt-token}
+
+Response: 200 OK
+{
+  "message": "Message marked as read"
+}
+```
+
+**Access:** Only the message receiver can mark a message as read
+
+#### 5. Mark Conversation as Read
+```http
+PUT /api/v1/chat/conversations/{otherUserId}/read
+Authorization: Bearer {jwt-token}
+
+Response: 200 OK
+{
+  "message": "Conversation marked as read"
+}
+```
+
+**Effect:** Marks all messages from the specified user as read
+
+### WebSocket Connection
+
+#### Connection URL
+```
+ws://localhost:8080/ws/chat
+```
+
+#### Authentication
+WebSocket connections require JWT authentication via query parameter or header:
+
+**Option 1: Query Parameter**
+```javascript
+const ws = new WebSocket(`ws://localhost:8080/ws/chat?token=${jwtToken}`);
+```
+
+**Option 2: Sec-WebSocket-Protocol Header** (Recommended)
+```javascript
+const ws = new WebSocket('ws://localhost:8080/ws/chat', ['access_token', jwtToken]);
+```
+
+#### Message Format
+
+**Client to Server Messages:**
+
+1. **Send Message**
+```json
+{
+  "type": "message",
+  "receiverId": "uuid-of-receiver",
+  "content": "Message content"
+}
+```
+
+2. **Typing Indicator**
+```json
+{
+  "type": "typing",
+  "receiverId": "uuid-of-receiver"
+}
+```
+
+3. **Mark as Read**
+```json
+{
+  "type": "mark_read",
+  "messageId": "uuid-of-message"
+}
+```
+
+**Server to Client Messages:**
+
+1. **Connection Established**
+```json
+{
+  "type": "connected",
+  "userId": "your-user-id",
+  "timestamp": 1707900000000
+}
+```
+
+2. **Unread Count**
+```json
+{
+  "type": "unread_count",
+  "count": 5
+}
+```
+
+3. **New Message**
+```json
+{
+  "type": "message",
+  "message": {
+    "id": "message-uuid",
+    "senderId": "sender-uuid",
+    "receiverId": "receiver-uuid",
+    "content": "Message content",
+    "readStatus": false,
+    "createdAt": "2026-02-14T08:00:00Z"
+  }
+}
+```
+
+4. **Typing Indicator**
+```json
+{
+  "type": "typing",
+  "senderId": "user-uuid"
+}
+```
+
+5. **Read Receipt**
+```json
+{
+  "type": "read_receipt",
+  "messageId": "message-uuid"
+}
+```
+
+6. **Error**
+```json
+{
+  "type": "error",
+  "error": "Error message"
+}
+```
+
+### JavaScript WebSocket Example
+
+```javascript
+// Establish connection
+const token = 'your-jwt-token';
+const ws = new WebSocket('ws://localhost:8080/ws/chat', ['access_token', token]);
+
+// Connection opened
+ws.onopen = (event) => {
+  console.log('Connected to chat WebSocket');
+};
+
+// Receive messages
+ws.onmessage = (event) => {
+  const data = JSON.parse(event.data);
+  
+  switch (data.type) {
+    case 'connected':
+      console.log('Connection confirmed, user ID:', data.userId);
+      break;
+      
+    case 'message':
+      console.log('New message:', data.message);
+      displayMessage(data.message);
+      break;
+      
+    case 'typing':
+      console.log('User is typing:', data.senderId);
+      showTypingIndicator(data.senderId);
+      break;
+      
+    case 'unread_count':
+      console.log('Unread messages:', data.count);
+      updateUnreadBadge(data.count);
+      break;
+      
+    case 'error':
+      console.error('Error:', data.error);
+      break;
+  }
+};
+
+// Send a message
+function sendMessage(receiverId, content) {
+  ws.send(JSON.stringify({
+    type: 'message',
+    receiverId: receiverId,
+    content: content
+  }));
+}
+
+// Send typing indicator
+function sendTypingIndicator(receiverId) {
+  ws.send(JSON.stringify({
+    type: 'typing',
+    receiverId: receiverId
+  }));
+}
+
+// Mark message as read
+function markAsRead(messageId) {
+  ws.send(JSON.stringify({
+    type: 'mark_read',
+    messageId: messageId
+  }));
+}
+
+// Handle disconnection
+ws.onclose = (event) => {
+  console.log('WebSocket connection closed:', event.code, event.reason);
+  // Implement reconnection logic here
+};
+
+// Handle errors
+ws.onerror = (error) => {
+  console.error('WebSocket error:', error);
+};
+```
+
+### Error Handling
+
+**Common Error Responses:**
+
+1. **Unauthorized (401)**
+```json
+{
+  "error": "Unauthorized - authentication required"
+}
+```
+
+2. **Blocked User (400)**
+```json
+{
+  "error": "Cannot send message to a blocked user"
+}
+```
+
+3. **Invalid Message (400)**
+```json
+{
+  "error": "Message content must not be empty"
+}
+```
+
+4. **Forbidden (403)**
+```json
+{
+  "error": "Only the receiver can mark a message as read"
+}
+```
+
+### Database Schema
+
+The chat feature uses the `chat_messages` table:
+
+```sql
+CREATE TABLE chat_messages (
+  id CHAR(36) PRIMARY KEY,
+  sender_id CHAR(36) NOT NULL,
+  receiver_id CHAR(36) NOT NULL,
+  content TEXT NOT NULL,
+  read_status BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (sender_id) REFERENCES users(id),
+  FOREIGN KEY (receiver_id) REFERENCES users(id),
+  INDEX idx_chat_sender_receiver_time (sender_id, receiver_id, created_at DESC),
+  INDEX idx_chat_receiver_unread (receiver_id, read_status)
+);
+```
+
+### Security Considerations
+
+1. **Authentication**: All endpoints require valid JWT token
+2. **Blocked Users**: Messages cannot be sent to or from blocked users
+3. **Input Validation**: Message content is sanitized and length-limited
+4. **Rate Limiting**: Consider implementing rate limiting for message sending
+5. **WebSocket Session Management**: Sessions are tracked per user with automatic cleanup
+
+### Performance Optimization
+
+- Messages are indexed by sender/receiver/timestamp for fast queries
+- Unread counts are tracked efficiently with composite indexes
+- WebSocket connections use concurrent session management
+- Message history supports pagination to prevent large data transfers
 
 ---
 
