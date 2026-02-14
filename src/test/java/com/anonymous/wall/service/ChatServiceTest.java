@@ -109,6 +109,7 @@ class ChatServiceTest {
             assertEquals(content, result.getContent());
             assertEquals(testUser1Id, result.getSenderId());
             assertEquals(testUser2Id, result.getReceiverId());
+            assertNotNull(result.getConversationId(), "Conversation ID should be set");
             assertFalse(result.isReadStatus());
             assertNotNull(result.getCreatedAt());
             verify(chatMessageRepository, times(1)).save(any(ChatMessage.class));
@@ -307,7 +308,7 @@ class ChatServiceTest {
             
             when(userRepository.existsById(testUser1Id)).thenReturn(true);
             when(userRepository.existsById(testUser2Id)).thenReturn(true);
-            when(chatMessageRepository.findConversationBetweenUsers(testUser1Id, testUser2Id, pageable))
+            when(chatMessageRepository.findByConversationIdOrderByCreatedAtAsc(any(UUID.class), eq(pageable)))
                 .thenReturn(mockPage);
 
             // Act
@@ -316,7 +317,7 @@ class ChatServiceTest {
             // Assert
             assertNotNull(result);
             verify(chatMessageRepository, times(1))
-                .findConversationBetweenUsers(testUser1Id, testUser2Id, pageable);
+                .findByConversationIdOrderByCreatedAtAsc(any(UUID.class), eq(pageable));
         }
 
         @Test
@@ -437,13 +438,13 @@ class ChatServiceTest {
         @DisplayName("Should mark all messages in conversation as read")
         void shouldMarkAllMessagesAsRead() {
             // Arrange
-            doNothing().when(chatMessageRepository).markMessagesAsRead(testUser2Id, testUser1Id);
+            doNothing().when(chatMessageRepository).markConversationMessagesAsRead(any(UUID.class), eq(testUser2Id));
 
             // Act
             chatService.markConversationAsRead(testUser2Id, testUser1Id);
 
             // Assert
-            verify(chatMessageRepository, times(1)).markMessagesAsRead(testUser2Id, testUser1Id);
+            verify(chatMessageRepository, times(1)).markConversationMessagesAsRead(any(UUID.class), eq(testUser2Id));
         }
 
         @Test
@@ -467,7 +468,7 @@ class ChatServiceTest {
         @DisplayName("Should count unread messages from specific sender")
         void shouldCountUnreadMessagesFromSender() {
             // Arrange
-            when(chatMessageRepository.countByReceiverIdAndSenderIdAndReadStatusFalse(testUser2Id, testUser1Id))
+            when(chatMessageRepository.countByConversationIdAndReceiverIdAndReadStatusFalse(any(UUID.class), eq(testUser2Id)))
                 .thenReturn(5L);
 
             // Act
@@ -500,17 +501,19 @@ class ChatServiceTest {
         @DisplayName("Should get list of conversations successfully")
         void shouldGetConversationsSuccessfully() {
             // Arrange
-            List<UUID> partnerIds = Arrays.asList(testUser2Id);
-            when(chatMessageRepository.findConversationPartners(testUser1Id)).thenReturn(partnerIds);
+            UUID conversationId = UUID.randomUUID();
+            List<UUID> conversationIds = Arrays.asList(conversationId);
+            when(chatMessageRepository.findUserConversations(testUser1Id)).thenReturn(conversationIds);
+            when(chatMessageRepository.findOtherParticipantInConversation(conversationId, testUser1Id)).thenReturn(testUser2Id);
             when(userRepository.findById(testUser2Id)).thenReturn(Optional.of(testUser2));
             
             ChatMessage lastMessage = new ChatMessage(testUser2Id, testUser1Id, "Last message");
             lastMessage.setId(UUID.randomUUID());
             lastMessage.setCreatedAt(OffsetDateTime.now());
-            when(chatMessageRepository.findLastMessageBetweenUsers(testUser1Id, testUser2Id))
+            when(chatMessageRepository.findLastMessageInConversation(conversationId))
                 .thenReturn(lastMessage);
             
-            when(chatMessageRepository.countByReceiverIdAndSenderIdAndReadStatusFalse(testUser1Id, testUser2Id))
+            when(chatMessageRepository.countByConversationIdAndReceiverIdAndReadStatusFalse(conversationId, testUser1Id))
                 .thenReturn(3L);
 
             // Act
@@ -529,8 +532,10 @@ class ChatServiceTest {
         @DisplayName("Should skip conversation if partner user not found")
         void shouldSkipIfPartnerNotFound() {
             // Arrange
-            List<UUID> partnerIds = Arrays.asList(testUser2Id);
-            when(chatMessageRepository.findConversationPartners(testUser1Id)).thenReturn(partnerIds);
+            UUID conversationId = UUID.randomUUID();
+            List<UUID> conversationIds = Arrays.asList(conversationId);
+            when(chatMessageRepository.findUserConversations(testUser1Id)).thenReturn(conversationIds);
+            when(chatMessageRepository.findOtherParticipantInConversation(conversationId, testUser1Id)).thenReturn(testUser2Id);
             when(userRepository.findById(testUser2Id)).thenReturn(Optional.empty());
 
             // Act
