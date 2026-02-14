@@ -87,7 +87,6 @@ public class UserServiceImpl implements UserService {
      * Update user entity
      */
     @Override
-    @CacheInvalidate(parameters = {"user.id"})
     public UserEntity update(UserEntity user) {
         log.debug("Updating user: {}", user.getId());
         return userRepository.update(user);

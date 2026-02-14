@@ -2,6 +2,7 @@ package com.anonymous.wall.admin.service;
 
 import com.anonymous.wall.entity.UserEntity;
 import com.anonymous.wall.repository.UserRepository;
+import io.micronaut.cache.annotation.CacheInvalidate;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
 import jakarta.inject.Inject;
@@ -96,6 +97,7 @@ public class AdminUserServiceImpl implements AdminUserService {
     }
     
     @Override
+    @CacheInvalidate(value = "blocked-users", parameters = {"userId"})
     public void blockUser(UUID userId) {
         log.info("Admin blocking user: {}", userId);
         UserEntity user = getUserById(userId);
@@ -105,6 +107,7 @@ public class AdminUserServiceImpl implements AdminUserService {
     }
     
     @Override
+    @CacheInvalidate(value = "blocked-users", parameters = {"userId"})
     public void unblockUser(UUID userId) {
         log.info("Admin unblocking user: {}", userId);
         UserEntity user = getUserById(userId);
