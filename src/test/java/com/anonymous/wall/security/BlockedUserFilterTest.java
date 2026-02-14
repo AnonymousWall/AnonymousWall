@@ -146,6 +146,7 @@ class BlockedUserFilterTest {
             UUID userId = UUID.randomUUID();
             when(request.getUserPrincipal()).thenReturn(Optional.of(principal));
             when(principal.getName()).thenReturn(userId.toString());
+            // Service returns false when user not found (handled in UserServiceImpl.isUserBlocked)
             when(userService.isUserBlocked(userId)).thenReturn(false);
             when(chain.proceed(request)).thenReturn(Mono.empty());
 
