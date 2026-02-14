@@ -1,6 +1,5 @@
 package com.anonymous.wall.security;
 
-import com.anonymous.wall.entity.UserEntity;
 import com.anonymous.wall.service.UserService;
 import io.micronaut.core.order.Ordered;
 import io.micronaut.http.HttpRequest;
@@ -58,9 +57,9 @@ public class BlockedUserFilter implements HttpServerFilter, Ordered {
 
             try {
                 UUID userId = UUID.fromString(principalName);
-                Optional<UserEntity> userOpt = userService.findById(userId);
-
-                if (userOpt.isPresent() && userOpt.get().isBlocked()) {
+                
+                // Use cached method to check blocked status - avoids DB hit on every request
+                if (userService.isUserBlocked(userId)) {
                     log.warn("Blocked user attempted to access: userId={}, path={}", userId, request.getPath());
                     
                     // Return 403 Forbidden for blocked users

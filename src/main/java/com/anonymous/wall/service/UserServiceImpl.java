@@ -3,6 +3,9 @@ package com.anonymous.wall.service;
 import com.anonymous.wall.entity.UserEntity;
 import com.anonymous.wall.event.ProfileNameChangedEvent;
 import com.anonymous.wall.repository.UserRepository;
+import io.micronaut.cache.annotation.CacheConfig;
+import io.micronaut.cache.annotation.CacheInvalidate;
+import io.micronaut.cache.annotation.Cacheable;
 import io.micronaut.context.event.ApplicationEventPublisher;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
@@ -13,6 +16,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Singleton
+@CacheConfig("blocked-users")
 public class UserServiceImpl implements UserService {
     private static final Logger log = LoggerFactory.getLogger(UserServiceImpl.class);
 
@@ -83,6 +87,7 @@ public class UserServiceImpl implements UserService {
      * Update user entity
      */
     @Override
+    @CacheInvalidate(parameters = {"user.id"})
     public UserEntity update(UserEntity user) {
         log.debug("Updating user: {}", user.getId());
         return userRepository.update(user);
@@ -95,5 +100,18 @@ public class UserServiceImpl implements UserService {
     public UserEntity save(UserEntity user) {
         log.debug("Saving user");
         return userRepository.save(user);
+    }
+
+    /**
+     * Check if user is blocked (cached for performance)
+     * Uses Caffeine cache to minimize database access
+     * Cache is automatically invalidated when user is updated
+     */
+    @Override
+    @Cacheable
+    public boolean isUserBlocked(UUID userId) {
+        log.debug("Checking blocked status for user: {} (cache miss)", userId);
+        Optional<UserEntity> userOpt = userRepository.findById(userId);
+        return userOpt.map(UserEntity::isBlocked).orElse(false);
     }
 }
