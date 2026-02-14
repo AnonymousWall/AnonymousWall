@@ -1,6 +1,5 @@
 package com.anonymous.wall.security;
 
-import com.anonymous.wall.entity.UserEntity;
 import com.anonymous.wall.service.UserService;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpStatus;
@@ -74,13 +73,10 @@ class BlockedUserFilterTest {
         void shouldAllowNonBlockedUser() {
             // Arrange
             UUID userId = UUID.randomUUID();
-            UserEntity user = new UserEntity();
-            user.setId(userId);
-            user.setBlocked(false);
 
             when(request.getUserPrincipal()).thenReturn(Optional.of(principal));
             when(principal.getName()).thenReturn(userId.toString());
-            when(userService.findById(userId)).thenReturn(Optional.of(user));
+            when(userService.isUserBlocked(userId)).thenReturn(false);
             when(chain.proceed(request)).thenReturn(Mono.empty());
 
             // Act
@@ -88,7 +84,7 @@ class BlockedUserFilterTest {
 
             // Assert
             verify(chain).proceed(request);
-            verify(userService).findById(userId);
+            verify(userService).isUserBlocked(userId);
         }
     }
 
@@ -101,20 +97,17 @@ class BlockedUserFilterTest {
         void shouldBlockBlockedUser() {
             // Arrange
             UUID userId = UUID.randomUUID();
-            UserEntity user = new UserEntity();
-            user.setId(userId);
-            user.setBlocked(true);
 
             when(request.getUserPrincipal()).thenReturn(Optional.of(principal));
             when(principal.getName()).thenReturn(userId.toString());
             when(request.getPath()).thenReturn("/api/v1/posts");
-            when(userService.findById(userId)).thenReturn(Optional.of(user));
+            when(userService.isUserBlocked(userId)).thenReturn(true);
 
             // Act
             Publisher<MutableHttpResponse<?>> result = filter.doFilter(request, chain);
 
             // Assert
-            verify(userService).findById(userId);
+            verify(userService).isUserBlocked(userId);
             verifyNoInteractions(chain);
             
             // Verify that response is 403
@@ -153,14 +146,15 @@ class BlockedUserFilterTest {
             UUID userId = UUID.randomUUID();
             when(request.getUserPrincipal()).thenReturn(Optional.of(principal));
             when(principal.getName()).thenReturn(userId.toString());
-            when(userService.findById(userId)).thenReturn(Optional.empty());
+            // Service returns false when user not found (handled in UserServiceImpl.isUserBlocked)
+            when(userService.isUserBlocked(userId)).thenReturn(false);
             when(chain.proceed(request)).thenReturn(Mono.empty());
 
             // Act
             Publisher<MutableHttpResponse<?>> result = filter.doFilter(request, chain);
 
             // Assert
-            verify(userService).findById(userId);
+            verify(userService).isUserBlocked(userId);
             verify(chain).proceed(request);
         }
     }

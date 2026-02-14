@@ -30,4 +30,11 @@ public interface UserService {
      * Save user entity
      */
     UserEntity save(UserEntity user);
+
+    /**
+     * Check if user is blocked (cached for performance)
+     * @param userId The user ID to check
+     * @return true if user is blocked, false otherwise
+     */
+    boolean isUserBlocked(UUID userId);
 }
