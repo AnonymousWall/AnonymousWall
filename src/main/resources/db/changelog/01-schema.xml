@@ -523,4 +523,47 @@
         </insert>
     </changeSet>
 
+    <!-- ================= Chat Messages ================= -->
+    <changeSet id="14-create-chat-messages-table" author="copilot">
+        <createTable tableName="chat_messages">
+            <column name="id" type="CHAR(36)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="sender_id" type="CHAR(36)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="receiver_id" type="CHAR(36)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="content" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="read_status" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <!-- Add foreign key constraints -->
+        <addForeignKeyConstraint baseTableName="chat_messages" baseColumnNames="sender_id"
+                                 constraintName="fk_chat_messages_sender"
+                                 referencedTableName="users" referencedColumnNames="id"/>
+        <addForeignKeyConstraint baseTableName="chat_messages" baseColumnNames="receiver_id"
+                                 constraintName="fk_chat_messages_receiver"
+                                 referencedTableName="users" referencedColumnNames="id"/>
+
+        <!-- Indexes for performance -->
+        <createIndex tableName="chat_messages" indexName="idx_chat_sender_receiver_time">
+            <column name="sender_id"/>
+            <column name="receiver_id"/>
+            <column name="created_at" descending="true"/>
+        </createIndex>
+        <createIndex tableName="chat_messages" indexName="idx_chat_receiver_unread">
+            <column name="receiver_id"/>
+            <column name="read_status"/>
+        </createIndex>
+    </changeSet>
+
 </databaseChangeLog>
