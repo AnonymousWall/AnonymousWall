@@ -21,40 +21,34 @@ public interface ChatMessageRepository extends CrudRepository<ChatMessage, UUID>
     /**
      * Find all messages between two users (conversation history).
      * Results are ordered by created_at ascending (oldest first).
-     * Uses Micronaut Data method naming convention for OR conditions.
      * 
-     * @param senderId1 First user ID as sender
-     * @param receiverId1 Second user ID as receiver  
-     * @param senderId2 Second user ID as sender
-     * @param receiverId2 First user ID as receiver
+     * @param userId1 First user ID
+     * @param userId2 Second user ID
      * @param pageable Pagination parameters
      * @return Page of messages
      */
-    Page<ChatMessage> findBySenderIdAndReceiverIdOrSenderIdAndReceiverIdOrderByCreatedAtAsc(
-            UUID senderId1,
-            UUID receiverId1,
-            UUID senderId2,
-            UUID receiverId2,
-            Pageable pageable
-    );
+    @Query(value = "SELECT * FROM chat_messages WHERE " +
+           "(sender_id = :userId1 AND receiver_id = :userId2) OR " +
+           "(sender_id = :userId2 AND receiver_id = :userId1) " +
+           "ORDER BY created_at ASC",
+           countQuery = "SELECT COUNT(*) FROM chat_messages WHERE " +
+           "(sender_id = :userId1 AND receiver_id = :userId2) OR " +
+           "(sender_id = :userId2 AND receiver_id = :userId1)")
+    Page<ChatMessage> findConversationBetweenUsers(UUID userId1, UUID userId2, Pageable pageable);
 
     /**
      * Find all messages between two users (conversation history) as a list.
      * Results are ordered by created_at ascending (oldest first).
-     * Uses Micronaut Data method naming convention for OR conditions.
      * 
-     * @param senderId1 First user ID as sender
-     * @param receiverId1 Second user ID as receiver
-     * @param senderId2 Second user ID as sender
-     * @param receiverId2 First user ID as receiver
+     * @param userId1 First user ID
+     * @param userId2 Second user ID
      * @return List of messages
      */
-    List<ChatMessage> findBySenderIdAndReceiverIdOrSenderIdAndReceiverIdOrderByCreatedAtAsc(
-            UUID senderId1,
-            UUID receiverId1,
-            UUID senderId2,
-            UUID receiverId2
-    );
+    @Query("SELECT * FROM chat_messages WHERE " +
+           "(sender_id = :userId1 AND receiver_id = :userId2) OR " +
+           "(sender_id = :userId2 AND receiver_id = :userId1) " +
+           "ORDER BY created_at ASC")
+    List<ChatMessage> findConversationBetweenUsers(UUID userId1, UUID userId2);
 
     /**
      * Count unread messages for a receiver from a specific sender.

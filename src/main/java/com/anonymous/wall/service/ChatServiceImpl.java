@@ -109,8 +109,7 @@ public class ChatServiceImpl implements ChatService {
             throw new IllegalArgumentException("User not found: " + userId2);
         }
 
-        return chatMessageRepository.findBySenderIdAndReceiverIdOrSenderIdAndReceiverIdOrderByCreatedAtAsc(
-                userId1, userId2, userId2, userId1, pageable);
+        return chatMessageRepository.findConversationBetweenUsers(userId1, userId2, pageable);
     }
 
     @Override
