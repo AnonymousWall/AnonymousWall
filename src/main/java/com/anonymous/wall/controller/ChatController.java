@@ -171,7 +171,7 @@ public class ChatController {
             return HttpResponse.ok(Map.of("message", "Message marked as read"));
         } catch (IllegalArgumentException e) {
             log.warn("Error marking message as read: {}", e.getMessage());
-            if (e.getMessage().contains("not the receiver")) {
+            if (e.getMessage().contains("Only the receiver")) {
                 return HttpResponse.<Map<String, String>>status(io.micronaut.http.HttpStatus.FORBIDDEN)
                         .body(Map.of("error", e.getMessage()));
             }
