@@ -14,50 +14,38 @@ import java.util.UUID;
 /**
  * Repository for managing chat messages in the database.
  * Provides methods for querying messages, conversations, and unread counts.
+ * Uses conversationId for efficient querying and indexing.
  */
 @JdbcRepository(dialect = Dialect.MYSQL)
 public interface ChatMessageRepository extends CrudRepository<ChatMessage, UUID> {
 
     /**
-     * Find all messages between two users (conversation history).
+     * Find all messages in a conversation by conversation ID.
      * Results are ordered by created_at ascending (oldest first).
      * 
-     * @param userId1 First user ID
-     * @param userId2 Second user ID
+     * @param conversationId The conversation ID
      * @param pageable Pagination parameters
      * @return Page of messages
      */
-    @Query(value = "SELECT * FROM chat_messages WHERE " +
-           "(sender_id = :userId1 AND receiver_id = :userId2) OR " +
-           "(sender_id = :userId2 AND receiver_id = :userId1) " +
-           "ORDER BY created_at ASC",
-           countQuery = "SELECT COUNT(*) FROM chat_messages WHERE " +
-           "(sender_id = :userId1 AND receiver_id = :userId2) OR " +
-           "(sender_id = :userId2 AND receiver_id = :userId1)")
-    Page<ChatMessage> findConversationBetweenUsers(UUID userId1, UUID userId2, Pageable pageable);
+    Page<ChatMessage> findByConversationIdOrderByCreatedAtAsc(UUID conversationId, Pageable pageable);
 
     /**
-     * Find all messages between two users (conversation history) as a list.
+     * Find all messages in a conversation by conversation ID as a list.
      * Results are ordered by created_at ascending (oldest first).
      * 
-     * @param userId1 First user ID
-     * @param userId2 Second user ID
+     * @param conversationId The conversation ID
      * @return List of messages
      */
-    @Query("SELECT * FROM chat_messages WHERE " +
-           "(sender_id = :userId1 AND receiver_id = :userId2) OR " +
-           "(sender_id = :userId2 AND receiver_id = :userId1) " +
-           "ORDER BY created_at ASC")
-    List<ChatMessage> findConversationBetweenUsers(UUID userId1, UUID userId2);
+    List<ChatMessage> findByConversationIdOrderByCreatedAtAsc(UUID conversationId);
 
     /**
-     * Count unread messages for a receiver from a specific sender.
+     * Count unread messages in a conversation for a specific receiver.
      * 
+     * @param conversationId The conversation ID
      * @param receiverId The receiver's user ID
-     * @param senderId The sender's user ID
      * @return Count of unread messages
      */
-    long countByReceiverIdAndSenderIdAndReadStatusFalse(UUID receiverId, UUID senderId);
+    long countByConversationIdAndReceiverIdAndReadStatusFalse(UUID conversationId, UUID receiverId);
 
     /**
      * Count all unread messages for a receiver.
@@ -86,38 +74,42 @@ public interface ChatMessageRepository extends CrudRepository<ChatMessage, UUID>
     Page<ChatMessage> findBySenderIdOrderByCreatedAtDesc(UUID senderId, Pageable pageable);
 
     /**
-     * Mark all messages from a sender to a receiver as read.
+     * Mark all messages in a conversation as read for a specific receiver.
      * 
+     * @param conversationId The conversation ID
      * @param receiverId The receiver's user ID
-     * @param senderId The sender's user ID
      */
-    @Query("UPDATE chat_messages SET read_status = true WHERE receiver_id = :receiverId AND sender_id = :senderId AND read_status = false")
-    void markMessagesAsRead(UUID receiverId, UUID senderId);
+    @Query("UPDATE chat_messages SET read_status = true WHERE conversation_id = :conversationId AND receiver_id = :receiverId AND read_status = false")
+    void markConversationMessagesAsRead(UUID conversationId, UUID receiverId);
 
     /**
-     * Get list of users with whom the given user has conversations.
-     * Returns distinct user IDs who have either sent messages to or received messages from the given user.
+     * Get list of unique conversation IDs for a user.
+     * Returns distinct conversation IDs where the user is either sender or receiver.
      * 
      * @param userId The user ID
-     * @return List of user IDs
+     * @return List of conversation IDs
      */
-    @Query("SELECT DISTINCT CASE " +
-           "WHEN sender_id = :userId THEN receiver_id " +
-           "ELSE sender_id END as user_id " +
-           "FROM chat_messages " +
-           "WHERE sender_id = :userId OR receiver_id = :userId")
-    List<UUID> findConversationPartners(UUID userId);
+    @Query("SELECT DISTINCT conversation_id FROM chat_messages WHERE sender_id = :userId OR receiver_id = :userId")
+    List<UUID> findUserConversations(UUID userId);
 
     /**
-     * Get the last message in a conversation between two users.
+     * Get the last message in a conversation.
      * 
-     * @param userId1 First user ID
-     * @param userId2 Second user ID
+     * @param conversationId The conversation ID
      * @return The last message or null
      */
-    @Query("SELECT * FROM chat_messages WHERE " +
-           "(sender_id = :userId1 AND receiver_id = :userId2) OR " +
-           "(sender_id = :userId2 AND receiver_id = :userId1) " +
-           "ORDER BY created_at DESC LIMIT 1")
-    ChatMessage findLastMessageBetweenUsers(UUID userId1, UUID userId2);
+    @Query("SELECT * FROM chat_messages WHERE conversation_id = :conversationId ORDER BY created_at DESC LIMIT 1")
+    ChatMessage findLastMessageInConversation(UUID conversationId);
+
+    /**
+     * Get the other participant's user ID in a conversation.
+     * Given a conversation ID and one user's ID, returns the other user's ID.
+     * 
+     * @param conversationId The conversation ID
+     * @param userId The known user's ID
+     * @return The other user's ID
+     */
+    @Query("SELECT CASE WHEN sender_id = :userId THEN receiver_id ELSE sender_id END as other_user_id " +
+           "FROM chat_messages WHERE conversation_id = :conversationId LIMIT 1")
+    UUID findOtherParticipantInConversation(UUID conversationId, UUID userId);
 }

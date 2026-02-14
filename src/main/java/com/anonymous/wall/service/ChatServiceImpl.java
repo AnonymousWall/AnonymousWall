@@ -6,6 +6,7 @@ import com.anonymous.wall.model.ChatMessageDTO;
 import com.anonymous.wall.model.ConversationDTO;
 import com.anonymous.wall.repository.ChatMessageRepository;
 import com.anonymous.wall.repository.UserRepository;
+import com.anonymous.wall.util.ConversationIdGenerator;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
 import io.micronaut.retry.annotation.Retryable;
@@ -22,6 +23,7 @@ import java.util.stream.Collectors;
 /**
  * Implementation of ChatService.
  * Provides enterprise-grade chat functionality with proper validation, logging, and transaction management.
+ * Uses conversationId for efficient querying and indexing.
  */
 @Singleton
 public class ChatServiceImpl implements ChatService {
@@ -82,13 +84,17 @@ public class ChatServiceImpl implements ChatService {
             throw new IllegalArgumentException("Blocked users cannot send messages");
         }
 
+        // Generate deterministic conversation ID
+        UUID conversationId = ConversationIdGenerator.generate(senderId, receiverId);
+
         // Create and save message
-        ChatMessage message = new ChatMessage(senderId, receiverId, content.trim());
+        ChatMessage message = new ChatMessage(senderId, receiverId, conversationId, content.trim());
         message.setCreatedAt(OffsetDateTime.now());
         message.setReadStatus(false);
 
         ChatMessage savedMessage = chatMessageRepository.save(message);
-        log.info("Message sent from {} to {}, message ID: {}", senderId, receiverId, savedMessage.getId());
+        log.info("Message sent from {} to {}, message ID: {}, conversation ID: {}", 
+                 senderId, receiverId, savedMessage.getId(), conversationId);
 
         return savedMessage;
     }
@@ -109,7 +115,9 @@ public class ChatServiceImpl implements ChatService {
             throw new IllegalArgumentException("User not found: " + userId2);
         }
 
-        return chatMessageRepository.findConversationBetweenUsers(userId1, userId2, pageable);
+        // Generate conversation ID and query by it
+        UUID conversationId = ConversationIdGenerator.generate(userId1, userId2);
+        return chatMessageRepository.findByConversationIdOrderByCreatedAtAsc(conversationId, pageable);
     }
 
     @Override
@@ -120,12 +128,19 @@ public class ChatServiceImpl implements ChatService {
             throw new IllegalArgumentException("User ID must not be null");
         }
 
-        // Get list of users with conversations
-        List<UUID> partnerIds = chatMessageRepository.findConversationPartners(userId);
+        // Get list of conversation IDs for the user
+        List<UUID> conversationIds = chatMessageRepository.findUserConversations(userId);
 
         // Build conversation DTOs
         List<ConversationDTO> conversations = new ArrayList<>();
-        for (UUID partnerId : partnerIds) {
+        for (UUID conversationId : conversationIds) {
+            // Get the other participant's ID
+            UUID partnerId = chatMessageRepository.findOtherParticipantInConversation(conversationId, userId);
+            if (partnerId == null) {
+                log.warn("Could not find other participant for conversation {}, skipping", conversationId);
+                continue;
+            }
+
             // Get partner user info
             Optional<UserEntity> partnerOpt = userRepository.findById(partnerId);
             if (partnerOpt.isEmpty()) {
@@ -136,10 +151,10 @@ public class ChatServiceImpl implements ChatService {
             UserEntity partner = partnerOpt.get();
 
             // Get last message
-            ChatMessage lastMessage = chatMessageRepository.findLastMessageBetweenUsers(userId, partnerId);
+            ChatMessage lastMessage = chatMessageRepository.findLastMessageInConversation(conversationId);
 
-            // Get unread count
-            long unreadCount = chatMessageRepository.countByReceiverIdAndSenderIdAndReadStatusFalse(userId, partnerId);
+            // Get unread count for this conversation
+            long unreadCount = chatMessageRepository.countByConversationIdAndReceiverIdAndReadStatusFalse(conversationId, userId);
 
             // Build DTO
             ConversationDTO conversation = new ConversationDTO();
@@ -211,8 +226,11 @@ public class ChatServiceImpl implements ChatService {
             throw new IllegalArgumentException("Receiver ID and sender ID must not be null");
         }
 
-        chatMessageRepository.markMessagesAsRead(receiverId, senderId);
-        log.info("All messages from {} to {} marked as read", senderId, receiverId);
+        // Generate conversation ID
+        UUID conversationId = ConversationIdGenerator.generate(receiverId, senderId);
+
+        chatMessageRepository.markConversationMessagesAsRead(conversationId, receiverId);
+        log.info("All messages in conversation {} marked as read for receiver {}", conversationId, receiverId);
     }
 
     @Override
@@ -221,7 +239,10 @@ public class ChatServiceImpl implements ChatService {
             throw new IllegalArgumentException("Receiver ID and sender ID must not be null");
         }
 
-        return chatMessageRepository.countByReceiverIdAndSenderIdAndReadStatusFalse(receiverId, senderId);
+        // Generate conversation ID
+        UUID conversationId = ConversationIdGenerator.generate(receiverId, senderId);
+
+        return chatMessageRepository.countByConversationIdAndReceiverIdAndReadStatusFalse(conversationId, receiverId);
     }
 
     @Override
