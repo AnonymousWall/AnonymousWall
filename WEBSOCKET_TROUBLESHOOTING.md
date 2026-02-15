@@ -199,6 +199,120 @@ WARN  BlockedUserFilter: Blocked user attempted to access: userId=303af0ec-7846-
 
 **Solution**: Contact support - your account has been blocked.
 
+## Platform-Specific Issues
+
+### Swift/iOS Issues
+
+#### Issue: "Cannot set Sec-WebSocket-Protocol header"
+**Problem**: You're trying to use `request.setValue(_:forHTTPHeaderField:)` for Sec-WebSocket-Protocol
+
+```swift
+// ❌ This doesn't work
+var request = URLRequest(url: url)
+request.setValue(token, forHTTPHeaderField: "Sec-WebSocket-Protocol")
+```
+
+**Solution**: Use the `protocols` parameter in `webSocketTask(with:protocols:)`
+
+```swift
+// ✅ Correct way
+webSocketTask = session.webSocketTask(with: request, protocols: [token])
+```
+
+See `SWIFT_WEBSOCKET_FIX.md` for complete details.
+
+#### Issue: "WebSocket connects but gets disconnected immediately"
+**Symptoms**: 
+- Connection appears to succeed
+- Immediately closes with error code 1002 or 1006
+
+**Possible Causes**:
+1. **App Transport Security (ATS)**: Using `ws://` instead of `wss://` in production
+2. **Invalid protocol negotiation**: Server rejected the protocol
+
+**Solutions**:
+1. Always use `wss://` in production
+2. Check that your token is valid (not expired, correct format)
+3. Verify the token starts with "eyJ" (valid JWT format)
+4. Enable network debugging in Xcode to see the actual handshake
+
+#### Issue: "URLSession error -1200 (SSL error)"
+**Problem**: SSL/TLS certificate validation failed
+
+**Solutions**:
+1. Make sure you're using `wss://` (secure WebSocket)
+2. For development only, you can bypass certificate validation (NOT for production):
+
+```swift
+class SSLPinningDelegate: NSObject, URLSessionDelegate {
+    func urlSession(_ session: URLSession, 
+                    didReceive challenge: URLAuthenticationChallenge, 
+                    completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
+        // Only for development/testing!
+        if challenge.protectionSpace.authenticationMethod == NSURLAuthenticationMethodServerTrust {
+            if let trust = challenge.protectionSpace.serverTrust {
+                completionHandler(.useCredential, URLCredential(trust: trust))
+                return
+            }
+        }
+        completionHandler(.performDefaultHandling, nil)
+    }
+}
+```
+
+#### Issue: "Token appears in logs"
+**Problem**: Using query parameter method exposes token in logs
+
+**Solution**: Switch to Sec-WebSocket-Protocol header method:
+```swift
+// Instead of: ws://host/ws/chat?token=xxx
+// Use: protocols: [token]
+webSocketTask = session.webSocketTask(with: request, protocols: [token])
+```
+
+### Android/Kotlin Issues
+
+#### Issue: OkHttp WebSocket authentication
+If using OkHttp, you can set the protocol:
+
+```kotlin
+val client = OkHttpClient()
+val request = Request.Builder()
+    .url("wss://your-domain.com/ws/chat")
+    .addHeader("Sec-WebSocket-Protocol", token)
+    .build()
+
+val webSocket = client.newWebSocket(request, listener)
+```
+
+Or use query parameter:
+```kotlin
+val request = Request.Builder()
+    .url("wss://your-domain.com/ws/chat?token=$token")
+    .build()
+```
+
+### React Native Issues
+
+#### Issue: WebSocket authentication in React Native
+React Native's WebSocket doesn't support Sec-WebSocket-Protocol properly. Use query parameter:
+
+```javascript
+const ws = new WebSocket(`wss://your-domain.com/ws/chat?token=${token}`);
+```
+
+Or use a library like `react-native-websocket`:
+```javascript
+import WebSocketClient from 'react-native-websocket';
+
+<WebSocketClient
+  url={`wss://your-domain.com/ws/chat`}
+  protocols={[token]}
+  onOpen={() => console.log('Connected')}
+  onMessage={(message) => console.log('Message:', message)}
+/>
+```
+
 ## Still Having Issues?
 
 If you're still seeing errors after following this guide:
