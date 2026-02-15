@@ -2,7 +2,9 @@
 
 ## Overview
 
-The WebSocket endpoint at `/ws/chat` requires JWT authentication. Due to browser WebSocket API limitations (cannot set custom headers), authentication is performed using query parameters.
+The WebSocket endpoint at `/ws/chat` requires JWT authentication. The endpoint is secured with `@Secured(SecurityRule.IS_AUTHENTICATED)`, which means only authenticated users can connect.
+
+Due to browser WebSocket API limitations (cannot set custom headers), authentication is performed using query parameters.
 
 ## Connection URL Format
 

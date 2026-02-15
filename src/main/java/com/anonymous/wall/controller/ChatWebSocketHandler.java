@@ -4,7 +4,9 @@ import com.anonymous.wall.entity.ChatMessage;
 import com.anonymous.wall.model.ChatMessageDTO;
 import com.anonymous.wall.service.ChatService;
 import io.micronaut.core.annotation.Nullable;
+import io.micronaut.security.annotation.Secured;
 import io.micronaut.security.authentication.Authentication;
+import io.micronaut.security.rules.SecurityRule;
 import io.micronaut.serde.ObjectMapper;
 import io.micronaut.websocket.WebSocketBroadcaster;
 import io.micronaut.websocket.WebSocketSession;
@@ -22,8 +24,10 @@ import java.util.concurrent.ConcurrentHashMap;
  * Manages WebSocket connections, message broadcasting, and user presence.
  * 
  * WebSocket endpoint: ws://host/ws/chat
+ * Requires authentication via JWT token in query parameter.
  */
 @ServerWebSocket("/ws/chat")
+@Secured(SecurityRule.IS_AUTHENTICATED)
 public class ChatWebSocketHandler {
 
     private static final Logger log = LoggerFactory.getLogger(ChatWebSocketHandler.class);
