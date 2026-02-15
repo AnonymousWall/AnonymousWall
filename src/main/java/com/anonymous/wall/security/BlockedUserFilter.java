@@ -60,7 +60,7 @@ public class BlockedUserFilter implements HttpServerFilter, Ordered {
                 
                 // Use cached method to check blocked status - avoids DB hit on every request
                 if (userService.isUserBlocked(userId)) {
-                    log.warn("Blocked user attempted to access: userId={}, path={}", userId, request.getPath());
+                    log.warn("BlockedUserFilter: Blocked user attempted to access: userId={}, path={}", userId, request.getPath());
                     
                     // Return 403 Forbidden for blocked users
                     Map<String, String> errorResponse = new HashMap<>();
@@ -70,10 +70,14 @@ public class BlockedUserFilter implements HttpServerFilter, Ordered {
                         .body(errorResponse);
                     return Mono.just(response);
                 }
+                
+                log.debug("BlockedUserFilter: User {} is not blocked, allowing access to path: {}", userId, request.getPath());
             } catch (IllegalArgumentException e) {
                 // Invalid UUID format - let it pass through to be handled by other filters
-                log.debug("Invalid user ID format in principal: {}", principalName);
+                log.debug("BlockedUserFilter: Invalid user ID format in principal: {}", principalName);
             }
+        } else {
+            log.debug("BlockedUserFilter: No authenticated principal for path: {}", request.getPath());
         }
 
         // Continue with the request if user is not blocked

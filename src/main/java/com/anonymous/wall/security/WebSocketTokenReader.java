@@ -34,11 +34,13 @@ public class WebSocketTokenReader implements TokenReader<HttpRequest<?>> {
 
     @Override
     public Optional<String> findToken(HttpRequest<?> request) {
+        String requestPath = request.getPath();
+        
         // First try "token" parameter
         Optional<String> token = request.getParameters().get(TOKEN_PARAM, String.class);
         
         if (token.isPresent()) {
-            log.debug("Found JWT token in '{}' query parameter for WebSocket connection", TOKEN_PARAM);
+            log.info("WebSocketTokenReader: Found JWT token in '{}' query parameter for path: {}", TOKEN_PARAM, requestPath);
             return token;
         }
         
@@ -46,11 +48,12 @@ public class WebSocketTokenReader implements TokenReader<HttpRequest<?>> {
         token = request.getParameters().get(ACCESS_TOKEN_PARAM, String.class);
         
         if (token.isPresent()) {
-            log.debug("Found JWT token in '{}' query parameter for WebSocket connection", ACCESS_TOKEN_PARAM);
+            log.info("WebSocketTokenReader: Found JWT token in '{}' query parameter for path: {}", ACCESS_TOKEN_PARAM, requestPath);
             return token;
         }
         
         // No token found in query parameters
+        log.debug("WebSocketTokenReader: No token found in query parameters for path: {}", requestPath);
         return Optional.empty();
     }
     
