@@ -22,6 +22,9 @@ public class ChatMessage {
     @MappedProperty("receiver_id")
     private UUID receiverId;
 
+    @MappedProperty("conversation_id")
+    private UUID conversationId;
+
     @MappedProperty("content")
     private String content;
 
@@ -38,6 +41,16 @@ public class ChatMessage {
     public ChatMessage(UUID senderId, UUID receiverId, String content) {
         this.senderId = senderId;
         this.receiverId = receiverId;
+        this.conversationId = com.anonymous.wall.util.ConversationIdGenerator.generate(senderId, receiverId);
+        this.content = content;
+        this.readStatus = false;
+        this.createdAt = OffsetDateTime.now();
+    }
+
+    public ChatMessage(UUID senderId, UUID receiverId, UUID conversationId, String content) {
+        this.senderId = senderId;
+        this.receiverId = receiverId;
+        this.conversationId = conversationId;
         this.content = content;
         this.readStatus = false;
         this.createdAt = OffsetDateTime.now();
@@ -67,6 +80,14 @@ public class ChatMessage {
 
     public void setReceiverId(UUID receiverId) {
         this.receiverId = receiverId;
+    }
+
+    public UUID getConversationId() {
+        return conversationId;
+    }
+
+    public void setConversationId(UUID conversationId) {
+        this.conversationId = conversationId;
     }
 
     public String getContent() {

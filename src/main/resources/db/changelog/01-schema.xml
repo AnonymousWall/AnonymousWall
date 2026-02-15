@@ -535,6 +535,9 @@
             <column name="receiver_id" type="CHAR(36)">
                 <constraints nullable="false"/>
             </column>
+            <column name="conversation_id" type="CHAR(36)">
+                <constraints nullable="false"/>
+            </column>
             <column name="content" type="TEXT">
                 <constraints nullable="false"/>
             </column>
@@ -554,15 +557,22 @@
                                  constraintName="fk_chat_messages_receiver"
                                  referencedTableName="users" referencedColumnNames="id"/>
 
-        <!-- Indexes for performance -->
-        <createIndex tableName="chat_messages" indexName="idx_chat_sender_receiver_time">
-            <column name="sender_id"/>
-            <column name="receiver_id"/>
-            <column name="created_at" descending="true"/>
+        <!-- Primary index for conversation message history queries -->
+        <createIndex tableName="chat_messages" indexName="idx_chat_conversation_created_asc">
+            <column name="conversation_id"/>
+            <column name="created_at" descending="false"/>
         </createIndex>
+
+        <!-- Index for unread message queries -->
         <createIndex tableName="chat_messages" indexName="idx_chat_receiver_unread">
             <column name="receiver_id"/>
             <column name="read_status"/>
+        </createIndex>
+
+        <!-- Index for finding last message per conversation -->
+        <createIndex tableName="chat_messages" indexName="idx_chat_conversation_created_desc">
+            <column name="conversation_id"/>
+            <column name="created_at" descending="true"/>
         </createIndex>
     </changeSet>
 
