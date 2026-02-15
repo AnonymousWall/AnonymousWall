@@ -13,7 +13,8 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Tests for WebSocketTokenReader to verify JWT token extraction from query parameters.
+ * Tests for WebSocketTokenReader to verify JWT token extraction from 
+ * Sec-WebSocket-Protocol header and query parameters.
  */
 @DisplayName("WebSocketTokenReader Tests")
 class WebSocketTokenReaderTest {
@@ -23,6 +24,123 @@ class WebSocketTokenReaderTest {
     @BeforeEach
     void setUp() {
         tokenReader = new WebSocketTokenReader();
+    }
+
+    @Nested
+    @DisplayName("Token Extraction from Sec-WebSocket-Protocol Header")
+    class SecWebSocketProtocolHeaderTests {
+
+        @Test
+        @DisplayName("Should extract token from Sec-WebSocket-Protocol header (plain format)")
+        void shouldExtractTokenFromProtocolHeaderPlainFormat() {
+            // Arrange
+            String expectedToken = "eyJhbGciOiJIUzI1NiJ9.test.signature";
+            HttpRequest<?> request = HttpRequest.GET("/ws/chat")
+                    .header("Sec-WebSocket-Protocol", expectedToken);
+
+            // Act
+            Optional<String> actualToken = tokenReader.findToken(request);
+
+            // Assert
+            assertTrue(actualToken.isPresent(), "Token should be present");
+            assertEquals(expectedToken, actualToken.get(), "Token should match");
+        }
+
+        @Test
+        @DisplayName("Should extract token from Sec-WebSocket-Protocol header (Bearer prefix)")
+        void shouldExtractTokenFromProtocolHeaderBearerFormat() {
+            // Arrange
+            String token = "eyJhbGciOiJIUzI1NiJ9.test.signature";
+            String bearerToken = "Bearer." + token;
+            HttpRequest<?> request = HttpRequest.GET("/ws/chat")
+                    .header("Sec-WebSocket-Protocol", bearerToken);
+
+            // Act
+            Optional<String> actualToken = tokenReader.findToken(request);
+
+            // Assert
+            assertTrue(actualToken.isPresent(), "Token should be present");
+            assertEquals(token, actualToken.get(), "Token should match (without Bearer prefix)");
+        }
+
+        @Test
+        @DisplayName("Should extract token from comma-separated protocols (plain format first)")
+        void shouldExtractTokenFromCommaSeparatedProtocolsPlainFirst() {
+            // Arrange
+            String expectedToken = "eyJhbGciOiJIUzI1NiJ9.test.signature";
+            String protocols = expectedToken + ", chat, json";
+            HttpRequest<?> request = HttpRequest.GET("/ws/chat")
+                    .header("Sec-WebSocket-Protocol", protocols);
+
+            // Act
+            Optional<String> actualToken = tokenReader.findToken(request);
+
+            // Assert
+            assertTrue(actualToken.isPresent(), "Token should be present");
+            assertEquals(expectedToken, actualToken.get(), "Token should match");
+        }
+
+        @Test
+        @DisplayName("Should extract token from comma-separated protocols (Bearer format)")
+        void shouldExtractTokenFromCommaSeparatedProtocolsBearerFormat() {
+            // Arrange
+            String token = "eyJhbGciOiJIUzI1NiJ9.test.signature";
+            String protocols = "chat, Bearer." + token + ", json";
+            HttpRequest<?> request = HttpRequest.GET("/ws/chat")
+                    .header("Sec-WebSocket-Protocol", protocols);
+
+            // Act
+            Optional<String> actualToken = tokenReader.findToken(request);
+
+            // Assert
+            assertTrue(actualToken.isPresent(), "Token should be present");
+            assertEquals(token, actualToken.get(), "Token should match (without Bearer prefix)");
+        }
+
+        @Test
+        @DisplayName("Should return empty when Sec-WebSocket-Protocol has no JWT token")
+        void shouldReturnEmptyWhenProtocolHeaderHasNoToken() {
+            // Arrange
+            HttpRequest<?> request = HttpRequest.GET("/ws/chat")
+                    .header("Sec-WebSocket-Protocol", "chat, json");
+
+            // Act
+            Optional<String> token = tokenReader.findToken(request);
+
+            // Assert
+            assertFalse(token.isPresent(), "Token should not be present");
+        }
+
+        @Test
+        @DisplayName("Should handle empty Bearer prefix")
+        void shouldHandleEmptyBearerPrefix() {
+            // Arrange
+            HttpRequest<?> request = HttpRequest.GET("/ws/chat")
+                    .header("Sec-WebSocket-Protocol", "Bearer.");
+
+            // Act
+            Optional<String> token = tokenReader.findToken(request);
+
+            // Assert
+            assertFalse(token.isPresent(), "Token should not be present for empty Bearer prefix");
+        }
+
+        @Test
+        @DisplayName("Should prefer Sec-WebSocket-Protocol over query parameters")
+        void shouldPreferProtocolHeaderOverQueryParams() {
+            // Arrange
+            String headerToken = "eyJhbGciOiJIUzI1NiJ9.header.signature";
+            String queryToken = "eyJhbGciOiJIUzI1NiJ9.query.signature";
+            HttpRequest<?> request = HttpRequest.GET("/ws/chat?token=" + queryToken)
+                    .header("Sec-WebSocket-Protocol", headerToken);
+
+            // Act
+            Optional<String> actualToken = tokenReader.findToken(request);
+
+            // Assert
+            assertTrue(actualToken.isPresent(), "Token should be present");
+            assertEquals(headerToken, actualToken.get(), "Should use header token");
+        }
     }
 
     @Nested
@@ -132,6 +250,33 @@ class WebSocketTokenReaderTest {
             // Assert
             assertTrue(actualToken.isPresent(), "Token should be present");
             assertEquals(expectedToken, actualToken.get(), "Token should match");
+        }
+    }
+
+    @Nested
+    @DisplayName("Priority Tests")
+    class PriorityTests {
+
+        @Test
+        @DisplayName("Priority: Sec-WebSocket-Protocol > token > access_token")
+        void shouldRespectTokenPriority() {
+            // Arrange
+            String headerToken = "eyJhbGciOiJIUzI1NiJ9.header.signature";
+            String tokenParam = "eyJhbGciOiJIUzI1NiJ9.token.signature";
+            String accessTokenParam = "eyJhbGciOiJIUzI1NiJ9.access_token.signature";
+            
+            // Test 1: All three present - should prefer header
+            HttpRequest<?> request1 = HttpRequest.GET("/ws/chat?token=" + tokenParam + "&access_token=" + accessTokenParam)
+                    .header("Sec-WebSocket-Protocol", headerToken);
+            assertEquals(headerToken, tokenReader.findToken(request1).get(), "Should prefer header over query params");
+
+            // Test 2: Only query params - should prefer 'token' over 'access_token'
+            HttpRequest<?> request2 = HttpRequest.GET("/ws/chat?token=" + tokenParam + "&access_token=" + accessTokenParam);
+            assertEquals(tokenParam, tokenReader.findToken(request2).get(), "Should prefer 'token' over 'access_token'");
+
+            // Test 3: Only access_token
+            HttpRequest<?> request3 = HttpRequest.GET("/ws/chat?access_token=" + accessTokenParam);
+            assertEquals(accessTokenParam, tokenReader.findToken(request3).get(), "Should use 'access_token' when others absent");
         }
     }
 
