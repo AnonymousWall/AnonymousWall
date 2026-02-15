@@ -438,13 +438,13 @@ class ChatServiceTest {
         @DisplayName("Should mark all messages in conversation as read")
         void shouldMarkAllMessagesAsRead() {
             // Arrange
-            doNothing().when(chatMessageRepository).markConversationMessagesAsRead(any(UUID.class), eq(testUser2Id));
+            doNothing().when(chatMessageRepository).updateReadStatusByConversationIdAndReceiverId(any(UUID.class), eq(testUser2Id), eq(true));
 
             // Act
             chatService.markConversationAsRead(testUser2Id, testUser1Id);
 
             // Assert
-            verify(chatMessageRepository, times(1)).markConversationMessagesAsRead(any(UUID.class), eq(testUser2Id));
+            verify(chatMessageRepository, times(1)).updateReadStatusByConversationIdAndReceiverId(any(UUID.class), eq(testUser2Id), eq(true));
         }
 
         @Test
@@ -503,15 +503,14 @@ class ChatServiceTest {
             // Arrange
             UUID conversationId = UUID.randomUUID();
             List<UUID> conversationIds = Arrays.asList(conversationId);
-            when(chatMessageRepository.findUserConversations(testUser1Id)).thenReturn(conversationIds);
-            when(chatMessageRepository.findOtherParticipantInConversation(conversationId, testUser1Id)).thenReturn(testUser2Id);
+            when(chatMessageRepository.findDistinctConversationIdBySenderIdOrReceiverId(testUser1Id, testUser1Id)).thenReturn(conversationIds);
             when(userRepository.findById(testUser2Id)).thenReturn(Optional.of(testUser2));
             
             ChatMessage lastMessage = new ChatMessage(testUser2Id, testUser1Id, "Last message");
             lastMessage.setId(UUID.randomUUID());
             lastMessage.setCreatedAt(OffsetDateTime.now());
-            when(chatMessageRepository.findLastMessageInConversation(conversationId))
-                .thenReturn(lastMessage);
+            when(chatMessageRepository.findFirstByConversationIdOrderByCreatedAtDesc(conversationId))
+                .thenReturn(Optional.of(lastMessage));
             
             when(chatMessageRepository.countByConversationIdAndReceiverIdAndReadStatusFalse(conversationId, testUser1Id))
                 .thenReturn(3L);
@@ -534,8 +533,7 @@ class ChatServiceTest {
             // Arrange
             UUID conversationId = UUID.randomUUID();
             List<UUID> conversationIds = Arrays.asList(conversationId);
-            when(chatMessageRepository.findUserConversations(testUser1Id)).thenReturn(conversationIds);
-            when(chatMessageRepository.findOtherParticipantInConversation(conversationId, testUser1Id)).thenReturn(testUser2Id);
+            when(chatMessageRepository.findDistinctConversationIdBySenderIdOrReceiverId(testUser1Id, testUser1Id)).thenReturn(conversationIds);
             when(userRepository.findById(testUser2Id)).thenReturn(Optional.empty());
 
             // Act

@@ -129,19 +129,25 @@ public class ChatServiceImpl implements ChatService {
         }
 
         // Get list of conversation IDs for the user
-        List<UUID> conversationIds = chatMessageRepository.findUserConversations(userId);
+        List<UUID> conversationIds = chatMessageRepository.findDistinctConversationIdBySenderIdOrReceiverId(userId, userId);
 
         // Build conversation DTOs
         List<ConversationDTO> conversations = new ArrayList<>();
         for (UUID conversationId : conversationIds) {
-            // Get the other participant's ID
-            UUID partnerId = chatMessageRepository.findOtherParticipantInConversation(conversationId, userId);
-            if (partnerId == null) {
-                log.warn("Could not find other participant for conversation {}, skipping", conversationId);
+            // Get last message
+            Optional<ChatMessage> lastMessageOpt = chatMessageRepository.findFirstByConversationIdOrderByCreatedAtDesc(conversationId);
+            if (lastMessageOpt.isEmpty()) {
+                log.warn("No last message found for conversation {}, skipping", conversationId);
                 continue;
             }
+            ChatMessage lastMessage = lastMessageOpt.get();
 
-            // Get partner user info
+            // Get the other participant's ID
+            UUID partnerId = lastMessage.getSenderId().equals(userId)
+                    ? lastMessage.getReceiverId()
+                    : lastMessage.getSenderId();
+
+            // Get the other participant user info
             Optional<UserEntity> partnerOpt = userRepository.findById(partnerId);
             if (partnerOpt.isEmpty()) {
                 log.warn("Partner user not found: {}, skipping", partnerId);
@@ -149,9 +155,6 @@ public class ChatServiceImpl implements ChatService {
             }
 
             UserEntity partner = partnerOpt.get();
-
-            // Get last message
-            ChatMessage lastMessage = chatMessageRepository.findLastMessageInConversation(conversationId);
 
             // Get unread count for this conversation
             long unreadCount = chatMessageRepository.countByConversationIdAndReceiverIdAndReadStatusFalse(conversationId, userId);
@@ -162,16 +165,14 @@ public class ChatServiceImpl implements ChatService {
             conversation.setProfileName(partner.getProfileName());
             conversation.setUnreadCount((int) unreadCount);
 
-            if (lastMessage != null) {
-                ChatMessageDTO lastMessageDTO = new ChatMessageDTO();
-                lastMessageDTO.setId(lastMessage.getId());
-                lastMessageDTO.setSenderId(lastMessage.getSenderId());
-                lastMessageDTO.setReceiverId(lastMessage.getReceiverId());
-                lastMessageDTO.setContent(lastMessage.getContent());
-                lastMessageDTO.setReadStatus(lastMessage.isReadStatus());
-                lastMessageDTO.setCreatedAt(lastMessage.getCreatedAt());
-                conversation.setLastMessage(lastMessageDTO);
-            }
+            ChatMessageDTO lastMessageDTO = new ChatMessageDTO();
+            lastMessageDTO.setId(lastMessage.getId());
+            lastMessageDTO.setSenderId(lastMessage.getSenderId());
+            lastMessageDTO.setReceiverId(lastMessage.getReceiverId());
+            lastMessageDTO.setContent(lastMessage.getContent());
+            lastMessageDTO.setReadStatus(lastMessage.isReadStatus());
+            lastMessageDTO.setCreatedAt(lastMessage.getCreatedAt());
+            conversation.setLastMessage(lastMessageDTO);
 
             conversations.add(conversation);
         }
@@ -229,7 +230,7 @@ public class ChatServiceImpl implements ChatService {
         // Generate conversation ID
         UUID conversationId = ConversationIdGenerator.generate(receiverId, senderId);
 
-        chatMessageRepository.markConversationMessagesAsRead(conversationId, receiverId);
+        chatMessageRepository.updateReadStatusByConversationIdAndReceiverId(conversationId, receiverId, true);
         log.info("All messages in conversation {} marked as read for receiver {}", conversationId, receiverId);
     }
 
