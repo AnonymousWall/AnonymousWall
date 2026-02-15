@@ -4,9 +4,11 @@ This guide helps diagnose WebSocket authentication issues by explaining the auth
 
 ## Authentication Flow
 
-When a client connects to `/ws/chat?token=xxx`, the following happens in order:
+When a client connects to `/ws/chat`, the following happens in order:
 
 1. **Token Extraction** (`WebSocketTokenReader`)
+   - Checks Sec-WebSocket-Protocol header first (recommended)
+   - Falls back to query parameters if header not found
 2. **JWT Validation** (Micronaut Security)
 3. **Blocked User Check** (`BlockedUserFilter`)
 4. **WebSocket Connection** (`ChatWebSocketHandler.onOpen()`)
@@ -14,13 +16,26 @@ When a client connects to `/ws/chat?token=xxx`, the following happens in order:
 ## Expected Logs (in order)
 
 ### 1. Token Found
+
+#### From Sec-WebSocket-Protocol Header (Recommended)
+```
+INFO  com.anonymous.wall.security.WebSocketTokenReader - WebSocketTokenReader: Found JWT token in 'Sec-WebSocket-Protocol' header (plain format) for path: /ws/chat
+```
+or
+```
+INFO  com.anonymous.wall.security.WebSocketTokenReader - WebSocketTokenReader: Found JWT token in 'Sec-WebSocket-Protocol' header (Bearer format) for path: /ws/chat
+```
+✅ **If you see this**: Token is being extracted correctly from the Sec-WebSocket-Protocol header (most secure method).
+
+#### From Query Parameter (Fallback)
 ```
 INFO  com.anonymous.wall.security.WebSocketTokenReader - WebSocketTokenReader: Found JWT token in 'token' query parameter for path: /ws/chat
 ```
 ✅ **If you see this**: Token is being extracted correctly from the query parameter.
 
-❌ **If you don't see this**: 
-- Check if the URL has the `?token=xxx` query parameter
+❌ **If you don't see either log**: 
+- **Using header method**: Check that you're passing the token in the second parameter: `new WebSocket(url, [token])`
+- **Using query param**: Check if the URL has the `?token=xxx` query parameter
 - Make sure you're quoting the URL in the shell: `wscat -c 'ws://...'`
 - Verify the server is running
 
@@ -87,6 +102,20 @@ logging.level.io.micronaut.security=DEBUG
 ```
 
 ### Step 2: Test with a fresh token
+
+#### Using Sec-WebSocket-Protocol Header (Recommended)
+```bash
+# 1. Login to get a fresh token
+TOKEN=$(curl -X POST http://localhost:8080/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"your@email.com","password":"yourpassword"}' \
+  | jq -r '.accessToken')
+
+# 2. Use the token immediately via Sec-WebSocket-Protocol header
+wscat -c ws://localhost:8080/ws/chat --subprotocol "$TOKEN"
+```
+
+#### Using Query Parameter (Fallback)
 ```bash
 # 1. Login to get a fresh token
 curl -X POST http://localhost:8080/api/auth/login \
@@ -106,11 +135,26 @@ Use https://jwt.io to decode your token and check:
 - `roles` claim contains ["USER"] or appropriate role
 
 ### Step 4: Check the logs in order
-1. Look for `WebSocketTokenReader: Found JWT token` - confirms token extraction
+1. Look for `WebSocketTokenReader: Found JWT token in 'Sec-WebSocket-Protocol' header` or `'token' query parameter` - confirms token extraction
 2. Look for `BlockedUserFilter:` messages - confirms authentication status
 3. Look for `WebSocket connection opened` - confirms successful connection
 
-## Example: Successful Connection
+## Example: Successful Connection (Sec-WebSocket-Protocol)
+
+```bash
+$ wscat -c ws://localhost:8080/ws/chat --subprotocol 'eyJhbGc...'
+Connected (press CTRL+C to quit)
+< {"type":"connected","userId":"303af0ec-7846-42e5-b654-f605f33632bf","timestamp":1771230449000}
+```
+
+**Server logs:**
+```
+INFO  WebSocketTokenReader: Found JWT token in 'Sec-WebSocket-Protocol' header (plain format) for path: /ws/chat
+DEBUG BlockedUserFilter: User 303af0ec-7846-42e5-b654-f605f33632bf is not blocked, allowing access to path: /ws/chat
+INFO  WebSocket connection opened for user: 303af0ec-7846-42e5-b654-f605f33632bf, session: abc123
+```
+
+## Example: Successful Connection (Query Parameter)
 
 ```bash
 $ wscat -c 'ws://localhost:8080/ws/chat?token=eyJhbGc...'
