@@ -41,6 +41,10 @@ public class WebSocketTokenReader implements TokenReader<HttpRequest<?>> {
     @Override
     public Optional<String> findToken(HttpRequest<?> request) {
         String requestPath = request.getPath();
+
+        if (!requestPath.startsWith("/ws/")) {
+            return Optional.empty();
+        }
         
         // First try Sec-WebSocket-Protocol header (most secure)
         Optional<String> token = extractTokenFromProtocolHeader(request, requestPath);
