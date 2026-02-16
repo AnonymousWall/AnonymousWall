@@ -190,7 +190,7 @@ public class ChatServiceImpl implements ChatService {
 
     @Override
     @Transactional
-    public void markMessageAsRead(UUID messageId, UUID userId) {
+    public ChatMessage markMessageAsRead(UUID messageId, UUID userId) {
         log.debug("Marking message {} as read by user {}", messageId, userId);
 
         if (messageId == null || userId == null) {
@@ -216,6 +216,7 @@ public class ChatServiceImpl implements ChatService {
             chatMessageRepository.update(message);
             log.info("Message {} marked as read by user {}", messageId, userId);
         }
+        return message;
     }
 
     @Override
@@ -253,5 +254,15 @@ public class ChatServiceImpl implements ChatService {
         }
 
         return chatMessageRepository.countByReceiverIdAndReadStatusFalse(receiverId);
+    }
+
+    @Override
+    public List<ChatMessage> getUnreadMessages(UUID receiverId, UUID senderId) {
+        if (receiverId == null || senderId == null) {
+            throw new IllegalArgumentException("Receiver ID and sender ID must not be null");
+        }
+
+        UUID conversationId = ConversationIdGenerator.generate(receiverId, senderId);
+        return chatMessageRepository.findByConversationIdAndReceiverIdAndReadStatusFalse(conversationId, receiverId);
     }
 }

@@ -53,7 +53,7 @@ public interface ChatService {
      * @param userId The user marking the message as read (must be the receiver)
      * @throws IllegalArgumentException if message not found or user is not the receiver
      */
-    void markMessageAsRead(UUID messageId, UUID userId);
+    ChatMessage markMessageAsRead(UUID messageId, UUID userId);
 
     /**
      * Mark all messages from a sender to a receiver as read.
@@ -79,4 +79,6 @@ public interface ChatService {
      * @return Total count of unread messages
      */
     long countTotalUnreadMessages(UUID receiverId);
+
+    List<ChatMessage> getUnreadMessages(UUID receiverId, UUID senderId);
 }

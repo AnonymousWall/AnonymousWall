@@ -33,6 +33,9 @@ public class ChatController {
     @Inject
     private ChatService chatService;
 
+    @Inject
+    private ChatWebSocketHandler chatWebSocketHandler;
+
     /**
      * Helper to extract user ID from Principal
      */
@@ -196,7 +199,23 @@ public class ChatController {
 
             log.debug("Marking all messages from {} to {} as read", otherUserUUID, userId);
 
+            List<ChatMessage> unreadMessages = chatService.getUnreadMessages(userId, otherUserUUID);
+
             chatService.markConversationAsRead(userId, otherUserUUID);
+
+            for (ChatMessage message : unreadMessages) {
+                UUID senderId = message.getSenderId();
+
+                Map<String, Object> notification = new HashMap<>();
+                notification.put("type", "markRead");
+                notification.put("messageId", message.getId().toString());
+                notification.put("readBy", userId.toString());
+                notification.put("readAt", System.currentTimeMillis());
+
+                // Send notification to sender
+                chatWebSocketHandler.broadcastToUser(senderId, chatWebSocketHandler.serializeToJson(notification));
+                log.debug("Notified sender {} that message {} was read by {}", senderId, message.getId(), userId);
+            }
 
             return HttpResponse.ok(Map.of("message", "Conversation marked as read"));
         } catch (IllegalArgumentException e) {

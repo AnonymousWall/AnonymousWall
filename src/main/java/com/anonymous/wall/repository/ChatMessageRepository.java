@@ -41,6 +41,15 @@ public interface ChatMessageRepository extends CrudRepository<ChatMessage, UUID>
     long countByConversationIdAndReceiverIdAndReadStatusFalse(UUID conversationId, UUID receiverId);
 
     /**
+     * Find unread messages in a conversation for a specific receiver.
+     *
+     * @param conversationId The conversation ID
+     * @param receiverId The receiver's user ID
+     * @return List of unread messages
+     */
+    List<ChatMessage> findByConversationIdAndReceiverIdAndReadStatusFalse(UUID conversationId, UUID receiverId);
+
+    /**
      * Count all unread messages for a receiver.
      * 
      * @param receiverId The receiver's user ID

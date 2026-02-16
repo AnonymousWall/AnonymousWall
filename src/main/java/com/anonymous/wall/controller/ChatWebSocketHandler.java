@@ -99,7 +99,7 @@ public class ChatWebSocketHandler {
             @SuppressWarnings("unchecked")
             Map<String, Object> messageData = objectMapper.readValue(message.getBytes(), Map.class);
             String type = (String) messageData.get("type");
-
+            log.debug("Received WebSocket message type: {}", type);
             if ("message".equals(type)) {
                 // Handle chat message
                 String receiverIdStr = (String) messageData.get("receiverId");
@@ -144,20 +144,9 @@ public class ChatWebSocketHandler {
                     broadcastToUser(receiverId, serializeToJson(typingNotification));
                 }
 
-            } else if ("mark_read".equals(type)) {
-                // Handle mark as read
-                String messageIdStr = (String) messageData.get("messageId");
-                if (messageIdStr != null) {
-                    UUID messageId = UUID.fromString(messageIdStr);
-                    chatService.markMessageAsRead(messageId, senderId);
-                    
-                    // Send confirmation
-                    Map<String, Object> response = new HashMap<>();
-                    response.put("type", "read_receipt");
-                    response.put("messageId", messageIdStr);
-                    session.sendAsync(serializeToJson(response));
-                }
-
+            } else if ("markRead".equals(type)) {
+                log.debug("Received WebSocket markRead message from user: {}", senderId);
+                handleMarkAsRead(messageData, senderId, session);
             } else {
                 sendError(session, "Unknown message type: " + type);
             }
@@ -168,6 +157,48 @@ public class ChatWebSocketHandler {
         } catch (Exception e) {
             log.error("Error processing WebSocket message", e);
             sendError(session, "Internal server error");
+        }
+    }
+
+    private void handleMarkAsRead(
+            Map<String, Object> messageData,
+            UUID readerId,
+            WebSocketSession session) {
+
+        String messageIdStr = (String) messageData.get("messageId");
+        if (messageIdStr != null) {
+            try {
+                UUID messageId = UUID.fromString(messageIdStr);
+
+                // mark as read and get message
+                ChatMessage message = chatService.markMessageAsRead(messageId, readerId);
+
+                // 1. send read receipt to reader (confirmation)
+                Map<String, Object> readerReceipt = new HashMap<>();
+                readerReceipt.put("type", "readReceipt");
+                readerReceipt.put("messageId", messageIdStr);
+                session.sendAsync(serializeToJson(readerReceipt));
+
+                // 2. ✅ notify original sender (critical fix)
+                UUID originalSenderId = message.getSenderId();
+                if (!originalSenderId.equals(readerId)) {  // not self-sent message
+                    Map<String, Object> senderNotification = new HashMap<>();
+                    senderNotification.put("type", "markRead");
+                    senderNotification.put("messageId", messageIdStr);
+                    senderNotification.put("readBy", readerId.toString());
+                    senderNotification.put("readAt", System.currentTimeMillis());
+
+                    broadcastToUser(originalSenderId, serializeToJson(senderNotification));
+
+                    log.debug("Notified sender {} that message {} was read by {}",
+                            originalSenderId, messageId, readerId);
+                    log.debug("Sending markRead notification for messageId: {} to sender: {}",
+                            messageIdStr, originalSenderId);
+                }
+
+            } catch (IllegalArgumentException e) {
+                sendError(session, "Invalid messageId or permission denied");
+            }
         }
     }
 
@@ -235,7 +266,7 @@ public class ChatWebSocketHandler {
     /**
      * Broadcast message to a specific user (all their active sessions).
      */
-    private void broadcastToUser(UUID userId, String message) {
+    public void broadcastToUser(UUID userId, String message) {
         Set<WebSocketSession> sessions = userSessions.get(userId);
         if (sessions != null && !sessions.isEmpty()) {
             for (WebSocketSession session : sessions) {
@@ -266,7 +297,7 @@ public class ChatWebSocketHandler {
     /**
      * Helper method to serialize object to JSON string.
      */
-    private String serializeToJson(Object obj) {
+    public String serializeToJson(Object obj) {
         try {
             return objectMapper.writeValueAsString(obj);
         } catch (IOException e) {

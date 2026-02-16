@@ -247,14 +247,14 @@ class ChatWebSocketHandlerTest {
         void shouldHandleMarkAsRead() throws IOException {
             // Arrange
             UUID messageId = UUID.randomUUID();
-            String messageJson = "{\"type\":\"mark_read\",\"messageId\":\"" + messageId + "\"}";
+            String messageJson = "{\"type\":\"markRead\",\"messageId\":\"" + messageId + "\"}";
             Map<String, Object> messageData = new HashMap<>();
-            messageData.put("type", "mark_read");
+            messageData.put("type", "markRead");
             messageData.put("messageId", messageId.toString());
 
             when(objectMapper.readValue(any(byte[].class), eq(Map.class))).thenReturn(messageData);
-            when(objectMapper.writeValueAsString(any())).thenReturn("{\"type\":\"read_receipt\"}");
-            doNothing().when(chatService).markMessageAsRead(messageId, testUser1Id);
+            when(objectMapper.writeValueAsString(any())).thenReturn("{\"type\":\"readReceipt\"}");
+            doReturn(new ChatMessage()).when(chatService).markMessageAsRead(messageId, testUser1Id);
 
             // Act
             handler.onMessage(messageJson, mockSession);
@@ -484,14 +484,14 @@ class ChatWebSocketHandlerTest {
         void shouldHandleConversationIdInMarkAsRead() throws IOException {
             // Arrange
             UUID messageId = UUID.randomUUID();
-            String messageJson = "{\"type\":\"mark_read\",\"messageId\":\"" + messageId + "\"}";
+            String messageJson = "{\"type\":\"markRead\",\"messageId\":\"" + messageId + "\"}";
             Map<String, Object> messageData = new HashMap<>();
-            messageData.put("type", "mark_read");
+            messageData.put("type", "markRead");
             messageData.put("messageId", messageId.toString());
 
             when(objectMapper.readValue(any(byte[].class), eq(Map.class))).thenReturn(messageData);
-            when(objectMapper.writeValueAsString(any())).thenReturn("{\"type\":\"read_receipt\"}");
-            doNothing().when(chatService).markMessageAsRead(messageId, testUser1Id);
+            when(objectMapper.writeValueAsString(any())).thenReturn("{\"type\":\"readReceipt\"}");
+            doReturn(new ChatMessage()).when(chatService).markMessageAsRead(messageId, testUser1Id);
 
             // Act
             handler.onMessage(messageJson, mockSession);
