@@ -70,7 +70,7 @@ public class ChatWebSocketHandler {
             long unreadCount = chatService.countTotalUnreadMessages(userId);
             if (unreadCount > 0) {
                 Map<String, Object> unreadNotification = new HashMap<>();
-                unreadNotification.put("type", "unread_count");
+                unreadNotification.put("type", "unreadCount");
                 unreadNotification.put("count", unreadCount);
                 session.sendSync(serializeToJson(unreadNotification));
             }
@@ -195,6 +195,16 @@ public class ChatWebSocketHandler {
                     log.debug("Sending markRead notification for messageId: {} to sender: {}",
                             messageIdStr, originalSenderId);
                 }
+
+                // 3. ✅ NEW: Send updated unread count to reader
+                long unreadCount = chatService.countTotalUnreadMessages(readerId);
+                Map<String, Object> unreadUpdate = new HashMap<>();
+                unreadUpdate.put("type", "unreadCount");
+                unreadUpdate.put("count", unreadCount);
+                broadcastToUser(readerId, serializeToJson(unreadUpdate));
+
+                log.debug("Updated unread count for reader {}: {}", readerId, unreadCount);
+
 
             } catch (IllegalArgumentException e) {
                 sendError(session, "Invalid messageId or permission denied");

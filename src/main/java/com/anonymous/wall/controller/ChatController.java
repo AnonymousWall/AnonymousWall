@@ -217,6 +217,15 @@ public class ChatController {
                 log.debug("Notified sender {} that message {} was read by {}", senderId, message.getId(), userId);
             }
 
+            // ✅ NEW: Send updated unread count to reader
+            long unreadCount = chatService.countTotalUnreadMessages(userId);
+            Map<String, Object> unreadUpdate = new HashMap<>();
+            unreadUpdate.put("type", "unreadCount");
+            unreadUpdate.put("count", unreadCount);
+            chatWebSocketHandler.broadcastToUser(userId, chatWebSocketHandler.serializeToJson(unreadUpdate));
+
+            log.debug("Updated unread count for user {}: {}", userId, unreadCount);
+
             return HttpResponse.ok(Map.of("message", "Conversation marked as read"));
         } catch (IllegalArgumentException e) {
             log.warn("Error marking conversation as read: {}", e.getMessage());
