@@ -52,16 +52,20 @@ class InternshipServiceImplListInternshipsTest {
     @Test
     @DisplayName("Should list all internships with pagination")
     void shouldListInternshipsWithPagination() {
-        // Create multiple internships
+        // Create multiple internships with explicit timestamps
         CreateInternshipRequest request1 = new CreateInternshipRequest("Google", "SWE Intern");
         CreateInternshipRequest request2 = new CreateInternshipRequest("Microsoft", "PM Intern");
         CreateInternshipRequest request3 = new CreateInternshipRequest("Amazon", "Data Intern");
 
-        internshipService.createInternship(request1, testUser.getId());
-        Thread.sleep(10); // Small delay to ensure different timestamps
-        internshipService.createInternship(request2, testUser.getId());
-        Thread.sleep(10);
-        internshipService.createInternship(request3, testUser.getId());
+        Internship internship1 = internshipService.createInternship(request1, testUser.getId());
+        Internship internship2 = internshipService.createInternship(request2, testUser.getId());
+        Internship internship3 = internshipService.createInternship(request3, testUser.getId());
+
+        // Manually adjust timestamps to ensure ordering
+        internship1.setCreatedAt(internship1.getCreatedAt().minusSeconds(2));
+        internship2.setCreatedAt(internship2.getCreatedAt().minusSeconds(1));
+        internshipRepository.update(internship1);
+        internshipRepository.update(internship2);
 
         // Act
         Pageable pageable = Pageable.from(0, 10);
@@ -92,12 +96,14 @@ class InternshipServiceImplListInternshipsTest {
 
     @Test
     @DisplayName("Should paginate results correctly")
-    void shouldPaginateResultsCorrectly() throws InterruptedException {
-        // Create 5 internships
+    void shouldPaginateResultsCorrectly() {
+        // Create 5 internships with controlled timestamps
         for (int i = 1; i <= 5; i++) {
             CreateInternshipRequest request = new CreateInternshipRequest("Company" + i, "Role" + i);
-            internshipService.createInternship(request, testUser.getId());
-            Thread.sleep(10);
+            Internship internship = internshipService.createInternship(request, testUser.getId());
+            // Set timestamps in reverse order so Company5 is newest
+            internship.setCreatedAt(internship.getCreatedAt().minusSeconds(5 - i));
+            internshipRepository.update(internship);
         }
 
         // Act - Get first page with 2 items

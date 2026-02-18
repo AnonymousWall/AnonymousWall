@@ -64,10 +64,10 @@ public class InternshipServiceImpl implements InternshipService {
         internship.setUserId(userId);
         internship.setCompany(trimmedCompany);
         internship.setRole(trimmedRole);
-        internship.setSalary(request.getSalary() != null ? request.getSalary() : null);
-        internship.setLocation(request.getLocation() != null ? request.getLocation() : null);
-        internship.setDescription(request.getDescription() != null ? request.getDescription() : null);
-        internship.setDeadline(request.getDeadline() != null ? request.getDeadline() : null);
+        internship.setSalary(request.getSalary());
+        internship.setLocation(request.getLocation());
+        internship.setDescription(request.getDescription());
+        internship.setDeadline(request.getDeadline());
         internship.setCreatedAt(OffsetDateTime.now());
         internship.setUpdatedAt(OffsetDateTime.now());
 
