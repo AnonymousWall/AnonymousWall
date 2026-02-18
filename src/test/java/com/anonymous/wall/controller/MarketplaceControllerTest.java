@@ -1,0 +1,578 @@
+package com.anonymous.wall.controller;
+
+import com.anonymous.wall.entity.MarketplaceItem;
+import com.anonymous.wall.entity.UserEntity;
+import com.anonymous.wall.model.ItemDTO;
+import com.anonymous.wall.repository.MarketplaceItemRepository;
+import com.anonymous.wall.repository.UserRepository;
+import com.anonymous.wall.service.JwtTokenService;
+import io.micronaut.http.HttpRequest;
+import io.micronaut.http.HttpResponse;
+import io.micronaut.http.HttpStatus;
+import io.micronaut.http.client.HttpClient;
+import io.micronaut.http.client.annotation.Client;
+import io.micronaut.http.client.exceptions.HttpClientResponseException;
+import io.micronaut.test.extensions.junit5.annotation.MicronautTest;
+import jakarta.inject.Inject;
+import org.junit.jupiter.api.*;
+
+import java.math.BigDecimal;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+@MicronautTest(transactional = false)
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+@DisplayName("Marketplace Controller Tests")
+class MarketplaceControllerTest {
+
+    @Inject
+    @Client("/")
+    HttpClient client;
+
+    @Inject
+    UserRepository userRepository;
+
+    @Inject
+    MarketplaceItemRepository marketplaceItemRepository;
+
+    @Inject
+    private JwtTokenService jwtTokenService;
+
+    private static final String BASE_PATH = "/api/v1/marketplace";
+
+    private UserEntity testUser;
+    private UserEntity otherUser;
+    private String jwtToken;
+    private String otherJwtToken;
+
+    @BeforeEach
+    void setUp() {
+        // Create test user
+        testUser = new UserEntity();
+        testUser.setEmail("seller" + System.currentTimeMillis() + "@test.edu");
+        testUser.setSchoolDomain("test.edu");
+        testUser.setVerified(true);
+        testUser.setPasswordSet(true);
+        testUser.setProfileName("TestSeller");
+        testUser = userRepository.save(testUser);
+        jwtToken = jwtTokenService.generateToken(testUser);
+
+        // Create another user for ownership tests
+        otherUser = new UserEntity();
+        otherUser.setEmail("buyer" + System.currentTimeMillis() + "@test.edu");
+        otherUser.setSchoolDomain("test.edu");
+        otherUser.setVerified(true);
+        otherUser.setPasswordSet(true);
+        otherUser.setProfileName("TestBuyer");
+        otherUser = userRepository.save(otherUser);
+        otherJwtToken = jwtTokenService.generateToken(otherUser);
+
+        marketplaceItemRepository.deleteAll();
+    }
+
+    @AfterEach
+    void tearDown() {
+        marketplaceItemRepository.deleteAll();
+    }
+
+    @Nested
+    @DisplayName("Create Item - POST /marketplace")
+    class CreateItemTests {
+
+        @Test
+        @DisplayName("Should create item with all fields")
+        void shouldCreateItemWithAllFields() {
+            Map<String, Object> request = new HashMap<>();
+            request.put("title", "MacBook Pro");
+            request.put("description", "Excellent condition, barely used");
+            request.put("price", 1500.00f);
+            request.put("category", "Electronics");
+            request.put("condition", "like-new");
+
+            HttpResponse<ItemDTO> response = client.toBlocking().exchange(
+                HttpRequest.POST(BASE_PATH, request)
+                    .header("Authorization", "Bearer " + jwtToken),
+                ItemDTO.class
+            );
+
+            assertEquals(HttpStatus.CREATED, response.getStatus());
+            ItemDTO body = response.body();
+            assertNotNull(body);
+            assertEquals("MacBook Pro", body.getTitle());
+            assertEquals("Excellent condition, barely used", body.getDescription());
+            assertNotNull(body.getPrice());
+            assertEquals("Electronics", body.getCategory());
+            assertEquals("like-new", body.getCondition().getValue());
+            assertFalse(body.getSold());
+            assertNotNull(body.getAuthor());
+            assertEquals("TestSeller", body.getAuthor().getProfileName());
+            assertFalse(body.getAuthor().getIsAnonymous());
+            assertNotNull(body.getCreatedAt());
+            assertNotNull(body.getUpdatedAt());
+        }
+
+        @Test
+        @DisplayName("Should create item with minimum required fields")
+        void shouldCreateItemWithMinimumFields() {
+            Map<String, Object> request = new HashMap<>();
+            request.put("title", "Textbook");
+            request.put("price", 25.00f);
+
+            HttpResponse<ItemDTO> response = client.toBlocking().exchange(
+                HttpRequest.POST(BASE_PATH, request)
+                    .header("Authorization", "Bearer " + jwtToken),
+                ItemDTO.class
+            );
+
+            assertEquals(HttpStatus.CREATED, response.getStatus());
+            ItemDTO body = response.body();
+            assertNotNull(body);
+            assertEquals("Textbook", body.getTitle());
+            assertNull(body.getDescription());
+            assertNull(body.getCategory());
+            assertNull(body.getCondition());
+            assertFalse(body.getSold());
+        }
+
+        @Test
+        @DisplayName("Should fail when title is missing")
+        void shouldFailWhenTitleMissing() {
+            Map<String, Object> request = new HashMap<>();
+            request.put("price", 100.00f);
+
+            HttpClientResponseException exception = assertThrows(
+                HttpClientResponseException.class,
+                () -> client.toBlocking().exchange(
+                    HttpRequest.POST(BASE_PATH, request)
+                        .header("Authorization", "Bearer " + jwtToken),
+                    ItemDTO.class
+                )
+            );
+
+            assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
+        }
+
+        @Test
+        @DisplayName("Should fail when price is negative")
+        void shouldFailWhenPriceNegative() {
+            Map<String, Object> request = new HashMap<>();
+            request.put("title", "Item");
+            request.put("price", -10.00f);
+
+            HttpClientResponseException exception = assertThrows(
+                HttpClientResponseException.class,
+                () -> client.toBlocking().exchange(
+                    HttpRequest.POST(BASE_PATH, request)
+                        .header("Authorization", "Bearer " + jwtToken),
+                    ItemDTO.class
+                )
+            );
+
+            assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
+        }
+
+        @Test
+        @DisplayName("Should fail without authentication")
+        void shouldFailWithoutAuth() {
+            Map<String, Object> request = new HashMap<>();
+            request.put("title", "Item");
+            request.put("price", 100.00f);
+
+            HttpClientResponseException exception = assertThrows(
+                HttpClientResponseException.class,
+                () -> client.toBlocking().exchange(
+                    HttpRequest.POST(BASE_PATH, request),
+                    ItemDTO.class
+                )
+            );
+
+            assertEquals(HttpStatus.UNAUTHORIZED, exception.getStatus());
+        }
+    }
+
+    @Nested
+    @DisplayName("Get Item by ID - GET /marketplace/{itemId}")
+    class GetItemTests {
+
+        @Test
+        @DisplayName("Should get item by ID")
+        void shouldGetItemById() {
+            // Create an item
+            MarketplaceItem item = new MarketplaceItem();
+            item.setUserId(testUser.getId());
+            item.setTitle("Test Item");
+            item.setDescription("Description");
+            item.setPrice(new BigDecimal("50.00"));
+            item.setCategory("Books");
+            item.setCondition("good");
+            item.setSold(false);
+            item = marketplaceItemRepository.save(item);
+
+            HttpResponse<ItemDTO> response = client.toBlocking().exchange(
+                HttpRequest.GET(BASE_PATH + "/" + item.getId())
+                    .header("Authorization", "Bearer " + jwtToken),
+                ItemDTO.class
+            );
+
+            assertEquals(HttpStatus.OK, response.getStatus());
+            ItemDTO body = response.body();
+            assertNotNull(body);
+            assertEquals("Test Item", body.getTitle());
+            assertEquals("Description", body.getDescription());
+            assertEquals("Books", body.getCategory());
+            assertEquals("good", body.getCondition().getValue());
+            assertFalse(body.getSold());
+            assertEquals("TestSeller", body.getAuthor().getProfileName());
+        }
+
+        @Test
+        @DisplayName("Should return 404 for non-existent item")
+        void shouldReturn404ForNonExistentItem() {
+            HttpClientResponseException exception = assertThrows(
+                HttpClientResponseException.class,
+                () -> client.toBlocking().exchange(
+                    HttpRequest.GET(BASE_PATH + "/00000000-0000-0000-0000-000000000000")
+                        .header("Authorization", "Bearer " + jwtToken),
+                    ItemDTO.class
+                )
+            );
+
+            assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());
+        }
+
+        @Test
+        @DisplayName("Should fail without authentication")
+        void shouldFailWithoutAuth() {
+            MarketplaceItem item = new MarketplaceItem();
+            item.setUserId(testUser.getId());
+            item.setTitle("Test Item");
+            item.setPrice(new BigDecimal("50.00"));
+            MarketplaceItem savedItem = marketplaceItemRepository.save(item);
+
+            HttpClientResponseException exception = assertThrows(
+                HttpClientResponseException.class,
+                () -> client.toBlocking().exchange(
+                    HttpRequest.GET(BASE_PATH + "/" + savedItem.getId()),
+                    ItemDTO.class
+                )
+            );
+
+            assertEquals(HttpStatus.UNAUTHORIZED, exception.getStatus());
+        }
+    }
+
+    @Nested
+    @DisplayName("List Items - GET /marketplace")
+    class ListItemsTests {
+
+        @Test
+        @DisplayName("Should list items with pagination")
+        void shouldListItems() {
+            // Create multiple items
+            for (int i = 1; i <= 5; i++) {
+                MarketplaceItem item = new MarketplaceItem();
+                item.setUserId(testUser.getId());
+                item.setTitle("Item " + i);
+                item.setPrice(new BigDecimal(i * 10));
+                item.setSold(false);
+                marketplaceItemRepository.save(item);
+            }
+
+            HttpResponse<Map> response = client.toBlocking().exchange(
+                HttpRequest.GET(BASE_PATH + "?page=1&limit=3")
+                    .header("Authorization", "Bearer " + jwtToken),
+                Map.class
+            );
+
+            assertEquals(HttpStatus.OK, response.getStatus());
+            Map body = response.body();
+            assertNotNull(body);
+            assertTrue(body.containsKey("items"));
+            assertTrue(body.containsKey("pagination"));
+
+            List items = (List) body.get("items");
+            assertEquals(3, items.size());
+
+            Map pagination = (Map) body.get("pagination");
+            assertEquals(1, pagination.get("page"));
+            assertEquals(3, pagination.get("limit"));
+            assertEquals(5, pagination.get("total"));
+        }
+
+        @Test
+        @DisplayName("Should filter items by sold status")
+        void shouldFilterBySoldStatus() {
+            // Create sold and unsold items
+            MarketplaceItem soldItem = new MarketplaceItem();
+            soldItem.setUserId(testUser.getId());
+            soldItem.setTitle("Sold Item");
+            soldItem.setPrice(new BigDecimal("100.00"));
+            soldItem.setSold(true);
+            marketplaceItemRepository.save(soldItem);
+
+            MarketplaceItem unsoldItem = new MarketplaceItem();
+            unsoldItem.setUserId(testUser.getId());
+            unsoldItem.setTitle("Available Item");
+            unsoldItem.setPrice(new BigDecimal("200.00"));
+            unsoldItem.setSold(false);
+            marketplaceItemRepository.save(unsoldItem);
+
+            HttpResponse<Map> response = client.toBlocking().exchange(
+                HttpRequest.GET(BASE_PATH + "?sold=false")
+                    .header("Authorization", "Bearer " + jwtToken),
+                Map.class
+            );
+
+            assertEquals(HttpStatus.OK, response.getStatus());
+            Map body = response.body();
+            List items = (List) body.get("items");
+            assertEquals(1, items.size());
+        }
+
+        @Test
+        @DisplayName("Should sort items by price")
+        void shouldSortByPrice() {
+            // Create items with different prices
+            MarketplaceItem item1 = new MarketplaceItem();
+            item1.setUserId(testUser.getId());
+            item1.setTitle("Expensive");
+            item1.setPrice(new BigDecimal("500.00"));
+            marketplaceItemRepository.save(item1);
+
+            MarketplaceItem item2 = new MarketplaceItem();
+            item2.setUserId(testUser.getId());
+            item2.setTitle("Cheap");
+            item2.setPrice(new BigDecimal("10.00"));
+            marketplaceItemRepository.save(item2);
+
+            HttpResponse<Map> response = client.toBlocking().exchange(
+                HttpRequest.GET(BASE_PATH + "?sortBy=price-asc")
+                    .header("Authorization", "Bearer " + jwtToken),
+                Map.class
+            );
+
+            assertEquals(HttpStatus.OK, response.getStatus());
+            Map body = response.body();
+            List items = (List) body.get("items");
+            assertEquals(2, items.size());
+        }
+
+        @Test
+        @DisplayName("Should fail without authentication")
+        void shouldFailWithoutAuth() {
+            HttpClientResponseException exception = assertThrows(
+                HttpClientResponseException.class,
+                () -> client.toBlocking().exchange(
+                    HttpRequest.GET(BASE_PATH),
+                    Map.class
+                )
+            );
+
+            assertEquals(HttpStatus.UNAUTHORIZED, exception.getStatus());
+        }
+    }
+
+    @Nested
+    @DisplayName("Update Item - PUT /marketplace/{itemId}")
+    class UpdateItemTests {
+
+        @Test
+        @DisplayName("Should update item title")
+        void shouldUpdateTitle() {
+            // Create an item
+            MarketplaceItem item = new MarketplaceItem();
+            item.setUserId(testUser.getId());
+            item.setTitle("Old Title");
+            item.setPrice(new BigDecimal("100.00"));
+            item = marketplaceItemRepository.save(item);
+
+            Map<String, Object> updateRequest = new HashMap<>();
+            updateRequest.put("title", "New Title");
+
+            HttpResponse<ItemDTO> response = client.toBlocking().exchange(
+                HttpRequest.PUT(BASE_PATH + "/" + item.getId(), updateRequest)
+                    .header("Authorization", "Bearer " + jwtToken),
+                ItemDTO.class
+            );
+
+            assertEquals(HttpStatus.OK, response.getStatus());
+            ItemDTO body = response.body();
+            assertNotNull(body);
+            assertEquals("New Title", body.getTitle());
+        }
+
+        @Test
+        @DisplayName("Should update item price")
+        void shouldUpdatePrice() {
+            MarketplaceItem item = new MarketplaceItem();
+            item.setUserId(testUser.getId());
+            item.setTitle("Item");
+            item.setPrice(new BigDecimal("100.00"));
+            item = marketplaceItemRepository.save(item);
+
+            Map<String, Object> updateRequest = new HashMap<>();
+            updateRequest.put("price", 150.00f);
+
+            HttpResponse<ItemDTO> response = client.toBlocking().exchange(
+                HttpRequest.PUT(BASE_PATH + "/" + item.getId(), updateRequest)
+                    .header("Authorization", "Bearer " + jwtToken),
+                ItemDTO.class
+            );
+
+            assertEquals(HttpStatus.OK, response.getStatus());
+            ItemDTO body = response.body();
+            assertNotNull(body);
+            assertTrue(body.getPrice() > 100.0f);
+        }
+
+        @Test
+        @DisplayName("Should mark item as sold")
+        void shouldMarkAsSold() {
+            MarketplaceItem item = new MarketplaceItem();
+            item.setUserId(testUser.getId());
+            item.setTitle("Item");
+            item.setPrice(new BigDecimal("100.00"));
+            item.setSold(false);
+            item = marketplaceItemRepository.save(item);
+
+            Map<String, Object> updateRequest = new HashMap<>();
+            updateRequest.put("sold", true);
+
+            HttpResponse<ItemDTO> response = client.toBlocking().exchange(
+                HttpRequest.PUT(BASE_PATH + "/" + item.getId(), updateRequest)
+                    .header("Authorization", "Bearer " + jwtToken),
+                ItemDTO.class
+            );
+
+            assertEquals(HttpStatus.OK, response.getStatus());
+            ItemDTO body = response.body();
+            assertNotNull(body);
+            assertTrue(body.getSold());
+        }
+
+        @Test
+        @DisplayName("Should update multiple fields")
+        void shouldUpdateMultipleFields() {
+            MarketplaceItem item = new MarketplaceItem();
+            item.setUserId(testUser.getId());
+            item.setTitle("Old Item");
+            item.setPrice(new BigDecimal("100.00"));
+            item.setDescription("Old description");
+            item = marketplaceItemRepository.save(item);
+
+            Map<String, Object> updateRequest = new HashMap<>();
+            updateRequest.put("title", "Updated Item");
+            updateRequest.put("description", "New description");
+            updateRequest.put("price", 200.00f);
+            updateRequest.put("sold", true);
+
+            HttpResponse<ItemDTO> response = client.toBlocking().exchange(
+                HttpRequest.PUT(BASE_PATH + "/" + item.getId(), updateRequest)
+                    .header("Authorization", "Bearer " + jwtToken),
+                ItemDTO.class
+            );
+
+            assertEquals(HttpStatus.OK, response.getStatus());
+            ItemDTO body = response.body();
+            assertNotNull(body);
+            assertEquals("Updated Item", body.getTitle());
+            assertEquals("New description", body.getDescription());
+            assertTrue(body.getSold());
+        }
+
+        @Test
+        @DisplayName("Should fail when updating another user's item")
+        void shouldFailWhenUpdatingOtherUsersItem() {
+            // Create item owned by testUser
+            MarketplaceItem item = new MarketplaceItem();
+            item.setUserId(testUser.getId());
+            item.setTitle("Item");
+            item.setPrice(new BigDecimal("100.00"));
+            MarketplaceItem savedItem = marketplaceItemRepository.save(item);
+
+            Map<String, Object> updateRequest = new HashMap<>();
+            updateRequest.put("title", "Hacked Title");
+
+            // Try to update with otherUser's token
+            HttpClientResponseException exception = assertThrows(
+                HttpClientResponseException.class,
+                () -> client.toBlocking().exchange(
+                    HttpRequest.PUT(BASE_PATH + "/" + savedItem.getId(), updateRequest)
+                        .header("Authorization", "Bearer " + otherJwtToken),
+                    ItemDTO.class
+                )
+            );
+
+            assertEquals(HttpStatus.FORBIDDEN, exception.getStatus());
+        }
+
+        @Test
+        @DisplayName("Should fail with negative price")
+        void shouldFailWithNegativePrice() {
+            MarketplaceItem item = new MarketplaceItem();
+            item.setUserId(testUser.getId());
+            item.setTitle("Item");
+            item.setPrice(new BigDecimal("100.00"));
+            MarketplaceItem savedItem = marketplaceItemRepository.save(item);
+
+            Map<String, Object> updateRequest = new HashMap<>();
+            updateRequest.put("price", -50.00f);
+
+            HttpClientResponseException exception = assertThrows(
+                HttpClientResponseException.class,
+                () -> client.toBlocking().exchange(
+                    HttpRequest.PUT(BASE_PATH + "/" + savedItem.getId(), updateRequest)
+                        .header("Authorization", "Bearer " + jwtToken),
+                    ItemDTO.class
+                )
+            );
+
+            assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
+        }
+
+        @Test
+        @DisplayName("Should return 404 for non-existent item")
+        void shouldReturn404ForNonExistentItem() {
+            Map<String, Object> updateRequest = new HashMap<>();
+            updateRequest.put("title", "New Title");
+
+            HttpClientResponseException exception = assertThrows(
+                HttpClientResponseException.class,
+                () -> client.toBlocking().exchange(
+                    HttpRequest.PUT(BASE_PATH + "/00000000-0000-0000-0000-000000000000", updateRequest)
+                        .header("Authorization", "Bearer " + jwtToken),
+                    ItemDTO.class
+                )
+            );
+
+            assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());
+        }
+
+        @Test
+        @DisplayName("Should fail without authentication")
+        void shouldFailWithoutAuth() {
+            MarketplaceItem item = new MarketplaceItem();
+            item.setUserId(testUser.getId());
+            item.setTitle("Item");
+            item.setPrice(new BigDecimal("100.00"));
+            MarketplaceItem savedItem = marketplaceItemRepository.save(item);
+
+            Map<String, Object> updateRequest = new HashMap<>();
+            updateRequest.put("title", "New Title");
+
+            HttpClientResponseException exception = assertThrows(
+                HttpClientResponseException.class,
+                () -> client.toBlocking().exchange(
+                    HttpRequest.PUT(BASE_PATH + "/" + savedItem.getId(), updateRequest),
+                    ItemDTO.class
+                )
+            );
+
+            assertEquals(HttpStatus.UNAUTHORIZED, exception.getStatus());
+        }
+    }
+}
