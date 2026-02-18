@@ -782,6 +782,292 @@ Response: 201 Created
 - Reporting a comment increments the report count for the comment author
 - Duplicate reports by the same user will return: `400 Bad Request`
 
+### Marketplace Endpoints
+
+#### 1. Create Marketplace Item
+```http
+POST /api/v1/marketplace
+Authorization: Bearer {jwt-token}
+Content-Type: application/json
+
+{
+    "title": "Used Calculus Textbook",
+    "price": 45.99,
+    "description": "Barely used, excellent condition",
+    "category": "books",
+    "condition": "like_new",
+    "contactInfo": "johndoe@harvard.edu"
+}
+
+Response: 201 Created
+{
+    "id": "uuid",
+    "title": "Used Calculus Textbook",
+    "price": 45.99,
+    "description": "Barely used, excellent condition",
+    "category": "books",
+    "condition": "like_new",
+    "contactInfo": "johndoe@harvard.edu",
+    "sold": false,
+    "author": {
+        "id": "uuid",
+        "profileName": "John Doe",
+        "isAnonymous": false
+    },
+    "createdAt": "2026-02-18T...",
+    "updatedAt": "2026-02-18T..."
+}
+```
+
+**Request Validation:**
+- `title` is **required** (cannot be null, empty, or whitespace-only)
+- `title` maximum length: **255 characters**
+- `price` is **required** and must be **≥ 0**
+- `price` maximum value: **99,999,999.99** (DECIMAL(10,2))
+- `description` is optional (max length: 5000 characters)
+- `category` is optional
+- `condition` is optional, valid values: "new", "like_new", "good", "fair", "poor"
+- `contactInfo` is optional
+
+**Error Responses:**
+```json
+// Missing or empty title
+400 Bad Request
+{
+    "error": "Title cannot be empty"
+}
+
+// Title exceeds 255 characters
+400 Bad Request
+{
+    "error": "Title cannot exceed 255 characters"
+}
+
+// Missing or invalid price
+400 Bad Request
+{
+    "error": "Price is required"
+}
+
+// Negative price
+400 Bad Request
+{
+    "error": "Price must be greater than or equal to 0"
+}
+
+// Invalid condition
+400 Bad Request
+{
+    "error": "Invalid condition. Must be one of: new, like_new, good, fair, poor"
+}
+```
+
+#### 2. List Marketplace Items
+```http
+GET /api/v1/marketplace?page=0&limit=20&sortBy=newest&sold=false
+Authorization: Bearer {jwt-token}
+
+Response: 200 OK
+{
+    "content": [
+        {
+            "id": "uuid",
+            "title": "Used Calculus Textbook",
+            "price": 45.99,
+            "description": "Barely used, excellent condition",
+            "category": "books",
+            "condition": "like_new",
+            "contactInfo": "johndoe@harvard.edu",
+            "sold": false,
+            "author": {
+                "id": "uuid",
+                "profileName": "John Doe",
+                "isAnonymous": false
+            },
+            "createdAt": "2026-02-18T...",
+            "updatedAt": "2026-02-18T..."
+        }
+    ],
+    "pageable": {
+        "pageNumber": 0,
+        "pageSize": 20,
+        "offset": 0,
+        "paged": true,
+        "unpaged": false
+    },
+    "totalPages": 5,
+    "totalElements": 95,
+    "last": false,
+    "size": 20,
+    "number": 0,
+    "numberOfElements": 20,
+    "first": true,
+    "empty": false
+}
+```
+
+**Query Parameters:**
+- `page` (default: 0) - Page number (0-based)
+- `limit` (default: 20) - Items per page (max: 100)
+- `sortBy` (default: "newest") - Sort order:
+  - `newest` - Sort by creation date descending (newest first)
+  - `price-asc` - Sort by price ascending (lowest first)
+  - `price-desc` - Sort by price descending (highest first)
+- `sold` (optional) - Filter by sold status:
+  - `true` - Show only sold items
+  - `false` - Show only unsold items
+  - omit parameter - Show all items (both sold and unsold)
+
+**Examples:**
+```http
+GET /api/v1/marketplace?sold=false&sortBy=price-asc
+GET /api/v1/marketplace?sold=true&page=1&limit=10
+GET /api/v1/marketplace?sortBy=newest
+```
+
+#### 3. Get Marketplace Item by ID
+```http
+GET /api/v1/marketplace/{itemId}
+Authorization: Bearer {jwt-token}
+
+Response: 200 OK
+{
+    "id": "uuid",
+    "title": "Used Calculus Textbook",
+    "price": 45.99,
+    "description": "Barely used, excellent condition",
+    "category": "books",
+    "condition": "like_new",
+    "contactInfo": "johndoe@harvard.edu",
+    "sold": false,
+    "author": {
+        "id": "uuid",
+        "profileName": "John Doe",
+        "isAnonymous": false
+    },
+    "createdAt": "2026-02-18T...",
+    "updatedAt": "2026-02-18T..."
+}
+
+Response: 404 Not Found
+{
+    "error": "Item not found"
+}
+```
+
+**Notes:**
+- Retrieves a single marketplace item by its ID
+- All authenticated users can view any marketplace item
+- Returns 404 if item does not exist
+
+#### 4. Update Marketplace Item (Partial Update)
+```http
+PUT /api/v1/marketplace/{itemId}
+Authorization: Bearer {jwt-token}
+Content-Type: application/json
+
+{
+    "title": "Used Calculus Textbook - Price Reduced",
+    "price": 35.99,
+    "sold": true
+}
+
+Response: 200 OK
+{
+    "id": "uuid",
+    "title": "Used Calculus Textbook - Price Reduced",
+    "price": 35.99,
+    "description": "Barely used, excellent condition",
+    "category": "books",
+    "condition": "like_new",
+    "contactInfo": "johndoe@harvard.edu",
+    "sold": true,
+    "author": {
+        "id": "uuid",
+        "profileName": "John Doe",
+        "isAnonymous": false
+    },
+    "createdAt": "2026-02-18T...",
+    "updatedAt": "2026-02-18T..."
+}
+```
+
+**Partial Update Behavior:**
+- All fields are **optional** in the update request
+- Only provided fields will be updated
+- Fields not included in the request remain unchanged
+- Null-safe: setting a field to null will not update it
+
+**Updatable Fields:**
+- `title` (max 255 characters, cannot be empty/whitespace-only)
+- `price` (must be ≥ 0 if provided)
+- `description` (max 5000 characters)
+- `category`
+- `condition` (must be valid enum value)
+- `contactInfo`
+- `sold` (boolean - mark item as sold/unsold)
+
+**Ownership Validation:**
+- Users can only update their own items
+- Attempting to update another user's item returns: `403 Forbidden`
+
+**Error Responses:**
+```json
+// Attempting to update another user's item
+403 Forbidden
+{
+    "error": "You can only update your own items"
+}
+
+// Item not found
+404 Not Found
+{
+    "error": "Item not found"
+}
+
+// Negative price
+400 Bad Request
+{
+    "error": "Price must be greater than or equal to 0"
+}
+
+// Empty title
+400 Bad Request
+{
+    "error": "Title cannot be empty"
+}
+
+// Invalid condition
+400 Bad Request
+{
+    "error": "Invalid condition. Must be one of: new, like_new, good, fair, poor"
+}
+```
+
+**Update Examples:**
+```http
+// Mark item as sold
+PUT /api/v1/marketplace/{itemId}
+{
+    "sold": true
+}
+
+// Update only price
+PUT /api/v1/marketplace/{itemId}
+{
+    "price": 25.00
+}
+
+// Update multiple fields
+PUT /api/v1/marketplace/{itemId}
+{
+    "title": "Updated Title",
+    "price": 30.00,
+    "description": "Updated description",
+    "sold": false
+}
+```
+
 ### User Endpoints
 
 #### 1. Get User's Own Comments

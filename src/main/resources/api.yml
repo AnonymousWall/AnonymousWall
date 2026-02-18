@@ -881,6 +881,68 @@ paths:
         "401":
           description: Unauthorized - authentication required
 
+  /marketplace/{itemId}:
+    get:
+      tags: [marketplace]
+      summary: Get marketplace item by ID
+      description: Retrieve a specific marketplace item by its ID
+      operationId: getItem
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: itemId
+          required: true
+          schema:
+            type: string
+          description: ID of the marketplace item to retrieve
+      responses:
+        "200":
+          description: Item retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ItemDTO"
+        "401":
+          description: Unauthorized - authentication required
+        "404":
+          description: Item not found
+    put:
+      tags: [marketplace]
+      summary: Update marketplace item
+      description: Update an existing marketplace item (partial update supported)
+      operationId: updateItem
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: itemId
+          required: true
+          schema:
+            type: string
+          description: ID of the marketplace item to update
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateItemRequest"
+      responses:
+        "200":
+          description: Item updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ItemDTO"
+        "400":
+          description: Invalid request data
+        "401":
+          description: Unauthorized - authentication required
+        "403":
+          description: Forbidden - not the owner of the item
+        "404":
+          description: Item not found
+
   # =================== Coins ===================
   /coins/claim:
     post:
@@ -2314,6 +2376,31 @@ components:
           enum: [new, like-new, good, fair]
           description: Condition of the item
 
+    UpdateItemRequest:
+      type: object
+      description: Request body for updating a marketplace item. All fields are optional for partial updates.
+      properties:
+        title:
+          type: string
+          description: Item title
+        description:
+          type: string
+          description: Item description
+        price:
+          type: number
+          format: float
+          description: Item price
+        category:
+          type: string
+          description: Item category (e.g., books, electronics, furniture)
+        condition:
+          type: string
+          enum: [new, like-new, good, fair]
+          description: Condition of the item
+        sold:
+          type: boolean
+          description: Whether the item has been sold
+
     ItemDTO:
       type: object
       properties:
@@ -2331,14 +2418,20 @@ components:
         condition:
           type: string
           enum: [new, like-new, good, fair]
-        seller:
+        sold:
+          type: boolean
+          default: false
+        author:
           type: object
           properties:
             id:
               type: string
-            email:
+            profileName:
               type: string
-              format: email
+              description: Profile name of the item author
+            isAnonymous:
+              type: boolean
+              description: Whether author is anonymous
         createdAt:
           type: string
           format: date-time
