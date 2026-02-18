@@ -70,7 +70,7 @@ class MarketplaceServiceImplListItemsTest {
 
             // Act
             Pageable pageable = Pageable.from(0, 10);
-            Page<MarketplaceItem> result = marketplaceService.listItems(pageable, "newest");
+            Page<MarketplaceItem> result = marketplaceService.listItems(pageable, "newest", null);
 
             // Assert
             assertEquals(3, result.getTotalSize());
@@ -98,7 +98,7 @@ class MarketplaceServiceImplListItemsTest {
 
             // Act
             Pageable pageable = Pageable.from(0, 10);
-            Page<MarketplaceItem> result = marketplaceService.listItems(pageable, "price-asc");
+            Page<MarketplaceItem> result = marketplaceService.listItems(pageable, "price-asc", null);
 
             // Assert
             List<MarketplaceItem> items = result.getContent();
@@ -126,7 +126,7 @@ class MarketplaceServiceImplListItemsTest {
 
             // Act
             Pageable pageable = Pageable.from(0, 10);
-            Page<MarketplaceItem> result = marketplaceService.listItems(pageable, "price-desc");
+            Page<MarketplaceItem> result = marketplaceService.listItems(pageable, "price-desc", null);
 
             // Assert
             List<MarketplaceItem> items = result.getContent();
@@ -149,11 +149,11 @@ class MarketplaceServiceImplListItemsTest {
 
             // Act - Get page 1 with size 2
             Pageable pageable1 = Pageable.from(0, 2);
-            Page<MarketplaceItem> page1 = marketplaceService.listItems(pageable1, "newest");
+            Page<MarketplaceItem> page1 = marketplaceService.listItems(pageable1, "newest", null);
 
             // Act - Get page 2 with size 2
             Pageable pageable2 = Pageable.from(1, 2);
-            Page<MarketplaceItem> page2 = marketplaceService.listItems(pageable2, "newest");
+            Page<MarketplaceItem> page2 = marketplaceService.listItems(pageable2, "newest", null);
 
             // Assert
             assertEquals(5, page1.getTotalSize());
@@ -168,7 +168,7 @@ class MarketplaceServiceImplListItemsTest {
         void shouldReturnEmptyListWhenNoItems() {
             // Act
             Pageable pageable = Pageable.from(0, 10);
-            Page<MarketplaceItem> result = marketplaceService.listItems(pageable, "newest");
+            Page<MarketplaceItem> result = marketplaceService.listItems(pageable, "newest", null);
 
             // Assert
             assertEquals(0, result.getTotalSize());
@@ -185,7 +185,7 @@ class MarketplaceServiceImplListItemsTest {
 
             // Act
             Pageable pageable = Pageable.from(0, 10);
-            Page<MarketplaceItem> result = marketplaceService.listItems(pageable, null);
+            Page<MarketplaceItem> result = marketplaceService.listItems(pageable, null, null);
 
             // Assert
             assertEquals(1, result.getTotalSize());
@@ -201,7 +201,7 @@ class MarketplaceServiceImplListItemsTest {
 
             // Act
             Pageable pageable = Pageable.from(0, 10);
-            Page<MarketplaceItem> result = marketplaceService.listItems(pageable, "invalid-sort");
+            Page<MarketplaceItem> result = marketplaceService.listItems(pageable, "invalid-sort", null);
 
             // Assert - Should default to newest
             assertEquals(1, result.getTotalSize());
@@ -224,7 +224,7 @@ class MarketplaceServiceImplListItemsTest {
 
             // Act
             Pageable pageable = Pageable.from(0, 100);
-            Page<MarketplaceItem> result = marketplaceService.listItems(pageable, "newest");
+            Page<MarketplaceItem> result = marketplaceService.listItems(pageable, "newest", null);
 
             // Assert
             assertEquals(3, result.getTotalSize());
@@ -241,11 +241,75 @@ class MarketplaceServiceImplListItemsTest {
 
             // Act - Request page 10
             Pageable pageable = Pageable.from(10, 10);
-            Page<MarketplaceItem> result = marketplaceService.listItems(pageable, "newest");
+            Page<MarketplaceItem> result = marketplaceService.listItems(pageable, "newest", null);
 
             // Assert
             assertEquals(1, result.getTotalSize());
             assertTrue(result.getContent().isEmpty());
+        }
+
+        @Test
+        @DisplayName("Should filter by sold status - only unsold items")
+        void shouldFilterByUnsoldItems() {
+            // Arrange - Create sold and unsold items
+            CreateItemRequest soldRequest = new CreateItemRequest("Sold Item", 100.0f);
+            MarketplaceItem soldItem = marketplaceService.createItem(soldRequest, testUser.getId());
+            soldItem.setSold(true);
+            marketplaceItemRepository.update(soldItem);
+
+            CreateItemRequest unsoldRequest = new CreateItemRequest("Available Item", 200.0f);
+            marketplaceService.createItem(unsoldRequest, testUser.getId());
+
+            // Act - Filter for unsold items only
+            Pageable pageable = Pageable.from(0, 10);
+            Page<MarketplaceItem> result = marketplaceService.listItems(pageable, "newest", false);
+
+            // Assert
+            assertEquals(1, result.getTotalSize());
+            assertFalse(result.getContent().get(0).isSold());
+            assertEquals("Available Item", result.getContent().get(0).getTitle());
+        }
+
+        @Test
+        @DisplayName("Should filter by sold status - only sold items")
+        void shouldFilterBySoldItems() {
+            // Arrange - Create sold and unsold items
+            CreateItemRequest soldRequest = new CreateItemRequest("Sold Item", 100.0f);
+            MarketplaceItem soldItem = marketplaceService.createItem(soldRequest, testUser.getId());
+            soldItem.setSold(true);
+            marketplaceItemRepository.update(soldItem);
+
+            CreateItemRequest unsoldRequest = new CreateItemRequest("Available Item", 200.0f);
+            marketplaceService.createItem(unsoldRequest, testUser.getId());
+
+            // Act - Filter for sold items only
+            Pageable pageable = Pageable.from(0, 10);
+            Page<MarketplaceItem> result = marketplaceService.listItems(pageable, "newest", true);
+
+            // Assert
+            assertEquals(1, result.getTotalSize());
+            assertTrue(result.getContent().get(0).isSold());
+            assertEquals("Sold Item", result.getContent().get(0).getTitle());
+        }
+
+        @Test
+        @DisplayName("Should return all items when sold filter is null")
+        void shouldReturnAllItemsWhenSoldIsNull() {
+            // Arrange - Create sold and unsold items
+            CreateItemRequest soldRequest = new CreateItemRequest("Sold Item", 100.0f);
+            MarketplaceItem soldItem = marketplaceService.createItem(soldRequest, testUser.getId());
+            soldItem.setSold(true);
+            marketplaceItemRepository.update(soldItem);
+
+            CreateItemRequest unsoldRequest = new CreateItemRequest("Available Item", 200.0f);
+            marketplaceService.createItem(unsoldRequest, testUser.getId());
+
+            // Act - No sold filter
+            Pageable pageable = Pageable.from(0, 10);
+            Page<MarketplaceItem> result = marketplaceService.listItems(pageable, "newest", null);
+
+            // Assert
+            assertEquals(2, result.getTotalSize());
         }
     }
 }

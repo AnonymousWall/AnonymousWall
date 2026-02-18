@@ -164,13 +164,27 @@ public class MarketplaceServiceImpl implements MarketplaceService {
     }
 
     @Override
-    public Page<MarketplaceItem> listItems(Pageable pageable, String sortBy) {
-        log.info("Listing marketplace items with sortBy={}", sortBy);
+    public Page<MarketplaceItem> listItems(Pageable pageable, String sortBy, Boolean sold) {
+        log.info("Listing marketplace items with sortBy={}, sold={}", sortBy, sold);
 
         if (sortBy == null) {
             sortBy = "newest";
         }
 
+        // If sold filter is provided, use filtered queries
+        if (sold != null) {
+            switch (sortBy.toLowerCase()) {
+                case "price-asc":
+                    return marketplaceItemRepository.findBySoldOrderByPriceAsc(sold, pageable);
+                case "price-desc":
+                    return marketplaceItemRepository.findBySoldOrderByPriceDesc(sold, pageable);
+                case "newest":
+                default:
+                    return marketplaceItemRepository.findBySoldOrderByCreatedAtDesc(sold, pageable);
+            }
+        }
+
+        // No sold filter, return all items
         switch (sortBy.toLowerCase()) {
             case "price-asc":
                 return marketplaceItemRepository.findAllOrderByPriceAsc(pageable);

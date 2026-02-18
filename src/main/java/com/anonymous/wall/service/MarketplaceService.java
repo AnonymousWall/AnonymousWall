@@ -34,9 +34,10 @@ public interface MarketplaceService {
      *
      * @param pageable pagination and sorting parameters
      * @param sortBy   sort option (newest, price-asc, price-desc)
+     * @param sold     optional filter by sold status (null for all items)
      * @return page of marketplace items
      */
-    Page<MarketplaceItem> listItems(Pageable pageable, String sortBy);
+    Page<MarketplaceItem> listItems(Pageable pageable, String sortBy, Boolean sold);
 
     /**
      * Get a specific marketplace item by ID

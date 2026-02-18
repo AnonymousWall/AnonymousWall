@@ -50,6 +50,16 @@ public interface MarketplaceItemRepository extends CrudRepository<MarketplaceIte
     Page<MarketplaceItem> findBySoldOrderByCreatedAtDesc(boolean sold, Pageable pageable);
 
     /**
+     * Find items by sold status, sorted by price ascending
+     */
+    Page<MarketplaceItem> findBySoldOrderByPriceAsc(boolean sold, Pageable pageable);
+
+    /**
+     * Find items by sold status, sorted by price descending
+     */
+    Page<MarketplaceItem> findBySoldOrderByPriceDesc(boolean sold, Pageable pageable);
+
+    /**
      * Find items by category
      */
     Page<MarketplaceItem> findByCategoryOrderByCreatedAtDesc(String category, Pageable pageable);

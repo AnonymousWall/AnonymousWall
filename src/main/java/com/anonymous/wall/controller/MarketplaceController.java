@@ -7,6 +7,7 @@ import com.anonymous.wall.model.ItemDTO;
 import com.anonymous.wall.model.UpdateItemRequest;
 import com.anonymous.wall.repository.UserRepository;
 import com.anonymous.wall.service.MarketplaceService;
+import io.micronaut.core.annotation.Nullable;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
 import io.micronaut.http.HttpRequest;
@@ -80,7 +81,7 @@ public class MarketplaceController {
 
     /**
      * GET /marketplace
-     * List marketplace items with optional pagination and sorting
+     * List marketplace items with optional pagination, sorting, and filtering
      */
     @Get
     @Secured(SecurityRule.IS_AUTHENTICATED)
@@ -88,16 +89,18 @@ public class MarketplaceController {
             @QueryValue(defaultValue = "1") int page,
             @QueryValue(defaultValue = "20") int limit,
             @QueryValue(defaultValue = "newest") String sortBy,
+            @Nullable @QueryValue Boolean sold,
             HttpRequest<?> httpRequest) {
         try {
             UUID userId = getUserIdFromRequest(httpRequest);
-            log.info("GET /marketplace - Listing items, user={}, page={}, limit={}, sortBy={}", userId, page, limit, sortBy);
+            log.info("GET /marketplace - Listing items, user={}, page={}, limit={}, sortBy={}, sold={}", 
+                    userId, page, limit, sortBy, sold);
 
             if (page < 1) page = 1;
             if (limit < 1 || limit > 100) limit = 20;
 
             Pageable pageable = Pageable.from(page - 1, limit);
-            Page<MarketplaceItem> items = marketplaceService.listItems(pageable, sortBy);
+            Page<MarketplaceItem> items = marketplaceService.listItems(pageable, sortBy, sold);
 
             List<ItemDTO> dtos = items.getContent().stream()
                     .map(this::mapItemToDTO)
