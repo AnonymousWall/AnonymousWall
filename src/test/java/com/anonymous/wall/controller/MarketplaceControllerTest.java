@@ -291,10 +291,10 @@ class MarketplaceControllerTest {
             assertEquals(HttpStatus.OK, response.getStatus());
             Map body = response.body();
             assertNotNull(body);
-            assertTrue(body.containsKey("items"));
+            assertTrue(body.containsKey("data"));
             assertTrue(body.containsKey("pagination"));
 
-            List items = (List) body.get("items");
+            List items = (List) body.get("data");
             assertEquals(3, items.size());
 
             Map pagination = (Map) body.get("pagination");
@@ -329,7 +329,7 @@ class MarketplaceControllerTest {
 
             assertEquals(HttpStatus.OK, response.getStatus());
             Map body = response.body();
-            List items = (List) body.get("items");
+            List items = (List) body.get("data");
             assertEquals(1, items.size());
         }
 
@@ -357,7 +357,7 @@ class MarketplaceControllerTest {
 
             assertEquals(HttpStatus.OK, response.getStatus());
             Map body = response.body();
-            List items = (List) body.get("items");
+            List items = (List) body.get("data");
             assertEquals(2, items.size());
         }
 
