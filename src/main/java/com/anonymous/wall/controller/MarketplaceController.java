@@ -119,6 +119,37 @@ public class MarketplaceController {
     }
 
     /**
+     * GET /marketplace/{itemId}
+     * Get a specific marketplace item by ID
+     */
+    @Get("/{itemId}")
+    @Secured(SecurityRule.IS_AUTHENTICATED)
+    public HttpResponse<Object> getItem(
+            @PathVariable String itemId,
+            HttpRequest<?> httpRequest) {
+        try {
+            UUID userId = getUserIdFromRequest(httpRequest);
+            UUID itemUUID = UUID.fromString(itemId);
+            log.info("GET /marketplace/{} - Getting item, user={}", itemId, userId);
+
+            MarketplaceItem item = marketplaceService.getItem(itemUUID);
+            ItemDTO dto = mapItemToDTO(item);
+
+            log.info("GET /marketplace/{} - Item retrieved successfully", itemId);
+            return HttpResponse.ok(dto);
+        } catch (IllegalArgumentException e) {
+            log.warn("GET /marketplace/{} - Bad request: {}", itemId, e.getMessage());
+            if (e.getMessage().contains("not found")) {
+                return HttpResponse.notFound();
+            }
+            return HttpResponse.badRequest(error(e.getMessage()));
+        } catch (Exception e) {
+            log.error("GET /marketplace/{} - Error getting item", itemId, e);
+            return HttpResponse.badRequest(error("Failed to get marketplace item"));
+        }
+    }
+
+    /**
      * PUT /marketplace/{itemId}
      * Update a marketplace item
      */
@@ -177,15 +208,15 @@ public class MarketplaceController {
         dto.setCreatedAt(item.getCreatedAt());
         dto.setUpdatedAt(item.getUpdatedAt());
 
-        // Set seller info
-        Optional<UserEntity> sellerOpt = userRepository.findById(item.getUserId());
-        if (sellerOpt.isPresent()) {
-            UserEntity seller = sellerOpt.get();
-            com.anonymous.wall.model.ItemDTOSeller sellerDTO = new com.anonymous.wall.model.ItemDTOSeller();
-            sellerDTO.setId(seller.getId().toString());
-            sellerDTO.setEmail(seller.getEmail());
-            dto.setSeller(sellerDTO);
+        // Set author info (following PostDTO pattern)
+        com.anonymous.wall.model.ItemDTOAuthor author = new com.anonymous.wall.model.ItemDTOAuthor();
+        author.setId(item.getUserId().toString());
+        // Get user email for author
+        Optional<UserEntity> userOpt = userRepository.findById(item.getUserId());
+        if (userOpt.isPresent()) {
+            author.setEmail(userOpt.get().getEmail());
         }
+        dto.setAuthor(author);
 
         return dto;
     }

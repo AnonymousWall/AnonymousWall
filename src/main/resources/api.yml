@@ -882,6 +882,31 @@ paths:
           description: Unauthorized - authentication required
 
   /marketplace/{itemId}:
+    get:
+      tags: [marketplace]
+      summary: Get marketplace item by ID
+      description: Retrieve a specific marketplace item by its ID
+      operationId: getItem
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: itemId
+          required: true
+          schema:
+            type: string
+          description: ID of the marketplace item to retrieve
+      responses:
+        "200":
+          description: Item retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ItemDTO"
+        "401":
+          description: Unauthorized - authentication required
+        "404":
+          description: Item not found
     put:
       tags: [marketplace]
       summary: Update marketplace item
@@ -2396,7 +2421,7 @@ components:
         sold:
           type: boolean
           default: false
-        seller:
+        author:
           type: object
           properties:
             id:
