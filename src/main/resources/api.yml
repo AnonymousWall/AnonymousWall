@@ -881,6 +881,43 @@ paths:
         "401":
           description: Unauthorized - authentication required
 
+  /marketplace/{itemId}:
+    put:
+      tags: [marketplace]
+      summary: Update marketplace item
+      description: Update an existing marketplace item (partial update supported)
+      operationId: updateItem
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: itemId
+          required: true
+          schema:
+            type: string
+          description: ID of the marketplace item to update
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateItemRequest"
+      responses:
+        "200":
+          description: Item updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ItemDTO"
+        "400":
+          description: Invalid request data
+        "401":
+          description: Unauthorized - authentication required
+        "403":
+          description: Forbidden - not the owner of the item
+        "404":
+          description: Item not found
+
   # =================== Coins ===================
   /coins/claim:
     post:
@@ -2314,6 +2351,31 @@ components:
           enum: [new, like-new, good, fair]
           description: Condition of the item
 
+    UpdateItemRequest:
+      type: object
+      description: Request body for updating a marketplace item. All fields are optional for partial updates.
+      properties:
+        title:
+          type: string
+          description: Item title
+        description:
+          type: string
+          description: Item description
+        price:
+          type: number
+          format: float
+          description: Item price
+        category:
+          type: string
+          description: Item category (e.g., books, electronics, furniture)
+        condition:
+          type: string
+          enum: [new, like-new, good, fair]
+          description: Condition of the item
+        sold:
+          type: boolean
+          description: Whether the item has been sold
+
     ItemDTO:
       type: object
       properties:
@@ -2331,6 +2393,9 @@ components:
         condition:
           type: string
           enum: [new, like-new, good, fair]
+        sold:
+          type: boolean
+          default: false
         seller:
           type: object
           properties:

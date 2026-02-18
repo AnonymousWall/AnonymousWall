@@ -576,4 +576,18 @@
         </createIndex>
     </changeSet>
 
+    <!-- ================= Marketplace Sold Column ================= -->
+    <changeSet id="13-add-marketplace-sold-column" author="copilot">
+        <comment>Add sold column to marketplace_items table to track if item has been sold</comment>
+        <addColumn tableName="marketplace_items">
+            <column name="sold" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+        <!-- Add index for filtering by sold status -->
+        <createIndex tableName="marketplace_items" indexName="idx_marketplace_sold">
+            <column name="sold"/>
+        </createIndex>
+    </changeSet>
+
 </databaseChangeLog>
