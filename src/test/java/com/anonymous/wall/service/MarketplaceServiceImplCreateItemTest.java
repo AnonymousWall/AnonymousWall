@@ -11,6 +11,7 @@ import jakarta.inject.Inject;
 import org.junit.jupiter.api.*;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -70,8 +71,8 @@ class MarketplaceServiceImplCreateItemTest {
             assertNotNull(result.getId());
             assertEquals("Test Item", result.getTitle());
             assertEquals("Description", result.getDescription());
-            // Use setScale for proper BigDecimal comparison with floating point
-            assertEquals(0, new BigDecimal("99.99").compareTo(result.getPrice()));
+            // Compare with 2 decimal places (matching DECIMAL(10,2) in database)
+            assertEquals(0, new BigDecimal("99.99").compareTo(result.getPrice().setScale(2, RoundingMode.HALF_UP)));
             assertEquals("Electronics", result.getCategory());
             assertEquals("new", result.getCondition());
             assertFalse(result.isSold());
