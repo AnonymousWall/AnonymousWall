@@ -782,6 +782,128 @@ Response: 201 Created
 - Reporting a comment increments the report count for the comment author
 - Duplicate reports by the same user will return: `400 Bad Request`
 
+### Internship Endpoints
+
+#### 1. Create Internship Posting
+```http
+POST /api/v1/internships
+Authorization: Bearer {jwt-token}
+Content-Type: application/json
+
+{
+    "company": "Google",
+    "role": "Software Engineer Intern",
+    "salary": "$8000/month",
+    "location": "Mountain View, CA",
+    "description": "Work on cutting-edge projects with experienced mentors",
+    "deadline": "2026-06-30"
+}
+
+Response: 201 Created
+{
+    "id": "uuid",
+    "company": "Google",
+    "role": "Software Engineer Intern",
+    "salary": "$8000/month",
+    "location": "Mountain View, CA",
+    "description": "Work on cutting-edge projects with experienced mentors",
+    "deadline": "2026-06-30",
+    "author": {
+        "id": "uuid"
+    },
+    "createdAt": "2026-02-18T...",
+    "updatedAt": "2026-02-18T..."
+}
+```
+
+**Request Validation:**
+- `company` is **required** (cannot be null, empty, or whitespace-only)
+- `company` maximum length: **255 characters**
+- `role` is **required** (cannot be null, empty, or whitespace-only)
+- `role` maximum length: **255 characters**
+- `salary` is optional (VARCHAR(50))
+- `location` is optional (VARCHAR(255))
+- `description` is optional (TEXT)
+- `deadline` is optional (DATE format: YYYY-MM-DD)
+
+**Error Responses:**
+```json
+// Missing or empty company
+400 Bad Request
+{
+    "error": "Company is required"
+}
+
+// Company exceeds 255 characters
+400 Bad Request
+{
+    "error": "Company name cannot exceed 255 characters"
+}
+
+// Missing or empty role
+400 Bad Request
+{
+    "error": "Role is required"
+}
+
+// Role exceeds 255 characters
+400 Bad Request
+{
+    "error": "Role cannot exceed 255 characters"
+}
+
+// User not found
+400 Bad Request
+{
+    "error": "User not found"
+}
+```
+
+#### 2. List Internship Postings
+```http
+GET /api/v1/internships?page=1&limit=20
+Authorization: Bearer {jwt-token}
+
+Response: 200 OK
+{
+    "data": [
+        {
+            "id": "uuid",
+            "company": "Google",
+            "role": "Software Engineer Intern",
+            "salary": "$8000/month",
+            "location": "Mountain View, CA",
+            "description": "Work on cutting-edge projects with experienced mentors",
+            "deadline": "2026-06-30",
+            "author": {
+                "id": "uuid"
+            },
+            "createdAt": "2026-02-18T...",
+            "updatedAt": "2026-02-18T..."
+        }
+    ],
+    "pagination": {
+        "page": 1,
+        "limit": 20,
+        "total": 50,
+        "totalPages": 3
+    }
+}
+```
+
+**Query Parameters:**
+- `page` (default: 1): Page number for pagination (1-based indexing)
+- `limit` (default: 20): Number of items per page (min: 1, max: 100)
+
+**Response Details:**
+- Internships are sorted by **created_at** in **descending order** (newest first)
+- Returns paginated results with pagination metadata
+
+**Notes:**
+- Authentication is required for both endpoints
+- Users can view all internship postings regardless of who posted them
+- Internships are public to all authenticated users on the platform
+
 ### Marketplace Endpoints
 
 #### 1. Create Marketplace Item
