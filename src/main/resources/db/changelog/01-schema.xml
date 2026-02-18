@@ -172,6 +172,9 @@
             </column>
             <column name="category" type="VARCHAR(100)"/>
             <column name="condition" type="VARCHAR(20)"/>
+            <column name="sold" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
             <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP"/>
             <column name="updated_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP"/>
         </createTable>
@@ -183,6 +186,9 @@
         </createIndex>
         <createIndex tableName="marketplace_items" indexName="idx_marketplace_price">
             <column name="price"/>
+        </createIndex>
+        <createIndex tableName="marketplace_items" indexName="idx_marketplace_sold">
+            <column name="sold"/>
         </createIndex>
     </changeSet>
 
@@ -573,20 +579,6 @@
         <createIndex tableName="chat_messages" indexName="idx_chat_conversation_created_desc">
             <column name="conversation_id"/>
             <column name="created_at" descending="true"/>
-        </createIndex>
-    </changeSet>
-
-    <!-- ================= Marketplace Sold Column ================= -->
-    <changeSet id="13-add-marketplace-sold-column" author="copilot">
-        <comment>Add sold column to marketplace_items table to track if item has been sold</comment>
-        <addColumn tableName="marketplace_items">
-            <column name="sold" type="BOOLEAN" defaultValueBoolean="false">
-                <constraints nullable="false"/>
-            </column>
-        </addColumn>
-        <!-- Add index for filtering by sold status -->
-        <createIndex tableName="marketplace_items" indexName="idx_marketplace_sold">
-            <column name="sold"/>
         </createIndex>
     </changeSet>
 
