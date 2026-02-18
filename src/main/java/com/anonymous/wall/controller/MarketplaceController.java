@@ -211,11 +211,17 @@ public class MarketplaceController {
         // Set author info (following PostDTO pattern)
         com.anonymous.wall.model.ItemDTOAuthor author = new com.anonymous.wall.model.ItemDTOAuthor();
         author.setId(item.getUserId().toString());
-        // Get user email for author
+        
+        // Get user for author details
         Optional<UserEntity> userOpt = userRepository.findById(item.getUserId());
         if (userOpt.isPresent()) {
-            author.setEmail(userOpt.get().getEmail());
+            UserEntity user = userOpt.get();
+            author.setProfileName(user.getProfileName());
+        } else {
+            author.setProfileName("Anonymous");
         }
+        
+        author.setIsAnonymous(false); // Marketplace items are not anonymous
         dto.setAuthor(author);
 
         return dto;

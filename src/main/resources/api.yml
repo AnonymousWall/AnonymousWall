@@ -2426,9 +2426,12 @@ components:
           properties:
             id:
               type: string
-            email:
+            profileName:
               type: string
-              format: email
+              description: Profile name of the item author
+            isAnonymous:
+              type: boolean
+              description: Whether author is anonymous
         createdAt:
           type: string
           format: date-time
