@@ -46,7 +46,9 @@ public class MarketplaceServiceImpl implements MarketplaceService {
             throw new IllegalArgumentException("Title is required");
         }
 
-        if (request.getTitle().length() > 255) {
+        String trimmedTitle = request.getTitle().trim();
+        
+        if (trimmedTitle.length() > 255) {
             throw new IllegalArgumentException("Title cannot exceed 255 characters");
         }
 
@@ -70,7 +72,7 @@ public class MarketplaceServiceImpl implements MarketplaceService {
         // Create the item
         MarketplaceItem item = new MarketplaceItem();
         item.setUserId(userId);
-        item.setTitle(request.getTitle().trim());
+        item.setTitle(trimmedTitle);
         item.setDescription(request.getDescription() != null ? request.getDescription() : null);
         item.setPrice(price);
         item.setCategory(request.getCategory() != null ? request.getCategory() : null);

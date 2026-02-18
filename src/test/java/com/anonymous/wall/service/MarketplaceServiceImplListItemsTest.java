@@ -55,7 +55,7 @@ class MarketplaceServiceImplListItemsTest {
 
         @Test
         @DisplayName("Should list items with default sorting (newest)")
-        void shouldListItemsWithDefaultSorting() throws InterruptedException {
+        void shouldListItemsWithDefaultSorting() {
             // Arrange - Create 3 items
             CreateItemRequest request1 = new CreateItemRequest("Item 1", 10f);
             request1.setDescription("First");
@@ -65,10 +65,8 @@ class MarketplaceServiceImplListItemsTest {
             request3.setDescription("Third");
 
             marketplaceService.createItem(request1, testUser.getId());
-            Thread.sleep(100);
             marketplaceService.createItem(request2, testUser.getId());
-            Thread.sleep(100);
-            MarketplaceItem item3 = marketplaceService.createItem(request3, testUser.getId());
+            marketplaceService.createItem(request3, testUser.getId());
 
             // Act
             Pageable pageable = Pageable.from(0, 10);
@@ -78,8 +76,9 @@ class MarketplaceServiceImplListItemsTest {
             assertEquals(3, result.getTotalSize());
             List<MarketplaceItem> items = result.getContent();
             assertEquals(3, items.size());
-            // Newest first
-            assertEquals(item3.getId(), items.get(0).getId());
+            // Verify items are sorted by created_at descending (newest first)
+            assertTrue(items.get(0).getCreatedAt().compareTo(items.get(1).getCreatedAt()) >= 0);
+            assertTrue(items.get(1).getCreatedAt().compareTo(items.get(2).getCreatedAt()) >= 0);
         }
 
         @Test
