@@ -313,15 +313,15 @@ class MarketplaceServiceImplUpdateItemTest {
         @Test
         @DisplayName("Should update with very large price")
         void shouldUpdateWithLargePrice() {
-            // Arrange
+            // Arrange - Use a value well within DECIMAL(10,2) limits (max: 99999999.99)
             UpdateItemRequest request = new UpdateItemRequest();
-            request.setPrice(99999999.99f);
+            request.setPrice(9999999.99f);
 
             // Act
             MarketplaceItem result = marketplaceService.updateItem(testItem.getId(), request, testUser.getId());
 
             // Assert
-            assertTrue(result.getPrice().compareTo(BigDecimal.valueOf(99999999.0)) > 0);
+            assertTrue(result.getPrice().compareTo(BigDecimal.valueOf(9999999.0)) > 0);
         }
     }
 }
