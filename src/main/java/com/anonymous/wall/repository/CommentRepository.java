@@ -8,80 +8,42 @@ import io.micronaut.data.model.query.builder.sql.Dialect;
 import io.micronaut.data.repository.CrudRepository;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 @JdbcRepository(dialect = Dialect.MYSQL)
 public interface CommentRepository extends CrudRepository<Comment, UUID> {
 
-    /**
-     * Find all comments for a post
-     */
-    List<Comment> findByPostId(UUID postId);
+    // ===== Parent-based queries (replacing postId-based queries) =====
 
-    /**
-     * Find all non-hidden comments for a post
-     */
-    List<Comment> findByPostIdAndHiddenFalse(UUID postId);
+    List<Comment> findByParentTypeAndParentId(String parentType, UUID parentId);
+
+    List<Comment> findByParentTypeAndParentIdAndHiddenFalse(String parentType, UUID parentId);
 
     // ===== Sorting by Created Time (Default) =====
-    /**
-     * Find comments for a post with pagination, sorted by created time (newest first)
-     */
-    Page<Comment> findByPostIdOrderByCreatedAtDesc(UUID postId, Pageable pageable);
 
-    /**
-     * Find non-hidden comments for a post with pagination, sorted by created time (newest first)
-     */
-    Page<Comment> findByPostIdAndHiddenFalseOrderByCreatedAtDesc(UUID postId, Pageable pageable);
+    Page<Comment> findByParentTypeAndParentIdOrderByCreatedAtDesc(String parentType, UUID parentId, Pageable pageable);
 
-    /**
-     * Find comments for a post with pagination, sorted by created time (oldest first)
-     */
-    Page<Comment> findByPostIdOrderByCreatedAtAsc(UUID postId, Pageable pageable);
+    Page<Comment> findByParentTypeAndParentIdAndHiddenFalseOrderByCreatedAtDesc(String parentType, UUID parentId, Pageable pageable);
 
-    /**
-     * Find non-hidden comments for a post with pagination, sorted by created time (oldest first)
-     */
-    Page<Comment> findByPostIdAndHiddenFalseOrderByCreatedAtAsc(UUID postId, Pageable pageable);
+    Page<Comment> findByParentTypeAndParentIdOrderByCreatedAtAsc(String parentType, UUID parentId, Pageable pageable);
 
-    /**
-     * Find comments for a post with pagination (generic - for compatibility)
-     */
-    Page<Comment> findByPostId(UUID postId, Pageable pageable);
+    Page<Comment> findByParentTypeAndParentIdAndHiddenFalseOrderByCreatedAtAsc(String parentType, UUID parentId, Pageable pageable);
 
-    /**
-     * Find non-hidden comments for a post with pagination (generic)
-     */
-    Page<Comment> findByPostIdAndHiddenFalse(UUID postId, Pageable pageable);
+    Page<Comment> findByParentTypeAndParentId(String parentType, UUID parentId, Pageable pageable);
 
-    /**
-     * Count comments for a post
-     */
-    long countByPostId(UUID postId);
+    Page<Comment> findByParentTypeAndParentIdAndHiddenFalse(String parentType, UUID parentId, Pageable pageable);
 
-    /**
-     * Count non-hidden comments for a post
-     */
-    long countByPostIdAndHiddenFalse(UUID postId);
+    long countByParentTypeAndParentId(String parentType, UUID parentId);
 
-    /**
-     * Delete all comments for a post (useful for post deletion)
-     */
-    long deleteByPostId(UUID postId);
+    long countByParentTypeAndParentIdAndHiddenFalse(String parentType, UUID parentId);
 
-    /**
-     * Update a comment (used for hiding/unhiding)
-     */
+    long deleteByParentTypeAndParentId(String parentType, UUID parentId);
+
     Comment update(Comment comment);
 
-    /**
-     * Find all comments for a post (including hidden ones)
-     */
-    List<Comment> findAllByPostId(UUID postId);
+    List<Comment> findAllByParentTypeAndParentId(String parentType, UUID parentId);
 
-    void updateByPostId(UUID postId, boolean hidden);
-//    void updateHiddenTrueByPostId(Long postId);
+    void updateByParentTypeAndParentId(String parentType, UUID parentId, boolean hidden);
 
     // ===== User's Own Comments =====
     /**
