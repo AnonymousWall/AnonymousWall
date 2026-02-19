@@ -1,13 +1,10 @@
 package com.anonymous.wall.service;
 
-import com.anonymous.wall.entity.Comment;
-import com.anonymous.wall.entity.Post;
-import com.anonymous.wall.entity.UserEntity;
+import com.anonymous.wall.entity.*;
+import com.anonymous.wall.model.CommentParentType;
 import com.anonymous.wall.model.CreateCommentRequest;
 import com.anonymous.wall.model.SortBy;
-import com.anonymous.wall.repository.CommentRepository;
-import com.anonymous.wall.repository.PostRepository;
-import com.anonymous.wall.repository.UserRepository;
+import com.anonymous.wall.repository.*;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
 import io.micronaut.transaction.annotation.Transactional;
@@ -17,7 +14,6 @@ import jakarta.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -33,31 +29,89 @@ public class CommentsServiceImpl implements CommentsService {
     private PostRepository postRepository;
 
     @Inject
+    private InternshipRepository internshipRepository;
+
+    @Inject
+    private MarketplaceItemRepository marketplaceItemRepository;
+
+    @Inject
     private UserRepository userRepository;
 
     @Inject
-    private com.anonymous.wall.repository.CommentReportRepository commentReportRepository;
+    private CommentReportRepository commentReportRepository;
 
     /**
-     * Add a comment to a post
-     * For campus posts: only users from the same school can comment
-     * For national posts: all authenticated users can comment
-     * Uses atomic operations to increment comment count
+     * Resolve a Commentable entity by its parent type and ID.
+     */
+    private Commentable resolveParent(CommentParentType parentType, UUID parentId) {
+        return switch (parentType) {
+            case POST -> postRepository.findById(parentId)
+                    .orElseThrow(() -> new IllegalArgumentException("Post not found"));
+            case INTERNSHIP -> internshipRepository.findById(parentId)
+                    .orElseThrow(() -> new IllegalArgumentException("Internship not found"));
+            case MARKETPLACE -> marketplaceItemRepository.findById(parentId)
+                    .orElseThrow(() -> new IllegalArgumentException("Marketplace item not found"));
+        };
+    }
+
+    /**
+     * Save the updated parent entity back to its repository after comment count changes.
+     */
+    private void saveParent(CommentParentType parentType, Commentable parent) {
+        switch (parentType) {
+            case POST -> postRepository.update((Post) parent);
+            case INTERNSHIP -> internshipRepository.update((Internship) parent);
+            case MARKETPLACE -> marketplaceItemRepository.update((MarketplaceItem) parent);
+        }
+    }
+
+    /**
+     * Validate that a user has visibility/permission for a parent entity.
+     * Campus entities: only visible/actionable by users from the same school.
+     * National entities: visible/actionable by all users.
+     */
+    private void validateParentVisibility(Commentable parent, UUID userId) {
+        if (parent.isHidden()) {
+            throw new IllegalArgumentException("Post not found");
+        }
+        if ("national".equals(parent.getWall())) {
+            log.debug("Validating national entity access for user: {}", userId);
+            return;
+        }
+        if ("campus".equals(parent.getWall())) {
+            log.debug("Validating campus entity access for user: {}, entitySchoolDomain: {}", userId, parent.getSchoolDomain());
+            Optional<UserEntity> userOpt = userRepository.findById(userId);
+            if (userOpt.isEmpty()) {
+                log.warn("User not found during visibility check: {}", userId);
+                throw new IllegalArgumentException("User not found");
+            }
+            UserEntity user = userOpt.get();
+            String userSchoolDomain = user.getSchoolDomain();
+            if (userSchoolDomain == null || userSchoolDomain.trim().isEmpty()) {
+                log.warn("User has no school domain, cannot access campus content: {}", userId);
+                throw new IllegalArgumentException("You do not have access to campus posts");
+            }
+            if (!userSchoolDomain.equals(parent.getSchoolDomain())) {
+                log.warn("School domain mismatch - user: {}, userDomain: {}, entityDomain: {}", userId, userSchoolDomain, parent.getSchoolDomain());
+                throw new IllegalArgumentException("You do not have access to posts from other schools");
+            }
+            log.debug("User validated for campus entity access: {}", userId);
+        }
+    }
+
+    /**
+     * Add a comment to a parent entity (post, internship, or marketplace item).
+     * For campus entities: only users from the same school can comment.
+     * For national entities: all authenticated users can comment.
      */
     @Override
     @Transactional
     @Retryable(attempts = "3", delay = "500ms")
-    public Comment addComment(UUID postId, CreateCommentRequest request, UUID userId) {
-        // Verify post exists
-        Optional<Post> postOpt = postRepository.findById(postId);
-        if (postOpt.isEmpty()) {
-            throw new IllegalArgumentException("Post not found");
-        }
-
-        Post post = postOpt.get();
+    public Comment addComment(CommentParentType parentType, UUID parentId, CreateCommentRequest request, UUID userId) {
+        Commentable parent = resolveParent(parentType, parentId);
 
         // Validate visibility and permission
-        validatePostVisibility(post, userId);
+        validateParentVisibility(parent, userId);
 
         if (request.getText() == null || request.getText().trim().isEmpty()) {
             throw new IllegalArgumentException("Comment text cannot be empty");
@@ -73,68 +127,61 @@ public class CommentsServiceImpl implements CommentsService {
             throw new IllegalArgumentException("User not found");
         }
 
-        Comment comment = new Comment(postId, userId, request.getText());
+        Comment comment = new Comment(parentId, parentType.name(), userId, request.getText());
         comment.setProfileName(userOpt.get().getProfileName());
         Comment savedComment = commentRepository.save(comment);
 
-        // Atomically increment comment count on post
-        post.incrementCommentCount();
-        postRepository.update(post);
+        // Atomically increment comment count on parent
+        parent.incrementCommentCount();
+        saveParent(parentType, parent);
 
-        log.info("Comment added: id={}, postId={}, user={}, newCommentCount={}",
-            savedComment.getId(), postId, userId, post.getCommentCount());
+        log.info("Comment added: id={}, parentType={}, parentId={}, user={}, newCommentCount={}",
+            savedComment.getId(), parentType, parentId, userId, parent.getCommentCount());
         return savedComment;
     }
 
     /**
-     * Get comments for a post with pagination and sorting
+     * Get comments for a parent entity with pagination and sorting.
      */
     @Override
-    public Page<Comment> getCommentsWithPagination(UUID postId, Pageable pageable, SortBy sortBy) {
+    public Page<Comment> getCommentsWithPagination(CommentParentType parentType, UUID parentId, Pageable pageable, SortBy sortBy) {
         if (sortBy == null) {
-            sortBy = SortBy.NEWEST; // Default sorting
+            sortBy = SortBy.NEWEST;
         }
 
-        log.debug("Fetching comments for post: {}, page: {}, limit: {}, sort: {}", postId, pageable.getNumber() + 1, pageable.getSize(), sortBy);
+        String parentTypeStr = parentType.name();
+        log.debug("Fetching comments for {}: {}, page: {}, limit: {}, sort: {}", parentType, parentId, pageable.getNumber() + 1, pageable.getSize(), sortBy);
 
-        // Comments only support sorting by created time
         Page<Comment> comments = switch (sortBy) {
-            case NEWEST, MOST_LIKED, MOST_COMMENTED -> commentRepository.findByPostIdAndHiddenFalseOrderByCreatedAtDesc(postId, pageable);
-            case OLDEST, LEAST_LIKED, LEAST_COMMENTED -> commentRepository.findByPostIdAndHiddenFalseOrderByCreatedAtAsc(postId, pageable);
+            case NEWEST, MOST_LIKED, MOST_COMMENTED -> commentRepository.findByParentTypeAndParentIdAndHiddenFalseOrderByCreatedAtDesc(parentTypeStr, parentId, pageable);
+            case OLDEST, LEAST_LIKED, LEAST_COMMENTED -> commentRepository.findByParentTypeAndParentIdAndHiddenFalseOrderByCreatedAtAsc(parentTypeStr, parentId, pageable);
         };
 
-        log.info("Retrieved {} comments for post: {}, sort: {}, total: {}", comments.getNumberOfElements(), postId, sortBy, comments.getTotalSize());
+        log.info("Retrieved {} comments for {} {}, sort: {}, total: {}", comments.getNumberOfElements(), parentType, parentId, sortBy, comments.getTotalSize());
         return comments;
     }
 
     /**
-     * Hide a comment (soft-delete)
-     * Only the comment author can hide their own comment
-     * Decrements the comment count on the post (soft-delete appears as deletion to user)
+     * Hide a comment (soft-delete).
+     * Only the comment author can hide their own comment.
      */
     @Override
     @Transactional
     @Retryable(attempts = "3", delay = "500ms")
-    public Comment hideComment(UUID postId, UUID commentId, UUID userId) {
-        // Verify post exists
-        Optional<Post> postOpt = postRepository.findById(postId);
-        if (postOpt.isEmpty()) {
-            throw new IllegalArgumentException("Post not found");
-        }
-
-        Post post = postOpt.get();
+    public Comment hideComment(CommentParentType parentType, UUID parentId, UUID commentId, UUID userId) {
+        Commentable parent = resolveParent(parentType, parentId);
 
         // Validate visibility and permission
-        validatePostVisibility(post, userId);
+        validateParentVisibility(parent, userId);
 
-        // Verify comment exists and belongs to this post
+        // Verify comment exists and belongs to this parent
         Optional<Comment> commentOpt = commentRepository.findById(commentId);
         if (commentOpt.isEmpty()) {
             throw new IllegalArgumentException("Comment not found");
         }
 
         Comment comment = commentOpt.get();
-        if (!comment.getPostId().equals(postId)) {
+        if (!comment.getParentId().equals(parentId)) {
             throw new IllegalArgumentException("Comment does not belong to this post");
         }
 
@@ -152,43 +199,36 @@ public class CommentsServiceImpl implements CommentsService {
         comment.setHidden(true);
         Comment updatedComment = commentRepository.update(comment);
 
-        // Atomically decrement comment count on post (within same transaction)
-        post.decrementCommentCount();
-        postRepository.update(post);
+        // Atomically decrement comment count on parent
+        parent.decrementCommentCount();
+        saveParent(parentType, parent);
 
-        log.info("Comment hidden: id={}, postId={}, user={}, newCommentCount={}",
-            commentId, postId, userId, post.getCommentCount());
+        log.info("Comment hidden: id={}, parentType={}, parentId={}, user={}, newCommentCount={}",
+            commentId, parentType, parentId, userId, parent.getCommentCount());
         return updatedComment;
     }
 
     /**
-     * Unhide a comment (undo soft-delete)
-     * Only the comment author can unhide their own comment
-     * Increments the comment count on the post (restore from deletion)
+     * Unhide a comment (undo soft-delete).
+     * Only the comment author can unhide their own comment.
      */
     @Override
     @Transactional
     @Retryable(attempts = "3", delay = "500ms")
-    public Comment unhideComment(UUID postId, UUID commentId, UUID userId) {
-        // Verify post exists
-        Optional<Post> postOpt = postRepository.findById(postId);
-        if (postOpt.isEmpty()) {
-            throw new IllegalArgumentException("Post not found");
-        }
-
-        Post post = postOpt.get();
+    public Comment unhideComment(CommentParentType parentType, UUID parentId, UUID commentId, UUID userId) {
+        Commentable parent = resolveParent(parentType, parentId);
 
         // Validate visibility and permission
-        validatePostVisibility(post, userId);
+        validateParentVisibility(parent, userId);
 
-        // Verify comment exists and belongs to this post
+        // Verify comment exists and belongs to this parent
         Optional<Comment> commentOpt = commentRepository.findById(commentId);
         if (commentOpt.isEmpty()) {
             throw new IllegalArgumentException("Comment not found");
         }
 
         Comment comment = commentOpt.get();
-        if (!comment.getPostId().equals(postId)) {
+        if (!comment.getParentId().equals(parentId)) {
             throw new IllegalArgumentException("Comment does not belong to this post");
         }
 
@@ -206,68 +246,27 @@ public class CommentsServiceImpl implements CommentsService {
         comment.setHidden(false);
         Comment updatedComment = commentRepository.update(comment);
 
-        // Atomically increment comment count on post (within same transaction)
-        post.incrementCommentCount();
-        postRepository.update(post);
+        // Atomically increment comment count on parent
+        parent.incrementCommentCount();
+        saveParent(parentType, parent);
 
-        log.info("Comment unhidden: id={}, postId={}, user={}, newCommentCount={}",
-            commentId, postId, userId, post.getCommentCount());
+        log.info("Comment unhidden: id={}, parentType={}, parentId={}, user={}, newCommentCount={}",
+            commentId, parentType, parentId, userId, parent.getCommentCount());
         return updatedComment;
     }
 
     /**
-     * Validate that a user has visibility/permission for a post
-     * Campus posts: only visible/actionable by users from the same school
-     * National posts: visible/actionable by all users
-     */
-    private void validatePostVisibility(Post post, UUID userId) {
-        if (post.isHidden()) {
-            throw new IllegalArgumentException("Post not found");
-        }
-        if (post.getWall().equals("national")) {
-            log.debug("Validating national post access for user: {}", userId);
-            return;
-        }
-        if (post.getWall().equals("campus")) {
-            log.debug("Validating campus post access for user: {}, postSchoolDomain: {}", userId, post.getSchoolDomain());
-            Optional<UserEntity> userOpt = userRepository.findById(userId);
-            if (userOpt.isEmpty()) {
-                log.warn("User not found during visibility check: {}", userId);
-                throw new IllegalArgumentException("User not found");
-            }
-            UserEntity user = userOpt.get();
-            String userSchoolDomain = user.getSchoolDomain();
-            if (userSchoolDomain == null || userSchoolDomain.trim().isEmpty()) {
-                log.warn("User has no school domain, cannot access campus posts: {}", userId);
-                throw new IllegalArgumentException("You do not have access to campus posts");
-            }
-            if (!userSchoolDomain.equals(post.getSchoolDomain())) {
-                log.warn("School domain mismatch - user: {}, userDomain: {}, postDomain: {}", userId, userSchoolDomain, post.getSchoolDomain());
-                throw new IllegalArgumentException("You do not have access to posts from other schools");
-            }
-            log.debug("User validated for campus post access: {}", userId);
-        }
-    }
-
-    /**
-     * Get user's own comments with pagination and sorting
-     * This is optimized with a composite index on (user_id, is_hidden, created_at)
-     * Performs a single query instead of N+1 queries
-     * Hidden comments are excluded (soft-deleted)
+     * Get user's own comments with pagination and sorting.
      */
     @Override
     public Page<Comment> getUserOwnComments(UUID userId, Pageable pageable, SortBy sortBy) {
         if (sortBy == null) {
-            sortBy = SortBy.NEWEST; // Default sorting
+            sortBy = SortBy.NEWEST;
         }
 
         log.debug("Fetching user's own comments: userId={}, page={}, limit={}, sort={}", 
             userId, pageable.getNumber() + 1, pageable.getSize(), sortBy);
 
-        // Comments only support sorting by created time
-        // MOST_LIKED/LEAST_LIKED and MOST_COMMENTED/LEAST_COMMENTED are mapped to NEWEST/OLDEST for consistency with API
-        // since comments don't have a like count field or comment count field
-        // Only non-hidden comments are returned
         Page<Comment> comments = switch (sortBy) {
             case NEWEST, MOST_LIKED, MOST_COMMENTED -> commentRepository.findByUserIdAndHiddenFalseOrderByCreatedAtDesc(userId, pageable);
             case OLDEST, LEAST_LIKED, LEAST_COMMENTED -> commentRepository.findByUserIdAndHiddenFalseOrderByCreatedAtAsc(userId, pageable);
@@ -297,7 +296,7 @@ public class CommentsServiceImpl implements CommentsService {
         }
 
         // Create the report
-        com.anonymous.wall.entity.CommentReport report = new com.anonymous.wall.entity.CommentReport(commentId, reporterUserId, comment.getUserId(), reason);
+        CommentReport report = new CommentReport(commentId, reporterUserId, comment.getUserId(), reason);
         commentReportRepository.save(report);
 
         // Increment report count for the comment author

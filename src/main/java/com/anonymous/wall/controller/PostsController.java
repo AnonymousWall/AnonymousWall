@@ -188,7 +188,7 @@ public class PostsController {
             UUID userId = getUserIdFromRequest(httpRequest);
             log.info("POST /posts/{}/comments - Adding comment, user={}, text_length={}", postId, userId, request.getText().length());
 
-            Comment comment = commentsService.addComment(postId, request, userId);
+            Comment comment = commentsService.addComment(CommentParentType.POST, postId, request, userId);
             CommentDTO dto = mapCommentToDTO(comment);
 
             log.info("POST /posts/{}/comments - Comment added successfully, commentId={}", postId, dto.getId());
@@ -235,7 +235,7 @@ public class PostsController {
 
             Pageable pageable = Pageable.from(page - 1, limit);
             com.anonymous.wall.model.SortBy sortBy = com.anonymous.wall.model.SortBy.parse(sort);
-            Page<Comment> commentPage = commentsService.getCommentsWithPagination(postId, pageable, sortBy);
+            Page<Comment> commentPage = commentsService.getCommentsWithPagination(CommentParentType.POST, postId, pageable, sortBy);
 
             List<CommentDTO> dtos = commentPage.getContent().stream()
                     .map(this::mapCommentToDTO)
@@ -312,7 +312,7 @@ public class PostsController {
             UUID userId = getUserIdFromRequest(httpRequest);
             log.info("PATCH /posts/{}/comments/{}/hide - Hiding comment, user={}", postId, commentId, userId);
 
-            commentsService.hideComment(postId, commentId, userId);
+            commentsService.hideComment(CommentParentType.POST, postId, commentId, userId);
 
             Map<String, String> response = new HashMap<>();
             response.put("message", "Comment hidden successfully");
@@ -349,7 +349,7 @@ public class PostsController {
             UUID userId = getUserIdFromRequest(httpRequest);
             log.info("PATCH /posts/{}/comments/{}/unhide - Unhiding comment, user={}", postId, commentId, userId);
 
-            commentsService.unhideComment(postId, commentId, userId);
+            commentsService.unhideComment(CommentParentType.POST, postId, commentId, userId);
 
             Map<String, String> response = new HashMap<>();
             response.put("message", "Comment unhidden successfully");
@@ -538,7 +538,7 @@ public class PostsController {
     private CommentDTO mapCommentToDTO(Comment comment) {
         CommentDTO dto = new CommentDTO();
         dto.setId(comment.getId());
-        dto.setPostId(comment.getPostId());
+        dto.setPostId(comment.getParentId());
         dto.setText(comment.getText());
         dto.setCreatedAt(comment.getCreatedAt());
 

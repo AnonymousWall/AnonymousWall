@@ -33,13 +33,13 @@ public class InternshipServiceImpl implements InternshipService {
     public Internship createInternship(CreateInternshipRequest request, UUID userId) {
         log.info("Creating internship for user {}", userId);
 
-        // Validate user exists
         Optional<UserEntity> userOpt = userRepository.findById(userId);
         if (userOpt.isEmpty()) {
             throw new IllegalArgumentException("User not found");
         }
 
-        // Validate required fields
+        UserEntity user = userOpt.get();
+
         if (request.getCompany() == null || request.getCompany().trim().isEmpty()) {
             throw new IllegalArgumentException("Company is required");
         }
@@ -59,20 +59,40 @@ public class InternshipServiceImpl implements InternshipService {
             throw new IllegalArgumentException("Role cannot exceed 255 characters");
         }
 
-        // Create the internship
+        // Determine wall: if wall is not specified in request, default to campus
+        String wall = "campus";
+        if (request.getWall() != null) {
+            String wallStr = request.getWall().getValue();
+            if ("national".equals(wallStr) || "campus".equals(wallStr)) {
+                wall = wallStr;
+            }
+        }
+
+        // For campus posts, validate school domain
+        String schoolDomain = null;
+        if ("campus".equals(wall)) {
+            schoolDomain = user.getSchoolDomain();
+            if (schoolDomain == null || schoolDomain.trim().isEmpty()) {
+                throw new IllegalArgumentException("You must have a school domain to post to campus wall");
+            }
+        }
+
         Internship internship = new Internship();
         internship.setUserId(userId);
+        internship.setProfileName(user.getProfileName());
         internship.setCompany(trimmedCompany);
         internship.setRole(trimmedRole);
         internship.setSalary(request.getSalary());
         internship.setLocation(request.getLocation());
         internship.setDescription(request.getDescription());
         internship.setDeadline(request.getDeadline());
+        internship.setWall(wall);
+        internship.setSchoolDomain(schoolDomain);
         internship.setCreatedAt(OffsetDateTime.now());
         internship.setUpdatedAt(OffsetDateTime.now());
 
         Internship saved = internshipRepository.save(internship);
-        log.info("Created internship {} for user {}", saved.getId(), userId);
+        log.info("Created internship {} for user {}, wall={}, schoolDomain={}", saved.getId(), userId, wall, schoolDomain);
         return saved;
     }
 
@@ -84,7 +104,6 @@ public class InternshipServiceImpl implements InternshipService {
             sortBy = "newest";
         }
 
-        // Only show non-hidden internships
         switch (sortBy.toLowerCase()) {
             case "oldest":
                 return internshipRepository.findByHiddenOrderByCreatedAtAsc(false, pageable);
@@ -95,10 +114,67 @@ public class InternshipServiceImpl implements InternshipService {
     }
 
     @Override
+    public Page<Internship> getInternshipsByWall(String wall, Pageable pageable, UUID userId, String schoolDomain, String sortBy) {
+        log.info("Listing internships by wall={}, sortBy={}, schoolDomain={}", wall, sortBy, schoolDomain);
+
+        if (sortBy == null) {
+            sortBy = "newest";
+        }
+
+        if ("campus".equals(wall)) {
+            if (schoolDomain == null || schoolDomain.trim().isEmpty()) {
+                throw new IllegalArgumentException("School domain is required to view campus internships");
+            }
+            switch (sortBy.toLowerCase()) {
+                case "oldest":
+                    return internshipRepository.findByWallAndSchoolDomainAndHiddenFalseOrderByCreatedAtAsc("campus", schoolDomain, pageable);
+                case "newest":
+                default:
+                    return internshipRepository.findByWallAndSchoolDomainAndHiddenFalseOrderByCreatedAtDesc("campus", schoolDomain, pageable);
+            }
+        } else {
+            // National wall
+            switch (sortBy.toLowerCase()) {
+                case "oldest":
+                    return internshipRepository.findByWallAndHiddenFalseOrderByCreatedAtAsc("national", pageable);
+                case "newest":
+                default:
+                    return internshipRepository.findByWallAndHiddenFalseOrderByCreatedAtDesc("national", pageable);
+            }
+        }
+    }
+
+    @Override
     public Internship getInternship(UUID internshipId) {
         log.info("Getting internship {}", internshipId);
         return internshipRepository.findById(internshipId)
                 .orElseThrow(() -> new IllegalArgumentException("Internship not found"));
+    }
+
+    @Override
+    public Internship getInternship(UUID internshipId, UUID userId) {
+        log.info("Getting internship {} for user {}", internshipId, userId);
+        Internship internship = internshipRepository.findById(internshipId)
+                .orElseThrow(() -> new IllegalArgumentException("Internship not found"));
+
+        if (internship.isHidden()) {
+            throw new IllegalArgumentException("Internship not found");
+        }
+
+        // Validate campus access
+        if ("campus".equals(internship.getWall())) {
+            Optional<UserEntity> userOpt = userRepository.findById(userId);
+            if (userOpt.isEmpty()) {
+                throw new IllegalArgumentException("User not found");
+            }
+            UserEntity user = userOpt.get();
+            String userSchoolDomain = user.getSchoolDomain();
+            if (userSchoolDomain == null || !userSchoolDomain.equals(internship.getSchoolDomain())) {
+                throw new IllegalArgumentException("You do not have access to posts from other schools");
+            }
+        }
+
+        return internship;
     }
 
     @Override
@@ -113,7 +189,6 @@ public class InternshipServiceImpl implements InternshipService {
 
         Internship internship = internshipOpt.get();
 
-        // Check ownership
         if (!internship.getUserId().equals(userId)) {
             throw new IllegalArgumentException("You can only hide your own internship postings");
         }
@@ -136,7 +211,6 @@ public class InternshipServiceImpl implements InternshipService {
 
         Internship internship = internshipOpt.get();
 
-        // Check ownership
         if (!internship.getUserId().equals(userId)) {
             throw new IllegalArgumentException("You can only unhide your own internship postings");
         }

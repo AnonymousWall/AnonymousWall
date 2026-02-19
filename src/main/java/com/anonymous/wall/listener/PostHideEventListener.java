@@ -39,7 +39,7 @@ public class PostHideEventListener implements ApplicationEventListener<PostHidde
                 event.getPostId(), event.getUserId());
         
         try {
-            commentRepository.updateByPostId(event.getPostId(), true);
+            commentRepository.updateByParentTypeAndParentId("POST", event.getPostId(), true);
             log.debug("Hidden all comments for postId={}", event.getPostId());
         } catch (Exception e) {
             log.error("Failed to hide comments for postId={}: {}", 

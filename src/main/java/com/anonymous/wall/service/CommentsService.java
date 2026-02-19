@@ -1,44 +1,40 @@
 package com.anonymous.wall.service;
 
 import com.anonymous.wall.entity.Comment;
+import com.anonymous.wall.model.CommentParentType;
 import com.anonymous.wall.model.CreateCommentRequest;
 import com.anonymous.wall.model.SortBy;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
 
-import java.util.List;
 import java.util.UUID;
 
 public interface CommentsService {
     /**
-     * Add a comment to a post
+     * Add a comment to a parent entity (post, internship, or marketplace item)
      */
-    Comment addComment(UUID postId, CreateCommentRequest request, UUID userId);
+    Comment addComment(CommentParentType parentType, UUID parentId, CreateCommentRequest request, UUID userId);
 
     /**
-     * Get comments for a post with pagination and sorting
+     * Get comments for a parent entity with pagination and sorting
      */
-    Page<Comment> getCommentsWithPagination(UUID postId, Pageable pageable, SortBy sortBy);
+    Page<Comment> getCommentsWithPagination(CommentParentType parentType, UUID parentId, Pageable pageable, SortBy sortBy);
 
     /**
      * Hide a comment (soft-delete)
      * Only the comment author can hide their own comment
      */
-    Comment hideComment(UUID postId, UUID commentId, UUID userId);
+    Comment hideComment(CommentParentType parentType, UUID parentId, UUID commentId, UUID userId);
 
     /**
      * Unhide a comment (undo soft-delete)
      * Only the comment author can unhide their own comment
      */
-    Comment unhideComment(UUID postId, UUID commentId, UUID userId);
+    Comment unhideComment(CommentParentType parentType, UUID parentId, UUID commentId, UUID userId);
 
     /**
      * Get user's own comments with pagination and sorting
      * Hidden comments are excluded (soft-deleted comments are not shown)
-     * @param userId User ID
-     * @param pageable Pagination settings
-     * @param sortBy Sort order (NEWEST or OLDEST)
-     * @return Page of non-hidden comments
      */
     Page<Comment> getUserOwnComments(UUID userId, Pageable pageable, SortBy sortBy);
 
