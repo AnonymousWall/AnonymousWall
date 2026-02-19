@@ -539,6 +539,9 @@ public class PostsController {
         CommentDTO dto = new CommentDTO();
         dto.setId(comment.getId());
         dto.setPostId(comment.getParentId());
+        if (comment.getParentType() != null) {
+            dto.setParentType(CommentDTOParentType.valueOf(comment.getParentType()));
+        }
         dto.setText(comment.getText());
         dto.setCreatedAt(comment.getCreatedAt());
 

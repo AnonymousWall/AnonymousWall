@@ -1,11 +1,11 @@
 package com.anonymous.wall.controller;
 
+import com.anonymous.wall.entity.Comment;
 import com.anonymous.wall.entity.Internship;
 import com.anonymous.wall.entity.UserEntity;
-import com.anonymous.wall.model.CreateInternshipRequest;
-import com.anonymous.wall.model.InternshipDTO;
-import com.anonymous.wall.model.InternshipDTOAuthor;
+import com.anonymous.wall.model.*;
 import com.anonymous.wall.repository.UserRepository;
+import com.anonymous.wall.service.CommentsService;
 import com.anonymous.wall.service.InternshipService;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
@@ -35,16 +35,16 @@ public class InternshipController {
     private InternshipService internshipService;
 
     @Inject
+    private CommentsService commentsService;
+
+    @Inject
     private UserRepository userRepository;
 
-    // Helper to extract user ID from Principal
     private UUID getUserIdFromRequest(HttpRequest<?> request) {
         Optional<Principal> principalOpt = request.getUserPrincipal();
-
         if (principalOpt.isEmpty()) {
             throw new IllegalArgumentException("User not authenticated");
         }
-
         String principalName = principalOpt.get().getName();
         try {
             return UUID.fromString(principalName);
@@ -53,20 +53,28 @@ public class InternshipController {
         }
     }
 
-    /**
-     * POST /internships
-     * Create a new internship posting
-     */
+    private String getSchoolDomainFromRequest(HttpRequest<?> request) {
+        Optional<Principal> principalOpt = request.getUserPrincipal();
+        if (principalOpt.isEmpty()) {
+            return null;
+        }
+        Principal principal = principalOpt.get();
+        if (principal instanceof io.micronaut.security.authentication.Authentication) {
+            io.micronaut.security.authentication.Authentication auth = (io.micronaut.security.authentication.Authentication) principal;
+            Object schoolDomainObj = auth.getAttributes().get("schoolDomain");
+            return schoolDomainObj != null ? schoolDomainObj.toString() : null;
+        }
+        return null;
+    }
+
     @Post
     @Secured(SecurityRule.IS_AUTHENTICATED)
     public HttpResponse<Object> createInternship(@Body CreateInternshipRequest request, HttpRequest<?> httpRequest) {
         try {
             UUID userId = getUserIdFromRequest(httpRequest);
             log.info("POST /internships - Creating new internship, user={}, company={}", userId, request.getCompany());
-
             Internship internship = internshipService.createInternship(request, userId);
             InternshipDTO dto = mapInternshipToDTO(internship);
-
             log.info("POST /internships - Internship created successfully, internshipId={}", dto.getId());
             return HttpResponse.created(dto);
         } catch (IllegalArgumentException e) {
@@ -78,27 +86,25 @@ public class InternshipController {
         }
     }
 
-    /**
-     * GET /internships
-     * List internship postings with optional pagination and sorting
-     */
     @Get
     @Secured(SecurityRule.IS_AUTHENTICATED)
     public HttpResponse<Object> listInternships(
+            @QueryValue(defaultValue = "campus") String wall,
             @QueryValue(defaultValue = "1") int page,
             @QueryValue(defaultValue = "20") int limit,
             @QueryValue(defaultValue = "newest") String sortBy,
             HttpRequest<?> httpRequest) {
         try {
             UUID userId = getUserIdFromRequest(httpRequest);
-            log.info("GET /internships - Listing internships, user={}, page={}, limit={}, sortBy={}", 
-                    userId, page, limit, sortBy);
+            String schoolDomain = getSchoolDomainFromRequest(httpRequest);
+            log.info("GET /internships - Listing internships, user={}, wall={}, page={}, limit={}, sortBy={}", 
+                    userId, wall, page, limit, sortBy);
 
             if (page < 1) page = 1;
             if (limit < 1 || limit > 100) limit = 20;
 
             Pageable pageable = Pageable.from(page - 1, limit);
-            Page<Internship> internships = internshipService.listInternships(pageable, sortBy);
+            Page<Internship> internships = internshipService.getInternshipsByWall(wall, pageable, userId, schoolDomain, sortBy);
 
             List<InternshipDTO> dtos = internships.getContent().stream()
                     .map(this::mapInternshipToDTO)
@@ -119,10 +125,6 @@ public class InternshipController {
         }
     }
 
-    /**
-     * GET /internships/{internshipId}
-     * Get a specific internship posting by ID
-     */
     @Get("/{internshipId}")
     @Secured(SecurityRule.IS_AUTHENTICATED)
     public HttpResponse<Object> getInternship(
@@ -132,16 +134,17 @@ public class InternshipController {
             UUID userId = getUserIdFromRequest(httpRequest);
             UUID internshipUUID = UUID.fromString(internshipId);
             log.info("GET /internships/{} - Getting internship, user={}", internshipId, userId);
-
-            Internship internship = internshipService.getInternship(internshipUUID);
+            Internship internship = internshipService.getInternship(internshipUUID, userId);
             InternshipDTO dto = mapInternshipToDTO(internship);
-
             log.info("GET /internships/{} - Internship retrieved successfully", internshipId);
             return HttpResponse.ok(dto);
         } catch (IllegalArgumentException e) {
             log.warn("GET /internships/{} - Bad request: {}", internshipId, e.getMessage());
             if (e.getMessage().contains("not found")) {
                 return HttpResponse.notFound();
+            }
+            if (e.getMessage().contains("do not have access")) {
+                return HttpResponse.status(io.micronaut.http.HttpStatus.FORBIDDEN).body(error(e.getMessage()));
             }
             return HttpResponse.badRequest(error(e.getMessage()));
         } catch (Exception e) {
@@ -150,10 +153,6 @@ public class InternshipController {
         }
     }
 
-    /**
-     * PATCH /internships/{internshipId}/hide
-     * Hide an internship posting
-     */
     @Patch("/{internshipId}/hide")
     @Secured(SecurityRule.IS_AUTHENTICATED)
     public HttpResponse<Object> hideInternship(
@@ -162,12 +161,9 @@ public class InternshipController {
         try {
             UUID userId = getUserIdFromRequest(httpRequest);
             log.info("PATCH /internships/{}/hide - Hiding internship, user={}", internshipId, userId);
-
             internshipService.hideInternship(internshipId, userId);
-
             Map<String, String> response = new HashMap<>();
             response.put("message", "Internship posting hidden successfully");
-
             log.info("PATCH /internships/{}/hide - Internship hidden successfully", internshipId);
             return HttpResponse.ok(response);
         } catch (IllegalArgumentException e) {
@@ -185,10 +181,6 @@ public class InternshipController {
         }
     }
 
-    /**
-     * PATCH /internships/{internshipId}/unhide
-     * Unhide an internship posting
-     */
     @Patch("/{internshipId}/unhide")
     @Secured(SecurityRule.IS_AUTHENTICATED)
     public HttpResponse<Object> unhideInternship(
@@ -197,12 +189,9 @@ public class InternshipController {
         try {
             UUID userId = getUserIdFromRequest(httpRequest);
             log.info("PATCH /internships/{}/unhide - Unhiding internship, user={}", internshipId, userId);
-
             internshipService.unhideInternship(internshipId, userId);
-
             Map<String, String> response = new HashMap<>();
             response.put("message", "Internship posting unhidden successfully");
-
             log.info("PATCH /internships/{}/unhide - Internship unhidden successfully", internshipId);
             return HttpResponse.ok(response);
         } catch (IllegalArgumentException e) {
@@ -220,6 +209,144 @@ public class InternshipController {
         }
     }
 
+    // ================= Comment Endpoints =================
+
+    @io.micronaut.http.annotation.Post("/{internshipId}/comments")
+    @Secured(SecurityRule.IS_AUTHENTICATED)
+    public HttpResponse<Object> addComment(
+            @PathVariable UUID internshipId,
+            @Body CreateCommentRequest request,
+            HttpRequest<?> httpRequest) {
+        try {
+            UUID userId = getUserIdFromRequest(httpRequest);
+            log.info("POST /internships/{}/comments - Adding comment, user={}", internshipId, userId);
+            Comment comment = commentsService.addComment(CommentParentType.INTERNSHIP, internshipId, request, userId);
+            CommentDTO dto = mapCommentToDTO(comment);
+            log.info("POST /internships/{}/comments - Comment added successfully, commentId={}", internshipId, dto.getId());
+            return HttpResponse.created(dto);
+        } catch (IllegalArgumentException e) {
+            log.warn("POST /internships/{}/comments - Bad request: {}", internshipId, e.getMessage());
+            if (e.getMessage().contains("not found")) {
+                return HttpResponse.notFound();
+            }
+            if (e.getMessage().contains("do not have access")) {
+                return HttpResponse.status(io.micronaut.http.HttpStatus.FORBIDDEN).body(error(e.getMessage()));
+            }
+            return HttpResponse.badRequest(error(e.getMessage()));
+        } catch (Exception e) {
+            log.error("POST /internships/{}/comments - Error adding comment", internshipId, e);
+            return HttpResponse.badRequest(error("Failed to add comment"));
+        }
+    }
+
+    @Get("/{internshipId}/comments")
+    @Secured(SecurityRule.IS_AUTHENTICATED)
+    public HttpResponse<Object> getComments(
+            @PathVariable UUID internshipId,
+            @QueryValue(defaultValue = "1") int page,
+            @QueryValue(defaultValue = "20") int limit,
+            @QueryValue(defaultValue = "NEWEST") String sort,
+            HttpRequest<?> httpRequest) {
+        try {
+            UUID userId = getUserIdFromRequest(httpRequest);
+            log.info("GET /internships/{}/comments - Getting comments, user={}", internshipId, userId);
+
+            if (page < 1) page = 1;
+            if (limit < 1 || limit > 100) limit = 20;
+
+            internshipService.getInternship(internshipId, userId);
+
+            Pageable pageable = Pageable.from(page - 1, limit);
+            SortBy sortBy = SortBy.parse(sort);
+            Page<Comment> commentPage = commentsService.getCommentsWithPagination(CommentParentType.INTERNSHIP, internshipId, pageable, sortBy);
+
+            List<CommentDTO> dtos = commentPage.getContent().stream()
+                    .map(this::mapCommentToDTO)
+                    .collect(Collectors.toList());
+
+            Map<String, Object> pagination = new HashMap<>();
+            pagination.put("page", page);
+            pagination.put("limit", limit);
+            pagination.put("total", commentPage.getTotalSize());
+            pagination.put("totalPages", commentPage.getTotalPages());
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("data", dtos);
+            response.put("pagination", pagination);
+
+            log.info("GET /internships/{}/comments - Successfully retrieved {} comments", internshipId, dtos.size());
+            return HttpResponse.ok(response);
+        } catch (IllegalArgumentException e) {
+            log.warn("GET /internships/{}/comments - Bad request: {}", internshipId, e.getMessage());
+            if (e.getMessage().contains("not found")) {
+                return HttpResponse.notFound();
+            }
+            if (e.getMessage().contains("do not have access")) {
+                return HttpResponse.status(io.micronaut.http.HttpStatus.FORBIDDEN).body(error(e.getMessage()));
+            }
+            return HttpResponse.badRequest(error(e.getMessage()));
+        } catch (Exception e) {
+            log.error("GET /internships/{}/comments - Error getting comments", internshipId, e);
+            return HttpResponse.badRequest(error("Failed to get comments"));
+        }
+    }
+
+    @Patch("/{internshipId}/comments/{commentId}/hide")
+    @Secured(SecurityRule.IS_AUTHENTICATED)
+    public HttpResponse<Object> hideComment(
+            @PathVariable UUID internshipId,
+            @PathVariable UUID commentId,
+            HttpRequest<?> httpRequest) {
+        try {
+            UUID userId = getUserIdFromRequest(httpRequest);
+            log.info("PATCH /internships/{}/comments/{}/hide - Hiding comment, user={}", internshipId, commentId, userId);
+            commentsService.hideComment(CommentParentType.INTERNSHIP, internshipId, commentId, userId);
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "Comment hidden successfully");
+            return HttpResponse.ok(response);
+        } catch (IllegalArgumentException e) {
+            log.warn("PATCH /internships/{}/comments/{}/hide - Bad request: {}", internshipId, commentId, e.getMessage());
+            if (e.getMessage().contains("not found")) {
+                return HttpResponse.notFound();
+            }
+            if (e.getMessage().contains("You can only hide your own comments") || e.getMessage().contains("do not have access")) {
+                return HttpResponse.status(io.micronaut.http.HttpStatus.FORBIDDEN).body(error(e.getMessage()));
+            }
+            return HttpResponse.badRequest(error(e.getMessage()));
+        } catch (Exception e) {
+            log.error("PATCH /internships/{}/comments/{}/hide - Error hiding comment", internshipId, commentId, e);
+            return HttpResponse.badRequest(error("Failed to hide comment"));
+        }
+    }
+
+    @Patch("/{internshipId}/comments/{commentId}/unhide")
+    @Secured(SecurityRule.IS_AUTHENTICATED)
+    public HttpResponse<Object> unhideComment(
+            @PathVariable UUID internshipId,
+            @PathVariable UUID commentId,
+            HttpRequest<?> httpRequest) {
+        try {
+            UUID userId = getUserIdFromRequest(httpRequest);
+            log.info("PATCH /internships/{}/comments/{}/unhide - Unhiding comment, user={}", internshipId, commentId, userId);
+            commentsService.unhideComment(CommentParentType.INTERNSHIP, internshipId, commentId, userId);
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "Comment unhidden successfully");
+            return HttpResponse.ok(response);
+        } catch (IllegalArgumentException e) {
+            log.warn("PATCH /internships/{}/comments/{}/unhide - Bad request: {}", internshipId, commentId, e.getMessage());
+            if (e.getMessage().contains("not found")) {
+                return HttpResponse.notFound();
+            }
+            if (e.getMessage().contains("You can only unhide your own comments") || e.getMessage().contains("do not have access")) {
+                return HttpResponse.status(io.micronaut.http.HttpStatus.FORBIDDEN).body(error(e.getMessage()));
+            }
+            return HttpResponse.badRequest(error(e.getMessage()));
+        } catch (Exception e) {
+            log.error("PATCH /internships/{}/comments/{}/unhide - Error unhiding comment", internshipId, commentId, e);
+            return HttpResponse.badRequest(error("Failed to unhide comment"));
+        }
+    }
+
     // ================= DTO Mapping Methods =================
 
     private InternshipDTO mapInternshipToDTO(Internship internship) {
@@ -234,22 +361,43 @@ public class InternshipController {
         dto.setCreatedAt(internship.getCreatedAt());
         dto.setUpdatedAt(internship.getUpdatedAt());
 
-        // Set author info (following marketplace pattern)
+        if (internship.getWall() != null) {
+            dto.setWall(InternshipDTOWall.valueOf(internship.getWall().toUpperCase()));
+        }
+        dto.setComments(internship.getCommentCount());
+
         InternshipDTOAuthor author = new InternshipDTOAuthor();
         author.setId(internship.getUserId().toString());
 
-        // Get user for author details
         Optional<UserEntity> userOpt = userRepository.findById(internship.getUserId());
         if (userOpt.isPresent()) {
             UserEntity user = userOpt.get();
             author.setProfileName(user.getProfileName());
         } else {
-            // Log data integrity issue - internship references non-existent user
             log.warn("User {} not found for internship {}", internship.getUserId(), internship.getId());
             author.setProfileName("Unknown User");
         }
 
-        author.setIsAnonymous(false); // Internship postings are not anonymous
+        author.setIsAnonymous(false);
+        dto.setAuthor(author);
+
+        return dto;
+    }
+
+    private CommentDTO mapCommentToDTO(Comment comment) {
+        CommentDTO dto = new CommentDTO();
+        dto.setId(comment.getId());
+        dto.setPostId(comment.getParentId());
+        if (comment.getParentType() != null) {
+            dto.setParentType(CommentDTOParentType.valueOf(comment.getParentType()));
+        }
+        dto.setText(comment.getText());
+        dto.setCreatedAt(comment.getCreatedAt());
+
+        CommentDTOAuthor author = new CommentDTOAuthor();
+        author.setId(comment.getUserId().toString());
+        author.setProfileName(comment.getProfileName());
+        author.setIsAnonymous(true);
         dto.setAuthor(author);
 
         return dto;
@@ -257,7 +405,7 @@ public class InternshipController {
 
     private Map<String, Object> createPaginationInfo(Page<?> page) {
         Map<String, Object> pagination = new HashMap<>();
-        pagination.put("page", page.getPageNumber() + 1); // Convert from 0-based to 1-based
+        pagination.put("page", page.getPageNumber() + 1);
         pagination.put("limit", page.getSize());
         pagination.put("total", page.getTotalSize());
         pagination.put("totalPages", page.getTotalPages());

@@ -795,6 +795,13 @@ paths:
             enum: [newest, oldest]
             default: newest
           description: Sort order for internship postings
+        - in: query
+          name: wall
+          schema:
+            type: string
+            enum: [campus, national]
+            default: campus
+          description: Which wall to view internship postings from
       responses:
         "200":
           description: Internship postings retrieved successfully
@@ -903,6 +910,131 @@ paths:
         "401":
           description: Unauthorized - authentication required
 
+  /internships/{internshipId}/comments:
+    post:
+      tags: [internships]
+      summary: Add comment to internship posting
+      description: Add a comment to an existing internship posting
+      operationId: addInternshipComment
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: internshipId
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID of the internship posting to comment on
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCommentRequest"
+      responses:
+        "201":
+          description: Comment added successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommentDTO"
+        "400":
+          description: Invalid request
+        "404":
+          description: Internship posting not found
+    get:
+      tags: [internships]
+      summary: Get comments for internship posting
+      description: Get comments for an internship posting with pagination and sorting
+      operationId: getInternshipComments
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: internshipId
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID of the internship posting
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 20
+        - in: query
+          name: sort
+          schema:
+            type: string
+            default: NEWEST
+      responses:
+        "200":
+          description: Comments retrieved successfully
+        "404":
+          description: Internship posting not found
+
+  /internships/{internshipId}/comments/{commentId}/hide:
+    patch:
+      tags: [internships]
+      summary: Hide a comment on internship posting
+      operationId: hideInternshipComment
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: internshipId
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: path
+          name: commentId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Comment hidden successfully
+        "403":
+          description: Forbidden
+        "404":
+          description: Not found
+
+  /internships/{internshipId}/comments/{commentId}/unhide:
+    patch:
+      tags: [internships]
+      summary: Unhide a comment on internship posting
+      operationId: unhideInternshipComment
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: internshipId
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: path
+          name: commentId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Comment unhidden successfully
+        "403":
+          description: Forbidden
+        "404":
+          description: Not found
+
   # =================== Marketplace ===================
   /marketplace:
     post:
@@ -957,6 +1089,13 @@ paths:
             enum: [newest, price-asc, price-desc]
             default: newest
           description: Sort order for items
+        - in: query
+          name: wall
+          schema:
+            type: string
+            enum: [campus, national]
+            default: campus
+          description: Which wall to view marketplace items from
       responses:
         "200":
           description: Marketplace items retrieved successfully
@@ -1035,6 +1174,131 @@ paths:
           description: Forbidden - not the owner of the item
         "404":
           description: Item not found
+
+  /marketplace/{itemId}/comments:
+    post:
+      tags: [marketplace]
+      summary: Add comment to marketplace item
+      description: Add a comment to an existing marketplace item
+      operationId: addMarketplaceComment
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: itemId
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID of the marketplace item to comment on
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCommentRequest"
+      responses:
+        "201":
+          description: Comment added successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommentDTO"
+        "400":
+          description: Invalid request
+        "404":
+          description: Marketplace item not found
+    get:
+      tags: [marketplace]
+      summary: Get comments for marketplace item
+      description: Get comments for a marketplace item with pagination and sorting
+      operationId: getMarketplaceComments
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: itemId
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID of the marketplace item
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 20
+        - in: query
+          name: sort
+          schema:
+            type: string
+            default: NEWEST
+      responses:
+        "200":
+          description: Comments retrieved successfully
+        "404":
+          description: Marketplace item not found
+
+  /marketplace/{itemId}/comments/{commentId}/hide:
+    patch:
+      tags: [marketplace]
+      summary: Hide a comment on marketplace item
+      operationId: hideMarketplaceComment
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: itemId
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: path
+          name: commentId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Comment hidden successfully
+        "403":
+          description: Forbidden
+        "404":
+          description: Not found
+
+  /marketplace/{itemId}/comments/{commentId}/unhide:
+    patch:
+      tags: [marketplace]
+      summary: Unhide a comment on marketplace item
+      operationId: unhideMarketplaceComment
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: itemId
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: path
+          name: commentId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Comment unhidden successfully
+        "403":
+          description: Forbidden
+        "404":
+          description: Not found
 
   # =================== Coins ===================
   /coins/claim:
@@ -2375,6 +2639,11 @@ components:
         postId:
           type: string
           format: uuid
+          description: ID of the parent entity (post, internship, or marketplace item)
+        parentType:
+          type: string
+          enum: [POST, INTERNSHIP, MARKETPLACE]
+          description: Type of the parent entity
         text:
           type: string
         createdAt:
@@ -2415,6 +2684,11 @@ components:
           type: string
           format: date
           description: Application deadline
+        wall:
+          type: string
+          enum: [campus, national]
+          default: campus
+          description: Which wall to post to
 
     InternshipDTO:
       type: object
@@ -2434,6 +2708,13 @@ components:
         deadline:
           type: string
           format: date
+        wall:
+          type: string
+          enum: [campus, national]
+          description: Which wall the internship is on
+        comments:
+          type: integer
+          description: Number of comments
         author:
           type: object
           properties:
@@ -2474,6 +2755,11 @@ components:
           type: string
           enum: [new, like-new, good, fair]
           description: Condition of the item
+        wall:
+          type: string
+          enum: [campus, national]
+          default: campus
+          description: Which wall to post to
 
     UpdateItemRequest:
       type: object
@@ -2520,6 +2806,13 @@ components:
         sold:
           type: boolean
           default: false
+        wall:
+          type: string
+          enum: [campus, national]
+          description: Which wall the item is on
+        comments:
+          type: integer
+          description: Number of comments
         author:
           type: object
           properties:
