@@ -72,7 +72,7 @@ public class CommentsServiceImpl implements CommentsService {
      */
     private void validateParentVisibility(Commentable parent, UUID userId) {
         if (parent.isHidden()) {
-            throw new IllegalArgumentException("Post not found");
+            throw new IllegalArgumentException("Content not found");
         }
         if ("national".equals(parent.getWall())) {
             log.debug("Validating national entity access for user: {}", userId);

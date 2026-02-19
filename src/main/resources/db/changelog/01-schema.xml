@@ -82,6 +82,9 @@
     </changeSet>
 
     <!-- ================= Comments (Polymorphic) ================= -->
+    <!-- Note: No FK to posts/internships/marketplace_items. Application-level referential integrity
+         is used to support polymorphic associations (parent_type discriminator pattern).
+         The resolveParent() method in CommentsServiceImpl validates parent existence at runtime. -->
     <changeSet id="4-create-comments-table" author="ziyihuang">
         <createTable tableName="comments">
             <column name="id" type="CHAR(36)">
