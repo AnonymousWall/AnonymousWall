@@ -221,4 +221,21 @@ public class InternshipServiceImpl implements InternshipService {
         internshipRepository.update(internship);
         log.info("Unhid internship {}", internshipId);
     }
+
+    @Override
+    public Page<Internship> getUserOwnInternships(UUID userId, Pageable pageable, String sortBy) {
+        log.info("Getting own internships for user {}, sortBy={}", userId, sortBy);
+
+        if (sortBy == null) {
+            sortBy = "newest";
+        }
+
+        switch (sortBy.toLowerCase()) {
+            case "oldest":
+                return internshipRepository.findByUserIdAndHiddenFalseOrderByCreatedAtAsc(userId, pageable);
+            case "newest":
+            default:
+                return internshipRepository.findByUserIdAndHiddenFalseOrderByCreatedAtDesc(userId, pageable);
+        }
+    }
 }

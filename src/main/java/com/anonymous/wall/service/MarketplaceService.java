@@ -21,4 +21,6 @@ public interface MarketplaceService {
     MarketplaceItem getItem(UUID itemId);
 
     MarketplaceItem getItem(UUID itemId, UUID userId);
+
+    Page<MarketplaceItem> getUserOwnItems(UUID userId, Pageable pageable, String sortBy);
 }

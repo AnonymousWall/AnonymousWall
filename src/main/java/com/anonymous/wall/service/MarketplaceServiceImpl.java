@@ -307,6 +307,23 @@ public class MarketplaceServiceImpl implements MarketplaceService {
         return item;
     }
 
+    @Override
+    public Page<MarketplaceItem> getUserOwnItems(UUID userId, Pageable pageable, String sortBy) {
+        log.info("Getting own marketplace items for user {}, sortBy={}", userId, sortBy);
+
+        if (sortBy == null) {
+            sortBy = "newest";
+        }
+
+        switch (sortBy.toLowerCase()) {
+            case "oldest":
+                return marketplaceItemRepository.findByUserIdAndHiddenFalseOrderByCreatedAtAsc(userId, pageable);
+            case "newest":
+            default:
+                return marketplaceItemRepository.findByUserIdAndHiddenFalseOrderByCreatedAtDesc(userId, pageable);
+        }
+    }
+
     private boolean isValidCondition(String condition) {
         if (condition == null) {
             return false;

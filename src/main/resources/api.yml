@@ -1468,6 +1468,126 @@ paths:
         "401":
           description: Unauthorized - authentication required
 
+  /users/me/internships:
+    get:
+      tags: [users]
+      summary: Get current user's own internships
+      description: Retrieve all internship postings created by the authenticated user with pagination and sorting
+      operationId: getUserInternships
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          description: Page number for pagination
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          description: Number of results per page
+        - in: query
+          name: sort
+          required: false
+          schema:
+            type: string
+            enum: [NEWEST, OLDEST]
+            default: NEWEST
+          description: Sort order for internships
+      responses:
+        "200":
+          description: Internships retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/InternshipDTO"
+                  pagination:
+                    type: object
+                    properties:
+                      page:
+                        type: integer
+                      limit:
+                        type: integer
+                      total:
+                        type: integer
+                      totalPages:
+                        type: integer
+        "401":
+          description: Unauthorized - authentication required
+
+  /users/me/marketplaces:
+    get:
+      tags: [users]
+      summary: Get current user's own marketplace items
+      description: Retrieve all marketplace items listed by the authenticated user with pagination and sorting
+      operationId: getUserMarketplaces
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          description: Page number for pagination
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          description: Number of results per page
+        - in: query
+          name: sort
+          required: false
+          schema:
+            type: string
+            enum: [NEWEST, OLDEST]
+            default: NEWEST
+          description: Sort order for marketplace items
+      responses:
+        "200":
+          description: Marketplace items retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ItemDTO"
+                  pagination:
+                    type: object
+                    properties:
+                      page:
+                        type: integer
+                      limit:
+                        type: integer
+                      total:
+                        type: integer
+                      totalPages:
+                        type: integer
+        "401":
+          description: Unauthorized - authentication required
+
   /users/me/profile/name:
     patch:
       tags: [users]
