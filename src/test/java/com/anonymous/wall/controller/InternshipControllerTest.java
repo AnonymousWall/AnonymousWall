@@ -123,6 +123,7 @@ class InternshipControllerTest {
             assertNull(body.getLocation());
             assertNull(body.getDescription());
             assertNotNull(body.getDeadline());
+            assertEquals(LocalDate.now().plusMonths(1), body.getDeadline());
         }
 
         @Test
