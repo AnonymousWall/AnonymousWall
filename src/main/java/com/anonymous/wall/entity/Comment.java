@@ -13,8 +13,11 @@ public class Comment {
     @AutoPopulated
     private UUID id;
 
-    @MappedProperty("post_id")
-    private UUID postId;
+    @MappedProperty("parent_id")
+    private UUID parentId;
+
+    @MappedProperty("parent_type")
+    private String parentType;
 
     @MappedProperty("user_id")
     private UUID userId;
@@ -33,15 +36,28 @@ public class Comment {
 
     @Version
     @MappedProperty("version")
-    private Long version = 0L; // Optimistic locking version
+    private Long version = 0L;
 
     // ================= Constructors =================
 
     public Comment() {
     }
 
+    // Backward-compatible constructor: defaults parentType to "POST"
     public Comment(UUID postId, UUID userId, String text) {
-        this.postId = postId;
+        this.parentId = postId;
+        this.parentType = "POST";
+        this.userId = userId;
+        this.text = text;
+        this.profileName = "Anonymous";
+        this.hidden = false;
+        this.createdAt = OffsetDateTime.now();
+        this.version = 0L;
+    }
+
+    public Comment(UUID parentId, String parentType, UUID userId, String text) {
+        this.parentId = parentId;
+        this.parentType = parentType;
         this.userId = userId;
         this.text = text;
         this.profileName = "Anonymous";
@@ -55,8 +71,15 @@ public class Comment {
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }
 
-    public UUID getPostId() { return postId; }
-    public void setPostId(UUID postId) { this.postId = postId; }
+    public UUID getParentId() { return parentId; }
+    public void setParentId(UUID parentId) { this.parentId = parentId; }
+
+    public String getParentType() { return parentType; }
+    public void setParentType(String parentType) { this.parentType = parentType; }
+
+    // Backward-compatible helpers delegating to parentId
+    public UUID getPostId() { return parentId; }
+    public void setPostId(UUID postId) { this.parentId = postId; }
 
     public UUID getUserId() { return userId; }
     public void setUserId(UUID userId) { this.userId = userId; }
