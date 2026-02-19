@@ -7,7 +7,7 @@ import java.time.OffsetDateTime;
 import java.util.UUID;
 
 @MappedEntity(value = "posts", namingStrategy = NamingStrategies.Raw.class)
-public class Post {
+public class Post implements Commentable {
 
     @Id
     @AutoPopulated
