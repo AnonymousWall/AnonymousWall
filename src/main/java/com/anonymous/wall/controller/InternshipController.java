@@ -244,7 +244,9 @@ public class InternshipController {
             UserEntity user = userOpt.get();
             author.setProfileName(user.getProfileName());
         } else {
-            author.setProfileName("Anonymous");
+            // Log data integrity issue - internship references non-existent user
+            log.warn("User {} not found for internship {}", internship.getUserId(), internship.getId());
+            author.setProfileName("Unknown User");
         }
 
         author.setIsAnonymous(false); // Internship postings are not anonymous
