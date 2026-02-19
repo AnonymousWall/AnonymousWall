@@ -13,6 +13,7 @@ import jakarta.transaction.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.Optional;
 import java.util.UUID;
@@ -85,7 +86,7 @@ public class InternshipServiceImpl implements InternshipService {
         internship.setSalary(request.getSalary());
         internship.setLocation(request.getLocation());
         internship.setDescription(request.getDescription());
-        internship.setDeadline(request.getDeadline());
+        internship.setDeadline(request.getDeadline() != null ? request.getDeadline() : LocalDate.now().plusMonths(1));
         internship.setWall(wall);
         internship.setSchoolDomain(schoolDomain);
         internship.setCreatedAt(OffsetDateTime.now());

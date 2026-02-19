@@ -122,7 +122,7 @@ class InternshipControllerTest {
             assertNull(body.getSalary());
             assertNull(body.getLocation());
             assertNull(body.getDescription());
-            assertNull(body.getDeadline());
+            assertNotNull(body.getDeadline());
         }
 
         @Test

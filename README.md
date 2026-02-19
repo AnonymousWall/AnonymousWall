@@ -897,7 +897,7 @@ Response: 201 Created
 - `salary` is optional (VARCHAR(50))
 - `location` is optional (VARCHAR(255))
 - `description` is optional (TEXT)
-- `deadline` is optional (DATE format: YYYY-MM-DD)
+- `deadline` is optional (DATE format: YYYY-MM-DD, defaults to 1 month from creation date)
 - `wall` is optional (defaults to "campus"), must be "campus" or "national"
 
 **Wall Rules:**
