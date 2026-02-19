@@ -679,7 +679,7 @@ class UserControllerTest {
             testPost.setProfileName(testUser.getProfileName());
             testPost = postRepository.save(testPost);
 
-            Comment testComment = new Comment(testPost.getId(), testUserId, "Test Comment");
+            Comment testComment = new Comment(testPost.getId(), "POST", testUserId, "Test Comment");
             testComment.setProfileName(testUser.getProfileName());
             testComment = commentRepository.save(testComment);
 

@@ -197,7 +197,7 @@ public class UserController {
     private CommentDTO mapCommentToDTO(Comment comment) {
         CommentDTO dto = new CommentDTO();
         dto.setId(comment.getId());
-        dto.setPostId(comment.getPostId());
+        dto.setPostId(comment.getParentId());
         dto.setText(comment.getText());
         dto.setCreatedAt(comment.getCreatedAt());
 

@@ -102,7 +102,8 @@ class AdminReportControllerTest {
 
         // Create test comment
         testComment = new Comment();
-        testComment.setPostId(testPost.getId());
+        testComment.setParentId(testPost.getId());
+        testComment.setParentType("POST");
         testComment.setUserId(regularUser.getId());
         testComment.setText("Test comment");
         testComment = commentRepository.save(testComment);

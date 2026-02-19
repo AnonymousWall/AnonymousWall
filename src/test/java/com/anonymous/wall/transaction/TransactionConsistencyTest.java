@@ -180,11 +180,11 @@ public class TransactionConsistencyTest {
         Comment comment = commentsService.addComment(CommentParentType.POST, testPost.getId(), req, testUser.getId());
 
         // Verify comment has valid post
-        assertTrue(comment.getPostId() != null, "Comment should reference a post");
-        assertEquals(testPost.getId(), comment.getPostId(), "Comment should reference correct post");
+        assertTrue(comment.getParentId() != null, "Comment should reference a post");
+        assertEquals(testPost.getId(), comment.getParentId(), "Comment should reference correct post");
 
         // Verify post exists
-        Post post = postRepository.findById(comment.getPostId()).orElseThrow();
+        Post post = postRepository.findById(comment.getParentId()).orElseThrow();
         assertNotNull(post, "Referenced post should exist");
 
         // Verify post has this comment

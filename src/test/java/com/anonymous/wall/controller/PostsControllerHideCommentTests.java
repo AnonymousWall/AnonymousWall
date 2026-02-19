@@ -401,7 +401,7 @@ class PostsControllerHideCommentTests {
         @DisplayName("Should return error when comment does not belong to post")
         void shouldReturnErrorWhenCommentDoesNotBelongToPost() {
             // Create a comment on nationalPost
-            Comment commentOnNationalPost = new Comment(nationalPost.getId(), testUserCampus.getId(), "National post comment");
+            Comment commentOnNationalPost = new Comment(nationalPost.getId(), "POST", testUserCampus.getId(), "National post comment");
             commentOnNationalPost = commentRepository.save(commentOnNationalPost);
 
             // Try to hide it as if it belongs to campusPost
@@ -434,7 +434,7 @@ class PostsControllerHideCommentTests {
             harvardOnlyPost = postRepository.save(harvardOnlyPost);
 
             // Create a comment on this post
-            Comment comment = new Comment(harvardOnlyPost.getId(), testUserCampus.getId(), "Harvard comment");
+            Comment comment = new Comment(harvardOnlyPost.getId(), "POST", testUserCampus.getId(), "Harvard comment");
             comment = commentRepository.save(comment);
 
             // Try to hide as testUserDifferentSchool (MIT student - no access to Harvard campus)
@@ -551,7 +551,7 @@ class PostsControllerHideCommentTests {
         @DisplayName("Should return error when comment does not belong to post for unhide")
         void shouldReturn404WhenCommentDoesNotBelongToPostForUnhide() {
             // Create a comment on nationalPost
-            Comment commentOnNationalPost = new Comment(nationalPost.getId(), testUserCampus.getId(), "National post comment");
+            Comment commentOnNationalPost = new Comment(nationalPost.getId(), "POST", testUserCampus.getId(), "National post comment");
             commentOnNationalPost = commentRepository.save(commentOnNationalPost);
             commentOnNationalPost.setHidden(true);
             commentRepository.update(commentOnNationalPost);
@@ -586,7 +586,7 @@ class PostsControllerHideCommentTests {
             harvardOnlyPost = postRepository.save(harvardOnlyPost);
 
             // Create and hide a comment on this post
-            Comment comment = new Comment(harvardOnlyPost.getId(), testUserCampus.getId(), "Harvard comment");
+            Comment comment = new Comment(harvardOnlyPost.getId(), "POST", testUserCampus.getId(), "Harvard comment");
             comment = commentRepository.save(comment);
             comment.setHidden(true);
             commentRepository.update(comment);
@@ -702,7 +702,7 @@ class PostsControllerHideCommentTests {
         @DisplayName("Should maintain other comment data when hiding")
         void shouldMaintainCommentDataWhenHiding() {
             String originalText = campusComment.getText();
-            UUID originalPostId = campusComment.getPostId();
+            UUID originalPostId = campusComment.getParentId();
 
             String endpoint = BASE_PATH + "/" + campusPost.getId() + "/comments/" + campusComment.getId() + "/hide";
             client.toBlocking().exchange(
@@ -714,7 +714,7 @@ class PostsControllerHideCommentTests {
             Optional<Comment> updatedComment = commentRepository.findById(campusComment.getId());
             assertTrue(updatedComment.isPresent());
             assertEquals(originalText, updatedComment.get().getText());
-            assertEquals(originalPostId, updatedComment.get().getPostId());
+            assertEquals(originalPostId, updatedComment.get().getParentId());
             // CreatedAt should remain the same (verify it's not changed)
             assertNotNull(updatedComment.get().getCreatedAt());
         }
@@ -725,7 +725,7 @@ class PostsControllerHideCommentTests {
         @DisplayName("Should work with very long comment text")
         void shouldWorkWithVeryLongCommentText() {
             String longText = "X".repeat(5000);
-            Comment longComment = new Comment(campusPost.getId(), testUserCampus.getId(), longText);
+            Comment longComment = new Comment(campusPost.getId(), "POST", testUserCampus.getId(), longText);
             longComment = commentRepository.save(longComment);
 
             String endpoint = BASE_PATH + "/" + campusPost.getId() + "/comments/" + longComment.getId() + "/hide";
@@ -748,7 +748,7 @@ class PostsControllerHideCommentTests {
         @DisplayName("Should work with comment containing special characters")
         void shouldWorkWithSpecialCharactersInComment() {
             String specialText = "Comment with 🎉 emoji @mention #hashtag and ñ characters";
-            Comment specialComment = new Comment(campusPost.getId(), testUserCampus.getId(), specialText);
+            Comment specialComment = new Comment(campusPost.getId(), "POST", testUserCampus.getId(), specialText);
             specialComment = commentRepository.save(specialComment);
 
             String hideEndpoint = BASE_PATH + "/" + campusPost.getId() + "/comments/" + specialComment.getId() + "/hide";

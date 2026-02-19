@@ -211,8 +211,8 @@ public class MarketplaceServiceImpl implements MarketplaceService {
     }
 
     @Override
-    public Page<MarketplaceItem> getItemsByWall(String wall, Pageable pageable, UUID userId, String schoolDomain, String sortBy) {
-        log.info("Listing marketplace items by wall={}, sortBy={}, schoolDomain={}", wall, sortBy, schoolDomain);
+    public Page<MarketplaceItem> getItemsByWall(String wall, Pageable pageable, UUID userId, String schoolDomain, String sortBy, Boolean sold) {
+        log.info("Listing marketplace items by wall={}, sortBy={}, schoolDomain={}, sold={}", wall, sortBy, schoolDomain, sold);
 
         if (sortBy == null) {
             sortBy = "newest";
@@ -221,6 +221,19 @@ public class MarketplaceServiceImpl implements MarketplaceService {
         if ("campus".equals(wall)) {
             if (schoolDomain == null || schoolDomain.trim().isEmpty()) {
                 throw new IllegalArgumentException("School domain is required to view campus marketplace items");
+            }
+            if (sold != null) {
+                switch (sortBy.toLowerCase()) {
+                    case "oldest":
+                        return marketplaceItemRepository.findByWallAndSchoolDomainAndSoldAndHiddenFalseOrderByCreatedAtAsc("campus", schoolDomain, sold, pageable);
+                    case "price-asc":
+                        return marketplaceItemRepository.findByWallAndSchoolDomainAndSoldAndHiddenFalseOrderByPriceAsc("campus", schoolDomain, sold, pageable);
+                    case "price-desc":
+                        return marketplaceItemRepository.findByWallAndSchoolDomainAndSoldAndHiddenFalseOrderByPriceDesc("campus", schoolDomain, sold, pageable);
+                    case "newest":
+                    default:
+                        return marketplaceItemRepository.findByWallAndSchoolDomainAndSoldAndHiddenFalseOrderByCreatedAtDesc("campus", schoolDomain, sold, pageable);
+                }
             }
             switch (sortBy.toLowerCase()) {
                 case "oldest":
@@ -234,6 +247,20 @@ public class MarketplaceServiceImpl implements MarketplaceService {
                     return marketplaceItemRepository.findByWallAndSchoolDomainAndHiddenFalseOrderByCreatedAtDesc("campus", schoolDomain, pageable);
             }
         } else {
+            // National wall
+            if (sold != null) {
+                switch (sortBy.toLowerCase()) {
+                    case "oldest":
+                        return marketplaceItemRepository.findByWallAndSoldAndHiddenFalseOrderByCreatedAtAsc("national", sold, pageable);
+                    case "price-asc":
+                        return marketplaceItemRepository.findByWallAndSoldAndHiddenFalseOrderByPriceAsc("national", sold, pageable);
+                    case "price-desc":
+                        return marketplaceItemRepository.findByWallAndSoldAndHiddenFalseOrderByPriceDesc("national", sold, pageable);
+                    case "newest":
+                    default:
+                        return marketplaceItemRepository.findByWallAndSoldAndHiddenFalseOrderByCreatedAtDesc("national", sold, pageable);
+                }
+            }
             switch (sortBy.toLowerCase()) {
                 case "oldest":
                     return marketplaceItemRepository.findByWallAndHiddenFalseOrderByCreatedAtAsc("national", pageable);

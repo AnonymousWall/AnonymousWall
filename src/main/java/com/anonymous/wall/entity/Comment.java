@@ -43,18 +43,6 @@ public class Comment {
     public Comment() {
     }
 
-    // Backward-compatible constructor: defaults parentType to "POST"
-    public Comment(UUID postId, UUID userId, String text) {
-        this.parentId = postId;
-        this.parentType = "POST";
-        this.userId = userId;
-        this.text = text;
-        this.profileName = "Anonymous";
-        this.hidden = false;
-        this.createdAt = OffsetDateTime.now();
-        this.version = 0L;
-    }
-
     public Comment(UUID parentId, String parentType, UUID userId, String text) {
         this.parentId = parentId;
         this.parentType = parentType;
@@ -76,10 +64,6 @@ public class Comment {
 
     public String getParentType() { return parentType; }
     public void setParentType(String parentType) { this.parentType = parentType; }
-
-    // Backward-compatible helpers delegating to parentId
-    public UUID getPostId() { return parentId; }
-    public void setPostId(UUID postId) { this.parentId = postId; this.parentType = "POST"; }
 
     public UUID getUserId() { return userId; }
     public void setUserId(UUID userId) { this.userId = userId; }

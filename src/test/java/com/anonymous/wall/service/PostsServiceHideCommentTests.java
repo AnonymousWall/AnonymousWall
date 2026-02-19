@@ -161,7 +161,7 @@ class PostsServiceHideCommentTests {
         @DisplayName("Should preserve comment data when hiding")
         void shouldPreserveCommentDataWhenHiding() {
             String originalText = campusComment.getText();
-            UUID originalPostId = campusComment.getPostId();
+            UUID originalPostId = campusComment.getParentId();
             UUID originalUserId = campusComment.getUserId();
 
             commentsService.hideComment(CommentParentType.POST, campusPost.getId(), campusComment.getId(), userCampusId);
@@ -169,7 +169,7 @@ class PostsServiceHideCommentTests {
             Optional<Comment> result = commentRepository.findById(campusComment.getId());
             assertTrue(result.isPresent());
             assertEquals(originalText, result.get().getText(), "Comment text should be preserved");
-            assertEquals(originalPostId, result.get().getPostId(), "Post ID should be preserved");
+            assertEquals(originalPostId, result.get().getParentId(), "Post ID should be preserved");
             assertEquals(originalUserId, result.get().getUserId(), "User ID should be preserved");
         }
 
@@ -265,7 +265,7 @@ class PostsServiceHideCommentTests {
         @DisplayName("Should preserve comment data when unhiding")
         void shouldPreserveCommentDataWhenUnhiding() {
             String originalText = campusComment.getText();
-            UUID originalPostId = campusComment.getPostId();
+            UUID originalPostId = campusComment.getParentId();
             UUID originalUserId = campusComment.getUserId();
 
             commentsService.hideComment(CommentParentType.POST, campusPost.getId(), campusComment.getId(), userCampusId);
@@ -274,7 +274,7 @@ class PostsServiceHideCommentTests {
             Optional<Comment> result = commentRepository.findById(campusComment.getId());
             assertTrue(result.isPresent());
             assertEquals(originalText, result.get().getText(), "Comment text should be preserved");
-            assertEquals(originalPostId, result.get().getPostId(), "Post ID should be preserved");
+            assertEquals(originalPostId, result.get().getParentId(), "Post ID should be preserved");
             assertEquals(originalUserId, result.get().getUserId(), "User ID should be preserved");
         }
     }
@@ -290,7 +290,7 @@ class PostsServiceHideCommentTests {
         @DisplayName("Should throw exception when trying to hide another user's comment")
         void shouldThrowExceptionWhenHidingAnotherUserComment() {
             // Create a comment by userDifferentSchool on a national post (so no access issues)
-            Comment otherUserComment = new Comment(nationalPost.getId(), userDifferentSchoolId, "Comment by other user");
+            Comment otherUserComment = new Comment(nationalPost.getId(), "POST", userDifferentSchoolId, "Comment by other user");
             final Comment savedOtherUserComment = commentRepository.save(otherUserComment);
 
             // Now userCampus tries to hide it
@@ -376,7 +376,7 @@ class PostsServiceHideCommentTests {
         @DisplayName("Should throw exception when trying to unhide another user's comment")
         void shouldThrowExceptionWhenUnhidingAnotherUserComment() {
             // Create a hidden comment by userDifferentSchool on a national post
-            Comment otherUserComment = new Comment(nationalPost.getId(), userDifferentSchoolId, "Comment by other user");
+            Comment otherUserComment = new Comment(nationalPost.getId(), "POST", userDifferentSchoolId, "Comment by other user");
             otherUserComment = commentRepository.save(otherUserComment);
             otherUserComment.setHidden(true);
             final Comment savedOtherUserComment = commentRepository.save(otherUserComment);
@@ -500,9 +500,9 @@ class PostsServiceHideCommentTests {
         @DisplayName("Should correctly filter hidden comments from getComments")
         void shouldFilterHiddenCommentsFromGetComments() {
             // Create multiple comments
-            Comment comment2 = new Comment(campusPost.getId(), userCampusId, "Comment 2");
+            Comment comment2 = new Comment(campusPost.getId(), "POST", userCampusId, "Comment 2");
             comment2 = commentRepository.save(comment2);
-            Comment comment3 = new Comment(campusPost.getId(), userCampusId, "Comment 3");
+            Comment comment3 = new Comment(campusPost.getId(), "POST", userCampusId, "Comment 3");
             comment3 = commentRepository.save(comment3);
 
             final UUID comment2Id = comment2.getId();
@@ -628,7 +628,7 @@ class PostsServiceHideCommentTests {
             post2 = postRepository.save(post2);
 
             // User1 adds a comment to user2's post
-            Comment comment = new Comment(post2.getId(), userCampusId, "Comment by user1");
+            Comment comment = new Comment(post2.getId(), "POST", userCampusId, "Comment by user1");
             comment = commentRepository.save(comment);
 
             // User1 should be able to hide their own comment even though post is by user2

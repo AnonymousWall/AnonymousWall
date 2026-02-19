@@ -187,8 +187,10 @@ class InternshipControllerTest {
             // Create test internships
             Internship internship1 = new Internship(testUser.getId(), "Google", "SWE Intern", 
                 null, null, null, null);
+            internship1.setSchoolDomain("test.edu");
             Internship internship2 = new Internship(testUser.getId(), "Microsoft", "PM Intern",
                 null, null, null, null);
+            internship2.setSchoolDomain("test.edu");
             internshipRepository.save(internship1);
             internshipRepository.save(internship2);
 
@@ -230,6 +232,7 @@ class InternshipControllerTest {
             for (int i = 1; i <= 5; i++) {
                 Internship internship = new Internship(testUser.getId(), "Company" + i, "Role" + i,
                     null, null, null, null);
+                internship.setSchoolDomain("test.edu");
                 internshipRepository.save(internship);
             }
 
@@ -268,7 +271,9 @@ class InternshipControllerTest {
         void shouldSupportSortByParameter() {
             // Create internships with different timestamps
             Internship internship1 = new Internship(testUser.getId(), "Google", "SWE", null, null, null, null);
+            internship1.setSchoolDomain("test.edu");
             Internship internship2 = new Internship(testUser.getId(), "Microsoft", "PM", null, null, null, null);
+            internship2.setSchoolDomain("test.edu");
             
             internship1.setCreatedAt(internship1.getCreatedAt().minusSeconds(1));
             internshipRepository.save(internship1);
@@ -308,6 +313,7 @@ class InternshipControllerTest {
             // Create internship
             Internship internship = new Internship(testUser.getId(), "Google", "SWE Intern",
                 "$8000/month", "Mountain View, CA", "Great opportunity", LocalDate.of(2026, 6, 30));
+            internship.setSchoolDomain("test.edu");
             final Internship savedInternship = internshipRepository.save(internship);
 
             HttpResponse<InternshipDTO> response = client.toBlocking().exchange(
@@ -349,6 +355,7 @@ class InternshipControllerTest {
             // Create internship
             Internship internship = new Internship(testUser.getId(), "Google", "SWE Intern",
                 null, null, null, null);
+            internship.setSchoolDomain("test.edu");
             final Internship savedInternship = internshipRepository.save(internship);
 
             HttpResponse<Map> response = client.toBlocking().exchange(
@@ -395,6 +402,7 @@ class InternshipControllerTest {
             // Create internship with otherUser
             Internship internship = new Internship(otherUser.getId(), "Google", "SWE Intern",
                 null, null, null, null);
+            internship.setSchoolDomain("test.edu");
             final Internship savedInternship = internshipRepository.save(internship);
 
             HttpClientResponseException exception = assertThrows(
@@ -419,6 +427,7 @@ class InternshipControllerTest {
             // Create and hide internship
             Internship internship = new Internship(testUser.getId(), "Google", "SWE Intern",
                 null, null, null, null);
+            internship.setSchoolDomain("test.edu");
             internship.setHidden(true);
             final Internship savedInternship = internshipRepository.save(internship);
 

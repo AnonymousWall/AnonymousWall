@@ -106,7 +106,7 @@ public class MarketplaceController {
             if (limit < 1 || limit > 100) limit = 20;
 
             Pageable pageable = Pageable.from(page - 1, limit);
-            Page<MarketplaceItem> items = marketplaceService.getItemsByWall(wall, pageable, userId, schoolDomain, sortBy);
+            Page<MarketplaceItem> items = marketplaceService.getItemsByWall(wall, pageable, userId, schoolDomain, sortBy, sold);
 
             List<ItemDTO> dtos = items.getContent().stream()
                     .map(this::mapItemToDTO)

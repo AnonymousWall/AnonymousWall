@@ -204,6 +204,7 @@ class MarketplaceControllerTest {
             // Create an item
             MarketplaceItem item = new MarketplaceItem();
             item.setUserId(testUser.getId());
+            item.setSchoolDomain("test.edu");
             item.setTitle("Test Item");
             item.setDescription("Description");
             item.setPrice(new BigDecimal("50.00"));
@@ -249,6 +250,7 @@ class MarketplaceControllerTest {
         void shouldFailWithoutAuth() {
             MarketplaceItem item = new MarketplaceItem();
             item.setUserId(testUser.getId());
+            item.setSchoolDomain("test.edu");
             item.setTitle("Test Item");
             item.setPrice(new BigDecimal("50.00"));
             MarketplaceItem savedItem = marketplaceItemRepository.save(item);
@@ -276,6 +278,7 @@ class MarketplaceControllerTest {
             for (int i = 1; i <= 5; i++) {
                 MarketplaceItem item = new MarketplaceItem();
                 item.setUserId(testUser.getId());
+                item.setSchoolDomain("test.edu");
                 item.setTitle("Item " + i);
                 item.setPrice(new BigDecimal(i * 10));
                 item.setSold(false);
@@ -309,6 +312,7 @@ class MarketplaceControllerTest {
             // Create sold and unsold items
             MarketplaceItem soldItem = new MarketplaceItem();
             soldItem.setUserId(testUser.getId());
+            soldItem.setSchoolDomain("test.edu");
             soldItem.setTitle("Sold Item");
             soldItem.setPrice(new BigDecimal("100.00"));
             soldItem.setSold(true);
@@ -316,6 +320,7 @@ class MarketplaceControllerTest {
 
             MarketplaceItem unsoldItem = new MarketplaceItem();
             unsoldItem.setUserId(testUser.getId());
+            unsoldItem.setSchoolDomain("test.edu");
             unsoldItem.setTitle("Available Item");
             unsoldItem.setPrice(new BigDecimal("200.00"));
             unsoldItem.setSold(false);
@@ -339,12 +344,14 @@ class MarketplaceControllerTest {
             // Create items with different prices
             MarketplaceItem item1 = new MarketplaceItem();
             item1.setUserId(testUser.getId());
+            item1.setSchoolDomain("test.edu");
             item1.setTitle("Expensive");
             item1.setPrice(new BigDecimal("500.00"));
             marketplaceItemRepository.save(item1);
 
             MarketplaceItem item2 = new MarketplaceItem();
             item2.setUserId(testUser.getId());
+            item2.setSchoolDomain("test.edu");
             item2.setTitle("Cheap");
             item2.setPrice(new BigDecimal("10.00"));
             marketplaceItemRepository.save(item2);
@@ -386,6 +393,7 @@ class MarketplaceControllerTest {
             // Create an item
             MarketplaceItem item = new MarketplaceItem();
             item.setUserId(testUser.getId());
+            item.setSchoolDomain("test.edu");
             item.setTitle("Old Title");
             item.setPrice(new BigDecimal("100.00"));
             item = marketplaceItemRepository.save(item);
@@ -410,6 +418,7 @@ class MarketplaceControllerTest {
         void shouldUpdatePrice() {
             MarketplaceItem item = new MarketplaceItem();
             item.setUserId(testUser.getId());
+            item.setSchoolDomain("test.edu");
             item.setTitle("Item");
             item.setPrice(new BigDecimal("100.00"));
             item = marketplaceItemRepository.save(item);
@@ -434,6 +443,7 @@ class MarketplaceControllerTest {
         void shouldMarkAsSold() {
             MarketplaceItem item = new MarketplaceItem();
             item.setUserId(testUser.getId());
+            item.setSchoolDomain("test.edu");
             item.setTitle("Item");
             item.setPrice(new BigDecimal("100.00"));
             item.setSold(false);
@@ -459,6 +469,7 @@ class MarketplaceControllerTest {
         void shouldUpdateMultipleFields() {
             MarketplaceItem item = new MarketplaceItem();
             item.setUserId(testUser.getId());
+            item.setSchoolDomain("test.edu");
             item.setTitle("Old Item");
             item.setPrice(new BigDecimal("100.00"));
             item.setDescription("Old description");
@@ -490,6 +501,7 @@ class MarketplaceControllerTest {
             // Create item owned by testUser
             MarketplaceItem item = new MarketplaceItem();
             item.setUserId(testUser.getId());
+            item.setSchoolDomain("test.edu");
             item.setTitle("Item");
             item.setPrice(new BigDecimal("100.00"));
             MarketplaceItem savedItem = marketplaceItemRepository.save(item);
@@ -515,6 +527,7 @@ class MarketplaceControllerTest {
         void shouldFailWithNegativePrice() {
             MarketplaceItem item = new MarketplaceItem();
             item.setUserId(testUser.getId());
+            item.setSchoolDomain("test.edu");
             item.setTitle("Item");
             item.setPrice(new BigDecimal("100.00"));
             MarketplaceItem savedItem = marketplaceItemRepository.save(item);
@@ -557,6 +570,7 @@ class MarketplaceControllerTest {
         void shouldFailWithoutAuth() {
             MarketplaceItem item = new MarketplaceItem();
             item.setUserId(testUser.getId());
+            item.setSchoolDomain("test.edu");
             item.setTitle("Item");
             item.setPrice(new BigDecimal("100.00"));
             MarketplaceItem savedItem = marketplaceItemRepository.save(item);

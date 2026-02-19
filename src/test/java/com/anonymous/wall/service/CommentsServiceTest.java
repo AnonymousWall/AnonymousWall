@@ -388,7 +388,7 @@ class CommentsServiceTest {
         void shouldHideOwnComment() {
             // Arrange
             UUID commentId = UUID.randomUUID();
-            Comment comment = new Comment(testPostId, testUserId, "Test");
+            Comment comment = new Comment(testPostId, "POST", testUserId, "Test");
             comment.setId(commentId);
             comment.setHidden(false);
             
@@ -410,7 +410,7 @@ class CommentsServiceTest {
         void shouldReturnIfAlreadyHidden() {
             // Arrange
             UUID commentId = UUID.randomUUID();
-            Comment comment = new Comment(testPostId, testUserId, "Test");
+            Comment comment = new Comment(testPostId, "POST", testUserId, "Test");
             comment.setId(commentId);
             comment.setHidden(true);
             
@@ -436,7 +436,7 @@ class CommentsServiceTest {
             // Arrange
             UUID commentId = UUID.randomUUID();
             UUID otherUserId = UUID.randomUUID();
-            Comment comment = new Comment(testPostId, otherUserId, "Test");
+            Comment comment = new Comment(testPostId, "POST", otherUserId, "Test");
             comment.setId(commentId);
             
             when(postRepository.findById(testPostId)).thenReturn(Optional.of(testPost));
@@ -467,7 +467,7 @@ class CommentsServiceTest {
             // Arrange
             UUID commentId = UUID.randomUUID();
             UUID otherPostId = UUID.randomUUID();
-            Comment comment = new Comment(otherPostId, testUserId, "Test");
+            Comment comment = new Comment(otherPostId, "POST", testUserId, "Test");
             comment.setId(commentId);
             
             when(postRepository.findById(testPostId)).thenReturn(Optional.of(testPost));
@@ -489,7 +489,7 @@ class CommentsServiceTest {
         void shouldUnhideOwnComment() {
             // Arrange
             UUID commentId = UUID.randomUUID();
-            Comment comment = new Comment(testPostId, testUserId, "Test");
+            Comment comment = new Comment(testPostId, "POST", testUserId, "Test");
             comment.setId(commentId);
             comment.setHidden(true);
             
@@ -511,7 +511,7 @@ class CommentsServiceTest {
         void shouldReturnIfNotHidden() {
             // Arrange
             UUID commentId = UUID.randomUUID();
-            Comment comment = new Comment(testPostId, testUserId, "Test");
+            Comment comment = new Comment(testPostId, "POST", testUserId, "Test");
             comment.setId(commentId);
             comment.setHidden(false);
             
@@ -537,7 +537,7 @@ class CommentsServiceTest {
             // Arrange
             UUID commentId = UUID.randomUUID();
             UUID otherUserId = UUID.randomUUID();
-            Comment comment = new Comment(testPostId, otherUserId, "Test");
+            Comment comment = new Comment(testPostId, "POST", otherUserId, "Test");
             comment.setId(commentId);
             comment.setHidden(true);
             

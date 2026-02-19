@@ -91,7 +91,7 @@ public class AdminUserController {
     private AdminCommentDTO mapCommentToDTO(Comment comment) {
         AdminCommentDTO dto = new AdminCommentDTO();
         dto.setId(comment.getId());
-        dto.setPostId(comment.getPostId());
+        dto.setPostId(comment.getParentId());
         dto.setUserId(comment.getUserId());
         dto.setProfileName(comment.getProfileName());
         dto.setText(comment.getText());
