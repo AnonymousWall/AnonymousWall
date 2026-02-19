@@ -610,7 +610,8 @@ class AdminCommentServiceTest {
     private Comment createTestComment(UUID commentId) {
         Comment comment = new Comment();
         comment.setId(commentId);
-        comment.setPostId(UUID.randomUUID());
+        comment.setParentId(UUID.randomUUID());
+        comment.setParentType("POST");
         comment.setUserId(UUID.randomUUID());
         comment.setText("Test comment");
         comment.setProfileName("Anonymous");

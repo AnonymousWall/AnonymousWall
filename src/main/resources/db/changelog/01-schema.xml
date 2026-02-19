@@ -81,13 +81,19 @@
                                  referencedTableName="users" referencedColumnNames="id"/>
     </changeSet>
 
-    <!-- ================= Comments ================= -->
+    <!-- ================= Comments (Polymorphic) ================= -->
+    <!-- Note: No FK to posts/internships/marketplace_items. Application-level referential integrity
+         is used to support polymorphic associations (parent_type discriminator pattern).
+         The resolveParent() method in CommentsServiceImpl validates parent existence at runtime. -->
     <changeSet id="4-create-comments-table" author="ziyihuang">
         <createTable tableName="comments">
             <column name="id" type="CHAR(36)">
                 <constraints primaryKey="true"/>
             </column>
-            <column name="post_id" type="CHAR(36)">
+            <column name="parent_id" type="CHAR(36)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="parent_type" type="VARCHAR(50)">
                 <constraints nullable="false"/>
             </column>
             <column name="user_id" type="CHAR(36)"/>
@@ -97,9 +103,6 @@
             <column name="version" type="BIGINT" defaultValueNumeric="0"/>
             <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP"/>
         </createTable>
-        <addForeignKeyConstraint baseTableName="comments" baseColumnNames="post_id"
-                                 constraintName="fk_comments_post"
-                                 referencedTableName="posts" referencedColumnNames="id"/>
         <addForeignKeyConstraint baseTableName="comments" baseColumnNames="user_id"
                                  constraintName="fk_comments_user"
                                  referencedTableName="users" referencedColumnNames="id"/>
@@ -132,6 +135,7 @@
                 <constraints primaryKey="true"/>
             </column>
             <column name="user_id" type="CHAR(36)"/>
+            <column name="profile_name" type="VARCHAR(255)" defaultValue="Anonymous"/>
             <column name="company" type="VARCHAR(255)">
                 <constraints nullable="false"/>
             </column>
@@ -142,7 +146,11 @@
             <column name="location" type="VARCHAR(255)"/>
             <column name="description" type="TEXT"/>
             <column name="deadline" type="DATE"/>
+            <column name="wall" type="VARCHAR(20)" defaultValue="campus"/>
+            <column name="school_domain" type="VARCHAR(255)"/>
+            <column name="comment_count" type="INT" defaultValueNumeric="0"/>
             <column name="is_hidden" type="BOOLEAN" defaultValueBoolean="false"/>
+            <column name="version" type="BIGINT" defaultValueNumeric="0"/>
             <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP"/>
             <column name="updated_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP"/>
         </createTable>
@@ -167,6 +175,7 @@
                 <constraints primaryKey="true"/>
             </column>
             <column name="user_id" type="CHAR(36)"/>
+            <column name="profile_name" type="VARCHAR(255)" defaultValue="Anonymous"/>
             <column name="title" type="VARCHAR(255)">
                 <constraints nullable="false"/>
             </column>
@@ -179,6 +188,11 @@
             <column name="sold" type="BOOLEAN" defaultValueBoolean="false">
                 <constraints nullable="false"/>
             </column>
+            <column name="wall" type="VARCHAR(20)" defaultValue="campus"/>
+            <column name="school_domain" type="VARCHAR(255)"/>
+            <column name="comment_count" type="INT" defaultValueNumeric="0"/>
+            <column name="is_hidden" type="BOOLEAN" defaultValueBoolean="false"/>
+            <column name="version" type="BIGINT" defaultValueNumeric="0"/>
             <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP"/>
             <column name="updated_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP"/>
         </createTable>
@@ -233,8 +247,9 @@
         </createIndex>
 
         <!-- Comments indexes -->
-        <createIndex tableName="comments" indexName="idx_comments_post_id">
-            <column name="post_id"/>
+        <createIndex tableName="comments" indexName="idx_comments_parent">
+            <column name="parent_type"/>
+            <column name="parent_id"/>
         </createIndex>
         <createIndex tableName="comments" indexName="idx_comments_user_id">
             <column name="user_id"/>

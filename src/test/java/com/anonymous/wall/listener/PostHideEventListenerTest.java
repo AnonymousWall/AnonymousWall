@@ -43,7 +43,7 @@ class PostHideEventListenerTest {
         listener.onApplicationEvent(event);
         
         // Assert
-        verify(commentRepository, times(1)).updateByPostId(postId, true);
+        verify(commentRepository, times(1)).updateByParentTypeAndParentId("POST", postId, true);
     }
     
     @Test
@@ -55,12 +55,12 @@ class PostHideEventListenerTest {
         PostHiddenEvent event = new PostHiddenEvent(postId, userId);
         
         doThrow(new RuntimeException("Database error"))
-            .when(commentRepository).updateByPostId(any(), anyBoolean());
+            .when(commentRepository).updateByParentTypeAndParentId(any(), any(), anyBoolean());
         
         // Act - should not throw exception
         listener.onApplicationEvent(event);
         
         // Assert
-        verify(commentRepository, times(1)).updateByPostId(postId, true);
+        verify(commentRepository, times(1)).updateByParentTypeAndParentId("POST", postId, true);
     }
 }

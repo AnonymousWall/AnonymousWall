@@ -95,7 +95,7 @@ class InternshipServiceImplCreateInternshipTest {
             assertNull(result.getSalary());
             assertNull(result.getLocation());
             assertNull(result.getDescription());
-            assertNull(result.getDeadline());
+            assertNotNull(result.getDeadline());
         }
 
         @Test

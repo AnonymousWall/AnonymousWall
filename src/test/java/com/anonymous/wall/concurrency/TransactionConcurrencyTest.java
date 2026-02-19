@@ -1,4 +1,5 @@
 package com.anonymous.wall.concurrency;
+import com.anonymous.wall.model.CommentParentType;
 
 import com.anonymous.wall.entity.Post;
 import com.anonymous.wall.entity.Comment;
@@ -83,12 +84,12 @@ public class TransactionConcurrencyTest {
         // Add comments sequentially
         for (int i = 0; i < commentCount; i++) {
             CreateCommentRequest request = new CreateCommentRequest("Transactional comment #" + i);
-            commentsService.addComment(testPost.getId(), request, testUser.getId());
+            commentsService.addComment(CommentParentType.POST, testPost.getId(), request, testUser.getId());
         }
 
         Thread.sleep(500);
 
-        long actualComments = commentRepository.findByPostIdAndHiddenFalse(testPost.getId()).size();
+        long actualComments = commentRepository.findByParentTypeAndParentIdAndHiddenFalse("POST", testPost.getId()).size();
         Post refreshedPost = postRepository.findById(testPost.getId()).orElseThrow();
 
         // Most important: count matches actual
@@ -141,20 +142,20 @@ public class TransactionConcurrencyTest {
         Comment[] comments = new Comment[commentCount];
         for (int i = 0; i < commentCount; i++) {
             CreateCommentRequest request = new CreateCommentRequest("Comment to hide #" + i);
-            comments[i] = commentsService.addComment(testPost.getId(), request, testUser.getId());
+            comments[i] = commentsService.addComment(CommentParentType.POST, testPost.getId(), request, testUser.getId());
         }
 
         Thread.sleep(500);
 
         // Hide comments sequentially
         for (int i = 0; i < commentCount; i++) {
-            commentsService.hideComment(testPost.getId(), comments[i].getId(), testUser.getId());
+            commentsService.hideComment(CommentParentType.POST, testPost.getId(), comments[i].getId(), testUser.getId());
         }
 
         Thread.sleep(500);
 
         Post afterHide = postRepository.findById(testPost.getId()).orElseThrow();
-        long visibleAfterHide = commentRepository.findByPostIdAndHiddenFalse(testPost.getId()).size();
+        long visibleAfterHide = commentRepository.findByParentTypeAndParentIdAndHiddenFalse("POST", testPost.getId()).size();
 
         // Verify count matches visible comments
         assertEquals(visibleAfterHide, afterHide.getCommentCount(),
@@ -167,7 +168,7 @@ public class TransactionConcurrencyTest {
     @Test
     void testRapidStateCycles() throws InterruptedException {
         CreateCommentRequest request = new CreateCommentRequest("Rapid cycle comment");
-        Comment comment = commentsService.addComment(testPost.getId(), request, testUser.getId());
+        Comment comment = commentsService.addComment(CommentParentType.POST, testPost.getId(), request, testUser.getId());
 
         int cycles = 5;
         int threadCount = 4;
@@ -181,9 +182,9 @@ public class TransactionConcurrencyTest {
                     try {
                         startLatch.await();
                         for (int cycle = 0; cycle < cycles; cycle++) {
-                            commentsService.hideComment(testPost.getId(), comment.getId(), testUser.getId());
+                            commentsService.hideComment(CommentParentType.POST, testPost.getId(), comment.getId(), testUser.getId());
                             Thread.sleep(10);
-                            commentsService.unhideComment(testPost.getId(), comment.getId(), testUser.getId());
+                            commentsService.unhideComment(CommentParentType.POST, testPost.getId(), comment.getId(), testUser.getId());
                             Thread.sleep(10);
                         }
                     } catch (InterruptedException e) {
@@ -219,7 +220,7 @@ public class TransactionConcurrencyTest {
         // Add comments sequentially
         for (int i = 0; i < commentCount; i++) {
             CreateCommentRequest request = new CreateCommentRequest("Comment " + i);
-            commentsService.addComment(testPost.getId(), request, testUser.getId());
+            commentsService.addComment(CommentParentType.POST, testPost.getId(), request, testUser.getId());
         }
 
         Thread.sleep(500);
@@ -230,7 +231,7 @@ public class TransactionConcurrencyTest {
         Thread.sleep(500);
 
         Post finalPost = postRepository.findById(testPost.getId()).orElseThrow();
-        long visibleComments = commentRepository.findByPostIdAndHiddenFalse(testPost.getId()).size();
+        long visibleComments = commentRepository.findByParentTypeAndParentIdAndHiddenFalse("POST", testPost.getId()).size();
 
         // Verify post is hidden
         assertTrue(finalPost.isHidden(), "Post should be hidden");

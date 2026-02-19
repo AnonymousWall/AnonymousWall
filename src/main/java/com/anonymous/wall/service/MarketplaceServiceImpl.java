@@ -35,19 +35,19 @@ public class MarketplaceServiceImpl implements MarketplaceService {
     public MarketplaceItem createItem(CreateItemRequest request, UUID userId) {
         log.info("Creating marketplace item for user {}", userId);
 
-        // Validate user exists
         Optional<UserEntity> userOpt = userRepository.findById(userId);
         if (userOpt.isEmpty()) {
             throw new IllegalArgumentException("User not found");
         }
 
-        // Validate required fields
+        UserEntity user = userOpt.get();
+
         if (request.getTitle() == null || request.getTitle().trim().isEmpty()) {
             throw new IllegalArgumentException("Title is required");
         }
 
         String trimmedTitle = request.getTitle().trim();
-        
+
         if (trimmedTitle.length() > 255) {
             throw new IllegalArgumentException("Title cannot exceed 255 characters");
         }
@@ -61,7 +61,6 @@ public class MarketplaceServiceImpl implements MarketplaceService {
             throw new IllegalArgumentException("Price must be greater than or equal to 0");
         }
 
-        // Validate condition if provided
         if (request.getCondition() != null) {
             String condition = request.getCondition().getValue();
             if (!isValidCondition(condition)) {
@@ -69,20 +68,40 @@ public class MarketplaceServiceImpl implements MarketplaceService {
             }
         }
 
-        // Create the item
+        // Determine wall: if wall is not specified in request, default to campus
+        String wall = "campus";
+        if (request.getWall() != null) {
+            String wallStr = request.getWall().getValue();
+            if ("national".equals(wallStr) || "campus".equals(wallStr)) {
+                wall = wallStr;
+            }
+        }
+
+        // For campus posts, validate school domain
+        String schoolDomain = null;
+        if ("campus".equals(wall)) {
+            schoolDomain = user.getSchoolDomain();
+            if (schoolDomain == null || schoolDomain.trim().isEmpty()) {
+                throw new IllegalArgumentException("You must have a school domain to post to campus wall");
+            }
+        }
+
         MarketplaceItem item = new MarketplaceItem();
         item.setUserId(userId);
+        item.setProfileName(user.getProfileName());
         item.setTitle(trimmedTitle);
         item.setDescription(request.getDescription() != null ? request.getDescription() : null);
         item.setPrice(price);
         item.setCategory(request.getCategory() != null ? request.getCategory() : null);
         item.setCondition(request.getCondition() != null ? request.getCondition().getValue() : null);
         item.setSold(false);
+        item.setWall(wall);
+        item.setSchoolDomain(schoolDomain);
         item.setCreatedAt(OffsetDateTime.now());
         item.setUpdatedAt(OffsetDateTime.now());
 
         MarketplaceItem saved = marketplaceItemRepository.save(item);
-        log.info("Created marketplace item {} for user {}", saved.getId(), userId);
+        log.info("Created marketplace item {} for user {}, wall={}, schoolDomain={}", saved.getId(), userId, wall, schoolDomain);
         return saved;
     }
 
@@ -91,7 +110,6 @@ public class MarketplaceServiceImpl implements MarketplaceService {
     public MarketplaceItem updateItem(UUID itemId, UpdateItemRequest request, UUID userId) {
         log.info("Updating marketplace item {} for user {}", itemId, userId);
 
-        // Find the item
         Optional<MarketplaceItem> itemOpt = marketplaceItemRepository.findById(itemId);
         if (itemOpt.isEmpty()) {
             throw new IllegalArgumentException("Item not found");
@@ -99,12 +117,10 @@ public class MarketplaceServiceImpl implements MarketplaceService {
 
         MarketplaceItem item = itemOpt.get();
 
-        // Check ownership
         if (!item.getUserId().equals(userId)) {
             throw new IllegalArgumentException("You can only update your own items");
         }
 
-        // Perform null-safe partial updates
         boolean updated = false;
 
         if (request.getTitle() != null) {
@@ -171,7 +187,6 @@ public class MarketplaceServiceImpl implements MarketplaceService {
             sortBy = "newest";
         }
 
-        // If sold filter is provided, use filtered queries
         if (sold != null) {
             switch (sortBy.toLowerCase()) {
                 case "price-asc":
@@ -184,7 +199,6 @@ public class MarketplaceServiceImpl implements MarketplaceService {
             }
         }
 
-        // No sold filter, return all items
         switch (sortBy.toLowerCase()) {
             case "price-asc":
                 return marketplaceItemRepository.findAllOrderByPriceAsc(pageable);
@@ -197,10 +211,100 @@ public class MarketplaceServiceImpl implements MarketplaceService {
     }
 
     @Override
+    public Page<MarketplaceItem> getItemsByWall(String wall, Pageable pageable, UUID userId, String schoolDomain, String sortBy, Boolean sold) {
+        log.info("Listing marketplace items by wall={}, sortBy={}, schoolDomain={}, sold={}", wall, sortBy, schoolDomain, sold);
+
+        if (sortBy == null) {
+            sortBy = "newest";
+        }
+
+        if ("campus".equals(wall)) {
+            if (schoolDomain == null || schoolDomain.trim().isEmpty()) {
+                throw new IllegalArgumentException("School domain is required to view campus marketplace items");
+            }
+            if (sold != null) {
+                switch (sortBy.toLowerCase()) {
+                    case "oldest":
+                        return marketplaceItemRepository.findByWallAndSchoolDomainAndSoldAndHiddenFalseOrderByCreatedAtAsc("campus", schoolDomain, sold, pageable);
+                    case "price-asc":
+                        return marketplaceItemRepository.findByWallAndSchoolDomainAndSoldAndHiddenFalseOrderByPriceAsc("campus", schoolDomain, sold, pageable);
+                    case "price-desc":
+                        return marketplaceItemRepository.findByWallAndSchoolDomainAndSoldAndHiddenFalseOrderByPriceDesc("campus", schoolDomain, sold, pageable);
+                    case "newest":
+                    default:
+                        return marketplaceItemRepository.findByWallAndSchoolDomainAndSoldAndHiddenFalseOrderByCreatedAtDesc("campus", schoolDomain, sold, pageable);
+                }
+            }
+            switch (sortBy.toLowerCase()) {
+                case "oldest":
+                    return marketplaceItemRepository.findByWallAndSchoolDomainAndHiddenFalseOrderByCreatedAtAsc("campus", schoolDomain, pageable);
+                case "price-asc":
+                    return marketplaceItemRepository.findByWallAndSchoolDomainAndHiddenFalseOrderByPriceAsc("campus", schoolDomain, pageable);
+                case "price-desc":
+                    return marketplaceItemRepository.findByWallAndSchoolDomainAndHiddenFalseOrderByPriceDesc("campus", schoolDomain, pageable);
+                case "newest":
+                default:
+                    return marketplaceItemRepository.findByWallAndSchoolDomainAndHiddenFalseOrderByCreatedAtDesc("campus", schoolDomain, pageable);
+            }
+        } else {
+            // National wall
+            if (sold != null) {
+                switch (sortBy.toLowerCase()) {
+                    case "oldest":
+                        return marketplaceItemRepository.findByWallAndSoldAndHiddenFalseOrderByCreatedAtAsc("national", sold, pageable);
+                    case "price-asc":
+                        return marketplaceItemRepository.findByWallAndSoldAndHiddenFalseOrderByPriceAsc("national", sold, pageable);
+                    case "price-desc":
+                        return marketplaceItemRepository.findByWallAndSoldAndHiddenFalseOrderByPriceDesc("national", sold, pageable);
+                    case "newest":
+                    default:
+                        return marketplaceItemRepository.findByWallAndSoldAndHiddenFalseOrderByCreatedAtDesc("national", sold, pageable);
+                }
+            }
+            switch (sortBy.toLowerCase()) {
+                case "oldest":
+                    return marketplaceItemRepository.findByWallAndHiddenFalseOrderByCreatedAtAsc("national", pageable);
+                case "price-asc":
+                    return marketplaceItemRepository.findByWallAndHiddenFalseOrderByPriceAsc("national", pageable);
+                case "price-desc":
+                    return marketplaceItemRepository.findByWallAndHiddenFalseOrderByPriceDesc("national", pageable);
+                case "newest":
+                default:
+                    return marketplaceItemRepository.findByWallAndHiddenFalseOrderByCreatedAtDesc("national", pageable);
+            }
+        }
+    }
+
+    @Override
     public MarketplaceItem getItem(UUID itemId) {
         log.info("Getting marketplace item {}", itemId);
         return marketplaceItemRepository.findById(itemId)
                 .orElseThrow(() -> new IllegalArgumentException("Item not found"));
+    }
+
+    @Override
+    public MarketplaceItem getItem(UUID itemId, UUID userId) {
+        log.info("Getting marketplace item {} for user {}", itemId, userId);
+        MarketplaceItem item = marketplaceItemRepository.findById(itemId)
+                .orElseThrow(() -> new IllegalArgumentException("Item not found"));
+
+        if (item.isHidden()) {
+            throw new IllegalArgumentException("Item not found");
+        }
+
+        if ("campus".equals(item.getWall())) {
+            Optional<UserEntity> userOpt = userRepository.findById(userId);
+            if (userOpt.isEmpty()) {
+                throw new IllegalArgumentException("User not found");
+            }
+            UserEntity user = userOpt.get();
+            String userSchoolDomain = user.getSchoolDomain();
+            if (userSchoolDomain == null || !userSchoolDomain.equals(item.getSchoolDomain())) {
+                throw new IllegalArgumentException("You do not have access to posts from other schools");
+            }
+        }
+
+        return item;
     }
 
     private boolean isValidCondition(String condition) {

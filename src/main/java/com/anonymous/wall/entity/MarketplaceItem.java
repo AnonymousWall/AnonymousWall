@@ -8,7 +8,7 @@ import java.time.OffsetDateTime;
 import java.util.UUID;
 
 @MappedEntity(value = "marketplace_items", namingStrategy = NamingStrategies.Raw.class)
-public class MarketplaceItem {
+public class MarketplaceItem implements Commentable {
 
     @Id
     @AutoPopulated
@@ -16,6 +16,9 @@ public class MarketplaceItem {
 
     @MappedProperty("user_id")
     private UUID userId;
+
+    @MappedProperty("profile_name")
+    private String profileName = "Anonymous";
 
     @MappedProperty("title")
     private String title;
@@ -35,6 +38,22 @@ public class MarketplaceItem {
     @MappedProperty("sold")
     private boolean sold = false;
 
+    @MappedProperty("wall")
+    private String wall = "campus";
+
+    @MappedProperty("school_domain")
+    private String schoolDomain;
+
+    @MappedProperty("comment_count")
+    private int commentCount = 0;
+
+    @MappedProperty("is_hidden")
+    private boolean hidden = false;
+
+    @Version
+    @MappedProperty("version")
+    private Long version = 0L;
+
     @MappedProperty("created_at")
     private OffsetDateTime createdAt = OffsetDateTime.now();
 
@@ -53,90 +72,71 @@ public class MarketplaceItem {
         this.price = price;
         this.category = category;
         this.condition = condition;
+        this.profileName = "Anonymous";
         this.sold = false;
+        this.wall = "campus";
+        this.commentCount = 0;
+        this.hidden = false;
         this.createdAt = OffsetDateTime.now();
         this.updatedAt = OffsetDateTime.now();
+        this.version = 0L;
     }
 
     // ================= Getters & Setters =================
 
-    public UUID getId() {
-        return id;
-    }
+    public UUID getId() { return id; }
+    public void setId(UUID id) { this.id = id; }
 
-    public void setId(UUID id) {
-        this.id = id;
-    }
+    public UUID getUserId() { return userId; }
+    public void setUserId(UUID userId) { this.userId = userId; }
 
-    public UUID getUserId() {
-        return userId;
-    }
+    public String getProfileName() { return profileName; }
+    public void setProfileName(String profileName) { this.profileName = profileName != null ? profileName : "Anonymous"; }
 
-    public void setUserId(UUID userId) {
-        this.userId = userId;
-    }
+    public String getTitle() { return title; }
+    public void setTitle(String title) { this.title = title; }
 
-    public String getTitle() {
-        return title;
-    }
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
 
-    public void setTitle(String title) {
-        this.title = title;
-    }
+    public BigDecimal getPrice() { return price; }
+    public void setPrice(BigDecimal price) { this.price = price; }
 
-    public String getDescription() {
-        return description;
-    }
+    public String getCategory() { return category; }
+    public void setCategory(String category) { this.category = category; }
 
-    public void setDescription(String description) {
-        this.description = description;
-    }
+    public String getCondition() { return condition; }
+    public void setCondition(String condition) { this.condition = condition; }
 
-    public BigDecimal getPrice() {
-        return price;
-    }
+    public boolean isSold() { return sold; }
+    public void setSold(boolean sold) { this.sold = sold; }
 
-    public void setPrice(BigDecimal price) {
-        this.price = price;
-    }
+    public String getWall() { return wall; }
+    public void setWall(String wall) { this.wall = wall; }
 
-    public String getCategory() {
-        return category;
-    }
+    public String getSchoolDomain() { return schoolDomain; }
+    public void setSchoolDomain(String schoolDomain) { this.schoolDomain = schoolDomain; }
 
-    public void setCategory(String category) {
-        this.category = category;
-    }
+    public int getCommentCount() { return commentCount; }
+    public void setCommentCount(int commentCount) { this.commentCount = commentCount; }
 
-    public String getCondition() {
-        return condition;
-    }
+    public boolean isHidden() { return hidden; }
+    public void setHidden(boolean hidden) { this.hidden = hidden; }
 
-    public void setCondition(String condition) {
-        this.condition = condition;
-    }
+    public Long getVersion() { return version; }
+    public void setVersion(Long version) { this.version = version; }
 
-    public boolean isSold() {
-        return sold;
-    }
+    public OffsetDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(OffsetDateTime createdAt) { this.createdAt = createdAt; }
 
-    public void setSold(boolean sold) {
-        this.sold = sold;
-    }
+    public OffsetDateTime getUpdatedAt() { return updatedAt; }
+    public void setUpdatedAt(OffsetDateTime updatedAt) { this.updatedAt = updatedAt; }
 
-    public OffsetDateTime getCreatedAt() {
-        return createdAt;
-    }
+    @Override
+    public void incrementCommentCount() { this.commentCount++; }
 
-    public void setCreatedAt(OffsetDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public OffsetDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(OffsetDateTime updatedAt) {
-        this.updatedAt = updatedAt;
+    @Override
+    public void decrementCommentCount() {
+        if (this.commentCount > 0) { this.commentCount--; }
     }
 }

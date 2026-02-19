@@ -14,58 +14,63 @@ import java.util.UUID;
 @JdbcRepository(dialect = Dialect.MYSQL)
 public interface MarketplaceItemRepository extends CrudRepository<MarketplaceItem, UUID> {
 
-    /**
-     * Find all items with pagination, sorted by created time (newest first)
-     */
     Page<MarketplaceItem> findAllOrderByCreatedAtDesc(Pageable pageable);
 
-    /**
-     * Find all items with pagination, sorted by price ascending
-     */
     Page<MarketplaceItem> findAllOrderByPriceAsc(Pageable pageable);
 
-    /**
-     * Find all items with pagination, sorted by price descending
-     */
     Page<MarketplaceItem> findAllOrderByPriceDesc(Pageable pageable);
 
-    /**
-     * Find items by user ID
-     */
+    // Wall-based queries (same pattern as Posts)
+    Page<MarketplaceItem> findByWallAndHiddenFalseOrderByCreatedAtDesc(String wall, Pageable pageable);
+
+    Page<MarketplaceItem> findByWallAndHiddenFalseOrderByCreatedAtAsc(String wall, Pageable pageable);
+
+    Page<MarketplaceItem> findByWallAndSchoolDomainAndHiddenFalseOrderByCreatedAtDesc(String wall, String schoolDomain, Pageable pageable);
+
+    Page<MarketplaceItem> findByWallAndSchoolDomainAndHiddenFalseOrderByCreatedAtAsc(String wall, String schoolDomain, Pageable pageable);
+
+    Page<MarketplaceItem> findByWallAndHiddenFalseOrderByPriceAsc(String wall, Pageable pageable);
+
+    Page<MarketplaceItem> findByWallAndHiddenFalseOrderByPriceDesc(String wall, Pageable pageable);
+
+    Page<MarketplaceItem> findByWallAndSchoolDomainAndHiddenFalseOrderByPriceAsc(String wall, String schoolDomain, Pageable pageable);
+
+    Page<MarketplaceItem> findByWallAndSchoolDomainAndHiddenFalseOrderByPriceDesc(String wall, String schoolDomain, Pageable pageable);
+
+    // Wall + sold filtered queries
+    Page<MarketplaceItem> findByWallAndSoldAndHiddenFalseOrderByCreatedAtDesc(String wall, boolean sold, Pageable pageable);
+
+    Page<MarketplaceItem> findByWallAndSoldAndHiddenFalseOrderByCreatedAtAsc(String wall, boolean sold, Pageable pageable);
+
+    Page<MarketplaceItem> findByWallAndSoldAndHiddenFalseOrderByPriceAsc(String wall, boolean sold, Pageable pageable);
+
+    Page<MarketplaceItem> findByWallAndSoldAndHiddenFalseOrderByPriceDesc(String wall, boolean sold, Pageable pageable);
+
+    Page<MarketplaceItem> findByWallAndSchoolDomainAndSoldAndHiddenFalseOrderByCreatedAtDesc(String wall, String schoolDomain, boolean sold, Pageable pageable);
+
+    Page<MarketplaceItem> findByWallAndSchoolDomainAndSoldAndHiddenFalseOrderByCreatedAtAsc(String wall, String schoolDomain, boolean sold, Pageable pageable);
+
+    Page<MarketplaceItem> findByWallAndSchoolDomainAndSoldAndHiddenFalseOrderByPriceAsc(String wall, String schoolDomain, boolean sold, Pageable pageable);
+
+    Page<MarketplaceItem> findByWallAndSchoolDomainAndSoldAndHiddenFalseOrderByPriceDesc(String wall, String schoolDomain, boolean sold, Pageable pageable);
+
     List<MarketplaceItem> findByUserId(UUID userId);
 
-    /**
-     * Find items by user ID with pagination
-     */
     Page<MarketplaceItem> findByUserIdOrderByCreatedAtDesc(UUID userId, Pageable pageable);
 
-    /**
-     * Find item by ID
-     */
     Optional<MarketplaceItem> findById(UUID id);
 
-    /**
-     * Find items by sold status
-     */
     Page<MarketplaceItem> findBySoldOrderByCreatedAtDesc(boolean sold, Pageable pageable);
 
-    /**
-     * Find items by sold status, sorted by price ascending
-     */
     Page<MarketplaceItem> findBySoldOrderByPriceAsc(boolean sold, Pageable pageable);
 
-    /**
-     * Find items by sold status, sorted by price descending
-     */
     Page<MarketplaceItem> findBySoldOrderByPriceDesc(boolean sold, Pageable pageable);
 
-    /**
-     * Find items by category
-     */
     Page<MarketplaceItem> findByCategoryOrderByCreatedAtDesc(String category, Pageable pageable);
 
-    /**
-     * Count items by user ID
-     */
     long countByUserId(UUID userId);
+
+    MarketplaceItem update(MarketplaceItem item);
+
+    void updateProfileNameByUserId(UUID userId, String profileName);
 }

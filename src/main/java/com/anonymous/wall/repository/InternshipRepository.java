@@ -14,33 +14,28 @@ import java.util.UUID;
 @JdbcRepository(dialect = Dialect.MYSQL)
 public interface InternshipRepository extends CrudRepository<Internship, UUID> {
 
-    /**
-     * Find all non-hidden internships with pagination, sorted by created time (newest first)
-     */
     Page<Internship> findByHiddenOrderByCreatedAtDesc(boolean hidden, Pageable pageable);
 
-    /**
-     * Find all non-hidden internships with pagination, sorted by created time (oldest first)
-     */
     Page<Internship> findByHiddenOrderByCreatedAtAsc(boolean hidden, Pageable pageable);
 
-    /**
-     * Find internships by user ID
-     */
+    // Wall-based queries (same pattern as Posts)
+    Page<Internship> findByWallAndHiddenFalseOrderByCreatedAtDesc(String wall, Pageable pageable);
+
+    Page<Internship> findByWallAndHiddenFalseOrderByCreatedAtAsc(String wall, Pageable pageable);
+
+    Page<Internship> findByWallAndSchoolDomainAndHiddenFalseOrderByCreatedAtDesc(String wall, String schoolDomain, Pageable pageable);
+
+    Page<Internship> findByWallAndSchoolDomainAndHiddenFalseOrderByCreatedAtAsc(String wall, String schoolDomain, Pageable pageable);
+
     List<Internship> findByUserId(UUID userId);
 
-    /**
-     * Find internships by user ID with pagination
-     */
     Page<Internship> findByUserIdOrderByCreatedAtDesc(UUID userId, Pageable pageable);
 
-    /**
-     * Find internship by ID
-     */
     Optional<Internship> findById(UUID id);
 
-    /**
-     * Count internships by user ID
-     */
     long countByUserId(UUID userId);
+
+    Internship update(Internship internship);
+
+    void updateProfileNameByUserId(UUID userId, String profileName);
 }

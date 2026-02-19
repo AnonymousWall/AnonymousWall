@@ -1,4 +1,5 @@
 package com.anonymous.wall.controller;
+import com.anonymous.wall.model.CommentParentType;
 
 import com.anonymous.wall.entity.Comment;
 import com.anonymous.wall.entity.Post;
@@ -111,13 +112,13 @@ class UserControllerTest {
         @DisplayName("Should return user's own comments")
         void shouldReturnUserOwnComments() {
             // User1 creates comments on both posts
-            commentsService.addComment(testPost1.getId(),
+            commentsService.addComment(CommentParentType.POST, testPost1.getId(),
                 new com.anonymous.wall.model.CreateCommentRequest("User1 comment on post1"), testUser1.getId());
-            commentsService.addComment(testPost2.getId(),
+            commentsService.addComment(CommentParentType.POST, testPost2.getId(),
                 new com.anonymous.wall.model.CreateCommentRequest("User1 comment on post2"), testUser1.getId());
 
             // User2 creates a comment
-            commentsService.addComment(testPost1.getId(),
+            commentsService.addComment(CommentParentType.POST, testPost1.getId(),
                 new com.anonymous.wall.model.CreateCommentRequest("User2 comment on post1"), testUser2.getId());
 
             String endpoint = BASE_PATH;
@@ -164,13 +165,13 @@ class UserControllerTest {
         void shouldOnlyReturnOwnComments() {
             // User1 creates 3 comments
             for (int i = 0; i < 3; i++) {
-                commentsService.addComment(testPost1.getId(),
+                commentsService.addComment(CommentParentType.POST, testPost1.getId(),
                     new com.anonymous.wall.model.CreateCommentRequest("User1 comment " + i), testUser1.getId());
             }
 
             // User2 creates 5 comments
             for (int i = 0; i < 5; i++) {
-                commentsService.addComment(testPost1.getId(),
+                commentsService.addComment(CommentParentType.POST, testPost1.getId(),
                     new com.anonymous.wall.model.CreateCommentRequest("User2 comment " + i), testUser2.getId());
             }
 
@@ -202,7 +203,7 @@ class UserControllerTest {
         void shouldPaginateCommentsCorrectly() {
             // Create 25 comments for user1
             for (int i = 0; i < 25; i++) {
-                commentsService.addComment(testPost1.getId(),
+                commentsService.addComment(CommentParentType.POST, testPost1.getId(),
                     new com.anonymous.wall.model.CreateCommentRequest("Comment " + i), testUser1.getId());
             }
 
@@ -239,7 +240,7 @@ class UserControllerTest {
         void shouldHandleCustomPageSize() {
             // Create 15 comments
             for (int i = 0; i < 15; i++) {
-                commentsService.addComment(testPost1.getId(),
+                commentsService.addComment(CommentParentType.POST, testPost1.getId(),
                     new com.anonymous.wall.model.CreateCommentRequest("Comment " + i), testUser1.getId());
             }
 
@@ -266,7 +267,7 @@ class UserControllerTest {
         void shouldSortByNewestFirst() throws InterruptedException {
             // Create comments with delays to ensure different timestamps
             for (int i = 1; i <= 3; i++) {
-                commentsService.addComment(testPost1.getId(),
+                commentsService.addComment(CommentParentType.POST, testPost1.getId(),
                     new com.anonymous.wall.model.CreateCommentRequest("Comment " + i), testUser1.getId());
                 Thread.sleep(1000); // 1 second delay to ensure different timestamps
             }
@@ -290,7 +291,7 @@ class UserControllerTest {
         void shouldSortByOldestFirst() throws InterruptedException {
             // Create comments with delays
             for (int i = 1; i <= 3; i++) {
-                commentsService.addComment(testPost1.getId(),
+                commentsService.addComment(CommentParentType.POST, testPost1.getId(),
                     new com.anonymous.wall.model.CreateCommentRequest("Comment " + i), testUser1.getId());
                 Thread.sleep(1000); // 1 second delay to ensure different timestamps
             }
@@ -318,15 +319,15 @@ class UserControllerTest {
         @DisplayName("Should exclude hidden comments")
         void shouldExcludeHiddenCommentsByDefault() {
             // Create 3 comments
-            Comment comment1 = commentsService.addComment(testPost1.getId(),
+            Comment comment1 = commentsService.addComment(CommentParentType.POST, testPost1.getId(),
                 new com.anonymous.wall.model.CreateCommentRequest("Comment 1"), testUser1.getId());
-            Comment comment2 = commentsService.addComment(testPost1.getId(),
+            Comment comment2 = commentsService.addComment(CommentParentType.POST, testPost1.getId(),
                 new com.anonymous.wall.model.CreateCommentRequest("Comment 2"), testUser1.getId());
-            commentsService.addComment(testPost1.getId(),
+            commentsService.addComment(CommentParentType.POST, testPost1.getId(),
                 new com.anonymous.wall.model.CreateCommentRequest("Comment 3"), testUser1.getId());
 
             // Hide comment2
-            commentsService.hideComment(testPost1.getId(), comment2.getId(), testUser1.getId());
+            commentsService.hideComment(CommentParentType.POST, testPost1.getId(), comment2.getId(), testUser1.getId());
 
             String endpoint = BASE_PATH;
             HttpRequest<?> request = HttpRequest.GET(endpoint).bearerAuth(jwtToken1);
@@ -348,7 +349,7 @@ class UserControllerTest {
         @Test
         @DisplayName("Should handle invalid page parameter")
         void shouldHandleInvalidPageParameter() {
-            commentsService.addComment(testPost1.getId(),
+            commentsService.addComment(CommentParentType.POST, testPost1.getId(),
                 new com.anonymous.wall.model.CreateCommentRequest("Comment 1"), testUser1.getId());
 
             // Page 0 should default to 1
@@ -366,7 +367,7 @@ class UserControllerTest {
         @Test
         @DisplayName("Should handle limit out of bounds")
         void shouldHandleLimitOutOfBounds() {
-            commentsService.addComment(testPost1.getId(),
+            commentsService.addComment(CommentParentType.POST, testPost1.getId(),
                 new com.anonymous.wall.model.CreateCommentRequest("Comment 1"), testUser1.getId());
 
             // Limit > 100 should default to 20
@@ -384,7 +385,7 @@ class UserControllerTest {
         @Test
         @DisplayName("Should handle page beyond total pages")
         void shouldHandlePageBeyondTotal() {
-            commentsService.addComment(testPost1.getId(),
+            commentsService.addComment(CommentParentType.POST, testPost1.getId(),
                 new com.anonymous.wall.model.CreateCommentRequest("Comment 1"), testUser1.getId());
 
             // Request page 10 when there's only 1 page
@@ -409,11 +410,11 @@ class UserControllerTest {
         void shouldEfficientlyRetrieveLargeNumberOfComments() {
             // Create 100 comments across multiple posts
             for (int i = 0; i < 50; i++) {
-                commentsService.addComment(testPost1.getId(),
+                commentsService.addComment(CommentParentType.POST, testPost1.getId(),
                     new com.anonymous.wall.model.CreateCommentRequest("Comment on post1 - " + i), testUser1.getId());
             }
             for (int i = 0; i < 50; i++) {
-                commentsService.addComment(testPost2.getId(),
+                commentsService.addComment(CommentParentType.POST, testPost2.getId(),
                     new com.anonymous.wall.model.CreateCommentRequest("Comment on post2 - " + i), testUser1.getId());
             }
 
@@ -678,7 +679,7 @@ class UserControllerTest {
             testPost.setProfileName(testUser.getProfileName());
             testPost = postRepository.save(testPost);
 
-            Comment testComment = new Comment(testPost.getId(), testUserId, "Test Comment");
+            Comment testComment = new Comment(testPost.getId(), "POST", testUserId, "Test Comment");
             testComment.setProfileName(testUser.getProfileName());
             testComment = commentRepository.save(testComment);
 

@@ -1,4 +1,5 @@
 package com.anonymous.wall.service;
+import com.anonymous.wall.model.CommentParentType;
 
 import com.anonymous.wall.entity.Comment;
 import com.anonymous.wall.entity.Post;
@@ -145,15 +146,15 @@ class PostsServiceHidePostTests {
         @DisplayName("Should hide all comments when hiding post")
         void shouldHideAllCommentsWhenHidingPost() throws InterruptedException {
             // Arrange - Create 3 comments
-            Comment comment1 = commentsService.addComment(testPost.getId(),
+            Comment comment1 = commentsService.addComment(CommentParentType.POST, testPost.getId(),
                     new CreateCommentRequest("Comment 1"), testUser.getId());
-            Comment comment2 = commentsService.addComment(testPost.getId(),
+            Comment comment2 = commentsService.addComment(CommentParentType.POST, testPost.getId(),
                     new CreateCommentRequest("Comment 2"), otherUser.getId());
-            Comment comment3 = commentsService.addComment(testPost.getId(),
+            Comment comment3 = commentsService.addComment(CommentParentType.POST, testPost.getId(),
                     new CreateCommentRequest("Comment 3"), testUser.getId());
 
             // Verify comments are visible
-            List<Comment> visibleBefore = commentRepository.findByPostIdAndHiddenFalse(testPost.getId());
+            List<Comment> visibleBefore = commentRepository.findByParentTypeAndParentIdAndHiddenFalse("POST", testPost.getId());
             assertEquals(3, visibleBefore.size());
 
             // Act - Hide post
@@ -163,7 +164,7 @@ class PostsServiceHidePostTests {
             Thread.sleep(500);
 
             // Assert - All comments should be hidden
-            List<Comment> visibleAfter = commentRepository.findByPostIdAndHiddenFalse(testPost.getId());
+            List<Comment> visibleAfter = commentRepository.findByParentTypeAndParentIdAndHiddenFalse("POST", testPost.getId());
             assertEquals(0, visibleAfter.size());
 
             // Verify each comment is marked as hidden
@@ -187,13 +188,13 @@ class PostsServiceHidePostTests {
         @DisplayName("Should hide comments from multiple users")
         void shouldHideCommentsFromMultipleUsers() throws InterruptedException {
             // Arrange - Create comments from both users
-            commentsService.addComment(testPost.getId(),
+            commentsService.addComment(CommentParentType.POST, testPost.getId(),
                     new CreateCommentRequest("User1 comment 1"), testUser.getId());
-            commentsService.addComment(testPost.getId(),
+            commentsService.addComment(CommentParentType.POST, testPost.getId(),
                     new CreateCommentRequest("User2 comment 1"), otherUser.getId());
-            commentsService.addComment(testPost.getId(),
+            commentsService.addComment(CommentParentType.POST, testPost.getId(),
                     new CreateCommentRequest("User1 comment 2"), testUser.getId());
-            commentsService.addComment(testPost.getId(),
+            commentsService.addComment(CommentParentType.POST, testPost.getId(),
                     new CreateCommentRequest("User2 comment 2"), otherUser.getId());
 
             // Act - Hide post
@@ -203,11 +204,11 @@ class PostsServiceHidePostTests {
             Thread.sleep(500);
 
             // Assert - All comments hidden regardless of author
-            List<Comment> visibleComments = commentRepository.findByPostIdAndHiddenFalse(testPost.getId());
+            List<Comment> visibleComments = commentRepository.findByParentTypeAndParentIdAndHiddenFalse("POST", testPost.getId());
             assertEquals(0, visibleComments.size());
 
             // All comments should be in hidden state
-            List<Comment> allComments = commentRepository.findAllByPostId(testPost.getId());
+            List<Comment> allComments = commentRepository.findAllByParentTypeAndParentId("POST", testPost.getId());
             for (Comment comment : allComments) {
                 assertTrue(comment.isHidden());
             }
@@ -280,23 +281,23 @@ class PostsServiceHidePostTests {
         @DisplayName("Should restore all comments when unhiding post")
         void shouldRestoreAllCommentsWhenUnhidingPost() {
             // Arrange - Create comments and hide post
-            Comment comment1 = commentsService.addComment(testPost.getId(),
+            Comment comment1 = commentsService.addComment(CommentParentType.POST, testPost.getId(),
                     new CreateCommentRequest("Comment 1"), testUser.getId());
-            Comment comment2 = commentsService.addComment(testPost.getId(),
+            Comment comment2 = commentsService.addComment(CommentParentType.POST, testPost.getId(),
                     new CreateCommentRequest("Comment 2"), otherUser.getId());
 
             // Hide post (cascades to comments)
             postsService.hidePost(testPost.getId(), testUser.getId());
 
             // Verify comments are hidden
-            List<Comment> hiddenComments = commentRepository.findByPostIdAndHiddenFalse(testPost.getId());
+            List<Comment> hiddenComments = commentRepository.findByParentTypeAndParentIdAndHiddenFalse("POST", testPost.getId());
             assertEquals(0, hiddenComments.size());
 
             // Act - Unhide post
             postsService.unhidePost(testPost.getId(), testUser.getId());
 
             // Assert - Comments should be restored
-            List<Comment> restoredComments = commentRepository.findByPostIdAndHiddenFalse(testPost.getId());
+            List<Comment> restoredComments = commentRepository.findByParentTypeAndParentIdAndHiddenFalse("POST", testPost.getId());
             assertEquals(2, restoredComments.size());
 
             // Verify each comment is unhidden
@@ -322,11 +323,11 @@ class PostsServiceHidePostTests {
         @DisplayName("Should preserve comment count through hide/unhide cycle")
         void shouldPreserveCommentCount() {
             // Arrange - Create comments
-            commentsService.addComment(testPost.getId(),
+            commentsService.addComment(CommentParentType.POST, testPost.getId(),
                     new CreateCommentRequest("Comment 1"), testUser.getId());
-            commentsService.addComment(testPost.getId(),
+            commentsService.addComment(CommentParentType.POST, testPost.getId(),
                     new CreateCommentRequest("Comment 2"), otherUser.getId());
-            commentsService.addComment(testPost.getId(),
+            commentsService.addComment(CommentParentType.POST, testPost.getId(),
                     new CreateCommentRequest("Comment 3"), testUser.getId());
 
             Post initialPost = postRepository.findById(testPost.getId()).get();
@@ -403,7 +404,7 @@ class PostsServiceHidePostTests {
         @DisplayName("Should handle hiding post with liked comments")
         void shouldHidePostWithLikedComments() throws InterruptedException {
             // Arrange - Create comment and like (if applicable)
-            Comment comment = commentsService.addComment(testPost.getId(),
+            Comment comment = commentsService.addComment(CommentParentType.POST, testPost.getId(),
                     new CreateCommentRequest("Test comment"), testUser.getId());
 
             // Act - Hide post
@@ -425,7 +426,7 @@ class PostsServiceHidePostTests {
             nationalPost = postRepository.save(nationalPost);
 
             // Add comment
-            Comment comment = commentsService.addComment(nationalPost.getId(),
+            Comment comment = commentsService.addComment(CommentParentType.POST, nationalPost.getId(),
                     new CreateCommentRequest("National comment"), testUser.getId());
 
             // Act - Hide post
@@ -444,7 +445,7 @@ class PostsServiceHidePostTests {
         void shouldMaintainTransactionIntegrity() throws InterruptedException {
             // Arrange - Create multiple comments
             for (int i = 0; i < 10; i++) {
-                commentsService.addComment(testPost.getId(),
+                commentsService.addComment(CommentParentType.POST, testPost.getId(),
                         new CreateCommentRequest("Comment " + i),
                         (i % 2 == 0) ? testUser.getId() : otherUser.getId());
             }
@@ -457,10 +458,10 @@ class PostsServiceHidePostTests {
 
             // Assert - All should be hidden atomically
             assertTrue(hiddenPost.isHidden());
-            List<Comment> visibleComments = commentRepository.findByPostIdAndHiddenFalse(testPost.getId());
+            List<Comment> visibleComments = commentRepository.findByParentTypeAndParentIdAndHiddenFalse("POST", testPost.getId());
             assertEquals(0, visibleComments.size());
 
-            List<Comment> allComments = commentRepository.findAllByPostId(testPost.getId());
+            List<Comment> allComments = commentRepository.findAllByParentTypeAndParentId("POST", testPost.getId());
             assertEquals(10, allComments.size());
             for (Comment comment : allComments) {
                 assertTrue(comment.isHidden());

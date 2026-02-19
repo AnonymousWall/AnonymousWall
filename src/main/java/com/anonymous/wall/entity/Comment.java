@@ -13,8 +13,11 @@ public class Comment {
     @AutoPopulated
     private UUID id;
 
-    @MappedProperty("post_id")
-    private UUID postId;
+    @MappedProperty("parent_id")
+    private UUID parentId;
+
+    @MappedProperty("parent_type")
+    private String parentType;
 
     @MappedProperty("user_id")
     private UUID userId;
@@ -33,15 +36,16 @@ public class Comment {
 
     @Version
     @MappedProperty("version")
-    private Long version = 0L; // Optimistic locking version
+    private Long version = 0L;
 
     // ================= Constructors =================
 
     public Comment() {
     }
 
-    public Comment(UUID postId, UUID userId, String text) {
-        this.postId = postId;
+    public Comment(UUID parentId, String parentType, UUID userId, String text) {
+        this.parentId = parentId;
+        this.parentType = parentType;
         this.userId = userId;
         this.text = text;
         this.profileName = "Anonymous";
@@ -55,8 +59,11 @@ public class Comment {
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }
 
-    public UUID getPostId() { return postId; }
-    public void setPostId(UUID postId) { this.postId = postId; }
+    public UUID getParentId() { return parentId; }
+    public void setParentId(UUID parentId) { this.parentId = parentId; }
+
+    public String getParentType() { return parentType; }
+    public void setParentType(String parentType) { this.parentType = parentType; }
 
     public UUID getUserId() { return userId; }
     public void setUserId(UUID userId) { this.userId = userId; }

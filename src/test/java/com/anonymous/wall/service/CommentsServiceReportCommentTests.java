@@ -1,4 +1,5 @@
 package com.anonymous.wall.service;
+import com.anonymous.wall.model.CommentParentType;
 
 import com.anonymous.wall.entity.Comment;
 import com.anonymous.wall.entity.CommentReport;
@@ -87,7 +88,7 @@ class CommentsServiceReportCommentTests {
 
         // Create test comment using service to ensure proper initialization
         CreateCommentRequest commentRequest = new CreateCommentRequest("Test comment text");
-        testComment = commentsService.addComment(testPost.getId(), commentRequest, commentAuthor.getId());
+        testComment = commentsService.addComment(CommentParentType.POST, testPost.getId(), commentRequest, commentAuthor.getId());
     }
 
     @AfterEach
@@ -204,7 +205,7 @@ class CommentsServiceReportCommentTests {
         void shouldAllowSameUserToReportDifferentComments() {
             // Arrange - Create another comment
             CreateCommentRequest commentRequest = new CreateCommentRequest("Another comment");
-            Comment anotherComment = commentsService.addComment(testPost.getId(), commentRequest, commentAuthor.getId());
+            Comment anotherComment = commentsService.addComment(CommentParentType.POST, testPost.getId(), commentRequest, commentAuthor.getId());
 
             // Act
             commentsService.reportComment(testComment.getId(), reporter.getId(), "Report first comment");

@@ -44,6 +44,9 @@ A Micronaut-based REST API for anonymous campus social networking. Users registe
 ✅ **Content moderation (soft-delete posts/comments)**  
 ✅ **Report management system**  
 ✅ **One-to-One Chat with WebSocket** (real-time messaging)  
+✅ **Internship postings** (campus and national walls, with comments)  
+✅ **Marketplace listings** (campus and national walls, with comments)  
+✅ **Polymorphic comment system** (single comment system shared by posts, internships, and marketplace)  
 
 ---
 
@@ -54,6 +57,8 @@ src/main/java/com/anonymous/wall/
 ├── controller/
 │   ├── AuthController.java           # Auth endpoints
 │   ├── PostsController.java          # Post, like, comment endpoints
+│   ├── InternshipController.java     # Internship + comment endpoints
+│   ├── MarketplaceController.java    # Marketplace + comment endpoints
 │   ├── UserController.java           # User profile endpoints
 │   ├── ChatController.java           # Chat REST endpoints
 │   └── ChatWebSocketHandler.java     # WebSocket chat handler
@@ -75,15 +80,21 @@ src/main/java/com/anonymous/wall/
 │   ├── AuthService/AuthServiceImpl.java           # Auth business logic
 │   ├── UserService/UserServiceImpl.java           # User management
 │   ├── PostsService/PostsServiceImpl.java         # Post operations
-│   ├── CommentsService/CommentsServiceImpl.java   # Comment operations
+│   ├── CommentsService/CommentsServiceImpl.java   # Polymorphic comment operations
+│   ├── InternshipService/InternshipServiceImpl.java   # Internship operations
+│   ├── MarketplaceService/MarketplaceServiceImpl.java # Marketplace operations
 │   ├── ChatService/ChatServiceImpl.java           # Chat operations
 │   ├── SchoolDomainService/SchoolDomainServiceImpl.java  # School domain logic
 │   └── JwtTokenService.java                       # JWT token generation (with RBAC)
 │
 ├── entity/
+│   ├── Commentable.java             # Interface for commentable entities
+│   ├── CommentParentType.java       # Enum: POST, INTERNSHIP, MARKETPLACE
 │   ├── UserEntity.java              # User model (with role & blocked fields)
-│   ├── Post.java                    # Post model
-│   ├── Comment.java                 # Comment model
+│   ├── Post.java                    # Post model (implements Commentable)
+│   ├── Comment.java                 # Comment model (polymorphic: parent_id + parent_type)
+│   ├── Internship.java              # Internship model (implements Commentable)
+│   ├── MarketplaceItem.java         # Marketplace model (implements Commentable)
 │   ├── ChatMessage.java             # Chat message model
 │   ├── PostLike.java                # Like model
 │   ├── EmailVerificationCode.java   # Email verification
@@ -96,6 +107,8 @@ src/main/java/com/anonymous/wall/
 │   ├── UserRepository.java
 │   ├── PostRepository.java
 │   ├── CommentRepository.java
+│   ├── InternshipRepository.java
+│   ├── MarketplaceItemRepository.java
 │   ├── ChatMessageRepository.java
 │   ├── PostLikeRepository.java
 │   ├── PostReportRepository.java
@@ -196,12 +209,20 @@ CREATE TABLE posts (
 ```sql
 CREATE TABLE comments (
     id UUID PRIMARY KEY,
-    post_id UUID NOT NULL REFERENCES posts(id),
+    parent_id CHAR(36) NOT NULL,              -- ID of the parent entity (post, internship, or marketplace item)
+    parent_type VARCHAR(50) NOT NULL,         -- "POST", "INTERNSHIP", or "MARKETPLACE"
     user_id UUID NOT NULL REFERENCES users(id),
-    text VARCHAR(5000) NOT NULL,
+    profile_name VARCHAR(255) DEFAULT 'Anonymous',
+    text TEXT NOT NULL,
+    is_hidden BOOLEAN DEFAULT false,
+    version BIGINT DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+-- Composite index for efficient lookups by parent entity
+CREATE INDEX idx_comments_parent ON comments(parent_type, parent_id);
 ```
+
+**Polymorphic Design**: Comments use `parent_id` + `parent_type` instead of a direct foreign key to a single table. This allows the same comment system to serve posts, internships, and marketplace items. Referential integrity is enforced at the application level.
 
 ### Post Likes Table
 ```sql
@@ -249,6 +270,51 @@ CREATE TABLE comment_reports (
     reason VARCHAR(500),                 -- Optional reason for the report
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(comment_id, reporter_user_id) -- One report per user per comment
+);
+```
+
+### Internships Table
+```sql
+CREATE TABLE internships (
+    id UUID PRIMARY KEY,
+    user_id UUID NOT NULL REFERENCES users(id),
+    profile_name VARCHAR(255) DEFAULT 'Anonymous',
+    company VARCHAR(255) NOT NULL,
+    role VARCHAR(255) NOT NULL,
+    salary VARCHAR(50),
+    location VARCHAR(255),
+    description TEXT,
+    deadline DATE,
+    wall VARCHAR(20) DEFAULT 'campus',   -- "campus" or "national"
+    school_domain VARCHAR(255),          -- NULL for national, set for campus
+    comment_count INT DEFAULT 0,
+    is_hidden BOOLEAN DEFAULT false,
+    version BIGINT DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+### Marketplace Items Table
+```sql
+CREATE TABLE marketplace_items (
+    id UUID PRIMARY KEY,
+    user_id UUID NOT NULL REFERENCES users(id),
+    profile_name VARCHAR(255) DEFAULT 'Anonymous',
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    price DECIMAL(10,2) NOT NULL,
+    category VARCHAR(100),
+    condition VARCHAR(20),               -- "new", "like_new", "good", "fair", "poor"
+    sold BOOLEAN DEFAULT false NOT NULL,
+    contact_info VARCHAR(255),
+    wall VARCHAR(20) DEFAULT 'campus',   -- "campus" or "national"
+    school_domain VARCHAR(255),          -- NULL for national, set for campus
+    comment_count INT DEFAULT 0,
+    is_hidden BOOLEAN DEFAULT false,
+    version BIGINT DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 ```
 
@@ -619,6 +685,7 @@ Response: 201 Created
 {
     "id": "uuid",
     "postId": "uuid",
+    "parentType": "POST",
     "text": "Great post!",
     "author": {
         "id": "uuid",
@@ -654,6 +721,7 @@ Response: 200 OK
         {
             "id": "uuid",
             "postId": "uuid",
+            "parentType": "POST",
             "text": "Great post!",
             "author": {
                 "id": "uuid",
@@ -796,7 +864,8 @@ Content-Type: application/json
     "salary": "$8000/month",
     "location": "Mountain View, CA",
     "description": "Work on cutting-edge projects with experienced mentors",
-    "deadline": "2026-06-30"
+    "deadline": "2026-06-30",
+    "wall": "campus"
 }
 
 Response: 201 Created
@@ -808,6 +877,8 @@ Response: 201 Created
     "location": "Mountain View, CA",
     "description": "Work on cutting-edge projects with experienced mentors",
     "deadline": "2026-06-30",
+    "wall": "CAMPUS",
+    "comments": 0,
     "author": {
         "id": "uuid",
         "profileName": "John Recruiter",
@@ -826,7 +897,12 @@ Response: 201 Created
 - `salary` is optional (VARCHAR(50))
 - `location` is optional (VARCHAR(255))
 - `description` is optional (TEXT)
-- `deadline` is optional (DATE format: YYYY-MM-DD)
+- `deadline` is optional (DATE format: YYYY-MM-DD, defaults to 1 month from creation date)
+- `wall` is optional (defaults to "campus"), must be "campus" or "national"
+
+**Wall Rules:**
+- **Campus wall**: Only users from the same school can see the posting
+- **National wall**: All authenticated users can see the posting
 
 **Error Responses:**
 ```json
@@ -863,7 +939,7 @@ Response: 201 Created
 
 #### 2. List Internship Postings
 ```http
-GET /api/v1/internships?page=1&limit=20&sortBy=newest
+GET /api/v1/internships?wall=campus&page=1&limit=20&sortBy=newest
 Authorization: Bearer {jwt-token}
 
 Response: 200 OK
@@ -877,6 +953,8 @@ Response: 200 OK
             "location": "Mountain View, CA",
             "description": "Work on cutting-edge projects with experienced mentors",
             "deadline": "2026-06-30",
+            "wall": "CAMPUS",
+            "comments": 3,
             "author": {
                 "id": "uuid",
                 "profileName": "John Recruiter",
@@ -896,13 +974,15 @@ Response: 200 OK
 ```
 
 **Query Parameters:**
+- `wall` (default: "campus") - Filter by "campus" or "national"
 - `page` (default: 1): Page number for pagination (1-based indexing)
 - `limit` (default: 20): Number of items per page (min: 1, max: 100)
 - `sortBy` (default: newest): Sort order - "newest" (newest first) or "oldest" (oldest first)
 
-**Response Details:**
+**Wall Rules:**
+- **Campus**: Returns only internships from the same school as the authenticated user
+- **National**: Returns all national internships
 - Only non-hidden internships are returned
-- Returns paginated results with pagination metadata
 
 #### 3. Get Internship Posting by ID
 ```http
@@ -918,6 +998,8 @@ Response: 200 OK
     "location": "Mountain View, CA",
     "description": "Work on cutting-edge projects with experienced mentors",
     "deadline": "2026-06-30",
+    "wall": "CAMPUS",
+    "comments": 3,
     "author": {
         "id": "uuid",
         "profileName": "John Recruiter",
@@ -932,6 +1014,12 @@ Response: 200 OK
 ```json
 // Internship not found
 404 Not Found
+
+// Campus internship from different school
+403 Forbidden
+{
+    "error": "You do not have access to internships from other schools"
+}
 ```
 
 #### 4. Hide Internship Posting
@@ -989,10 +1077,99 @@ Response: 200 OK
 404 Not Found
 ```
 
-**General Notes:**
-- Authentication is required for all endpoints
-- Users can view all non-hidden internship postings regardless of who posted them
-- Internship postings are not anonymous (author information is visible)
+#### 6. Add Comment to Internship
+```http
+POST /api/v1/internships/{internshipId}/comments
+Authorization: Bearer {jwt-token}
+Content-Type: application/json
+
+{
+    "text": "Great opportunity!"
+}
+
+Response: 201 Created
+{
+    "id": "uuid",
+    "postId": "uuid",
+    "parentType": "INTERNSHIP",
+    "text": "Great opportunity!",
+    "author": {
+        "id": "uuid",
+        "profileName": "Anonymous",
+        "isAnonymous": true
+    },
+    "createdAt": "2026-02-18T..."
+}
+```
+
+**Validation Rules:**
+- `text` is **required** (cannot be null, empty, or whitespace-only)
+- `text` maximum length: **5000 characters**
+- For campus internships: only users from the same school can comment
+- For national internships: all authenticated users can comment
+
+#### 7. Get Comments for Internship
+```http
+GET /api/v1/internships/{internshipId}/comments?page=1&limit=20&sort=NEWEST
+Authorization: Bearer {jwt-token}
+
+Response: 200 OK
+{
+    "data": [
+        {
+            "id": "uuid",
+            "postId": "uuid",
+            "parentType": "INTERNSHIP",
+            "text": "Great opportunity!",
+            "author": {
+                "id": "uuid",
+                "profileName": "Jane Smith",
+                "isAnonymous": true
+            },
+            "createdAt": "2026-02-18T..."
+        }
+    ],
+    "pagination": {
+        "page": 1,
+        "limit": 20,
+        "total": 5,
+        "totalPages": 1
+    }
+}
+```
+
+**Query Parameters:**
+- `page` (default: 1) - Page number (1-based)
+- `limit` (default: 20) - Comments per page (max: 100)
+- `sort` (default: "NEWEST") - Sort order: NEWEST, OLDEST
+
+#### 8. Hide Comment on Internship
+```http
+PATCH /api/v1/internships/{internshipId}/comments/{commentId}/hide
+Authorization: Bearer {jwt-token}
+
+Response: 200 OK
+{
+    "message": "Comment hidden successfully"
+}
+```
+
+**Notes:**
+- Only the comment author can hide their own comment
+
+#### 9. Unhide Comment on Internship
+```http
+PATCH /api/v1/internships/{internshipId}/comments/{commentId}/unhide
+Authorization: Bearer {jwt-token}
+
+Response: 200 OK
+{
+    "message": "Comment unhidden successfully"
+}
+```
+
+**Notes:**
+- Only the comment author can unhide their own comment
 
 ### Marketplace Endpoints
 
@@ -1008,7 +1185,8 @@ Content-Type: application/json
     "description": "Barely used, excellent condition",
     "category": "books",
     "condition": "like_new",
-    "contactInfo": "johndoe@harvard.edu"
+    "contactInfo": "johndoe@harvard.edu",
+    "wall": "campus"
 }
 
 Response: 201 Created
@@ -1021,6 +1199,8 @@ Response: 201 Created
     "condition": "like_new",
     "contactInfo": "johndoe@harvard.edu",
     "sold": false,
+    "wall": "CAMPUS",
+    "comments": 0,
     "author": {
         "id": "uuid",
         "profileName": "John Doe",
@@ -1040,6 +1220,11 @@ Response: 201 Created
 - `category` is optional
 - `condition` is optional, valid values: "new", "like_new", "good", "fair", "poor"
 - `contactInfo` is optional
+- `wall` is optional (defaults to "campus"), must be "campus" or "national"
+
+**Wall Rules:**
+- **Campus wall**: Only users from the same school can see the item
+- **National wall**: All authenticated users can see the item
 
 **Error Responses:**
 ```json
@@ -1076,12 +1261,12 @@ Response: 201 Created
 
 #### 2. List Marketplace Items
 ```http
-GET /api/v1/marketplace?page=0&limit=20&sortBy=newest&sold=false
+GET /api/v1/marketplace?wall=campus&page=1&limit=20&sortBy=newest&sold=false
 Authorization: Bearer {jwt-token}
 
 Response: 200 OK
 {
-    "content": [
+    "data": [
         {
             "id": "uuid",
             "title": "Used Calculus Textbook",
@@ -1091,6 +1276,8 @@ Response: 200 OK
             "condition": "like_new",
             "contactInfo": "johndoe@harvard.edu",
             "sold": false,
+            "wall": "CAMPUS",
+            "comments": 2,
             "author": {
                 "id": "uuid",
                 "profileName": "John Doe",
@@ -1100,26 +1287,18 @@ Response: 200 OK
             "updatedAt": "2026-02-18T..."
         }
     ],
-    "pageable": {
-        "pageNumber": 0,
-        "pageSize": 20,
-        "offset": 0,
-        "paged": true,
-        "unpaged": false
-    },
-    "totalPages": 5,
-    "totalElements": 95,
-    "last": false,
-    "size": 20,
-    "number": 0,
-    "numberOfElements": 20,
-    "first": true,
-    "empty": false
+    "pagination": {
+        "page": 1,
+        "limit": 20,
+        "total": 95,
+        "totalPages": 5
+    }
 }
 ```
 
 **Query Parameters:**
-- `page` (default: 0) - Page number (0-based)
+- `wall` (default: "campus") - Filter by "campus" or "national"
+- `page` (default: 1) - Page number (1-based)
 - `limit` (default: 20) - Items per page (max: 100)
 - `sortBy` (default: "newest") - Sort order:
   - `newest` - Sort by creation date descending (newest first)
@@ -1130,10 +1309,14 @@ Response: 200 OK
   - `false` - Show only unsold items
   - omit parameter - Show all items (both sold and unsold)
 
+**Wall Rules:**
+- **Campus**: Returns only items from the same school as the authenticated user
+- **National**: Returns all national items
+
 **Examples:**
 ```http
-GET /api/v1/marketplace?sold=false&sortBy=price-asc
-GET /api/v1/marketplace?sold=true&page=1&limit=10
+GET /api/v1/marketplace?wall=campus&sold=false&sortBy=price-asc
+GET /api/v1/marketplace?wall=national&sold=true&page=1&limit=10
 GET /api/v1/marketplace?sortBy=newest
 ```
 
@@ -1152,6 +1335,8 @@ Response: 200 OK
     "condition": "like_new",
     "contactInfo": "johndoe@harvard.edu",
     "sold": false,
+    "wall": "CAMPUS",
+    "comments": 2,
     "author": {
         "id": "uuid",
         "profileName": "John Doe",
@@ -1168,9 +1353,8 @@ Response: 404 Not Found
 ```
 
 **Notes:**
-- Retrieves a single marketplace item by its ID
-- All authenticated users can view any marketplace item
-- Returns 404 if item does not exist
+- For campus items: only users from the same school can access
+- For national items: all authenticated users can access
 
 #### 4. Update Marketplace Item (Partial Update)
 ```http
@@ -1194,6 +1378,8 @@ Response: 200 OK
     "condition": "like_new",
     "contactInfo": "johndoe@harvard.edu",
     "sold": true,
+    "wall": "CAMPUS",
+    "comments": 2,
     "author": {
         "id": "uuid",
         "profileName": "John Doe",
@@ -1280,6 +1466,100 @@ PUT /api/v1/marketplace/{itemId}
 }
 ```
 
+#### 5. Add Comment to Marketplace Item
+```http
+POST /api/v1/marketplace/{itemId}/comments
+Authorization: Bearer {jwt-token}
+Content-Type: application/json
+
+{
+    "text": "Is this still available?"
+}
+
+Response: 201 Created
+{
+    "id": "uuid",
+    "postId": "uuid",
+    "parentType": "MARKETPLACE",
+    "text": "Is this still available?",
+    "author": {
+        "id": "uuid",
+        "profileName": "Anonymous",
+        "isAnonymous": true
+    },
+    "createdAt": "2026-02-18T..."
+}
+```
+
+**Validation Rules:**
+- `text` is **required** (cannot be null, empty, or whitespace-only)
+- `text` maximum length: **5000 characters**
+- For campus items: only users from the same school can comment
+- For national items: all authenticated users can comment
+
+#### 6. Get Comments for Marketplace Item
+```http
+GET /api/v1/marketplace/{itemId}/comments?page=1&limit=20&sort=NEWEST
+Authorization: Bearer {jwt-token}
+
+Response: 200 OK
+{
+    "data": [
+        {
+            "id": "uuid",
+            "postId": "uuid",
+            "parentType": "MARKETPLACE",
+            "text": "Is this still available?",
+            "author": {
+                "id": "uuid",
+                "profileName": "Jane Smith",
+                "isAnonymous": true
+            },
+            "createdAt": "2026-02-18T..."
+        }
+    ],
+    "pagination": {
+        "page": 1,
+        "limit": 20,
+        "total": 3,
+        "totalPages": 1
+    }
+}
+```
+
+**Query Parameters:**
+- `page` (default: 1) - Page number (1-based)
+- `limit` (default: 20) - Comments per page (max: 100)
+- `sort` (default: "NEWEST") - Sort order: NEWEST, OLDEST
+
+#### 7. Hide Comment on Marketplace Item
+```http
+PATCH /api/v1/marketplace/{itemId}/comments/{commentId}/hide
+Authorization: Bearer {jwt-token}
+
+Response: 200 OK
+{
+    "message": "Comment hidden successfully"
+}
+```
+
+**Notes:**
+- Only the comment author can hide their own comment
+
+#### 8. Unhide Comment on Marketplace Item
+```http
+PATCH /api/v1/marketplace/{itemId}/comments/{commentId}/unhide
+Authorization: Bearer {jwt-token}
+
+Response: 200 OK
+{
+    "message": "Comment unhidden successfully"
+}
+```
+
+**Notes:**
+- Only the comment author can unhide their own comment
+
 ### User Endpoints
 
 #### 1. Get User's Own Comments
@@ -1293,6 +1573,7 @@ Response: 200 OK
         {
             "id": "uuid",
             "postId": "uuid",
+            "parentType": "POST",
             "text": "Great post!",
             "author": {
                 "id": "uuid",
@@ -1317,7 +1598,8 @@ Response: 200 OK
 - `sort` (default: "NEWEST") - Sort order: NEWEST, OLDEST
 
 **Notes:**
-- Returns all comments made by the authenticated user across all posts
+- Returns all comments made by the authenticated user across all entity types (posts, internships, marketplace items)
+- Each comment includes `parentType` ("POST", "INTERNSHIP", or "MARKETPLACE") to identify the parent entity
 - Hidden (soft-deleted) comments are automatically excluded
 - Uses optimized query with composite database index for efficient retrieval
 - Performance: O(log K) where K is the user's total comment count
@@ -1393,9 +1675,9 @@ Response: 200 OK
 - Default profile name is "Anonymous"
 - Sending an empty string will reset the profile name to "Anonymous"
 - Profile name can be 1-255 characters
-- Profile name changes are **asynchronously propagated** to all user's posts and comments
+- Profile name changes are **asynchronously propagated** to all user's posts, comments, internships, and marketplace items
 - The API returns immediately after updating the user profile
-- Posts and comments are updated in the background for better performance
+- Posts, comments, internships, and marketplace items are updated in the background for better performance
 
 ---
 
@@ -2269,7 +2551,8 @@ GET /api/v1/admin/comments?hidden=true
 
 **Notes:**
 - Returns all comments including hidden (soft-deleted) comments
-- Shows complete user information including user IDs and post IDs
+- Comments span all parent entity types (posts, internships, marketplace items)
+- The `postId` field contains the parent entity ID regardless of parent type
 
 **Access:** ADMIN or MODERATOR
 
@@ -2525,18 +2808,19 @@ When a user is blocked by an administrator:
 
 ### Visibility Rules
 
-#### Campus Posts
+#### Campus Posts / Internships / Marketplace Items
 - Only visible to users from **the same school domain**
 - Users from other schools receive **403 Forbidden**
 - Campus wall requires user to have a school domain
 
-#### National Posts
+#### National Posts / Internships / Marketplace Items
 - Visible to **all authenticated users**
 - No school domain restriction
 
 #### Comments & Likes
-- Same visibility rules as posts apply
-- Users from different schools cannot like/comment on campus posts
+- Same visibility rules as the parent entity apply
+- Users from different schools cannot comment on campus posts/internships/marketplace items
+- Comments use a polymorphic design: a single comment system serves all entity types
 
 ### User Authentication Flow
 1. **Registration**: Email verification → Account creation → JWT issued

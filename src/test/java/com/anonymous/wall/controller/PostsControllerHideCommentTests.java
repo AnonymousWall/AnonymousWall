@@ -1,4 +1,5 @@
 package com.anonymous.wall.controller;
+import com.anonymous.wall.model.CommentParentType;
 
 import com.anonymous.wall.entity.Comment;
 import com.anonymous.wall.entity.Post;
@@ -102,10 +103,10 @@ class PostsControllerHideCommentTests {
         nationalPost = postRepository.save(nationalPost);
 
         // Create test comments via service to properly update post counts
-        campusComment = commentsService.addComment(campusPost.getId(),
+        campusComment = commentsService.addComment(CommentParentType.POST, campusPost.getId(),
             new com.anonymous.wall.model.CreateCommentRequest("Campus comment"), testUserCampus.getId());
 
-        nationalComment = commentsService.addComment(nationalPost.getId(),
+        nationalComment = commentsService.addComment(CommentParentType.POST, nationalPost.getId(),
             new com.anonymous.wall.model.CreateCommentRequest("National comment"), testUserCampus.getId());
     }
 
@@ -334,7 +335,7 @@ class PostsControllerHideCommentTests {
         @DisplayName("Should not allow user to hide another user's comment")
         void shouldNotAllowHidingAnotherUserComment() {
             // Create a comment by testUserCampus on national post (avoid access issues)
-            Comment otherUserComment = commentsService.addComment(nationalPost.getId(),
+            Comment otherUserComment = commentsService.addComment(CommentParentType.POST, nationalPost.getId(),
                 new com.anonymous.wall.model.CreateCommentRequest("Someone else's comment"), testUserCampus.getId());
 
             // Try to hide it as testUserDifferentSchool
@@ -400,7 +401,7 @@ class PostsControllerHideCommentTests {
         @DisplayName("Should return error when comment does not belong to post")
         void shouldReturnErrorWhenCommentDoesNotBelongToPost() {
             // Create a comment on nationalPost
-            Comment commentOnNationalPost = new Comment(nationalPost.getId(), testUserCampus.getId(), "National post comment");
+            Comment commentOnNationalPost = new Comment(nationalPost.getId(), "POST", testUserCampus.getId(), "National post comment");
             commentOnNationalPost = commentRepository.save(commentOnNationalPost);
 
             // Try to hide it as if it belongs to campusPost
@@ -433,7 +434,7 @@ class PostsControllerHideCommentTests {
             harvardOnlyPost = postRepository.save(harvardOnlyPost);
 
             // Create a comment on this post
-            Comment comment = new Comment(harvardOnlyPost.getId(), testUserCampus.getId(), "Harvard comment");
+            Comment comment = new Comment(harvardOnlyPost.getId(), "POST", testUserCampus.getId(), "Harvard comment");
             comment = commentRepository.save(comment);
 
             // Try to hide as testUserDifferentSchool (MIT student - no access to Harvard campus)
@@ -483,9 +484,9 @@ class PostsControllerHideCommentTests {
         @DisplayName("Should not allow user to unhide another user's comment")
         void shouldNotAllowUnhidingAnotherUserComment() {
             // Create a comment by testUserCampus on national post and hide it
-            Comment otherUserComment = commentsService.addComment(nationalPost.getId(),
+            Comment otherUserComment = commentsService.addComment(CommentParentType.POST, nationalPost.getId(),
                 new com.anonymous.wall.model.CreateCommentRequest("Someone else's comment"), testUserCampus.getId());
-            commentsService.hideComment(nationalPost.getId(), otherUserComment.getId(), testUserCampus.getId());
+            commentsService.hideComment(CommentParentType.POST, nationalPost.getId(), otherUserComment.getId(), testUserCampus.getId());
 
             // Try to unhide it as testUserDifferentSchool
             String endpoint = BASE_PATH + "/" + nationalPost.getId() + "/comments/" + otherUserComment.getId() + "/unhide";
@@ -550,7 +551,7 @@ class PostsControllerHideCommentTests {
         @DisplayName("Should return error when comment does not belong to post for unhide")
         void shouldReturn404WhenCommentDoesNotBelongToPostForUnhide() {
             // Create a comment on nationalPost
-            Comment commentOnNationalPost = new Comment(nationalPost.getId(), testUserCampus.getId(), "National post comment");
+            Comment commentOnNationalPost = new Comment(nationalPost.getId(), "POST", testUserCampus.getId(), "National post comment");
             commentOnNationalPost = commentRepository.save(commentOnNationalPost);
             commentOnNationalPost.setHidden(true);
             commentRepository.update(commentOnNationalPost);
@@ -585,7 +586,7 @@ class PostsControllerHideCommentTests {
             harvardOnlyPost = postRepository.save(harvardOnlyPost);
 
             // Create and hide a comment on this post
-            Comment comment = new Comment(harvardOnlyPost.getId(), testUserCampus.getId(), "Harvard comment");
+            Comment comment = new Comment(harvardOnlyPost.getId(), "POST", testUserCampus.getId(), "Harvard comment");
             comment = commentRepository.save(comment);
             comment.setHidden(true);
             commentRepository.update(comment);
@@ -701,7 +702,7 @@ class PostsControllerHideCommentTests {
         @DisplayName("Should maintain other comment data when hiding")
         void shouldMaintainCommentDataWhenHiding() {
             String originalText = campusComment.getText();
-            UUID originalPostId = campusComment.getPostId();
+            UUID originalPostId = campusComment.getParentId();
 
             String endpoint = BASE_PATH + "/" + campusPost.getId() + "/comments/" + campusComment.getId() + "/hide";
             client.toBlocking().exchange(
@@ -713,7 +714,7 @@ class PostsControllerHideCommentTests {
             Optional<Comment> updatedComment = commentRepository.findById(campusComment.getId());
             assertTrue(updatedComment.isPresent());
             assertEquals(originalText, updatedComment.get().getText());
-            assertEquals(originalPostId, updatedComment.get().getPostId());
+            assertEquals(originalPostId, updatedComment.get().getParentId());
             // CreatedAt should remain the same (verify it's not changed)
             assertNotNull(updatedComment.get().getCreatedAt());
         }
@@ -724,7 +725,7 @@ class PostsControllerHideCommentTests {
         @DisplayName("Should work with very long comment text")
         void shouldWorkWithVeryLongCommentText() {
             String longText = "X".repeat(5000);
-            Comment longComment = new Comment(campusPost.getId(), testUserCampus.getId(), longText);
+            Comment longComment = new Comment(campusPost.getId(), "POST", testUserCampus.getId(), longText);
             longComment = commentRepository.save(longComment);
 
             String endpoint = BASE_PATH + "/" + campusPost.getId() + "/comments/" + longComment.getId() + "/hide";
@@ -747,7 +748,7 @@ class PostsControllerHideCommentTests {
         @DisplayName("Should work with comment containing special characters")
         void shouldWorkWithSpecialCharactersInComment() {
             String specialText = "Comment with 🎉 emoji @mention #hashtag and ñ characters";
-            Comment specialComment = new Comment(campusPost.getId(), testUserCampus.getId(), specialText);
+            Comment specialComment = new Comment(campusPost.getId(), "POST", testUserCampus.getId(), specialText);
             specialComment = commentRepository.save(specialComment);
 
             String hideEndpoint = BASE_PATH + "/" + campusPost.getId() + "/comments/" + specialComment.getId() + "/hide";

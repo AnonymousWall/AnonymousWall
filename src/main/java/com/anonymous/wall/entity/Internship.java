@@ -8,7 +8,7 @@ import java.time.OffsetDateTime;
 import java.util.UUID;
 
 @MappedEntity(value = "internships", namingStrategy = NamingStrategies.Raw.class)
-public class Internship {
+public class Internship implements Commentable {
 
     @Id
     @AutoPopulated
@@ -16,6 +16,9 @@ public class Internship {
 
     @MappedProperty("user_id")
     private UUID userId;
+
+    @MappedProperty("profile_name")
+    private String profileName = "Anonymous";
 
     @MappedProperty("company")
     private String company;
@@ -35,8 +38,21 @@ public class Internship {
     @MappedProperty("deadline")
     private LocalDate deadline;
 
+    @MappedProperty("wall")
+    private String wall = "campus";
+
+    @MappedProperty("school_domain")
+    private String schoolDomain;
+
+    @MappedProperty("comment_count")
+    private int commentCount = 0;
+
     @MappedProperty("is_hidden")
     private boolean hidden = false;
+
+    @Version
+    @MappedProperty("version")
+    private Long version = 0L;
 
     @MappedProperty("created_at")
     private OffsetDateTime createdAt = OffsetDateTime.now();
@@ -57,98 +73,70 @@ public class Internship {
         this.location = location;
         this.description = description;
         this.deadline = deadline;
+        this.profileName = "Anonymous";
+        this.wall = "campus";
+        this.commentCount = 0;
         this.hidden = false;
         this.createdAt = OffsetDateTime.now();
         this.updatedAt = OffsetDateTime.now();
+        this.version = 0L;
     }
 
     // ================= Getters & Setters =================
 
-    public UUID getId() {
-        return id;
-    }
+    public UUID getId() { return id; }
+    public void setId(UUID id) { this.id = id; }
 
-    public void setId(UUID id) {
-        this.id = id;
-    }
+    public UUID getUserId() { return userId; }
+    public void setUserId(UUID userId) { this.userId = userId; }
 
-    public UUID getUserId() {
-        return userId;
-    }
+    public String getProfileName() { return profileName; }
+    public void setProfileName(String profileName) { this.profileName = profileName != null ? profileName : "Anonymous"; }
 
-    public void setUserId(UUID userId) {
-        this.userId = userId;
-    }
+    public String getCompany() { return company; }
+    public void setCompany(String company) { this.company = company; }
 
-    public String getCompany() {
-        return company;
-    }
+    public String getRole() { return role; }
+    public void setRole(String role) { this.role = role; }
 
-    public void setCompany(String company) {
-        this.company = company;
-    }
+    public String getSalary() { return salary; }
+    public void setSalary(String salary) { this.salary = salary; }
 
-    public String getRole() {
-        return role;
-    }
+    public String getLocation() { return location; }
+    public void setLocation(String location) { this.location = location; }
 
-    public void setRole(String role) {
-        this.role = role;
-    }
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
 
-    public String getSalary() {
-        return salary;
-    }
+    public LocalDate getDeadline() { return deadline; }
+    public void setDeadline(LocalDate deadline) { this.deadline = deadline; }
 
-    public void setSalary(String salary) {
-        this.salary = salary;
-    }
+    public String getWall() { return wall; }
+    public void setWall(String wall) { this.wall = wall; }
 
-    public String getLocation() {
-        return location;
-    }
+    public String getSchoolDomain() { return schoolDomain; }
+    public void setSchoolDomain(String schoolDomain) { this.schoolDomain = schoolDomain; }
 
-    public void setLocation(String location) {
-        this.location = location;
-    }
+    public int getCommentCount() { return commentCount; }
+    public void setCommentCount(int commentCount) { this.commentCount = commentCount; }
 
-    public String getDescription() {
-        return description;
-    }
+    public OffsetDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(OffsetDateTime createdAt) { this.createdAt = createdAt; }
 
-    public void setDescription(String description) {
-        this.description = description;
-    }
+    public OffsetDateTime getUpdatedAt() { return updatedAt; }
+    public void setUpdatedAt(OffsetDateTime updatedAt) { this.updatedAt = updatedAt; }
 
-    public LocalDate getDeadline() {
-        return deadline;
-    }
+    public boolean isHidden() { return hidden; }
+    public void setHidden(boolean hidden) { this.hidden = hidden; }
 
-    public void setDeadline(LocalDate deadline) {
-        this.deadline = deadline;
-    }
+    public Long getVersion() { return version; }
+    public void setVersion(Long version) { this.version = version; }
 
-    public OffsetDateTime getCreatedAt() {
-        return createdAt;
-    }
+    @Override
+    public void incrementCommentCount() { this.commentCount++; }
 
-    public void setCreatedAt(OffsetDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public OffsetDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(OffsetDateTime updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
-    public boolean isHidden() {
-        return hidden;
-    }
-
-    public void setHidden(boolean hidden) {
-        this.hidden = hidden;
+    @Override
+    public void decrementCommentCount() {
+        if (this.commentCount > 0) { this.commentCount--; }
     }
 }

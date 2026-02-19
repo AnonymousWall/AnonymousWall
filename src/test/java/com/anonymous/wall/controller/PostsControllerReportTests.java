@@ -1,4 +1,5 @@
 package com.anonymous.wall.controller;
+import com.anonymous.wall.model.CommentParentType;
 
 import com.anonymous.wall.entity.Comment;
 import com.anonymous.wall.entity.Post;
@@ -111,7 +112,7 @@ class PostsControllerReportTests {
 
         // Create test comment
         CreateCommentRequest commentRequest = new CreateCommentRequest("Test comment text");
-        testComment = commentsService.addComment(testPost.getId(), commentRequest, postAuthor.getId());
+        testComment = commentsService.addComment(CommentParentType.POST, testPost.getId(), commentRequest, postAuthor.getId());
     }
 
     @AfterEach

@@ -91,7 +91,8 @@ class AdminCommentControllerTest {
 
         // Create test comment
         testComment = new Comment();
-        testComment.setPostId(testPost.getId());
+        testComment.setParentId(testPost.getId());
+        testComment.setParentType("POST");
         testComment.setUserId(regularUser.getId());
         testComment.setText("Test comment");
         testComment.setHidden(false);
@@ -183,7 +184,7 @@ class AdminCommentControllerTest {
             assertNotNull(response.body());
             assertEquals(testComment.getId().toString(), response.body().get("id"));
             assertEquals(testComment.getText(), response.body().get("text"));
-            assertEquals(testComment.getPostId().toString(), response.body().get("postId"));
+            assertEquals(testComment.getParentId().toString(), response.body().get("postId"));
         }
 
         @Test

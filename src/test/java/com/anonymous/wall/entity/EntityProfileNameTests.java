@@ -150,7 +150,7 @@ class EntityProfileNameTests {
         void setUp() {
             userId = UUID.randomUUID();
             postId = UUID.randomUUID();
-            comment = new Comment(postId, userId, "Test comment");
+            comment = new Comment(postId, "POST", userId, "Test comment");
         }
 
         @Test
@@ -176,7 +176,7 @@ class EntityProfileNameTests {
         @Test
         @DisplayName("Comment constructor should initialize profile name to Anonymous")
         void commentConstructorInitializesProfileName() {
-            Comment newComment = new Comment(postId, userId, "Content");
+            Comment newComment = new Comment(postId, "POST", userId, "Content");
             assertEquals("Anonymous", newComment.getProfileName());
         }
 
@@ -193,10 +193,10 @@ class EntityProfileNameTests {
         @Test
         @DisplayName("Multiple comments can have different profile names")
         void multipleCommentsWithDifferentNames() {
-            Comment comment1 = new Comment(postId, userId, "Comment 1");
+            Comment comment1 = new Comment(postId, "POST", userId, "Comment 1");
             comment1.setProfileName("Name 1");
 
-            Comment comment2 = new Comment(postId, userId, "Comment 2");
+            Comment comment2 = new Comment(postId, "POST", userId, "Comment 2");
             comment2.setProfileName("Name 2");
 
             assertEquals("Name 1", comment1.getProfileName());
@@ -210,10 +210,10 @@ class EntityProfileNameTests {
             UUID userId1 = UUID.randomUUID();
             UUID userId2 = UUID.randomUUID();
 
-            Comment comment1 = new Comment(postId, userId1, "Comment 1");
+            Comment comment1 = new Comment(postId, "POST", userId1, "Comment 1");
             comment1.setProfileName("User 1 Name");
 
-            Comment comment2 = new Comment(postId, userId2, "Comment 2");
+            Comment comment2 = new Comment(postId, "POST", userId2, "Comment 2");
             comment2.setProfileName("User 2 Name");
 
             assertEquals("User 1 Name", comment1.getProfileName());
@@ -231,7 +231,7 @@ class EntityProfileNameTests {
             // All should default to Anonymous
             UserEntity user = new UserEntity();
             Post post = new Post(UUID.randomUUID(), "Title", "Content", "campus", "harvard.edu");
-            Comment comment = new Comment(UUID.randomUUID(), UUID.randomUUID(), "Comment");
+            Comment comment = new Comment(UUID.randomUUID(), "POST", UUID.randomUUID(), "Comment");
 
             assertEquals("Anonymous", user.getProfileName());
             assertEquals("Anonymous", post.getProfileName());
@@ -269,7 +269,7 @@ class EntityProfileNameTests {
             Post post = new Post(userId, "Title", "Content", "campus", "harvard.edu");
             post.setProfileName("Custom Name");
 
-            Comment comment = new Comment(UUID.randomUUID(), userId, "Comment");
+            Comment comment = new Comment(UUID.randomUUID(), "POST", userId, "Comment");
             comment.setProfileName("Custom Name");
 
             // All should have the same profile name

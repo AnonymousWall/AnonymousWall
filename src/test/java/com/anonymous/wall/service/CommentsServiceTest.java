@@ -1,4 +1,5 @@
 package com.anonymous.wall.service;
+import com.anonymous.wall.model.CommentParentType;
 
 import com.anonymous.wall.entity.Comment;
 import com.anonymous.wall.entity.Post;
@@ -97,7 +98,7 @@ class CommentsServiceTest {
             });
 
             // Act
-            Comment result = commentsService.addComment(testPostId, request, testUserId);
+            Comment result = commentsService.addComment(CommentParentType.POST, testPostId, request, testUserId);
 
             // Assert
             assertNotNull(result);
@@ -123,7 +124,7 @@ class CommentsServiceTest {
             });
 
             // Act
-            Comment result = commentsService.addComment(testPostId, request, testUserId);
+            Comment result = commentsService.addComment(CommentParentType.POST, testPostId, request, testUserId);
 
             // Assert
             assertNotNull(result);
@@ -147,7 +148,7 @@ class CommentsServiceTest {
             });
 
             // Act
-            commentsService.addComment(testPostId, request, testUserId);
+            commentsService.addComment(CommentParentType.POST, testPostId, request, testUserId);
 
             // Assert
             Comment savedComment = captor.getValue();
@@ -168,7 +169,7 @@ class CommentsServiceTest {
 
             // Act & Assert
             IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-                () -> commentsService.addComment(testPostId, request, testUserId));
+                () -> commentsService.addComment(CommentParentType.POST, testPostId, request, testUserId));
             assertTrue(exception.getMessage().contains("Post not found"));
             verify(commentRepository, never()).save(any());
         }
@@ -182,7 +183,7 @@ class CommentsServiceTest {
 
             // Act & Assert
             IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-                () -> commentsService.addComment(testPostId, request, testUserId));
+                () -> commentsService.addComment(CommentParentType.POST, testPostId, request, testUserId));
             assertTrue(exception.getMessage().contains("cannot be empty"));
         }
 
@@ -195,7 +196,7 @@ class CommentsServiceTest {
 
             // Act & Assert
             IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-                () -> commentsService.addComment(testPostId, request, testUserId));
+                () -> commentsService.addComment(CommentParentType.POST, testPostId, request, testUserId));
             assertTrue(exception.getMessage().contains("cannot be empty"));
         }
 
@@ -208,7 +209,7 @@ class CommentsServiceTest {
 
             // Act & Assert
             assertThrows(IllegalArgumentException.class,
-                () -> commentsService.addComment(testPostId, request, testUserId));
+                () -> commentsService.addComment(CommentParentType.POST, testPostId, request, testUserId));
         }
 
         @Test
@@ -220,7 +221,7 @@ class CommentsServiceTest {
 
             // Act & Assert
             IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-                () -> commentsService.addComment(testPostId, request, testUserId));
+                () -> commentsService.addComment(CommentParentType.POST, testPostId, request, testUserId));
             assertTrue(exception.getMessage().contains("exceeds maximum length"));
         }
 
@@ -234,7 +235,7 @@ class CommentsServiceTest {
 
             // Act & Assert
             IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-                () -> commentsService.addComment(testPostId, request, testUserId));
+                () -> commentsService.addComment(CommentParentType.POST, testPostId, request, testUserId));
             assertTrue(exception.getMessage().contains("User not found"));
         }
 
@@ -248,7 +249,7 @@ class CommentsServiceTest {
 
             // Act & Assert
             assertThrows(IllegalArgumentException.class,
-                () -> commentsService.addComment(testPostId, request, testUserId));
+                () -> commentsService.addComment(CommentParentType.POST, testPostId, request, testUserId));
         }
 
         @Test
@@ -266,7 +267,7 @@ class CommentsServiceTest {
 
             // Act & Assert
             IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-                () -> commentsService.addComment(testPostId, request, testUserId));
+                () -> commentsService.addComment(CommentParentType.POST, testPostId, request, testUserId));
             assertTrue(exception.getMessage().contains("other schools"));
         }
 
@@ -285,7 +286,7 @@ class CommentsServiceTest {
 
             // Act & Assert
             assertThrows(IllegalArgumentException.class,
-                () -> commentsService.addComment(testPostId, request, testUserId));
+                () -> commentsService.addComment(CommentParentType.POST, testPostId, request, testUserId));
         }
     }
 
@@ -308,7 +309,7 @@ class CommentsServiceTest {
             });
 
             // Act
-            Comment result = commentsService.addComment(testPostId, request, testUserId);
+            Comment result = commentsService.addComment(CommentParentType.POST, testPostId, request, testUserId);
 
             // Assert
             assertNotNull(result);
@@ -329,7 +330,7 @@ class CommentsServiceTest {
             });
 
             // Act
-            Comment result = commentsService.addComment(testPostId, request, testUserId);
+            Comment result = commentsService.addComment(CommentParentType.POST, testPostId, request, testUserId);
 
             // Assert
             assertNotNull(result);
@@ -350,7 +351,7 @@ class CommentsServiceTest {
             });
 
             // Act
-            Comment result = commentsService.addComment(testPostId, request, testUserId);
+            Comment result = commentsService.addComment(CommentParentType.POST, testPostId, request, testUserId);
 
             // Assert
             assertNotNull(result);
@@ -371,7 +372,7 @@ class CommentsServiceTest {
             });
 
             // Act
-            Comment result = commentsService.addComment(testPostId, request, testUserId);
+            Comment result = commentsService.addComment(CommentParentType.POST, testPostId, request, testUserId);
 
             // Assert
             assertNotNull(result);
@@ -387,7 +388,7 @@ class CommentsServiceTest {
         void shouldHideOwnComment() {
             // Arrange
             UUID commentId = UUID.randomUUID();
-            Comment comment = new Comment(testPostId, testUserId, "Test");
+            Comment comment = new Comment(testPostId, "POST", testUserId, "Test");
             comment.setId(commentId);
             comment.setHidden(false);
             
@@ -396,7 +397,7 @@ class CommentsServiceTest {
             when(commentRepository.update(any(Comment.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
             // Act
-            Comment result = commentsService.hideComment(testPostId, commentId, testUserId);
+            Comment result = commentsService.hideComment(CommentParentType.POST, testPostId, commentId, testUserId);
 
             // Assert
             assertTrue(result.isHidden());
@@ -409,7 +410,7 @@ class CommentsServiceTest {
         void shouldReturnIfAlreadyHidden() {
             // Arrange
             UUID commentId = UUID.randomUUID();
-            Comment comment = new Comment(testPostId, testUserId, "Test");
+            Comment comment = new Comment(testPostId, "POST", testUserId, "Test");
             comment.setId(commentId);
             comment.setHidden(true);
             
@@ -417,7 +418,7 @@ class CommentsServiceTest {
             when(commentRepository.findById(commentId)).thenReturn(Optional.of(comment));
 
             // Act
-            Comment result = commentsService.hideComment(testPostId, commentId, testUserId);
+            Comment result = commentsService.hideComment(CommentParentType.POST, testPostId, commentId, testUserId);
 
             // Assert
             assertTrue(result.isHidden());
@@ -435,7 +436,7 @@ class CommentsServiceTest {
             // Arrange
             UUID commentId = UUID.randomUUID();
             UUID otherUserId = UUID.randomUUID();
-            Comment comment = new Comment(testPostId, otherUserId, "Test");
+            Comment comment = new Comment(testPostId, "POST", otherUserId, "Test");
             comment.setId(commentId);
             
             when(postRepository.findById(testPostId)).thenReturn(Optional.of(testPost));
@@ -443,7 +444,7 @@ class CommentsServiceTest {
 
             // Act & Assert
             IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-                () -> commentsService.hideComment(testPostId, commentId, testUserId));
+                () -> commentsService.hideComment(CommentParentType.POST, testPostId, commentId, testUserId));
             assertTrue(exception.getMessage().contains("only hide your own"));
         }
 
@@ -457,7 +458,7 @@ class CommentsServiceTest {
 
             // Act & Assert
             assertThrows(IllegalArgumentException.class,
-                () -> commentsService.hideComment(testPostId, commentId, testUserId));
+                () -> commentsService.hideComment(CommentParentType.POST, testPostId, commentId, testUserId));
         }
 
         @Test
@@ -466,7 +467,7 @@ class CommentsServiceTest {
             // Arrange
             UUID commentId = UUID.randomUUID();
             UUID otherPostId = UUID.randomUUID();
-            Comment comment = new Comment(otherPostId, testUserId, "Test");
+            Comment comment = new Comment(otherPostId, "POST", testUserId, "Test");
             comment.setId(commentId);
             
             when(postRepository.findById(testPostId)).thenReturn(Optional.of(testPost));
@@ -474,7 +475,7 @@ class CommentsServiceTest {
 
             // Act & Assert
             IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-                () -> commentsService.hideComment(testPostId, commentId, testUserId));
+                () -> commentsService.hideComment(CommentParentType.POST, testPostId, commentId, testUserId));
             assertTrue(exception.getMessage().contains("does not belong"));
         }
     }
@@ -488,7 +489,7 @@ class CommentsServiceTest {
         void shouldUnhideOwnComment() {
             // Arrange
             UUID commentId = UUID.randomUUID();
-            Comment comment = new Comment(testPostId, testUserId, "Test");
+            Comment comment = new Comment(testPostId, "POST", testUserId, "Test");
             comment.setId(commentId);
             comment.setHidden(true);
             
@@ -497,7 +498,7 @@ class CommentsServiceTest {
             when(commentRepository.update(any(Comment.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
             // Act
-            Comment result = commentsService.unhideComment(testPostId, commentId, testUserId);
+            Comment result = commentsService.unhideComment(CommentParentType.POST, testPostId, commentId, testUserId);
 
             // Assert
             assertFalse(result.isHidden());
@@ -510,7 +511,7 @@ class CommentsServiceTest {
         void shouldReturnIfNotHidden() {
             // Arrange
             UUID commentId = UUID.randomUUID();
-            Comment comment = new Comment(testPostId, testUserId, "Test");
+            Comment comment = new Comment(testPostId, "POST", testUserId, "Test");
             comment.setId(commentId);
             comment.setHidden(false);
             
@@ -518,7 +519,7 @@ class CommentsServiceTest {
             when(commentRepository.findById(commentId)).thenReturn(Optional.of(comment));
 
             // Act
-            Comment result = commentsService.unhideComment(testPostId, commentId, testUserId);
+            Comment result = commentsService.unhideComment(CommentParentType.POST, testPostId, commentId, testUserId);
 
             // Assert
             assertFalse(result.isHidden());
@@ -536,7 +537,7 @@ class CommentsServiceTest {
             // Arrange
             UUID commentId = UUID.randomUUID();
             UUID otherUserId = UUID.randomUUID();
-            Comment comment = new Comment(testPostId, otherUserId, "Test");
+            Comment comment = new Comment(testPostId, "POST", otherUserId, "Test");
             comment.setId(commentId);
             comment.setHidden(true);
             
@@ -545,7 +546,7 @@ class CommentsServiceTest {
 
             // Act & Assert
             IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-                () -> commentsService.unhideComment(testPostId, commentId, testUserId));
+                () -> commentsService.unhideComment(CommentParentType.POST, testPostId, commentId, testUserId));
             assertTrue(exception.getMessage().contains("only unhide your own"));
         }
     }

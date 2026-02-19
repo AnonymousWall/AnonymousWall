@@ -409,7 +409,7 @@ public class PostsServiceImpl implements PostsService {
         Post updatedPost = postRepository.update(post);
 
         // Unhide all comments associated with this post (within same transaction)
-        commentRepository.updateByPostId(postId, false);
+        commentRepository.updateByParentTypeAndParentId("POST", postId, false);
 
         log.info("Post unhidden: id={}, user={}", postId, userId);
         return updatedPost;

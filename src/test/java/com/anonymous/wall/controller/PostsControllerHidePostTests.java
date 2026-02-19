@@ -1,4 +1,5 @@
 package com.anonymous.wall.controller;
+import com.anonymous.wall.model.CommentParentType;
 
 import com.anonymous.wall.entity.Comment;
 import com.anonymous.wall.entity.Post;
@@ -155,18 +156,18 @@ class PostsControllerHidePostTests {
         @DisplayName("Hide post cascades to hide all comments")
         void shouldHideAllCommentsCascade() throws InterruptedException {
             // Arrange - Create 3 comments on the post
-            Comment comment1 = commentsService.addComment(testPost.getId(),
+            Comment comment1 = commentsService.addComment(CommentParentType.POST, testPost.getId(),
                     new com.anonymous.wall.model.CreateCommentRequest("Comment 1"),
                     authorUser.getId());
-            Comment comment2 = commentsService.addComment(testPost.getId(),
+            Comment comment2 = commentsService.addComment(CommentParentType.POST, testPost.getId(),
                     new com.anonymous.wall.model.CreateCommentRequest("Comment 2"),
                     otherUser.getId());
-            Comment comment3 = commentsService.addComment(testPost.getId(),
+            Comment comment3 = commentsService.addComment(CommentParentType.POST, testPost.getId(),
                     new com.anonymous.wall.model.CreateCommentRequest("Comment 3"),
                     authorUser.getId());
 
             // Verify comments are visible before hiding
-            List<Comment> visibleBefore = commentRepository.findByPostIdAndHiddenFalse(testPost.getId());
+            List<Comment> visibleBefore = commentRepository.findByParentTypeAndParentIdAndHiddenFalse("POST", testPost.getId());
             assertEquals(3, visibleBefore.size());
 
             // Act - Hide the post
@@ -183,7 +184,7 @@ class PostsControllerHidePostTests {
             Thread.sleep(500);
 
             // Verify all comments are hidden
-            List<Comment> visibleAfter = commentRepository.findByPostIdAndHiddenFalse(testPost.getId());
+            List<Comment> visibleAfter = commentRepository.findByParentTypeAndParentIdAndHiddenFalse("POST", testPost.getId());
             assertEquals(0, visibleAfter.size(), "All comments should be hidden");
 
             // Verify comments are marked as hidden in database
@@ -342,10 +343,10 @@ class PostsControllerHidePostTests {
         @DisplayName("Unhide post restores all hidden comments")
         void shouldRestoreAllCommentsWhenUnhiding() {
             // Arrange - Create comments and hide post
-            Comment comment1 = commentsService.addComment(testPost.getId(),
+            Comment comment1 = commentsService.addComment(CommentParentType.POST, testPost.getId(),
                     new com.anonymous.wall.model.CreateCommentRequest("Comment 1"),
                     authorUser.getId());
-            Comment comment2 = commentsService.addComment(testPost.getId(),
+            Comment comment2 = commentsService.addComment(CommentParentType.POST, testPost.getId(),
                     new com.anonymous.wall.model.CreateCommentRequest("Comment 2"),
                     otherUser.getId());
 
@@ -357,7 +358,7 @@ class PostsControllerHidePostTests {
             );
 
             // Verify comments are hidden
-            List<Comment> hiddenComments = commentRepository.findByPostIdAndHiddenFalse(testPost.getId());
+            List<Comment> hiddenComments = commentRepository.findByParentTypeAndParentIdAndHiddenFalse("POST", testPost.getId());
             assertEquals(0, hiddenComments.size());
 
             // Act - Unhide post
@@ -371,7 +372,7 @@ class PostsControllerHidePostTests {
             assertEquals(HttpStatus.OK, response.getStatus());
 
             // Verify all comments are restored
-            List<Comment> restoredComments = commentRepository.findByPostIdAndHiddenFalse(testPost.getId());
+            List<Comment> restoredComments = commentRepository.findByParentTypeAndParentIdAndHiddenFalse("POST", testPost.getId());
             assertEquals(2, restoredComments.size(), "All comments should be restored");
 
             // Verify comments are marked as unhidden
@@ -516,10 +517,10 @@ class PostsControllerHidePostTests {
         @DisplayName("Hiding post hides all comments regardless of who created them")
         void shouldHideAllCommentsRegardlessOfAuthor() throws InterruptedException {
             // Arrange - Create comments from different users
-            Comment authorComment = commentsService.addComment(testPost.getId(),
+            Comment authorComment = commentsService.addComment(CommentParentType.POST, testPost.getId(),
                     new com.anonymous.wall.model.CreateCommentRequest("Author comment"),
                     authorUser.getId());
-            Comment otherComment = commentsService.addComment(testPost.getId(),
+            Comment otherComment = commentsService.addComment(CommentParentType.POST, testPost.getId(),
                     new com.anonymous.wall.model.CreateCommentRequest("Other user comment"),
                     otherUser.getId());
 
@@ -544,13 +545,13 @@ class PostsControllerHidePostTests {
         @DisplayName("Hiding then unhiding post preserves comment count")
         void shouldPreserveCommentCountThroughHideUnhide() {
             // Arrange - Create multiple comments
-            commentsService.addComment(testPost.getId(),
+            commentsService.addComment(CommentParentType.POST, testPost.getId(),
                     new com.anonymous.wall.model.CreateCommentRequest("Comment 1"),
                     authorUser.getId());
-            commentsService.addComment(testPost.getId(),
+            commentsService.addComment(CommentParentType.POST, testPost.getId(),
                     new com.anonymous.wall.model.CreateCommentRequest("Comment 2"),
                     otherUser.getId());
-            commentsService.addComment(testPost.getId(),
+            commentsService.addComment(CommentParentType.POST, testPost.getId(),
                     new com.anonymous.wall.model.CreateCommentRequest("Comment 3"),
                     authorUser.getId());
 
@@ -618,10 +619,10 @@ class PostsControllerHidePostTests {
         @DisplayName("Hide/Unhide operations are transactional (atomic)")
         void shouldBeAtomicOperation() throws InterruptedException {
             // Arrange - Create comments
-            commentsService.addComment(testPost.getId(),
+            commentsService.addComment(CommentParentType.POST, testPost.getId(),
                     new com.anonymous.wall.model.CreateCommentRequest("Comment 1"),
                     authorUser.getId());
-            commentsService.addComment(testPost.getId(),
+            commentsService.addComment(CommentParentType.POST, testPost.getId(),
                     new com.anonymous.wall.model.CreateCommentRequest("Comment 2"),
                     otherUser.getId());
 
@@ -637,7 +638,7 @@ class PostsControllerHidePostTests {
             Post hiddenPost = postRepository.findById(testPost.getId()).get();
             assertTrue(hiddenPost.isHidden());
 
-            List<Comment> hiddenComments = commentRepository.findByPostIdAndHiddenFalse(testPost.getId());
+            List<Comment> hiddenComments = commentRepository.findByParentTypeAndParentIdAndHiddenFalse("POST", testPost.getId());
             assertEquals(0, hiddenComments.size(),
                     "All comments should be hidden atomically with post");
         }

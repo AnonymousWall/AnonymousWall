@@ -650,7 +650,8 @@ class AdminUserControllerTest {
 
             // Create a test comment for the target user
             testComment = new Comment();
-            testComment.setPostId(testPost.getId());
+            testComment.setParentId(testPost.getId());
+            testComment.setParentType("POST");
             testComment.setUserId(targetUser.getId());
             testComment.setProfileName(targetUser.getProfileName());
             testComment.setText("Test comment");
