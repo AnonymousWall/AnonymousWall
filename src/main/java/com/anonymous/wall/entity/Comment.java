@@ -79,7 +79,7 @@ public class Comment {
 
     // Backward-compatible helpers delegating to parentId
     public UUID getPostId() { return parentId; }
-    public void setPostId(UUID postId) { this.parentId = postId; }
+    public void setPostId(UUID postId) { this.parentId = postId; this.parentType = "POST"; }
 
     public UUID getUserId() { return userId; }
     public void setUserId(UUID userId) { this.userId = userId; }
