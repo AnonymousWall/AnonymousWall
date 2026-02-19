@@ -22,4 +22,6 @@ public interface InternshipService {
     void hideInternship(UUID internshipId, UUID userId);
 
     void unhideInternship(UUID internshipId, UUID userId);
+
+    Page<Internship> getUserOwnInternships(UUID userId, Pageable pageable, String sortBy);
 }

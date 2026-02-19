@@ -31,6 +31,10 @@ public interface InternshipRepository extends CrudRepository<Internship, UUID> {
 
     Page<Internship> findByUserIdOrderByCreatedAtDesc(UUID userId, Pageable pageable);
 
+    Page<Internship> findByUserIdAndHiddenFalseOrderByCreatedAtDesc(UUID userId, Pageable pageable);
+
+    Page<Internship> findByUserIdAndHiddenFalseOrderByCreatedAtAsc(UUID userId, Pageable pageable);
+
     Optional<Internship> findById(UUID id);
 
     long countByUserId(UUID userId);

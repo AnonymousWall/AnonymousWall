@@ -1,11 +1,15 @@
 package com.anonymous.wall.controller;
 
 import com.anonymous.wall.entity.Comment;
+import com.anonymous.wall.entity.Internship;
+import com.anonymous.wall.entity.MarketplaceItem;
 import com.anonymous.wall.entity.Post;
 import com.anonymous.wall.entity.UserEntity;
 import com.anonymous.wall.mapper.UserMapper;
 import com.anonymous.wall.model.*;
 import com.anonymous.wall.service.CommentsService;
+import com.anonymous.wall.service.InternshipService;
+import com.anonymous.wall.service.MarketplaceService;
 import com.anonymous.wall.service.UserService;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
@@ -36,6 +40,12 @@ public class UserController {
 
     @Inject
     private com.anonymous.wall.service.PostsService postsService;
+
+    @Inject
+    private InternshipService internshipService;
+
+    @Inject
+    private MarketplaceService marketplaceService;
 
     @Inject
     private UserService userService;
@@ -164,6 +174,106 @@ public class UserController {
     }
 
     /**
+     * GET /users/me/internships
+     * Get current user's own internships with pagination and sorting
+     * Query parameters: page (default 1), limit (default 20), sort (default NEWEST)
+     * Sort options: NEWEST, OLDEST
+     * Hidden internships are excluded (soft-deleted internships are not shown)
+     */
+    @Get("/me/internships")
+    @Secured(SecurityRule.IS_AUTHENTICATED)
+    public HttpResponse<Object> getUserInternships(
+            @QueryValue(defaultValue = "1") int page,
+            @QueryValue(defaultValue = "20") int limit,
+            @QueryValue(defaultValue = "NEWEST") String sort,
+            HttpRequest<?> httpRequest) {
+        try {
+            UUID userId = getUserIdFromRequest(httpRequest);
+            log.info("GET /users/me/internships - Getting user's own internships, user={}, page={}, limit={}, sort={}",
+                userId, page, limit, sort);
+
+            if (page < 1) page = 1;
+            if (limit < 1 || limit > 100) limit = 20;
+
+            Pageable pageable = Pageable.from(page - 1, limit);
+            Page<Internship> internshipPage = internshipService.getUserOwnInternships(userId, pageable, sort);
+
+            List<InternshipDTO> dtos = internshipPage.getContent().stream()
+                    .map(this::mapInternshipToDTO)
+                    .collect(Collectors.toList());
+
+            Map<String, Object> pagination = new HashMap<>();
+            pagination.put("page", page);
+            pagination.put("limit", limit);
+            pagination.put("total", internshipPage.getTotalSize());
+            pagination.put("totalPages", internshipPage.getTotalPages());
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("data", dtos);
+            response.put("pagination", pagination);
+
+            log.info("GET /users/me/internships - Successfully retrieved {} internships", dtos.size());
+            return HttpResponse.ok(response);
+        } catch (IllegalArgumentException e) {
+            log.warn("GET /users/me/internships - Bad request: {}", e.getMessage());
+            return HttpResponse.badRequest(error(e.getMessage()));
+        } catch (Exception e) {
+            log.error("GET /users/me/internships - Error getting user internships", e);
+            return HttpResponse.badRequest(error("Failed to get user internships"));
+        }
+    }
+
+    /**
+     * GET /users/me/marketplaces
+     * Get current user's own marketplace items with pagination and sorting
+     * Query parameters: page (default 1), limit (default 20), sort (default NEWEST)
+     * Sort options: NEWEST, OLDEST
+     * Hidden items are excluded (soft-deleted items are not shown)
+     */
+    @Get("/me/marketplaces")
+    @Secured(SecurityRule.IS_AUTHENTICATED)
+    public HttpResponse<Object> getUserMarketplaces(
+            @QueryValue(defaultValue = "1") int page,
+            @QueryValue(defaultValue = "20") int limit,
+            @QueryValue(defaultValue = "NEWEST") String sort,
+            HttpRequest<?> httpRequest) {
+        try {
+            UUID userId = getUserIdFromRequest(httpRequest);
+            log.info("GET /users/me/marketplaces - Getting user's own marketplace items, user={}, page={}, limit={}, sort={}",
+                userId, page, limit, sort);
+
+            if (page < 1) page = 1;
+            if (limit < 1 || limit > 100) limit = 20;
+
+            Pageable pageable = Pageable.from(page - 1, limit);
+            Page<MarketplaceItem> itemPage = marketplaceService.getUserOwnItems(userId, pageable, sort);
+
+            List<ItemDTO> dtos = itemPage.getContent().stream()
+                    .map(this::mapItemToDTO)
+                    .collect(Collectors.toList());
+
+            Map<String, Object> pagination = new HashMap<>();
+            pagination.put("page", page);
+            pagination.put("limit", limit);
+            pagination.put("total", itemPage.getTotalSize());
+            pagination.put("totalPages", itemPage.getTotalPages());
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("data", dtos);
+            response.put("pagination", pagination);
+
+            log.info("GET /users/me/marketplaces - Successfully retrieved {} marketplace items", dtos.size());
+            return HttpResponse.ok(response);
+        } catch (IllegalArgumentException e) {
+            log.warn("GET /users/me/marketplaces - Bad request: {}", e.getMessage());
+            return HttpResponse.badRequest(error(e.getMessage()));
+        } catch (Exception e) {
+            log.error("GET /users/me/marketplaces - Error getting user marketplace items", e);
+            return HttpResponse.badRequest(error("Failed to get user marketplace items"));
+        }
+    }
+
+    /**
      * PATCH /users/me/profile/name
      * Update user profile name with async propagation to posts and comments
      */
@@ -193,6 +303,66 @@ public class UserController {
     }
 
     // ================= DTO Mapping Methods =================
+
+    private InternshipDTO mapInternshipToDTO(Internship internship) {
+        InternshipDTO dto = new InternshipDTO();
+        dto.setId(internship.getId().toString());
+        dto.setCompany(internship.getCompany());
+        dto.setRole(internship.getRole());
+        dto.setSalary(internship.getSalary());
+        dto.setLocation(internship.getLocation());
+        dto.setDescription(internship.getDescription());
+        dto.setDeadline(internship.getDeadline());
+        dto.setCreatedAt(internship.getCreatedAt());
+        dto.setUpdatedAt(internship.getUpdatedAt());
+
+        if (internship.getWall() != null) {
+            dto.setWall(InternshipDTOWall.valueOf(internship.getWall().toUpperCase()));
+        }
+        dto.setComments(internship.getCommentCount());
+
+        InternshipDTOAuthor author = new InternshipDTOAuthor();
+        author.setId(internship.getUserId().toString());
+        author.setProfileName(internship.getProfileName());
+        author.setIsAnonymous(false);
+        dto.setAuthor(author);
+
+        return dto;
+    }
+
+    private ItemDTO mapItemToDTO(MarketplaceItem item) {
+        ItemDTO dto = new ItemDTO();
+        dto.setId(item.getId().toString());
+        dto.setTitle(item.getTitle());
+        dto.setDescription(item.getDescription());
+        dto.setPrice(item.getPrice() != null ? item.getPrice().floatValue() : null);
+        dto.setCategory(item.getCategory());
+
+        if (item.getCondition() != null) {
+            try {
+                dto.setCondition(ItemDTOCondition.fromValue(item.getCondition()));
+            } catch (IllegalArgumentException e) {
+                log.warn("Invalid condition value: {}", item.getCondition());
+            }
+        }
+
+        dto.setSold(item.isSold());
+
+        if (item.getWall() != null) {
+            dto.setWall(ItemDTOWall.valueOf(item.getWall().toUpperCase()));
+        }
+        dto.setComments(item.getCommentCount());
+        dto.setCreatedAt(item.getCreatedAt());
+        dto.setUpdatedAt(item.getUpdatedAt());
+
+        ItemDTOAuthor author = new ItemDTOAuthor();
+        author.setId(item.getUserId().toString());
+        author.setProfileName(item.getProfileName());
+        author.setIsAnonymous(false);
+        dto.setAuthor(author);
+
+        return dto;
+    }
 
     private CommentDTO mapCommentToDTO(Comment comment) {
         CommentDTO dto = new CommentDTO();
