@@ -308,10 +308,10 @@ class InternshipControllerTest {
             // Create internship
             Internship internship = new Internship(testUser.getId(), "Google", "SWE Intern",
                 "$8000/month", "Mountain View, CA", "Great opportunity", LocalDate.of(2026, 6, 30));
-            internship = internshipRepository.save(internship);
+            final Internship savedInternship = internshipRepository.save(internship);
 
             HttpResponse<InternshipDTO> response = client.toBlocking().exchange(
-                HttpRequest.GET(BASE_PATH + "/" + internship.getId())
+                HttpRequest.GET(BASE_PATH + "/" + savedInternship.getId())
                     .header("Authorization", "Bearer " + jwtToken),
                 InternshipDTO.class
             );
@@ -349,10 +349,10 @@ class InternshipControllerTest {
             // Create internship
             Internship internship = new Internship(testUser.getId(), "Google", "SWE Intern",
                 null, null, null, null);
-            internship = internshipRepository.save(internship);
+            final Internship savedInternship = internshipRepository.save(internship);
 
             HttpResponse<Map> response = client.toBlocking().exchange(
-                HttpRequest.PATCH(BASE_PATH + "/" + internship.getId() + "/hide", null)
+                HttpRequest.PATCH(BASE_PATH + "/" + savedInternship.getId() + "/hide", null)
                     .header("Authorization", "Bearer " + jwtToken),
                 Map.class
             );
@@ -363,7 +363,7 @@ class InternshipControllerTest {
             assertTrue(body.get("message").toString().contains("hidden successfully"));
 
             // Verify internship is hidden
-            Internship hidden = internshipRepository.findById(internship.getId()).orElseThrow();
+            Internship hidden = internshipRepository.findById(savedInternship.getId()).orElseThrow();
             assertTrue(hidden.isHidden());
         }
 
@@ -395,12 +395,12 @@ class InternshipControllerTest {
             // Create internship with otherUser
             Internship internship = new Internship(otherUser.getId(), "Google", "SWE Intern",
                 null, null, null, null);
-            internship = internshipRepository.save(internship);
+            final Internship savedInternship = internshipRepository.save(internship);
 
             HttpClientResponseException exception = assertThrows(
                 HttpClientResponseException.class,
                 () -> client.toBlocking().exchange(
-                    HttpRequest.PATCH(BASE_PATH + "/" + internship.getId() + "/hide", null)
+                    HttpRequest.PATCH(BASE_PATH + "/" + savedInternship.getId() + "/hide", null)
                         .header("Authorization", "Bearer " + jwtToken),
                     Map.class
                 )
@@ -420,10 +420,10 @@ class InternshipControllerTest {
             Internship internship = new Internship(testUser.getId(), "Google", "SWE Intern",
                 null, null, null, null);
             internship.setHidden(true);
-            internship = internshipRepository.save(internship);
+            final Internship savedInternship = internshipRepository.save(internship);
 
             HttpResponse<Map> response = client.toBlocking().exchange(
-                HttpRequest.PATCH(BASE_PATH + "/" + internship.getId() + "/unhide", null)
+                HttpRequest.PATCH(BASE_PATH + "/" + savedInternship.getId() + "/unhide", null)
                     .header("Authorization", "Bearer " + jwtToken),
                 Map.class
             );
@@ -434,7 +434,7 @@ class InternshipControllerTest {
             assertTrue(body.get("message").toString().contains("unhidden successfully"));
 
             // Verify internship is not hidden
-            Internship unhidden = internshipRepository.findById(internship.getId()).orElseThrow();
+            Internship unhidden = internshipRepository.findById(savedInternship.getId()).orElseThrow();
             assertFalse(unhidden.isHidden());
         }
 
