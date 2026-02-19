@@ -789,10 +789,12 @@ paths:
             maximum: 100
           description: Number of postings per page
         - in: query
-          name: company
+          name: sortBy
           schema:
             type: string
-          description: Filter by company name
+            enum: [newest, oldest]
+            default: newest
+          description: Sort order for internship postings
       responses:
         "200":
           description: Internship postings retrieved successfully
@@ -807,6 +809,97 @@ paths:
                       $ref: "#/components/schemas/InternshipDTO"
                   pagination:
                     $ref: "#/components/schemas/PaginationInfo"
+        "401":
+          description: Unauthorized - authentication required
+
+  /internships/{internshipId}:
+    get:
+      tags: [internships]
+      summary: Get internship posting by ID
+      description: Retrieve a specific internship posting by its ID
+      operationId: getInternship
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: internshipId
+          required: true
+          schema:
+            type: string
+          description: ID of the internship posting to retrieve
+      responses:
+        "200":
+          description: Internship posting retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InternshipDTO"
+        "404":
+          description: Internship posting not found
+        "401":
+          description: Unauthorized - authentication required
+
+  /internships/{internshipId}/hide:
+    patch:
+      tags: [internships]
+      summary: Hide an internship posting
+      description: Hide an internship posting (soft-delete). Only the posting author can hide their own posting.
+      operationId: hideInternship
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: internshipId
+          required: true
+          schema:
+            type: string
+          description: ID of the internship posting to hide
+      responses:
+        "200":
+          description: Internship posting hidden successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        "404":
+          description: Internship posting not found
+        "403":
+          description: Forbidden - You can only hide your own postings
+        "401":
+          description: Unauthorized - authentication required
+
+  /internships/{internshipId}/unhide:
+    patch:
+      tags: [internships]
+      summary: Unhide an internship posting
+      description: Unhide a previously hidden internship posting. Only the posting author can unhide their own posting.
+      operationId: unhideInternship
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: internshipId
+          required: true
+          schema:
+            type: string
+          description: ID of the internship posting to unhide
+      responses:
+        "200":
+          description: Internship posting unhidden successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        "404":
+          description: Internship posting not found
+        "403":
+          description: Forbidden - You can only unhide your own postings
         "401":
           description: Unauthorized - authentication required
 
@@ -2346,6 +2439,12 @@ components:
           properties:
             id:
               type: string
+            profileName:
+              type: string
+              description: Profile name of the posting author
+            isAnonymous:
+              type: boolean
+              description: Whether author is anonymous
         createdAt:
           type: string
           format: date-time
