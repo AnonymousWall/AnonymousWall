@@ -15,9 +15,14 @@ import java.util.UUID;
 public interface InternshipRepository extends CrudRepository<Internship, UUID> {
 
     /**
-     * Find all internships with pagination, sorted by created time (newest first)
+     * Find all non-hidden internships with pagination, sorted by created time (newest first)
      */
-    Page<Internship> findAllOrderByCreatedAtDesc(Pageable pageable);
+    Page<Internship> findByHiddenOrderByCreatedAtDesc(boolean hidden, Pageable pageable);
+
+    /**
+     * Find all non-hidden internships with pagination, sorted by created time (oldest first)
+     */
+    Page<Internship> findByHiddenOrderByCreatedAtAsc(boolean hidden, Pageable pageable);
 
     /**
      * Find internships by user ID

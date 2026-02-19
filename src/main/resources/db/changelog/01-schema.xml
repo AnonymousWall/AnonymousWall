@@ -142,6 +142,7 @@
             <column name="location" type="VARCHAR(255)"/>
             <column name="description" type="TEXT"/>
             <column name="deadline" type="DATE"/>
+            <column name="is_hidden" type="BOOLEAN" defaultValueBoolean="false"/>
             <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP"/>
             <column name="updated_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP"/>
         </createTable>
@@ -153,6 +154,9 @@
         </createIndex>
         <createIndex tableName="internships" indexName="idx_internships_created_at">
             <column name="created_at"/>
+        </createIndex>
+        <createIndex tableName="internships" indexName="idx_internships_is_hidden">
+            <column name="is_hidden"/>
         </createIndex>
     </changeSet>
 

@@ -80,23 +80,25 @@ public class InternshipController {
 
     /**
      * GET /internships
-     * List internship postings with optional pagination
+     * List internship postings with optional pagination and sorting
      */
     @Get
     @Secured(SecurityRule.IS_AUTHENTICATED)
     public HttpResponse<Object> listInternships(
             @QueryValue(defaultValue = "1") int page,
             @QueryValue(defaultValue = "20") int limit,
+            @QueryValue(defaultValue = "newest") String sortBy,
             HttpRequest<?> httpRequest) {
         try {
             UUID userId = getUserIdFromRequest(httpRequest);
-            log.info("GET /internships - Listing internships, user={}, page={}, limit={}", userId, page, limit);
+            log.info("GET /internships - Listing internships, user={}, page={}, limit={}, sortBy={}", 
+                    userId, page, limit, sortBy);
 
             if (page < 1) page = 1;
             if (limit < 1 || limit > 100) limit = 20;
 
             Pageable pageable = Pageable.from(page - 1, limit);
-            Page<Internship> internships = internshipService.listInternships(pageable);
+            Page<Internship> internships = internshipService.listInternships(pageable, sortBy);
 
             List<InternshipDTO> dtos = internships.getContent().stream()
                     .map(this::mapInternshipToDTO)
@@ -117,6 +119,107 @@ public class InternshipController {
         }
     }
 
+    /**
+     * GET /internships/{internshipId}
+     * Get a specific internship posting by ID
+     */
+    @Get("/{internshipId}")
+    @Secured(SecurityRule.IS_AUTHENTICATED)
+    public HttpResponse<Object> getInternship(
+            @PathVariable String internshipId,
+            HttpRequest<?> httpRequest) {
+        try {
+            UUID userId = getUserIdFromRequest(httpRequest);
+            UUID internshipUUID = UUID.fromString(internshipId);
+            log.info("GET /internships/{} - Getting internship, user={}", internshipId, userId);
+
+            Internship internship = internshipService.getInternship(internshipUUID);
+            InternshipDTO dto = mapInternshipToDTO(internship);
+
+            log.info("GET /internships/{} - Internship retrieved successfully", internshipId);
+            return HttpResponse.ok(dto);
+        } catch (IllegalArgumentException e) {
+            log.warn("GET /internships/{} - Bad request: {}", internshipId, e.getMessage());
+            if (e.getMessage().contains("not found")) {
+                return HttpResponse.notFound();
+            }
+            return HttpResponse.badRequest(error(e.getMessage()));
+        } catch (Exception e) {
+            log.error("GET /internships/{} - Error getting internship", internshipId, e);
+            return HttpResponse.badRequest(error("Failed to get internship posting"));
+        }
+    }
+
+    /**
+     * PATCH /internships/{internshipId}/hide
+     * Hide an internship posting
+     */
+    @Patch("/{internshipId}/hide")
+    @Secured(SecurityRule.IS_AUTHENTICATED)
+    public HttpResponse<Object> hideInternship(
+            @PathVariable UUID internshipId,
+            HttpRequest<?> httpRequest) {
+        try {
+            UUID userId = getUserIdFromRequest(httpRequest);
+            log.info("PATCH /internships/{}/hide - Hiding internship, user={}", internshipId, userId);
+
+            internshipService.hideInternship(internshipId, userId);
+
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "Internship posting hidden successfully");
+
+            log.info("PATCH /internships/{}/hide - Internship hidden successfully", internshipId);
+            return HttpResponse.ok(response);
+        } catch (IllegalArgumentException e) {
+            log.warn("PATCH /internships/{}/hide - Bad request: {}", internshipId, e.getMessage());
+            if (e.getMessage().contains("not found")) {
+                return HttpResponse.notFound();
+            }
+            if (e.getMessage().contains("You can only hide your own")) {
+                return HttpResponse.status(io.micronaut.http.HttpStatus.FORBIDDEN).body(error(e.getMessage()));
+            }
+            return HttpResponse.badRequest(error(e.getMessage()));
+        } catch (Exception e) {
+            log.error("PATCH /internships/{}/hide - Error hiding internship", internshipId, e);
+            return HttpResponse.badRequest(error("Failed to hide internship posting"));
+        }
+    }
+
+    /**
+     * PATCH /internships/{internshipId}/unhide
+     * Unhide an internship posting
+     */
+    @Patch("/{internshipId}/unhide")
+    @Secured(SecurityRule.IS_AUTHENTICATED)
+    public HttpResponse<Object> unhideInternship(
+            @PathVariable UUID internshipId,
+            HttpRequest<?> httpRequest) {
+        try {
+            UUID userId = getUserIdFromRequest(httpRequest);
+            log.info("PATCH /internships/{}/unhide - Unhiding internship, user={}", internshipId, userId);
+
+            internshipService.unhideInternship(internshipId, userId);
+
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "Internship posting unhidden successfully");
+
+            log.info("PATCH /internships/{}/unhide - Internship unhidden successfully", internshipId);
+            return HttpResponse.ok(response);
+        } catch (IllegalArgumentException e) {
+            log.warn("PATCH /internships/{}/unhide - Bad request: {}", internshipId, e.getMessage());
+            if (e.getMessage().contains("not found")) {
+                return HttpResponse.notFound();
+            }
+            if (e.getMessage().contains("You can only unhide your own")) {
+                return HttpResponse.status(io.micronaut.http.HttpStatus.FORBIDDEN).body(error(e.getMessage()));
+            }
+            return HttpResponse.badRequest(error(e.getMessage()));
+        } catch (Exception e) {
+            log.error("PATCH /internships/{}/unhide - Error unhiding internship", internshipId, e);
+            return HttpResponse.badRequest(error("Failed to unhide internship posting"));
+        }
+    }
+
     // ================= DTO Mapping Methods =================
 
     private InternshipDTO mapInternshipToDTO(Internship internship) {
@@ -131,17 +234,20 @@ public class InternshipController {
         dto.setCreatedAt(internship.getCreatedAt());
         dto.setUpdatedAt(internship.getUpdatedAt());
 
-        // Set author info
+        // Set author info (following marketplace pattern)
         InternshipDTOAuthor author = new InternshipDTOAuthor();
         author.setId(internship.getUserId().toString());
 
-        // Get user for author details (optional, based on API spec)
+        // Get user for author details
         Optional<UserEntity> userOpt = userRepository.findById(internship.getUserId());
         if (userOpt.isPresent()) {
-            // Author info is minimal in the API spec, just id is required
-            // Additional fields can be added if needed
+            UserEntity user = userOpt.get();
+            author.setProfileName(user.getProfileName());
+        } else {
+            author.setProfileName("Anonymous");
         }
 
+        author.setIsAnonymous(false); // Internship postings are not anonymous
         dto.setAuthor(author);
 
         return dto;

@@ -77,8 +77,73 @@ public class InternshipServiceImpl implements InternshipService {
     }
 
     @Override
-    public Page<Internship> listInternships(Pageable pageable) {
-        log.info("Listing internships");
-        return internshipRepository.findAllOrderByCreatedAtDesc(pageable);
+    public Page<Internship> listInternships(Pageable pageable, String sortBy) {
+        log.info("Listing internships with sortBy={}", sortBy);
+
+        if (sortBy == null) {
+            sortBy = "newest";
+        }
+
+        // Only show non-hidden internships
+        switch (sortBy.toLowerCase()) {
+            case "oldest":
+                return internshipRepository.findByHiddenOrderByCreatedAtAsc(false, pageable);
+            case "newest":
+            default:
+                return internshipRepository.findByHiddenOrderByCreatedAtDesc(false, pageable);
+        }
+    }
+
+    @Override
+    public Internship getInternship(UUID internshipId) {
+        log.info("Getting internship {}", internshipId);
+        return internshipRepository.findById(internshipId)
+                .orElseThrow(() -> new IllegalArgumentException("Internship not found"));
+    }
+
+    @Override
+    @Transactional
+    public void hideInternship(UUID internshipId, UUID userId) {
+        log.info("Hiding internship {} for user {}", internshipId, userId);
+
+        Optional<Internship> internshipOpt = internshipRepository.findById(internshipId);
+        if (internshipOpt.isEmpty()) {
+            throw new IllegalArgumentException("Internship not found");
+        }
+
+        Internship internship = internshipOpt.get();
+
+        // Check ownership
+        if (!internship.getUserId().equals(userId)) {
+            throw new IllegalArgumentException("You can only hide your own internship postings");
+        }
+
+        internship.setHidden(true);
+        internship.setUpdatedAt(OffsetDateTime.now());
+        internshipRepository.update(internship);
+        log.info("Hid internship {}", internshipId);
+    }
+
+    @Override
+    @Transactional
+    public void unhideInternship(UUID internshipId, UUID userId) {
+        log.info("Unhiding internship {} for user {}", internshipId, userId);
+
+        Optional<Internship> internshipOpt = internshipRepository.findById(internshipId);
+        if (internshipOpt.isEmpty()) {
+            throw new IllegalArgumentException("Internship not found");
+        }
+
+        Internship internship = internshipOpt.get();
+
+        // Check ownership
+        if (!internship.getUserId().equals(userId)) {
+            throw new IllegalArgumentException("You can only unhide your own internship postings");
+        }
+
+        internship.setHidden(false);
+        internship.setUpdatedAt(OffsetDateTime.now());
+        internshipRepository.update(internship);
+        log.info("Unhid internship {}", internshipId);
     }
 }

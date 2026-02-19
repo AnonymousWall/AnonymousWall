@@ -35,6 +35,9 @@ public class Internship {
     @MappedProperty("deadline")
     private LocalDate deadline;
 
+    @MappedProperty("is_hidden")
+    private boolean hidden = false;
+
     @MappedProperty("created_at")
     private OffsetDateTime createdAt = OffsetDateTime.now();
 
@@ -54,6 +57,7 @@ public class Internship {
         this.location = location;
         this.description = description;
         this.deadline = deadline;
+        this.hidden = false;
         this.createdAt = OffsetDateTime.now();
         this.updatedAt = OffsetDateTime.now();
     }
@@ -138,5 +142,13 @@ public class Internship {
 
     public void setUpdatedAt(OffsetDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public boolean isHidden() {
+        return hidden;
+    }
+
+    public void setHidden(boolean hidden) {
+        this.hidden = hidden;
     }
 }
