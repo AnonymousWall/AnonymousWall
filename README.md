@@ -809,7 +809,9 @@ Response: 201 Created
     "description": "Work on cutting-edge projects with experienced mentors",
     "deadline": "2026-06-30",
     "author": {
-        "id": "uuid"
+        "id": "uuid",
+        "profileName": "John Recruiter",
+        "isAnonymous": false
     },
     "createdAt": "2026-02-18T...",
     "updatedAt": "2026-02-18T..."
@@ -861,7 +863,7 @@ Response: 201 Created
 
 #### 2. List Internship Postings
 ```http
-GET /api/v1/internships?page=1&limit=20
+GET /api/v1/internships?page=1&limit=20&sortBy=newest
 Authorization: Bearer {jwt-token}
 
 Response: 200 OK
@@ -876,7 +878,9 @@ Response: 200 OK
             "description": "Work on cutting-edge projects with experienced mentors",
             "deadline": "2026-06-30",
             "author": {
-                "id": "uuid"
+                "id": "uuid",
+                "profileName": "John Recruiter",
+                "isAnonymous": false
             },
             "createdAt": "2026-02-18T...",
             "updatedAt": "2026-02-18T..."
@@ -894,15 +898,101 @@ Response: 200 OK
 **Query Parameters:**
 - `page` (default: 1): Page number for pagination (1-based indexing)
 - `limit` (default: 20): Number of items per page (min: 1, max: 100)
+- `sortBy` (default: newest): Sort order - "newest" (newest first) or "oldest" (oldest first)
 
 **Response Details:**
-- Internships are sorted by **created_at** in **descending order** (newest first)
+- Only non-hidden internships are returned
 - Returns paginated results with pagination metadata
 
+#### 3. Get Internship Posting by ID
+```http
+GET /api/v1/internships/{internshipId}
+Authorization: Bearer {jwt-token}
+
+Response: 200 OK
+{
+    "id": "uuid",
+    "company": "Google",
+    "role": "Software Engineer Intern",
+    "salary": "$8000/month",
+    "location": "Mountain View, CA",
+    "description": "Work on cutting-edge projects with experienced mentors",
+    "deadline": "2026-06-30",
+    "author": {
+        "id": "uuid",
+        "profileName": "John Recruiter",
+        "isAnonymous": false
+    },
+    "createdAt": "2026-02-18T...",
+    "updatedAt": "2026-02-18T..."
+}
+```
+
+**Error Responses:**
+```json
+// Internship not found
+404 Not Found
+```
+
+#### 4. Hide Internship Posting
+```http
+PATCH /api/v1/internships/{internshipId}/hide
+Authorization: Bearer {jwt-token}
+
+Response: 200 OK
+{
+    "message": "Internship posting hidden successfully"
+}
+```
+
 **Notes:**
-- Authentication is required for both endpoints
-- Users can view all internship postings regardless of who posted them
-- Internships are public to all authenticated users on the platform
+- Only the author can hide their own internship posting
+- Hidden internships are excluded from list results
+- Soft-delete operation (data is not permanently removed)
+
+**Error Responses:**
+```json
+// Not the author
+403 Forbidden
+{
+    "error": "You can only hide your own internship postings"
+}
+
+// Internship not found
+404 Not Found
+```
+
+#### 5. Unhide Internship Posting
+```http
+PATCH /api/v1/internships/{internshipId}/unhide
+Authorization: Bearer {jwt-token}
+
+Response: 200 OK
+{
+    "message": "Internship posting unhidden successfully"
+}
+```
+
+**Notes:**
+- Only the author can unhide their own internship posting
+- Unhidden internships reappear in list results
+
+**Error Responses:**
+```json
+// Not the author
+403 Forbidden
+{
+    "error": "You can only unhide your own internship postings"
+}
+
+// Internship not found
+404 Not Found
+```
+
+**General Notes:**
+- Authentication is required for all endpoints
+- Users can view all non-hidden internship postings regardless of who posted them
+- Internship postings are not anonymous (author information is visible)
 
 ### Marketplace Endpoints
 

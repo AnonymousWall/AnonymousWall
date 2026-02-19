@@ -11,8 +11,6 @@ import io.micronaut.test.extensions.junit5.annotation.MicronautTest;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.*;
 
-import java.time.LocalDate;
-
 import static org.junit.jupiter.api.Assertions.*;
 
 @MicronautTest
@@ -50,7 +48,7 @@ class InternshipServiceImplListInternshipsTest {
     }
 
     @Test
-    @DisplayName("Should list all internships with pagination")
+    @DisplayName("Should list all internships with pagination sorted by newest")
     void shouldListInternshipsWithPagination() {
         // Create multiple internships with explicit timestamps
         CreateInternshipRequest request1 = new CreateInternshipRequest("Google", "SWE Intern");
@@ -69,7 +67,7 @@ class InternshipServiceImplListInternshipsTest {
 
         // Act
         Pageable pageable = Pageable.from(0, 10);
-        Page<Internship> result = internshipService.listInternships(pageable);
+        Page<Internship> result = internshipService.listInternships(pageable, "newest");
 
         // Assert
         assertNotNull(result);
@@ -82,11 +80,59 @@ class InternshipServiceImplListInternshipsTest {
     }
 
     @Test
+    @DisplayName("Should list internships sorted by oldest")
+    void shouldListInternshipsSortedByOldest() {
+        // Create multiple internships
+        CreateInternshipRequest request1 = new CreateInternshipRequest("Google", "SWE Intern");
+        CreateInternshipRequest request2 = new CreateInternshipRequest("Microsoft", "PM Intern");
+
+        Internship internship1 = internshipService.createInternship(request1, testUser.getId());
+        Internship internship2 = internshipService.createInternship(request2, testUser.getId());
+
+        internship1.setCreatedAt(internship1.getCreatedAt().minusSeconds(1));
+        internshipRepository.update(internship1);
+
+        // Act
+        Pageable pageable = Pageable.from(0, 10);
+        Page<Internship> result = internshipService.listInternships(pageable, "oldest");
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(2, result.getTotalSize());
+        // Should be sorted by oldest first
+        assertEquals("Google", result.getContent().get(0).getCompany());
+        assertEquals("Microsoft", result.getContent().get(1).getCompany());
+    }
+
+    @Test
+    @DisplayName("Should not show hidden internships in list")
+    void shouldNotShowHiddenInternships() {
+        // Create internships
+        CreateInternshipRequest request1 = new CreateInternshipRequest("Google", "SWE Intern");
+        CreateInternshipRequest request2 = new CreateInternshipRequest("Microsoft", "PM Intern");
+
+        Internship internship1 = internshipService.createInternship(request1, testUser.getId());
+        internshipService.createInternship(request2, testUser.getId());
+
+        // Hide first internship
+        internshipService.hideInternship(internship1.getId(), testUser.getId());
+
+        // Act
+        Pageable pageable = Pageable.from(0, 10);
+        Page<Internship> result = internshipService.listInternships(pageable, "newest");
+
+        // Assert - Only non-hidden internship should be shown
+        assertNotNull(result);
+        assertEquals(1, result.getTotalSize());
+        assertEquals("Microsoft", result.getContent().get(0).getCompany());
+    }
+
+    @Test
     @DisplayName("Should return empty page when no internships exist")
     void shouldReturnEmptyPageWhenNoInternships() {
         // Act
         Pageable pageable = Pageable.from(0, 10);
-        Page<Internship> result = internshipService.listInternships(pageable);
+        Page<Internship> result = internshipService.listInternships(pageable, "newest");
 
         // Assert
         assertNotNull(result);
@@ -108,11 +154,11 @@ class InternshipServiceImplListInternshipsTest {
 
         // Act - Get first page with 2 items
         Pageable pageable1 = Pageable.from(0, 2);
-        Page<Internship> page1 = internshipService.listInternships(pageable1);
+        Page<Internship> page1 = internshipService.listInternships(pageable1, "newest");
 
         // Act - Get second page with 2 items
         Pageable pageable2 = Pageable.from(1, 2);
-        Page<Internship> page2 = internshipService.listInternships(pageable2);
+        Page<Internship> page2 = internshipService.listInternships(pageable2, "newest");
 
         // Assert
         assertEquals(5, page1.getTotalSize());
