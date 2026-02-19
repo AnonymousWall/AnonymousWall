@@ -1,4 +1,5 @@
 package com.anonymous.wall.concurrency;
+import com.anonymous.wall.model.CommentParentType;
 
 import com.anonymous.wall.entity.Post;
 import com.anonymous.wall.entity.Comment;
@@ -87,7 +88,7 @@ public class PostConcurrencyTest {
                     try {
                         startLatch.await();
                         CreateCommentRequest request = new CreateCommentRequest("Concurrent comment #" + commentNumber);
-                        Comment result = commentsService.addComment(testPost.getId(), request, testUser.getId());
+                        Comment result = commentsService.addComment(CommentParentType.POST, testPost.getId(), request, testUser.getId());
                         if (result != null && result.getId() != null) {
                             successCount.incrementAndGet();
                         }
@@ -107,7 +108,7 @@ public class PostConcurrencyTest {
 
             // Verify at least some comments were saved and count is reasonable
             Post refreshedPost = postRepository.findById(testPost.getId()).orElseThrow();
-            long actualCommentCount = commentRepository.findByPostIdAndHiddenFalse(testPost.getId()).size();
+            long actualCommentCount = commentRepository.findByParentTypeAndParentIdAndHiddenFalse("POST", testPost.getId()).size();
 
             assertTrue(actualCommentCount > 0, "At least some comments should be saved");
             assertTrue(actualCommentCount <= threadCount, "Count should not exceed thread count");
@@ -171,7 +172,7 @@ public class PostConcurrencyTest {
         // Add comments sequentially
         for (int i = 0; i < commentCount; i++) {
             CreateCommentRequest request = new CreateCommentRequest("Mixed operation comment #" + i);
-            commentsService.addComment(testPost.getId(), request, testUser.getId());
+            commentsService.addComment(CommentParentType.POST, testPost.getId(), request, testUser.getId());
         }
 
         // Add likes sequentially
@@ -182,7 +183,7 @@ public class PostConcurrencyTest {
         Thread.sleep(1000);
 
         Post refreshedPost = postRepository.findById(testPost.getId()).orElseThrow();
-        long actualCommentCount = commentRepository.findByPostIdAndHiddenFalse(testPost.getId()).size();
+        long actualCommentCount = commentRepository.findByParentTypeAndParentIdAndHiddenFalse("POST", testPost.getId()).size();
         long actualLikeCount = postLikeRepository.countByPostId(testPost.getId());
 
         // Verify counts match actual data
@@ -207,7 +208,7 @@ public class PostConcurrencyTest {
                     try {
                         startLatch.await();
                         CreateCommentRequest request = new CreateCommentRequest("High-load comment #" + threadNumber);
-                        Comment result = commentsService.addComment(testPost.getId(), request, testUser.getId());
+                        Comment result = commentsService.addComment(CommentParentType.POST, testPost.getId(), request, testUser.getId());
                         if (result != null) {
                             successCount.incrementAndGet();
                         }
@@ -226,7 +227,7 @@ public class PostConcurrencyTest {
             Thread.sleep(1000);
 
             Post refreshedPost = postRepository.findById(testPost.getId()).orElseThrow();
-            long actualCommentCount = commentRepository.findByPostIdAndHiddenFalse(testPost.getId()).size();
+            long actualCommentCount = commentRepository.findByParentTypeAndParentIdAndHiddenFalse("POST", testPost.getId()).size();
 
             // Verify counts are consistent (not zero, and match actual)
             assertTrue(actualCommentCount > 0, "At least some comments should be saved");

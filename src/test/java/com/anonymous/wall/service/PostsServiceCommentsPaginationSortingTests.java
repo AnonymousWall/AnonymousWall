@@ -1,4 +1,5 @@
 package com.anonymous.wall.service;
+import com.anonymous.wall.model.CommentParentType;
 
 import com.anonymous.wall.entity.Post;
 import com.anonymous.wall.entity.Comment;
@@ -65,7 +66,7 @@ class PostsServiceCommentsPaginationSortingTests {
 
         // Create test comments (40 comments for comprehensive testing) via service
         for (int i = 0; i < 40; i++) {
-            commentsService.addComment(testPost.getId(),
+            commentsService.addComment(CommentParentType.POST, testPost.getId(),
                 new com.anonymous.wall.model.CreateCommentRequest("Comment " + i), userId);
         }
     }
@@ -85,7 +86,7 @@ class PostsServiceCommentsPaginationSortingTests {
         @DisplayName("Should return first page of comments with default parameters")
         void shouldReturnFirstPageDefault() {
             Pageable pageable = Pageable.from(0, 20);
-            Page<Comment> result = commentsService.getCommentsWithPagination(testPost.getId(), pageable, SortBy.NEWEST);
+            Page<Comment> result = commentsService.getCommentsWithPagination(CommentParentType.POST, testPost.getId(), pageable, SortBy.NEWEST);
 
             assertEquals(20, result.getContent().size(), "Should return 20 items");
             assertEquals(40, result.getTotalSize(), "Total should be 40");
@@ -96,7 +97,7 @@ class PostsServiceCommentsPaginationSortingTests {
         @DisplayName("Should return second page of comments")
         void shouldReturnSecondPage() {
             Pageable pageable = Pageable.from(1, 20); // Page 2 (0-based)
-            Page<Comment> result = commentsService.getCommentsWithPagination(testPost.getId(), pageable, SortBy.NEWEST);
+            Page<Comment> result = commentsService.getCommentsWithPagination(CommentParentType.POST, testPost.getId(), pageable, SortBy.NEWEST);
 
             assertEquals(20, result.getContent().size(), "Second page should have 20 items");
             assertEquals(40, result.getTotalSize(), "Total should be 40");
@@ -106,7 +107,7 @@ class PostsServiceCommentsPaginationSortingTests {
         @DisplayName("Should respect custom limit for comments")
         void shouldRespectCustomLimit() {
             Pageable pageable = Pageable.from(0, 10);
-            Page<Comment> result = commentsService.getCommentsWithPagination(testPost.getId(), pageable, SortBy.NEWEST);
+            Page<Comment> result = commentsService.getCommentsWithPagination(CommentParentType.POST, testPost.getId(), pageable, SortBy.NEWEST);
 
             assertEquals(10, result.getContent().size());
             assertEquals(4, result.getTotalPages(), "Should have 4 pages with limit 10");
@@ -116,7 +117,7 @@ class PostsServiceCommentsPaginationSortingTests {
         @DisplayName("Should handle max limit for comments")
         void shouldHandleMaxLimit() {
             Pageable pageable = Pageable.from(0, 100);
-            Page<Comment> result = commentsService.getCommentsWithPagination(testPost.getId(), pageable, SortBy.NEWEST);
+            Page<Comment> result = commentsService.getCommentsWithPagination(CommentParentType.POST, testPost.getId(), pageable, SortBy.NEWEST);
 
             assertEquals(40, result.getContent().size(), "Should return all 40 items");
             assertEquals(1, result.getTotalPages());
@@ -131,7 +132,7 @@ class PostsServiceCommentsPaginationSortingTests {
         @DisplayName("Should handle page beyond available pages")
         void shouldHandlePageBeyondAvailable() {
             Pageable pageable = Pageable.from(10, 20);
-            Page<Comment> result = commentsService.getCommentsWithPagination(testPost.getId(), pageable, SortBy.NEWEST);
+            Page<Comment> result = commentsService.getCommentsWithPagination(CommentParentType.POST, testPost.getId(), pageable, SortBy.NEWEST);
 
             assertEquals(0, result.getContent().size(), "Should return empty for page beyond available");
         }
@@ -144,7 +145,7 @@ class PostsServiceCommentsPaginationSortingTests {
             emptyPost = postRepository.save(emptyPost);
 
             Pageable pageable = Pageable.from(0, 20);
-            Page<Comment> result = commentsService.getCommentsWithPagination(emptyPost.getId(), pageable, SortBy.NEWEST);
+            Page<Comment> result = commentsService.getCommentsWithPagination(CommentParentType.POST, emptyPost.getId(), pageable, SortBy.NEWEST);
 
             assertEquals(0, result.getContent().size());
             assertEquals(0, result.getTotalSize());
@@ -159,7 +160,7 @@ class PostsServiceCommentsPaginationSortingTests {
         @DisplayName("Should handle limit=1 for comments")
         void shouldHandleLimit1() {
             Pageable pageable = Pageable.from(0, 1);
-            Page<Comment> result = commentsService.getCommentsWithPagination(testPost.getId(), pageable, SortBy.NEWEST);
+            Page<Comment> result = commentsService.getCommentsWithPagination(CommentParentType.POST, testPost.getId(), pageable, SortBy.NEWEST);
 
             assertEquals(1, result.getContent().size());
             assertEquals(40, result.getTotalPages(), "Should have 40 pages with limit 1");
@@ -170,7 +171,7 @@ class PostsServiceCommentsPaginationSortingTests {
         void shouldHandleExactPageBoundary() {
             // 40 comments, limit 20 = exactly 2 pages
             Pageable pageable = Pageable.from(1, 20);
-            Page<Comment> result = commentsService.getCommentsWithPagination(testPost.getId(), pageable, SortBy.NEWEST);
+            Page<Comment> result = commentsService.getCommentsWithPagination(CommentParentType.POST, testPost.getId(), pageable, SortBy.NEWEST);
 
             assertEquals(20, result.getContent().size());
             assertEquals(2, result.getTotalPages());
@@ -185,7 +186,7 @@ class PostsServiceCommentsPaginationSortingTests {
         @DisplayName("Should sort comments by NEWEST (default)")
         void shouldSortByNewest() {
             Pageable pageable = Pageable.from(0, 10);
-            Page<Comment> result = commentsService.getCommentsWithPagination(testPost.getId(), pageable, SortBy.NEWEST);
+            Page<Comment> result = commentsService.getCommentsWithPagination(CommentParentType.POST, testPost.getId(), pageable, SortBy.NEWEST);
 
             assertEquals(10, result.getContent().size());
             // Verify newest first by checking creation times are descending
@@ -203,7 +204,7 @@ class PostsServiceCommentsPaginationSortingTests {
         @DisplayName("Should sort comments by OLDEST")
         void shouldSortByOldest() {
             Pageable pageable = Pageable.from(0, 10);
-            Page<Comment> result = commentsService.getCommentsWithPagination(testPost.getId(), pageable, SortBy.OLDEST);
+            Page<Comment> result = commentsService.getCommentsWithPagination(CommentParentType.POST, testPost.getId(), pageable, SortBy.OLDEST);
 
             assertEquals(10, result.getContent().size());
             // Verify oldest first by checking creation times are ascending
@@ -221,7 +222,7 @@ class PostsServiceCommentsPaginationSortingTests {
         @DisplayName("Should map MOST_LIKED to NEWEST for comments")
         void shouldMapMostLikedToNewest() {
             Pageable pageable = Pageable.from(0, 10);
-            Page<Comment> result = commentsService.getCommentsWithPagination(testPost.getId(), pageable, SortBy.MOST_LIKED);
+            Page<Comment> result = commentsService.getCommentsWithPagination(CommentParentType.POST, testPost.getId(), pageable, SortBy.MOST_LIKED);
 
             assertEquals(10, result.getContent().size());
             // Should be sorted by NEWEST (since MOST_LIKED maps to NEWEST)
@@ -239,7 +240,7 @@ class PostsServiceCommentsPaginationSortingTests {
         @DisplayName("Should map LEAST_LIKED to NEWEST for comments")
         void shouldMapLeastLikedToNewest() {
             Pageable pageable = Pageable.from(0, 10);
-            Page<Comment> result = commentsService.getCommentsWithPagination(testPost.getId(), pageable, SortBy.LEAST_LIKED);
+            Page<Comment> result = commentsService.getCommentsWithPagination(CommentParentType.POST, testPost.getId(), pageable, SortBy.LEAST_LIKED);
 
             assertEquals(10, result.getContent().size());
             // Should be sorted by NEWEST (since LEAST_LIKED maps to NEWEST)
@@ -262,7 +263,7 @@ class PostsServiceCommentsPaginationSortingTests {
         @DisplayName("Should handle null SortBy with default")
         void shouldHandleNullSortBy() {
             Pageable pageable = Pageable.from(0, 10);
-            Page<Comment> result = commentsService.getCommentsWithPagination(testPost.getId(), pageable, null);
+            Page<Comment> result = commentsService.getCommentsWithPagination(CommentParentType.POST, testPost.getId(), pageable, null);
 
             assertNotNull(result, "Should return results even with null SortBy");
             assertEquals(10, result.getContent().size());
@@ -277,7 +278,7 @@ class PostsServiceCommentsPaginationSortingTests {
         @DisplayName("Should handle sorting with limit=1")
         void shouldHandleSortingWithLimit1() {
             Pageable pageable = Pageable.from(0, 1);
-            Page<Comment> result = commentsService.getCommentsWithPagination(testPost.getId(), pageable, SortBy.NEWEST);
+            Page<Comment> result = commentsService.getCommentsWithPagination(CommentParentType.POST, testPost.getId(), pageable, SortBy.NEWEST);
 
             assertEquals(1, result.getContent().size());
             assertEquals(40, result.getTotalPages());
@@ -288,11 +289,11 @@ class PostsServiceCommentsPaginationSortingTests {
         void shouldMaintainSortingConsistencyAcrossPages() {
             // Get first page
             Pageable pageable1 = Pageable.from(0, 10);
-            Page<Comment> page1 = commentsService.getCommentsWithPagination(testPost.getId(), pageable1, SortBy.NEWEST);
+            Page<Comment> page1 = commentsService.getCommentsWithPagination(CommentParentType.POST, testPost.getId(), pageable1, SortBy.NEWEST);
 
             // Get second page
             Pageable pageable2 = Pageable.from(1, 10);
-            Page<Comment> page2 = commentsService.getCommentsWithPagination(testPost.getId(), pageable2, SortBy.NEWEST);
+            Page<Comment> page2 = commentsService.getCommentsWithPagination(CommentParentType.POST, testPost.getId(), pageable2, SortBy.NEWEST);
 
             // Last comment of page 1 should be older than first comment of page 2
             Comment lastPage1 = page1.getContent().get(page1.getContent().size() - 1);
@@ -309,7 +310,7 @@ class PostsServiceCommentsPaginationSortingTests {
         @DisplayName("Should handle combination of pagination and sorting for comments")
         void shouldHandlePaginationWithSorting() {
             Pageable pageable1 = Pageable.from(0, 15);
-            Page<Comment> page1 = commentsService.getCommentsWithPagination(testPost.getId(), pageable1, SortBy.OLDEST);
+            Page<Comment> page1 = commentsService.getCommentsWithPagination(CommentParentType.POST, testPost.getId(), pageable1, SortBy.OLDEST);
 
             assertEquals(15, page1.getContent().size());
             assertEquals(3, page1.getTotalPages(), "Should have 3 pages with 40 comments and limit 15");
@@ -336,7 +337,7 @@ class PostsServiceCommentsPaginationSortingTests {
             Pageable pageable = Pageable.from(0, 10);
 
             for (SortBy sortBy : SortBy.values()) {
-                Page<Comment> result = commentsService.getCommentsWithPagination(testPost.getId(), pageable, sortBy);
+                Page<Comment> result = commentsService.getCommentsWithPagination(CommentParentType.POST, testPost.getId(), pageable, sortBy);
 
                 assertNotNull(result, "Should return result for " + sortBy);
                 assertEquals(10, result.getContent().size(), "Should have 10 comments for " + sortBy);
@@ -348,8 +349,8 @@ class PostsServiceCommentsPaginationSortingTests {
         void shouldReturnSameTotalRegardlessOfSorting() {
             Pageable pageable = Pageable.from(0, 20);
 
-            Page<Comment> newestResult = commentsService.getCommentsWithPagination(testPost.getId(), pageable, SortBy.NEWEST);
-            Page<Comment> oldestResult = commentsService.getCommentsWithPagination(testPost.getId(), pageable, SortBy.OLDEST);
+            Page<Comment> newestResult = commentsService.getCommentsWithPagination(CommentParentType.POST, testPost.getId(), pageable, SortBy.NEWEST);
+            Page<Comment> oldestResult = commentsService.getCommentsWithPagination(CommentParentType.POST, testPost.getId(), pageable, SortBy.OLDEST);
 
             assertEquals(newestResult.getTotalSize(), oldestResult.getTotalSize(),
                 "Total should be same regardless of sort");
@@ -364,7 +365,7 @@ class PostsServiceCommentsPaginationSortingTests {
             emptyPost = postRepository.save(emptyPost);
 
             Pageable pageable = Pageable.from(0, 20);
-            Page<Comment> result = commentsService.getCommentsWithPagination(emptyPost.getId(), pageable, SortBy.NEWEST);
+            Page<Comment> result = commentsService.getCommentsWithPagination(CommentParentType.POST, emptyPost.getId(), pageable, SortBy.NEWEST);
 
             assertEquals(0, result.getContent().size());
             assertEquals(0, result.getTotalSize());

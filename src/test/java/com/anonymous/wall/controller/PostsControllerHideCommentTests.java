@@ -1,4 +1,5 @@
 package com.anonymous.wall.controller;
+import com.anonymous.wall.model.CommentParentType;
 
 import com.anonymous.wall.entity.Comment;
 import com.anonymous.wall.entity.Post;
@@ -102,10 +103,10 @@ class PostsControllerHideCommentTests {
         nationalPost = postRepository.save(nationalPost);
 
         // Create test comments via service to properly update post counts
-        campusComment = commentsService.addComment(campusPost.getId(),
+        campusComment = commentsService.addComment(CommentParentType.POST, campusPost.getId(),
             new com.anonymous.wall.model.CreateCommentRequest("Campus comment"), testUserCampus.getId());
 
-        nationalComment = commentsService.addComment(nationalPost.getId(),
+        nationalComment = commentsService.addComment(CommentParentType.POST, nationalPost.getId(),
             new com.anonymous.wall.model.CreateCommentRequest("National comment"), testUserCampus.getId());
     }
 
@@ -334,7 +335,7 @@ class PostsControllerHideCommentTests {
         @DisplayName("Should not allow user to hide another user's comment")
         void shouldNotAllowHidingAnotherUserComment() {
             // Create a comment by testUserCampus on national post (avoid access issues)
-            Comment otherUserComment = commentsService.addComment(nationalPost.getId(),
+            Comment otherUserComment = commentsService.addComment(CommentParentType.POST, nationalPost.getId(),
                 new com.anonymous.wall.model.CreateCommentRequest("Someone else's comment"), testUserCampus.getId());
 
             // Try to hide it as testUserDifferentSchool
@@ -483,9 +484,9 @@ class PostsControllerHideCommentTests {
         @DisplayName("Should not allow user to unhide another user's comment")
         void shouldNotAllowUnhidingAnotherUserComment() {
             // Create a comment by testUserCampus on national post and hide it
-            Comment otherUserComment = commentsService.addComment(nationalPost.getId(),
+            Comment otherUserComment = commentsService.addComment(CommentParentType.POST, nationalPost.getId(),
                 new com.anonymous.wall.model.CreateCommentRequest("Someone else's comment"), testUserCampus.getId());
-            commentsService.hideComment(nationalPost.getId(), otherUserComment.getId(), testUserCampus.getId());
+            commentsService.hideComment(CommentParentType.POST, nationalPost.getId(), otherUserComment.getId(), testUserCampus.getId());
 
             // Try to unhide it as testUserDifferentSchool
             String endpoint = BASE_PATH + "/" + nationalPost.getId() + "/comments/" + otherUserComment.getId() + "/unhide";

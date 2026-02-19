@@ -1,4 +1,5 @@
 package com.anonymous.wall.transaction;
+import com.anonymous.wall.model.CommentParentType;
 
 import com.anonymous.wall.entity.Post;
 import com.anonymous.wall.entity.UserEntity;
@@ -88,7 +89,7 @@ public class TransactionRollbackTest {
     @Test
     void testHideNonExistentCommentError() {
         CreateCommentRequest req = new CreateCommentRequest("Valid comment");
-        commentsService.addComment(testPost.getId(), req, testUser.getId());
+        commentsService.addComment(CommentParentType.POST, testPost.getId(), req, testUser.getId());
 
         Post beforeError = postRepository.findById(testPost.getId()).orElseThrow();
         assertEquals(1, beforeError.getCommentCount());
@@ -96,14 +97,14 @@ public class TransactionRollbackTest {
         // Try to hide non-existent comment - should throw error
         UUID fakeCommentId = UUID.randomUUID();
         assertThrows(Exception.class, () -> {
-            commentsService.hideComment(testPost.getId(), fakeCommentId, testUser.getId());
+            commentsService.hideComment(CommentParentType.POST, testPost.getId(), fakeCommentId, testUser.getId());
         }, "Should throw exception for non-existent comment");
 
         // Verify state wasn't corrupted
         Post afterError = postRepository.findById(testPost.getId()).orElseThrow();
         assertEquals(1, afterError.getCommentCount(),
             "Count should be unchanged after failed operation");
-        long actualComments = commentRepository.findByPostIdAndHiddenFalse(testPost.getId()).size();
+        long actualComments = commentRepository.findByParentTypeAndParentIdAndHiddenFalse("POST", testPost.getId()).size();
         assertEquals(1, actualComments);
     }
 
@@ -114,21 +115,21 @@ public class TransactionRollbackTest {
     @Test
     void testHideCommentPermissionError() {
         CreateCommentRequest req = new CreateCommentRequest("Comment by original user");
-        var comment = commentsService.addComment(testPost.getId(), req, testUser.getId());
+        var comment = commentsService.addComment(CommentParentType.POST, testPost.getId(), req, testUser.getId());
 
         Post beforeAttempt = postRepository.findById(testPost.getId()).orElseThrow();
         assertEquals(1, beforeAttempt.getCommentCount());
 
         // Other user tries to hide testUser's comment - should fail
         assertThrows(Exception.class, () -> {
-            commentsService.hideComment(testPost.getId(), comment.getId(), otherUser.getId());
+            commentsService.hideComment(CommentParentType.POST, testPost.getId(), comment.getId(), otherUser.getId());
         }, "Should throw exception for permission denied");
 
         // Verify state unchanged
         Post afterAttempt = postRepository.findById(testPost.getId()).orElseThrow();
         assertEquals(1, afterAttempt.getCommentCount(),
             "Count should be unchanged after failed hide");
-        long visibleComments = commentRepository.findByPostIdAndHiddenFalse(testPost.getId()).size();
+        long visibleComments = commentRepository.findByParentTypeAndParentIdAndHiddenFalse("POST", testPost.getId()).size();
         assertEquals(1, visibleComments);
     }
 
@@ -140,7 +141,7 @@ public class TransactionRollbackTest {
     void testPartialOperationFailure() {
         // Add a comment
         CreateCommentRequest req1 = new CreateCommentRequest("Comment 1");
-        var c1 = commentsService.addComment(testPost.getId(), req1, testUser.getId());
+        var c1 = commentsService.addComment(CommentParentType.POST, testPost.getId(), req1, testUser.getId());
 
         Post after1 = postRepository.findById(testPost.getId()).orElseThrow();
         assertEquals(1, after1.getCommentCount());
@@ -149,7 +150,7 @@ public class TransactionRollbackTest {
         // If transaction is atomic, no partial update should occur
         UUID fakeId = UUID.randomUUID();
         try {
-            commentsService.hideComment(testPost.getId(), fakeId, testUser.getId());
+            commentsService.hideComment(CommentParentType.POST, testPost.getId(), fakeId, testUser.getId());
         } catch (Exception e) {
             // Expected to fail
         }
@@ -159,7 +160,7 @@ public class TransactionRollbackTest {
         assertEquals(1, afterFailure.getCommentCount(),
             "Count should still be 1 - no partial updates");
 
-        var comments = commentRepository.findByPostIdAndHiddenFalse(testPost.getId());
+        var comments = commentRepository.findByParentTypeAndParentIdAndHiddenFalse("POST", testPost.getId());
         assertEquals(1, comments.size());
         assertFalse(comments.get(0).isHidden());
     }
@@ -205,7 +206,7 @@ public class TransactionRollbackTest {
         // Add multiple comments
         for (int i = 0; i < 3; i++) {
             CreateCommentRequest req = new CreateCommentRequest("Comment " + i);
-            commentsService.addComment(testPost.getId(), req, testUser.getId());
+            commentsService.addComment(CommentParentType.POST, testPost.getId(), req, testUser.getId());
         }
 
         Post before = postRepository.findById(testPost.getId()).orElseThrow();
@@ -218,8 +219,8 @@ public class TransactionRollbackTest {
         Thread.sleep(500);
 
         Post after = postRepository.findById(testPost.getId()).orElseThrow();
-        long visibleComments = commentRepository.findByPostIdAndHiddenFalse(testPost.getId()).size();
-        long totalComments = commentRepository.findByPostId(testPost.getId()).size();
+        long visibleComments = commentRepository.findByParentTypeAndParentIdAndHiddenFalse("POST", testPost.getId()).size();
+        long totalComments = commentRepository.findByParentTypeAndParentId("POST", testPost.getId()).size();
 
         // Either ALL comments are hidden or NONE are hidden (atomicity)
         assertTrue(visibleComments == 0 || visibleComments == 3,
@@ -238,19 +239,19 @@ public class TransactionRollbackTest {
     void testConsistencyAfterMixedOperations() {
         // Success: add comment
         CreateCommentRequest req1 = new CreateCommentRequest("Comment 1");
-        var c1 = commentsService.addComment(testPost.getId(), req1, testUser.getId());
+        var c1 = commentsService.addComment(CommentParentType.POST, testPost.getId(), req1, testUser.getId());
         Post s1 = postRepository.findById(testPost.getId()).orElseThrow();
         assertEquals(1, s1.getCommentCount());
 
         // Success: add another comment
         CreateCommentRequest req2 = new CreateCommentRequest("Comment 2");
-        var c2 = commentsService.addComment(testPost.getId(), req2, testUser.getId());
+        var c2 = commentsService.addComment(CommentParentType.POST, testPost.getId(), req2, testUser.getId());
         Post s2 = postRepository.findById(testPost.getId()).orElseThrow();
         assertEquals(2, s2.getCommentCount());
 
         // Failure: try to hide non-existent comment
         try {
-            commentsService.hideComment(testPost.getId(), UUID.randomUUID(), testUser.getId());
+            commentsService.hideComment(CommentParentType.POST, testPost.getId(), UUID.randomUUID(), testUser.getId());
         } catch (Exception e) {
             // Expected
         }
@@ -264,7 +265,7 @@ public class TransactionRollbackTest {
         assertEquals(1, s4.getLikeCount());
 
         // Verify consistency throughout
-        long visibleComments = commentRepository.findByPostIdAndHiddenFalse(testPost.getId()).size();
+        long visibleComments = commentRepository.findByParentTypeAndParentIdAndHiddenFalse("POST", testPost.getId()).size();
         assertEquals(visibleComments, s4.getCommentCount(), "Consistency maintained");
     }
 
@@ -275,7 +276,7 @@ public class TransactionRollbackTest {
     @Test
     void testRepeatedFailedOperations() {
         CreateCommentRequest req = new CreateCommentRequest("Real comment");
-        commentsService.addComment(testPost.getId(), req, testUser.getId());
+        commentsService.addComment(CommentParentType.POST, testPost.getId(), req, testUser.getId());
 
         Post initial = postRepository.findById(testPost.getId()).orElseThrow();
         int initialCount = initial.getCommentCount();
@@ -283,7 +284,7 @@ public class TransactionRollbackTest {
         // Try to hide non-existent comment multiple times
         for (int i = 0; i < 5; i++) {
             try {
-                commentsService.hideComment(testPost.getId(), UUID.randomUUID(), testUser.getId());
+                commentsService.hideComment(CommentParentType.POST, testPost.getId(), UUID.randomUUID(), testUser.getId());
             } catch (Exception e) {
                 // Expected
             }

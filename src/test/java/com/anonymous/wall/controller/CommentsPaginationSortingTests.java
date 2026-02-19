@@ -1,4 +1,5 @@
 package com.anonymous.wall.controller;
+import com.anonymous.wall.model.CommentParentType;
 
 import com.anonymous.wall.entity.Post;
 import com.anonymous.wall.entity.Comment;
@@ -80,7 +81,7 @@ class CommentsPaginationSortingTests {
 
         // Create test comments (30 comments for comprehensive testing) via service
         for (int i = 0; i < 30; i++) {
-            commentsService.addComment(testPost.getId(),
+            commentsService.addComment(CommentParentType.POST, testPost.getId(),
                 new com.anonymous.wall.model.CreateCommentRequest("Comment " + i), testUser.getId());
         }
     }

@@ -1,4 +1,5 @@
 package com.anonymous.wall.transaction;
+import com.anonymous.wall.model.CommentParentType;
 
 import com.anonymous.wall.entity.Post;
 import com.anonymous.wall.entity.Comment;
@@ -87,7 +88,7 @@ public class TransactionAtomicityTest {
         // 1. Save comment to DB
         // 2. Increment post comment count
         CreateCommentRequest request = new CreateCommentRequest("Test comment for atomicity");
-        Comment savedComment = commentsService.addComment(testPost.getId(), request, testUser.getId());
+        Comment savedComment = commentsService.addComment(CommentParentType.POST, testPost.getId(), request, testUser.getId());
 
         // Both operations MUST succeed
         assertNotNull(savedComment.getId(), "Comment should be saved with ID");
@@ -102,7 +103,7 @@ public class TransactionAtomicityTest {
             "Comment count MUST be incremented when comment is saved (atomicity)");
 
         // Verify actual comment count in DB matches
-        long actualCommentCount = commentRepository.findByPostIdAndHiddenFalse(testPost.getId()).size();
+        long actualCommentCount = commentRepository.findByParentTypeAndParentIdAndHiddenFalse("POST", testPost.getId()).size();
         assertEquals(actualCommentCount, afterComment.getCommentCount(),
             "Post count must match actual visible comments (consistency)");
     }
@@ -118,13 +119,13 @@ public class TransactionAtomicityTest {
 
         for (int i = 0; i < numComments; i++) {
             CreateCommentRequest request = new CreateCommentRequest("Comment #" + i);
-            Comment savedComment = commentsService.addComment(testPost.getId(), request, testUser.getId());
+            Comment savedComment = commentsService.addComment(CommentParentType.POST, testPost.getId(), request, testUser.getId());
             assertNotNull(savedComment.getId(), "Comment " + i + " should be saved");
         }
 
         // After all additions, verify exact consistency
         Post finalPost = postRepository.findById(testPost.getId()).orElseThrow();
-        long actualCommentCount = commentRepository.findByPostIdAndHiddenFalse(testPost.getId()).size();
+        long actualCommentCount = commentRepository.findByParentTypeAndParentIdAndHiddenFalse("POST", testPost.getId()).size();
 
         assertEquals(numComments, actualCommentCount,
             "Should have exactly " + numComments + " comments in DB");
@@ -179,20 +180,20 @@ public class TransactionAtomicityTest {
     void testHideCommentAtomicity() {
         // Add a comment first
         CreateCommentRequest request = new CreateCommentRequest("Comment to hide");
-        Comment savedComment = commentsService.addComment(testPost.getId(), request, testUser.getId());
+        Comment savedComment = commentsService.addComment(CommentParentType.POST, testPost.getId(), request, testUser.getId());
 
         Post beforeHide = postRepository.findById(testPost.getId()).orElseThrow();
         assertEquals(1, beforeHide.getCommentCount(), "Initial count should be 1");
 
         // Hide the comment
-        Comment hiddenComment = commentsService.hideComment(testPost.getId(), savedComment.getId(), testUser.getId());
+        Comment hiddenComment = commentsService.hideComment(CommentParentType.POST, testPost.getId(), savedComment.getId(), testUser.getId());
 
         // Verify comment is hidden
         assertTrue(hiddenComment.isHidden(), "Comment should be marked as hidden");
 
         // Verify count is updated
         Post afterHide = postRepository.findById(testPost.getId()).orElseThrow();
-        long visibleComments = commentRepository.findByPostIdAndHiddenFalse(testPost.getId()).size();
+        long visibleComments = commentRepository.findByParentTypeAndParentIdAndHiddenFalse("POST", testPost.getId()).size();
 
         assertEquals(0, visibleComments, "Should have 0 visible comments after hide");
         assertEquals(visibleComments, afterHide.getCommentCount(),
@@ -210,7 +211,7 @@ public class TransactionAtomicityTest {
         // Add multiple comments
         for (int i = 0; i < 3; i++) {
             CreateCommentRequest request = new CreateCommentRequest("Comment #" + i);
-            commentsService.addComment(testPost.getId(), request, testUser.getId());
+            commentsService.addComment(CommentParentType.POST, testPost.getId(), request, testUser.getId());
         }
 
         Post beforeHide = postRepository.findById(testPost.getId()).orElseThrow();
@@ -226,8 +227,8 @@ public class TransactionAtomicityTest {
         Thread.sleep(500);
 
         // Verify all comments are hidden (cascade)
-        long visibleComments = commentRepository.findByPostIdAndHiddenFalse(testPost.getId()).size();
-        long totalComments = commentRepository.findByPostId(testPost.getId()).size();
+        long visibleComments = commentRepository.findByParentTypeAndParentIdAndHiddenFalse("POST", testPost.getId()).size();
+        long totalComments = commentRepository.findByParentTypeAndParentId("POST", testPost.getId()).size();
 
         assertEquals(0, visibleComments, "All comments should be hidden");
         assertEquals(3, totalComments, "All 3 comments should still exist (soft delete)");
@@ -244,23 +245,23 @@ public class TransactionAtomicityTest {
     @Test
     void testUnhideCommentAtomicity() {
         CreateCommentRequest request = new CreateCommentRequest("Comment to toggle");
-        Comment savedComment = commentsService.addComment(testPost.getId(), request, testUser.getId());
+        Comment savedComment = commentsService.addComment(CommentParentType.POST, testPost.getId(), request, testUser.getId());
 
         // Hide it
-        commentsService.hideComment(testPost.getId(), savedComment.getId(), testUser.getId());
+        commentsService.hideComment(CommentParentType.POST, testPost.getId(), savedComment.getId(), testUser.getId());
 
         Post afterHide = postRepository.findById(testPost.getId()).orElseThrow();
         assertEquals(0, afterHide.getCommentCount(), "Count should be 0 after hide");
 
         // Unhide it
-        Comment unhiddenComment = commentsService.unhideComment(testPost.getId(), savedComment.getId(), testUser.getId());
+        Comment unhiddenComment = commentsService.unhideComment(CommentParentType.POST, testPost.getId(), savedComment.getId(), testUser.getId());
 
         // Verify comment is unhidden
         assertFalse(unhiddenComment.isHidden(), "Comment should be unhidden");
 
         // Verify count is updated
         Post afterUnhide = postRepository.findById(testPost.getId()).orElseThrow();
-        long visibleComments = commentRepository.findByPostIdAndHiddenFalse(testPost.getId()).size();
+        long visibleComments = commentRepository.findByParentTypeAndParentIdAndHiddenFalse("POST", testPost.getId()).size();
 
         assertEquals(1, visibleComments, "Should have 1 visible comment after unhide");
         assertEquals(visibleComments, afterUnhide.getCommentCount(),
@@ -276,31 +277,31 @@ public class TransactionAtomicityTest {
         // Add comments
         CreateCommentRequest req1 = new CreateCommentRequest("Comment 1");
         CreateCommentRequest req2 = new CreateCommentRequest("Comment 2");
-        Comment c1 = commentsService.addComment(testPost.getId(), req1, testUser.getId());
-        Comment c2 = commentsService.addComment(testPost.getId(), req2, testUser.getId());
+        Comment c1 = commentsService.addComment(CommentParentType.POST, testPost.getId(), req1, testUser.getId());
+        Comment c2 = commentsService.addComment(CommentParentType.POST, testPost.getId(), req2, testUser.getId());
 
         Post after2 = postRepository.findById(testPost.getId()).orElseThrow();
         assertEquals(2, after2.getCommentCount());
 
         // Hide first comment
-        commentsService.hideComment(testPost.getId(), c1.getId(), testUser.getId());
+        commentsService.hideComment(CommentParentType.POST, testPost.getId(), c1.getId(), testUser.getId());
 
         Post after1Hide = postRepository.findById(testPost.getId()).orElseThrow();
-        long visible1 = commentRepository.findByPostIdAndHiddenFalse(testPost.getId()).size();
+        long visible1 = commentRepository.findByParentTypeAndParentIdAndHiddenFalse("POST", testPost.getId()).size();
         assertEquals(1, visible1);
         assertEquals(visible1, after1Hide.getCommentCount());
 
         // Unhide first comment
-        commentsService.unhideComment(testPost.getId(), c1.getId(), testUser.getId());
+        commentsService.unhideComment(CommentParentType.POST, testPost.getId(), c1.getId(), testUser.getId());
 
         Post afterUnhide = postRepository.findById(testPost.getId()).orElseThrow();
-        long visible2 = commentRepository.findByPostIdAndHiddenFalse(testPost.getId()).size();
+        long visible2 = commentRepository.findByParentTypeAndParentIdAndHiddenFalse("POST", testPost.getId()).size();
         assertEquals(2, visible2);
         assertEquals(visible2, afterUnhide.getCommentCount());
 
         // Verify consistency maintained throughout
         assertTrue(
-            afterUnhide.getCommentCount() == commentRepository.findByPostIdAndHiddenFalse(testPost.getId()).size(),
+            afterUnhide.getCommentCount() == commentRepository.findByParentTypeAndParentIdAndHiddenFalse("POST", testPost.getId()).size(),
             "Consistency must be maintained across all operations"
         );
     }
