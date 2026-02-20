@@ -173,7 +173,6 @@ class AdminInternshipControllerTest {
         @DisplayName("Positive: Admin can unhide an internship")
         void adminCanUnhideInternship() {
             // First hide it
-            internshipRepository.update(testInternship);
             testInternship.setHidden(true);
             internshipRepository.update(testInternship);
 

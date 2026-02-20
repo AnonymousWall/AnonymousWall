@@ -31,7 +31,7 @@ public class AdminMarketplaceServiceImpl implements AdminMarketplaceService {
             }
             return isDesc
                     ? marketplaceItemRepository.findAllOrderByCreatedAtDesc(pageable)
-                    : marketplaceItemRepository.findAllOrderByCreatedAtDesc(pageable);
+                    : marketplaceItemRepository.findAllOrderByCreatedAtAsc(pageable);
         }
 
         if (userId != null && hidden == null) {

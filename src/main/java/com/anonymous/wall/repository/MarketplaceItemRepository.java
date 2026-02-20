@@ -16,6 +16,8 @@ public interface MarketplaceItemRepository extends CrudRepository<MarketplaceIte
 
     Page<MarketplaceItem> findAllOrderByCreatedAtDesc(Pageable pageable);
 
+    Page<MarketplaceItem> findAllOrderByCreatedAtAsc(Pageable pageable);
+
     Page<MarketplaceItem> findAllOrderByPriceAsc(Pageable pageable);
 
     Page<MarketplaceItem> findAllOrderByPriceDesc(Pageable pageable);
