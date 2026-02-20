@@ -2315,6 +2315,12 @@ paths:
             format: uuid
           description: Filter posts by user ID
         - in: query
+          name: wall
+          required: false
+          schema:
+            type: string
+          description: Filter posts by wall type (campus or national)
+        - in: query
           name: hidden
           required: false
           schema:
@@ -2377,38 +2383,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AdminPostDTO"
-        "401":
-          description: Unauthorized - authentication required
-        "403":
-          description: Forbidden - admin access required
-        "404":
-          description: Post not found
-    delete:
-      tags: [admin]
-      summary: Delete a post
-      description: Admin endpoint to soft-delete (hide) a post
-      operationId: adminDeletePost
-      security:
-        - bearerAuth: []
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: string
-            format: uuid
-          description: Post ID to delete
-      responses:
-        "200":
-          description: Post deleted successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Post deleted successfully"
         "401":
           description: Unauthorized - authentication required
         "403":
@@ -2616,6 +2590,20 @@ paths:
             format: uuid
           description: Filter comments by user ID
         - in: query
+          name: parentId
+          required: false
+          schema:
+            type: string
+            format: uuid
+          description: Filter comments by parent ID (post/internship/marketplace item ID)
+        - in: query
+          name: parentType
+          required: false
+          schema:
+            type: string
+            enum: [POST, INTERNSHIP, MARKETPLACE]
+          description: Filter comments by parent type
+        - in: query
           name: hidden
           required: false
           schema:
@@ -2678,38 +2666,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AdminCommentDTO"
-        "401":
-          description: Unauthorized - authentication required
-        "403":
-          description: Forbidden - admin access required
-        "404":
-          description: Comment not found
-    delete:
-      tags: [admin]
-      summary: Delete a comment
-      description: Admin endpoint to soft-delete (hide) a comment
-      operationId: adminDeleteComment
-      security:
-        - bearerAuth: []
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: string
-            format: uuid
-          description: Comment ID to delete
-      responses:
-        "200":
-          description: Comment deleted successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Comment deleted successfully"
         "401":
           description: Unauthorized - authentication required
         "403":

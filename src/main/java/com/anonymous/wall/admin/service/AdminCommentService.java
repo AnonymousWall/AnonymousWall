@@ -15,11 +15,13 @@ public interface AdminCommentService {
      * Get all comments with pagination and optional filters/sorting
      * @param pageable Pagination parameters
      * @param userId Filter by author user ID (null = all authors)
+     * @param parentId Filter by parent ID (null = all parents)
+     * @param parentType Filter by parent type: "POST", "INTERNSHIP", etc. (null = all types)
      * @param hidden Filter by hidden status (null = all comments)
      * @param sortBy Sort field: "createdAt", "userId"
      * @param sortOrder Sort order: "asc" or "desc"
      */
-    Page<Comment> getAllComments(Pageable pageable, UUID userId, Boolean hidden, String sortBy, String sortOrder);
+    Page<Comment> getAllComments(Pageable pageable, UUID userId, UUID parentId, String parentType, Boolean hidden, String sortBy, String sortOrder);
     
     Comment getCommentById(UUID commentId);
     

@@ -269,4 +269,10 @@ public interface PostRepository extends CrudRepository<Post, UUID> {
      * Find all posts sorted by user ID (author) descending - for admin
      */
     Page<Post> findAllOrderByUserIdDesc(Pageable pageable);
+
+    // ===== Admin wall filter methods =====
+    Page<Post> findByWall(String wall, Pageable pageable);
+    Page<Post> findByWallAndUserId(String wall, UUID userId, Pageable pageable);
+    Page<Post> findByWallAndHidden(String wall, boolean hidden, Pageable pageable);
+    Page<Post> findByWallAndUserIdAndHidden(String wall, UUID userId, boolean hidden, Pageable pageable);
 }

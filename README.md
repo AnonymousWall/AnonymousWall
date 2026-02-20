@@ -68,12 +68,18 @@ src/main/java/com/anonymous/wall/
 │   │   ├── AdminUserController.java      # User management
 │   │   ├── AdminPostController.java      # Post moderation
 │   │   ├── AdminCommentController.java   # Comment moderation
-│   │   ├── AdminReportController.java    # Report viewing
+│   │   ├── AdminInternshipController.java # Internship moderation
+│   │   ├── AdminMarketplaceController.java # Marketplace moderation
+│   │   ├── AdminChatController.java      # Conversation management
+│   │   ├── AdminReportController.java    # Report management
 │   │   └── AdminSchoolDomainController.java  # School domain management
 │   └── service/
 │       ├── AdminUserService.java         # User management logic
 │       ├── AdminPostService.java         # Post moderation logic
 │       ├── AdminCommentService.java      # Comment moderation logic
+│       ├── AdminInternshipService.java   # Internship moderation logic
+│       ├── AdminMarketplaceService.java  # Marketplace moderation logic
+│       ├── AdminChatService.java         # Chat management logic
 │       └── AdminReportService.java       # Report handling logic
 │
 ├── service/
@@ -135,10 +141,13 @@ src/test/java/com/anonymous/wall/
 │   ├── PostsControllerCommentTests.java
 │   └── [Other controller tests...]
 ├── admin/controller/                  # Admin API tests
-│   ├── AdminUserControllerTest.java      # 12 tests
-│   ├── AdminPostControllerTest.java      # 9 tests
-│   ├── AdminCommentControllerTest.java   # 7 tests
-│   └── AdminReportControllerTest.java    # 5 tests
+│   ├── AdminUserControllerTest.java      # User management tests
+│   ├── AdminPostControllerTest.java      # Post moderation tests
+│   ├── AdminCommentControllerTest.java   # Comment moderation tests
+│   ├── AdminInternshipControllerTest.java # Internship moderation tests
+│   ├── AdminMarketplaceControllerTest.java # Marketplace moderation tests
+│   ├── AdminChatControllerTest.java      # Chat management tests
+│   └── AdminReportControllerTest.java    # Report management tests
 ├── service/                           # Service unit tests
 │   ├── AuthServiceImplTest.java
 │   ├── UserServiceImplTest.java
@@ -2324,7 +2333,7 @@ Response: 200 OK
 
 #### 3. Block User
 ```http
-POST /api/v1/admin/users/{userId}/block
+PUT /api/v1/admin/users/{userId}/block
 Authorization: Bearer {admin-jwt-token}
 
 Response: 200 OK
@@ -2351,7 +2360,7 @@ Response: 200 OK
 
 #### 4. Unblock User
 ```http
-POST /api/v1/admin/users/{userId}/unblock
+PUT /api/v1/admin/users/{userId}/unblock
 Authorization: Bearer {admin-jwt-token}
 
 Response: 200 OK
@@ -2465,6 +2474,27 @@ GET /api/v1/admin/users/{userId}/comments?page=2&limit=50
 
 **Access:** ADMIN or MODERATOR
 
+#### 7. Get User's Internships
+```http
+GET /api/v1/admin/users/{userId}/internships?page=1&limit=20
+Authorization: Bearer {admin-jwt-token}
+```
+**Access:** ADMIN or MODERATOR
+
+#### 8. Get User's Marketplace Items
+```http
+GET /api/v1/admin/users/{userId}/marketplaces?page=1&limit=20
+Authorization: Bearer {admin-jwt-token}
+```
+**Access:** ADMIN or MODERATOR
+
+#### 9. Get User's Conversations
+```http
+GET /api/v1/admin/users/{userId}/conversations?page=1&limit=20
+Authorization: Bearer {admin-jwt-token}
+```
+**Access:** ADMIN or MODERATOR
+
 ---
 
 ### Admin Post Moderation Endpoints
@@ -2559,20 +2589,40 @@ Response: 200 OK
 
 **Access:** ADMIN or MODERATOR
 
-#### 3. Delete Post (Soft Delete)
+#### 3. Hide Post
 ```http
-DELETE /api/v1/admin/posts/{postId}
+PUT /api/v1/admin/posts/{postId}/hide
 Authorization: Bearer {admin-jwt-token}
 
 Response: 200 OK
 {
-    "message": "Post deleted successfully"
+    "message": "Post hidden successfully"
 }
 ```
 
 **Effect:**
 - Post is marked as `hidden = true`
 - Post is no longer visible to regular users
+- Not physically deleted from database
+
+**Access:** ADMIN or MODERATOR
+
+#### 4. Unhide Post
+```http
+PUT /api/v1/admin/posts/{postId}/unhide
+Authorization: Bearer {admin-jwt-token}
+
+Response: 200 OK
+{
+    "message": "Post unhidden successfully"
+}
+```
+
+**Access:** ADMIN or MODERATOR
+
+**Effect:**
+- Post is marked as `hidden = false`
+- Post becomes visible to regular users again
 - Post is not physically deleted from database
 - Can be unhidden by database update if needed
 
@@ -2729,22 +2779,34 @@ Response: 200 OK
 
 **Access:** ADMIN or MODERATOR
 
-#### 3. Delete Comment (Soft Delete)
+#### 3. Hide Comment
 ```http
-DELETE /api/v1/admin/comments/{commentId}
+PUT /api/v1/admin/comments/{commentId}/hide
 Authorization: Bearer {admin-jwt-token}
 
 Response: 200 OK
 {
-    "message": "Comment deleted successfully"
+    "message": "Comment hidden successfully"
 }
 ```
 
 **Effect:**
 - Comment is marked as `hidden = true`
 - Comment is no longer visible to regular users
-- Comment count on the post is decremented
 - Not physically deleted from database
+
+**Access:** ADMIN or MODERATOR
+
+#### 4. Unhide Comment
+```http
+PUT /api/v1/admin/comments/{commentId}/unhide
+Authorization: Bearer {admin-jwt-token}
+
+Response: 200 OK
+{
+    "message": "Comment unhidden successfully"
+}
+```
 
 **Access:** ADMIN or MODERATOR
 
@@ -2805,6 +2867,138 @@ GET /api/v1/admin/reports?type=comment
 GET /api/v1/admin/reports
 ```
 
+**Access:** ADMIN or MODERATOR
+
+#### 2. Get Report by ID
+```http
+GET /api/v1/admin/reports/{id}?type=POST
+Authorization: Bearer {admin-jwt-token}
+```
+**Query Parameters:** `type` (required: POST|COMMENT)
+
+**Access:** ADMIN or MODERATOR
+
+#### 3. Resolve Report
+```http
+PUT /api/v1/admin/reports/{id}/resolve?type=POST
+Authorization: Bearer {admin-jwt-token}
+
+Response: 200 OK
+{ "message": "Report resolved successfully" }
+```
+**Access:** ADMIN or MODERATOR
+
+#### 4. Reject Report
+```http
+PUT /api/v1/admin/reports/{id}/reject?type=POST
+Authorization: Bearer {admin-jwt-token}
+
+Response: 200 OK
+{ "message": "Report rejected successfully" }
+```
+**Access:** ADMIN or MODERATOR
+
+---
+
+### Admin Internship Moderation Endpoints
+
+#### 1. List All Internships
+```http
+GET /api/v1/admin/internships?page=1&limit=20
+Authorization: Bearer {admin-jwt-token}
+```
+
+**Query Parameters:** `page`, `limit`, `userId`, `hidden`, `sortBy` (createdAt|commentCount), `sortOrder` (asc|desc)
+
+**Access:** ADMIN or MODERATOR
+
+#### 2. Get Internship by ID
+```http
+GET /api/v1/admin/internships/{id}
+Authorization: Bearer {admin-jwt-token}
+```
+**Access:** ADMIN or MODERATOR
+
+#### 3. Hide Internship
+```http
+PUT /api/v1/admin/internships/{id}/hide
+Authorization: Bearer {admin-jwt-token}
+
+Response: 200 OK
+{ "message": "Internship hidden successfully" }
+```
+**Access:** ADMIN or MODERATOR
+
+#### 4. Unhide Internship
+```http
+PUT /api/v1/admin/internships/{id}/unhide
+Authorization: Bearer {admin-jwt-token}
+
+Response: 200 OK
+{ "message": "Internship unhidden successfully" }
+```
+**Access:** ADMIN or MODERATOR
+
+---
+
+### Admin Marketplace Moderation Endpoints
+
+#### 1. List All Marketplace Items
+```http
+GET /api/v1/admin/marketplaces?page=1&limit=20
+Authorization: Bearer {admin-jwt-token}
+```
+
+**Query Parameters:** `page`, `limit`, `userId`, `hidden`, `sortBy` (createdAt|price|commentCount), `sortOrder` (asc|desc)
+
+**Access:** ADMIN or MODERATOR
+
+#### 2. Get Marketplace Item by ID
+```http
+GET /api/v1/admin/marketplaces/{id}
+Authorization: Bearer {admin-jwt-token}
+```
+**Access:** ADMIN or MODERATOR
+
+#### 3. Hide Marketplace Item
+```http
+PUT /api/v1/admin/marketplaces/{id}/hide
+Authorization: Bearer {admin-jwt-token}
+
+Response: 200 OK
+{ "message": "Marketplace item hidden successfully" }
+```
+**Access:** ADMIN or MODERATOR
+
+#### 4. Unhide Marketplace Item
+```http
+PUT /api/v1/admin/marketplaces/{id}/unhide
+Authorization: Bearer {admin-jwt-token}
+
+Response: 200 OK
+{ "message": "Marketplace item unhidden successfully" }
+```
+**Access:** ADMIN or MODERATOR
+
+---
+
+### Admin Chat Management Endpoints
+
+#### 1. List All Conversations
+```http
+GET /api/v1/admin/conversations?page=1&limit=20
+Authorization: Bearer {admin-jwt-token}
+```
+
+**Query Parameters:** `page`, `limit`, `userId` (filter by participant)
+
+**Access:** ADMIN or MODERATOR
+
+#### 2. Get Conversation Messages
+```http
+GET /api/v1/admin/conversations/{conversationId}/messages?page=1&limit=20
+Authorization: Bearer {admin-jwt-token}
+```
 **Access:** ADMIN or MODERATOR
 
 ---

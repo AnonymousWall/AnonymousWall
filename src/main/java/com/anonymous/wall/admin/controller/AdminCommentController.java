@@ -49,6 +49,8 @@ public class AdminCommentController {
             @QueryValue(defaultValue = "1") int page,
             @QueryValue(defaultValue = "20") int limit,
             @Nullable @QueryValue String userId,
+            @Nullable @QueryValue String parentId,
+            @Nullable @QueryValue String parentType,
             @Nullable @QueryValue Boolean hidden,
             @Nullable @QueryValue String sortBy,
             @Nullable @QueryValue String sortOrder,
@@ -59,7 +61,8 @@ public class AdminCommentController {
         
         Pageable pageable = Pageable.from(page - 1, limit);
         UUID userIdUuid = userId != null ? UUID.fromString(userId) : null;
-        Page<Comment> commentsPage = adminCommentService.getAllComments(pageable, userIdUuid, hidden, sortBy, sortOrder);
+        UUID parentIdUuid = parentId != null ? UUID.fromString(parentId) : null;
+        Page<Comment> commentsPage = adminCommentService.getAllComments(pageable, userIdUuid, parentIdUuid, parentType, hidden, sortBy, sortOrder);
         
         List<AdminCommentDTO> commentDTOs = commentsPage.getContent().stream()
                 .map(this::mapCommentToDTO)
@@ -86,17 +89,6 @@ public class AdminCommentController {
         return HttpResponse.ok(mapCommentToDTO(comment));
     }
     
-    @Delete("/{id}")
-    @Secured({"ADMIN", "MODERATOR"})
-    public HttpResponse<Object> deleteComment(@PathVariable String id) {
-        log.info("Admin deleting comment: {}", id);
-        UUID commentId = UUID.fromString(id);
-        adminCommentService.deleteComment(commentId);
-        Map<String, String> response = new HashMap<>();
-        response.put("message", "Comment deleted successfully");
-        return HttpResponse.ok(response);
-    }
-
     @Put("/{id}/hide")
     @Secured({"ADMIN", "MODERATOR"})
     public HttpResponse<Object> hideComment(@PathVariable String id) {

@@ -70,6 +70,7 @@ public class AdminPostController {
             @QueryValue(defaultValue = "1") int page,
             @QueryValue(defaultValue = "20") int limit,
             @Nullable @QueryValue String userId,
+            @Nullable @QueryValue String wall,
             @Nullable @QueryValue Boolean hidden,
             @Nullable @QueryValue String sortBy,
             @Nullable @QueryValue String sortOrder,
@@ -80,7 +81,7 @@ public class AdminPostController {
         
         Pageable pageable = Pageable.from(page - 1, limit);
         UUID userIdUuid = userId != null ? UUID.fromString(userId) : null;
-        Page<Post> postsPage = adminPostService.getAllPosts(pageable, userIdUuid, hidden, sortBy, sortOrder);
+        Page<Post> postsPage = adminPostService.getAllPosts(pageable, userIdUuid, wall, hidden, sortBy, sortOrder);
         
         List<AdminPostDTO> postDTOs = postsPage.getContent().stream()
                 .map(this::mapPostToDTO)
@@ -107,17 +108,6 @@ public class AdminPostController {
         return HttpResponse.ok(mapPostToDTO(post));
     }
     
-    @Delete("/{id}")
-    @Secured({"ADMIN", "MODERATOR"})
-    public HttpResponse<Object> deletePost(@PathVariable String id) {
-        log.info("Admin deleting post: {}", id);
-        UUID postId = UUID.fromString(id);
-        adminPostService.deletePost(postId);
-        Map<String, String> response = new HashMap<>();
-        response.put("message", "Post deleted successfully");
-        return HttpResponse.ok(response);
-    }
-
     @Put("/{id}/hide")
     @Secured({"ADMIN", "MODERATOR"})
     public HttpResponse<Object> hidePost(@PathVariable String id) {

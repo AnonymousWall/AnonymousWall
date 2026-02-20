@@ -238,33 +238,33 @@ class AdminCommentControllerTest {
 
         @Test
         @Order(5)
-        @DisplayName("Positive: Admin can soft-delete a comment")
-        void adminCanSoftDeleteComment() {
+        @DisplayName("Positive: Admin can hide a comment")
+        void adminCanHideComment() {
             // Act
             HttpResponse<Map> response = client.toBlocking().exchange(
-                HttpRequest.DELETE(BASE_PATH + "/" + testComment.getId())
+                HttpRequest.PUT(BASE_PATH + "/" + testComment.getId() + "/hide", null)
                     .bearerAuth(adminToken),
                 Map.class
             );
 
             // Assert
             assertEquals(HttpStatus.OK, response.getStatus());
-            assertTrue(response.body().get("message").toString().contains("deleted"));
+            assertTrue(response.body().get("message").toString().contains("hidden"));
 
             // Verify in database - comment should be hidden
-            Comment deletedComment = commentRepository.findById(testComment.getId()).orElseThrow();
-            assertTrue(deletedComment.isHidden());
+            Comment hiddenComment = commentRepository.findById(testComment.getId()).orElseThrow();
+            assertTrue(hiddenComment.isHidden());
         }
 
         @Test
         @Order(2)
-        @DisplayName("Negative: Regular user cannot delete a comment via admin endpoint")
-        void regularUserCannotDeleteComment() {
+        @DisplayName("Negative: Regular user cannot hide a comment via admin endpoint")
+        void regularUserCannotHideComment() {
             // Act & Assert
             HttpClientResponseException exception = assertThrows(
                 HttpClientResponseException.class,
                 () -> client.toBlocking().exchange(
-                    HttpRequest.DELETE(BASE_PATH + "/" + testComment.getId())
+                    HttpRequest.PUT(BASE_PATH + "/" + testComment.getId() + "/hide", null)
                         .bearerAuth(userToken),
                     Map.class
                 )
@@ -279,13 +279,13 @@ class AdminCommentControllerTest {
 
         @Test
         @Order(3)
-        @DisplayName("Negative: Unauthenticated user cannot delete a comment")
-        void unauthenticatedUserCannotDeleteComment() {
+        @DisplayName("Negative: Unauthenticated user cannot hide a comment")
+        void unauthenticatedUserCannotHideComment() {
             // Act & Assert
             HttpClientResponseException exception = assertThrows(
                 HttpClientResponseException.class,
                 () -> client.toBlocking().exchange(
-                    HttpRequest.DELETE(BASE_PATH + "/" + testComment.getId()),
+                    HttpRequest.PUT(BASE_PATH + "/" + testComment.getId() + "/hide", null),
                     Map.class
                 )
             );

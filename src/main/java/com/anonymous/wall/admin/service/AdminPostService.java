@@ -13,7 +13,7 @@ import java.util.UUID;
  */
 public interface AdminPostService {
     
-    Page<Post> getAllPosts(Pageable pageable, UUID userId, Boolean hidden, String sortBy, String sortOrder);
+    Page<Post> getAllPosts(Pageable pageable, UUID userId, String wall, Boolean hidden, String sortBy, String sortOrder);
     
     Page<Post> getPostsByWall(String wall, Pageable pageable, SortBy sortBy);
     

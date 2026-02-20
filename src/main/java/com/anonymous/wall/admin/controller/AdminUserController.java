@@ -225,7 +225,7 @@ public class AdminUserController {
         
         UUID userId = UUID.fromString(id);
         Pageable pageable = Pageable.from(page - 1, limit);
-        Page<Post> postsPage = adminPostService.getAllPosts(pageable, userId, null, sortBy, sortOrder);
+        Page<Post> postsPage = adminPostService.getAllPosts(pageable, userId, null, null, sortBy, sortOrder);
         
         List<AdminPostDTO> postDTOs = postsPage.getContent().stream()
                 .map(this::mapPostToDTO)
@@ -259,7 +259,7 @@ public class AdminUserController {
         
         UUID userId = UUID.fromString(id);
         Pageable pageable = Pageable.from(page - 1, limit);
-        Page<Comment> commentsPage = adminCommentService.getAllComments(pageable, userId, null, sortBy, sortOrder);
+        Page<Comment> commentsPage = adminCommentService.getAllComments(pageable, userId, null, null, null, sortBy, sortOrder);
         
         List<AdminCommentDTO> commentDTOs = commentsPage.getContent().stream()
                 .map(this::mapCommentToDTO)
