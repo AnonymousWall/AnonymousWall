@@ -2,9 +2,12 @@ package com.anonymous.wall.service;
 
 import com.anonymous.wall.entity.Internship;
 import com.anonymous.wall.entity.UserEntity;
+import com.anonymous.wall.event.InternshipHiddenEvent;
 import com.anonymous.wall.model.CreateInternshipRequest;
+import com.anonymous.wall.repository.CommentRepository;
 import com.anonymous.wall.repository.InternshipRepository;
 import com.anonymous.wall.repository.UserRepository;
+import io.micronaut.context.event.ApplicationEventPublisher;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
 import jakarta.inject.Inject;
@@ -28,6 +31,12 @@ public class InternshipServiceImpl implements InternshipService {
 
     @Inject
     private UserRepository userRepository;
+
+    @Inject
+    private CommentRepository commentRepository;
+
+    @Inject
+    private ApplicationEventPublisher<InternshipHiddenEvent> internshipHiddenEventPublisher;
 
     @Override
     @Transactional
@@ -197,6 +206,9 @@ public class InternshipServiceImpl implements InternshipService {
         internship.setHidden(true);
         internship.setUpdatedAt(OffsetDateTime.now());
         internshipRepository.update(internship);
+        // Publish event for async comment hiding
+        internshipHiddenEventPublisher.publishEvent(new InternshipHiddenEvent(internshipId, userId));
+        log.debug("Published InternshipHiddenEvent for internshipId={}", internshipId);
         log.info("Hid internship {}", internshipId);
     }
 
@@ -219,6 +231,8 @@ public class InternshipServiceImpl implements InternshipService {
         internship.setHidden(false);
         internship.setUpdatedAt(OffsetDateTime.now());
         internshipRepository.update(internship);
+        // Unhide all comments associated with this internship (within same transaction)
+        commentRepository.updateByParentTypeAndParentId("INTERNSHIP", internshipId, false);
         log.info("Unhid internship {}", internshipId);
     }
 
