@@ -1466,7 +1466,63 @@ PUT /api/v1/marketplace/{itemId}
 }
 ```
 
-#### 5. Add Comment to Marketplace Item
+#### 5. Hide Marketplace Item
+```http
+PATCH /api/v1/marketplace/{itemId}/hide
+Authorization: Bearer {jwt-token}
+
+Response: 200 OK
+{
+    "message": "Item hidden successfully"
+}
+```
+
+**Notes:**
+- Only the item author can hide their own item
+- Hidden items are excluded from marketplace listings
+- Attempting to hide another user's item returns `403 Forbidden`
+
+**Error Responses:**
+```json
+// Item not found
+404 Not Found
+
+// Attempting to hide another user's item
+403 Forbidden
+{
+    "error": "You can only hide your own items"
+}
+```
+
+#### 6. Unhide Marketplace Item
+```http
+PATCH /api/v1/marketplace/{itemId}/unhide
+Authorization: Bearer {jwt-token}
+
+Response: 200 OK
+{
+    "message": "Item unhidden successfully"
+}
+```
+
+**Notes:**
+- Only the item author can unhide their own item
+- Unhidden items become visible in marketplace listings again
+- Attempting to unhide another user's item returns `403 Forbidden`
+
+**Error Responses:**
+```json
+// Item not found
+404 Not Found
+
+// Attempting to unhide another user's item
+403 Forbidden
+{
+    "error": "You can only unhide your own items"
+}
+```
+
+#### 7. Add Comment to Marketplace Item
 ```http
 POST /api/v1/marketplace/{itemId}/comments
 Authorization: Bearer {jwt-token}
@@ -1497,7 +1553,7 @@ Response: 201 Created
 - For campus items: only users from the same school can comment
 - For national items: all authenticated users can comment
 
-#### 6. Get Comments for Marketplace Item
+#### 8. Get Comments for Marketplace Item
 ```http
 GET /api/v1/marketplace/{itemId}/comments?page=1&limit=20&sort=NEWEST
 Authorization: Bearer {jwt-token}
@@ -1532,7 +1588,7 @@ Response: 200 OK
 - `limit` (default: 20) - Comments per page (max: 100)
 - `sort` (default: "NEWEST") - Sort order: NEWEST, OLDEST
 
-#### 7. Hide Comment on Marketplace Item
+#### 9. Hide Comment on Marketplace Item
 ```http
 PATCH /api/v1/marketplace/{itemId}/comments/{commentId}/hide
 Authorization: Bearer {jwt-token}
@@ -1546,7 +1602,7 @@ Response: 200 OK
 **Notes:**
 - Only the comment author can hide their own comment
 
-#### 8. Unhide Comment on Marketplace Item
+#### 10. Unhide Comment on Marketplace Item
 ```http
 PATCH /api/v1/marketplace/{itemId}/comments/{commentId}/unhide
 Authorization: Bearer {jwt-token}

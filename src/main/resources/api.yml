@@ -1175,6 +1175,74 @@ paths:
         "404":
           description: Item not found
 
+  /marketplace/{itemId}/hide:
+    patch:
+      tags: [marketplace]
+      summary: Hide a marketplace item
+      description: Hide a marketplace item (soft-delete). Only the item author can hide their own item.
+      operationId: hideItem
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: itemId
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID of the marketplace item to hide
+      responses:
+        "200":
+          description: Item hidden successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Item hidden successfully
+        "401":
+          description: Unauthorized - authentication required
+        "403":
+          description: Forbidden - You can only hide your own items
+        "404":
+          description: Item not found
+
+  /marketplace/{itemId}/unhide:
+    patch:
+      tags: [marketplace]
+      summary: Unhide a marketplace item
+      description: Unhide a previously hidden marketplace item. Only the item author can unhide their own item.
+      operationId: unhideItem
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: itemId
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID of the marketplace item to unhide
+      responses:
+        "200":
+          description: Item unhidden successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Item unhidden successfully
+        "401":
+          description: Unauthorized - authentication required
+        "403":
+          description: Forbidden - You can only unhide your own items
+        "404":
+          description: Item not found
+
   /marketplace/{itemId}/comments:
     post:
       tags: [marketplace]

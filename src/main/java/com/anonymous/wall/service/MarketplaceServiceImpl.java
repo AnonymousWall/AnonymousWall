@@ -2,10 +2,13 @@ package com.anonymous.wall.service;
 
 import com.anonymous.wall.entity.MarketplaceItem;
 import com.anonymous.wall.entity.UserEntity;
+import com.anonymous.wall.event.MarketplaceItemHiddenEvent;
 import com.anonymous.wall.model.CreateItemRequest;
 import com.anonymous.wall.model.UpdateItemRequest;
+import com.anonymous.wall.repository.CommentRepository;
 import com.anonymous.wall.repository.MarketplaceItemRepository;
 import com.anonymous.wall.repository.UserRepository;
+import io.micronaut.context.event.ApplicationEventPublisher;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
 import jakarta.inject.Inject;
@@ -29,6 +32,12 @@ public class MarketplaceServiceImpl implements MarketplaceService {
 
     @Inject
     private UserRepository userRepository;
+
+    @Inject
+    private CommentRepository commentRepository;
+
+    @Inject
+    private ApplicationEventPublisher<MarketplaceItemHiddenEvent> marketplaceItemHiddenEventPublisher;
 
     @Override
     @Transactional
@@ -330,5 +339,40 @@ public class MarketplaceServiceImpl implements MarketplaceService {
         }
         return condition.equals("new") || condition.equals("like-new") || 
                condition.equals("good") || condition.equals("fair") || condition.equals("poor");
+    }
+
+    @Override
+    @Transactional
+    public void hideItem(UUID itemId, UUID userId) {
+        log.info("Hiding marketplace item {} for user {}", itemId, userId);
+        MarketplaceItem item = marketplaceItemRepository.findById(itemId)
+                .orElseThrow(() -> new IllegalArgumentException("Item not found"));
+        if (!item.getUserId().equals(userId)) {
+            throw new IllegalArgumentException("You can only hide your own items");
+        }
+        item.setHidden(true);
+        item.setUpdatedAt(java.time.OffsetDateTime.now());
+        marketplaceItemRepository.update(item);
+        // Publish event for async comment hiding
+        marketplaceItemHiddenEventPublisher.publishEvent(new MarketplaceItemHiddenEvent(itemId, userId));
+        log.debug("Published MarketplaceItemHiddenEvent for itemId={}", itemId);
+        log.info("Hid marketplace item {}", itemId);
+    }
+
+    @Override
+    @Transactional
+    public void unhideItem(UUID itemId, UUID userId) {
+        log.info("Unhiding marketplace item {} for user {}", itemId, userId);
+        MarketplaceItem item = marketplaceItemRepository.findById(itemId)
+                .orElseThrow(() -> new IllegalArgumentException("Item not found"));
+        if (!item.getUserId().equals(userId)) {
+            throw new IllegalArgumentException("You can only unhide your own items");
+        }
+        item.setHidden(false);
+        item.setUpdatedAt(java.time.OffsetDateTime.now());
+        marketplaceItemRepository.update(item);
+        // Unhide all comments associated with this item (within same transaction)
+        commentRepository.updateByParentTypeAndParentId("MARKETPLACE", itemId, false);
+        log.info("Unhid marketplace item {}", itemId);
     }
 }
