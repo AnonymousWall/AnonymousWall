@@ -10,10 +10,10 @@ import jakarta.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Singleton
 public class AdminChatServiceImpl implements AdminChatService {
@@ -27,27 +27,18 @@ public class AdminChatServiceImpl implements AdminChatService {
     public Page<AdminConversationDTO> getAllConversations(Pageable pageable, UUID userId) {
         log.info("Admin fetching conversations - userId={}, page={}, size={}", userId, pageable.getNumber(), pageable.getSize());
 
-        int limit = pageable.getSize();
-        int offset = (int) pageable.getOffset();
-
-        List<UUID> conversationIds;
-        long total;
-
+        Page<UUID> conversationPage;
         if (userId != null) {
-            conversationIds = chatMessageRepository.findDistinctConversationIdsByUserIdPaged(userId, limit, offset);
-            total = chatMessageRepository.countDistinctConversationsByUserId(userId);
+            conversationPage = chatMessageRepository.findDistinctConversationIdBySenderIdOrReceiverId(userId, userId, pageable);
         } else {
-            conversationIds = chatMessageRepository.findDistinctConversationIdsPaged(limit, offset);
-            total = chatMessageRepository.countDistinctConversations();
+            conversationPage = chatMessageRepository.findDistinctConversationId(pageable);
         }
 
-        List<AdminConversationDTO> dtos = new ArrayList<>();
-        for (UUID convId : conversationIds) {
-            AdminConversationDTO dto = buildConversationDTO(convId);
-            dtos.add(dto);
-        }
+        List<AdminConversationDTO> dtos = conversationPage.getContent().stream()
+                .map(this::buildConversationDTO)
+                .collect(Collectors.toList());
 
-        return Page.of(dtos, pageable, total);
+        return Page.of(dtos, pageable, conversationPage.getTotalSize());
     }
 
     private AdminConversationDTO buildConversationDTO(UUID conversationId) {

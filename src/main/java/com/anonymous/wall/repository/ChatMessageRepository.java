@@ -1,8 +1,6 @@
 package com.anonymous.wall.repository;
 
 import com.anonymous.wall.entity.ChatMessage;
-import io.micronaut.context.annotation.Parameter;
-import io.micronaut.data.annotation.Query;
 import io.micronaut.data.jdbc.annotation.JdbcRepository;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
@@ -24,7 +22,7 @@ public interface ChatMessageRepository extends CrudRepository<ChatMessage, UUID>
     /**
      * Find all messages in a conversation by conversation ID.
      * Results are ordered by created_at ascending (oldest first).
-     * 
+     *
      * @param conversationId The conversation ID
      * @param pageable Pagination parameters
      * @return Page of messages
@@ -33,7 +31,7 @@ public interface ChatMessageRepository extends CrudRepository<ChatMessage, UUID>
 
     /**
      * Count unread messages in a conversation for a specific receiver.
-     * 
+     *
      * @param conversationId The conversation ID
      * @param receiverId The receiver's user ID
      * @return Count of unread messages
@@ -51,7 +49,7 @@ public interface ChatMessageRepository extends CrudRepository<ChatMessage, UUID>
 
     /**
      * Count all unread messages for a receiver.
-     * 
+     *
      * @param receiverId The receiver's user ID
      * @return Count of all unread messages
      */
@@ -59,21 +57,34 @@ public interface ChatMessageRepository extends CrudRepository<ChatMessage, UUID>
 
     void updateReadStatusByConversationIdAndReceiverId(UUID conversationId, UUID receiverId, boolean readStatus);
 
+    /**
+     * Find distinct conversation IDs for a given sender or receiver (used for conversation list).
+     *
+     * @param senderId   The user ID as sender
+     * @param receiverId The user ID as receiver (pass the same UUID for both to get all conversations of a user)
+     * @return List of distinct conversation IDs
+     */
     List<UUID> findDistinctConversationIdBySenderIdOrReceiverId(UUID senderId, UUID receiverId);
+
+    /**
+     * Find distinct conversation IDs for a given sender or receiver with pagination.
+     *
+     * @param senderId   The user ID as sender
+     * @param receiverId The user ID as receiver
+     * @param pageable   Pagination parameters
+     * @return Page of distinct conversation IDs
+     */
+    Page<UUID> findDistinctConversationIdBySenderIdOrReceiverId(UUID senderId, UUID receiverId, Pageable pageable);
+
+    /**
+     * Find all distinct conversation IDs with pagination (admin: all conversations).
+     *
+     * @param pageable Pagination parameters
+     * @return Page of distinct conversation IDs
+     */
+    Page<UUID> findDistinctConversationId(Pageable pageable);
 
     Optional<ChatMessage> findFirstByConversationIdOrderByCreatedAtDesc(UUID conversationId);
 
     long countByConversationId(UUID conversationId);
-
-    @Query("SELECT conversation_id FROM chat_messages GROUP BY conversation_id ORDER BY MAX(created_at) DESC LIMIT :limit OFFSET :offset")
-    List<UUID> findDistinctConversationIdsPaged(@Parameter("limit") int limit, @Parameter("offset") int offset);
-
-    @Query("SELECT COUNT(*) FROM (SELECT DISTINCT conversation_id FROM chat_messages) AS t")
-    long countDistinctConversations();
-
-    @Query("SELECT conversation_id FROM chat_messages WHERE sender_id = :userId OR receiver_id = :userId GROUP BY conversation_id ORDER BY MAX(created_at) DESC LIMIT :limit OFFSET :offset")
-    List<UUID> findDistinctConversationIdsByUserIdPaged(@Parameter("userId") UUID userId, @Parameter("limit") int limit, @Parameter("offset") int offset);
-
-    @Query("SELECT COUNT(*) FROM (SELECT DISTINCT conversation_id FROM chat_messages WHERE sender_id = :userId OR receiver_id = :userId) AS t")
-    long countDistinctConversationsByUserId(@Parameter("userId") UUID userId);
 }
