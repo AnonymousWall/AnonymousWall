@@ -106,6 +106,12 @@
         <addForeignKeyConstraint baseTableName="comments" baseColumnNames="user_id"
                                  constraintName="fk_comments_user"
                                  referencedTableName="users" referencedColumnNames="id"/>
+        <createIndex tableName="comments" indexName="idx_comments_parent_id">
+            <column name="parent_id"/>
+        </createIndex>
+        <createIndex tableName="comments" indexName="idx_comments_parent_type">
+            <column name="parent_type"/>
+        </createIndex>
     </changeSet>
 
     <!-- ================= Post Likes ================= -->
@@ -207,6 +213,9 @@
         </createIndex>
         <createIndex tableName="marketplace_items" indexName="idx_marketplace_sold">
             <column name="sold"/>
+        </createIndex>
+        <createIndex tableName="marketplace_items" indexName="idx_marketplace_is_hidden">
+            <column name="is_hidden"/>
         </createIndex>
     </changeSet>
 
@@ -333,6 +342,9 @@
                 <constraints nullable="false"/>
             </column>
             <column name="reason" type="VARCHAR(500)"/>
+            <column name="status" type="VARCHAR(20)" defaultValue="PENDING">
+                <constraints nullable="false"/>
+            </column>
             <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP"/>
         </createTable>
         <addForeignKeyConstraint baseTableName="post_reports" baseColumnNames="post_id"
@@ -355,6 +367,9 @@
         <createIndex tableName="post_reports" indexName="idx_post_reports_reported_user_id">
             <column name="reported_user_id"/>
         </createIndex>
+        <createIndex tableName="post_reports" indexName="idx_post_reports_status">
+            <column name="status"/>
+        </createIndex>
     </changeSet>
 
     <!-- ================= Comment Reports ================= -->
@@ -374,6 +389,9 @@
                 <constraints nullable="false"/>
             </column>
             <column name="reason" type="VARCHAR(500)"/>
+            <column name="status" type="VARCHAR(20)" defaultValue="PENDING">
+                <constraints nullable="false"/>
+            </column>
             <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP"/>
         </createTable>
         <addForeignKeyConstraint baseTableName="comment_reports" baseColumnNames="comment_id"
@@ -395,6 +413,9 @@
         </createIndex>
         <createIndex tableName="comment_reports" indexName="idx_comment_reports_reported_user_id">
             <column name="reported_user_id"/>
+        </createIndex>
+        <createIndex tableName="comment_reports" indexName="idx_comment_reports_status">
+            <column name="status"/>
         </createIndex>
     </changeSet>
 
@@ -598,51 +619,6 @@
         <createIndex tableName="chat_messages" indexName="idx_chat_conversation_created_desc">
             <column name="conversation_id"/>
             <column name="created_at" descending="true"/>
-        </createIndex>
-    </changeSet>
-
-
-    <!-- ================= Admin: Report Status ================= -->
-    <changeSet id="17-add-report-status" author="copilot">
-        <comment>Add status field to post_reports and comment_reports for admin resolve/reject</comment>
-        <addColumn tableName="post_reports">
-            <column name="status" type="VARCHAR(20)" defaultValue="PENDING">
-                <constraints nullable="false"/>
-            </column>
-        </addColumn>
-        <addColumn tableName="comment_reports">
-            <column name="status" type="VARCHAR(20)" defaultValue="PENDING">
-                <constraints nullable="false"/>
-            </column>
-        </addColumn>
-        <createIndex tableName="post_reports" indexName="idx_post_reports_status">
-            <column name="status"/>
-        </createIndex>
-        <createIndex tableName="comment_reports" indexName="idx_comment_reports_status">
-            <column name="status"/>
-        </createIndex>
-    </changeSet>
-
-    <!-- ================= Admin: Indexes for filters ================= -->
-    <changeSet id="18-add-admin-filter-indexes" author="copilot">
-        <comment>Add indexes to support admin filtering</comment>
-        <createIndex tableName="internships" indexName="idx_internships_user_id">
-            <column name="user_id"/>
-        </createIndex>
-        <createIndex tableName="internships" indexName="idx_internships_hidden">
-            <column name="is_hidden"/>
-        </createIndex>
-        <createIndex tableName="marketplace_items" indexName="idx_marketplace_user_id">
-            <column name="user_id"/>
-        </createIndex>
-        <createIndex tableName="marketplace_items" indexName="idx_marketplace_hidden">
-            <column name="is_hidden"/>
-        </createIndex>
-        <createIndex tableName="comments" indexName="idx_comments_parent_id">
-            <column name="parent_id"/>
-        </createIndex>
-        <createIndex tableName="comments" indexName="idx_comments_parent_type">
-            <column name="parent_type"/>
         </createIndex>
     </changeSet>
 
