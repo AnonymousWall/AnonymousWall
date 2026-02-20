@@ -329,6 +329,6 @@ public class MarketplaceServiceImpl implements MarketplaceService {
             return false;
         }
         return condition.equals("new") || condition.equals("like-new") || 
-               condition.equals("good") || condition.equals("fair");
+               condition.equals("good") || condition.equals("fair") || condition.equals("poor");
     }
 }
