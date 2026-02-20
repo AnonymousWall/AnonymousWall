@@ -50,7 +50,7 @@ class AdminCommentServiceTest {
             when(commentRepository.findAll(pageable)).thenReturn(mockPage);
 
             // Act
-            Page<Comment> result = adminCommentService.getAllComments(pageable, null, null, null, null);
+            Page<Comment> result = adminCommentService.getAllComments(pageable, null, null, null, null, null, null);
 
             // Assert
             assertNotNull(result);
@@ -67,7 +67,7 @@ class AdminCommentServiceTest {
             when(commentRepository.findAllOrderByCreatedAtDesc(pageable)).thenReturn(mockPage);
 
             // Act
-            Page<Comment> result = adminCommentService.getAllComments(pageable, null, null, "createdAt", "desc");
+            Page<Comment> result = adminCommentService.getAllComments(pageable, null, null, null, null, "createdAt", "desc");
 
             // Assert
             assertNotNull(result);
@@ -84,7 +84,7 @@ class AdminCommentServiceTest {
             when(commentRepository.findAllOrderByCreatedAtAsc(pageable)).thenReturn(mockPage);
 
             // Act
-            Page<Comment> result = adminCommentService.getAllComments(pageable, null, null, "createdAt", "asc");
+            Page<Comment> result = adminCommentService.getAllComments(pageable, null, null, null, null, "createdAt", "asc");
 
             // Assert
             assertNotNull(result);
@@ -100,7 +100,7 @@ class AdminCommentServiceTest {
             when(commentRepository.findAllOrderByUserIdDesc(pageable)).thenReturn(mockPage);
 
             // Act
-            Page<Comment> result = adminCommentService.getAllComments(pageable, null, null, "userId", "desc");
+            Page<Comment> result = adminCommentService.getAllComments(pageable, null, null, null, null, "userId", "desc");
 
             // Assert
             assertNotNull(result);
@@ -116,7 +116,7 @@ class AdminCommentServiceTest {
             when(commentRepository.findAllOrderByUserIdAsc(pageable)).thenReturn(mockPage);
 
             // Act
-            Page<Comment> result = adminCommentService.getAllComments(pageable, null, null, "userId", "asc");
+            Page<Comment> result = adminCommentService.getAllComments(pageable, null, null, null, null, "userId", "asc");
 
             // Assert
             assertNotNull(result);
@@ -132,7 +132,7 @@ class AdminCommentServiceTest {
             when(commentRepository.findAllOrderByUserIdDesc(pageable)).thenReturn(mockPage);
 
             // Act
-            Page<Comment> result = adminCommentService.getAllComments(pageable, null, null, "author", "desc");
+            Page<Comment> result = adminCommentService.getAllComments(pageable, null, null, null, null, "author", "desc");
 
             // Assert
             assertNotNull(result);
@@ -148,7 +148,7 @@ class AdminCommentServiceTest {
             when(commentRepository.findAllOrderByUserIdAsc(pageable)).thenReturn(mockPage);
 
             // Act
-            Page<Comment> result = adminCommentService.getAllComments(pageable, null, null, "author", "asc");
+            Page<Comment> result = adminCommentService.getAllComments(pageable, null, null, null, null, "author", "asc");
 
             // Assert
             assertNotNull(result);
@@ -164,7 +164,7 @@ class AdminCommentServiceTest {
             when(commentRepository.findAllOrderByCreatedAtDesc(pageable)).thenReturn(mockPage);
 
             // Act
-            Page<Comment> result = adminCommentService.getAllComments(pageable, null, null, "CREATEDAT", "DESC");
+            Page<Comment> result = adminCommentService.getAllComments(pageable, null, null, null, null, "CREATEDAT", "DESC");
 
             // Assert
             assertNotNull(result);
@@ -180,7 +180,7 @@ class AdminCommentServiceTest {
             when(commentRepository.findAll(pageable)).thenReturn(mockPage);
 
             // Act
-            Page<Comment> result = adminCommentService.getAllComments(pageable, null, null, "invalidField", "desc");
+            Page<Comment> result = adminCommentService.getAllComments(pageable, null, null, null, null, "invalidField", "desc");
 
             // Assert
             assertNotNull(result);
@@ -196,7 +196,7 @@ class AdminCommentServiceTest {
             when(commentRepository.findAllOrderByCreatedAtDesc(pageable)).thenReturn(mockPage);
 
             // Act
-            Page<Comment> result = adminCommentService.getAllComments(pageable, null, null, "createdAt", null);
+            Page<Comment> result = adminCommentService.getAllComments(pageable, null, null, null, null, "createdAt", null);
 
             // Assert
             assertNotNull(result);
@@ -212,7 +212,7 @@ class AdminCommentServiceTest {
             when(commentRepository.findAllOrderByCreatedAtAsc(pageable)).thenReturn(mockPage);
 
             // Act
-            Page<Comment> result = adminCommentService.getAllComments(pageable, null, null, "createdAt", "");
+            Page<Comment> result = adminCommentService.getAllComments(pageable, null, null, null, null, "createdAt", "");
 
             // Assert
             assertNotNull(result);
@@ -233,7 +233,7 @@ class AdminCommentServiceTest {
             when(commentRepository.findByHidden(true, pageable)).thenReturn(mockPage);
 
             // Act
-            Page<Comment> result = adminCommentService.getAllComments(pageable, null, true, null, null);
+            Page<Comment> result = adminCommentService.getAllComments(pageable, null, null, null, true, null, null);
 
             // Assert
             assertNotNull(result);
@@ -250,7 +250,7 @@ class AdminCommentServiceTest {
             when(commentRepository.findByHidden(false, pageable)).thenReturn(mockPage);
 
             // Act
-            Page<Comment> result = adminCommentService.getAllComments(pageable, null, false, null, null);
+            Page<Comment> result = adminCommentService.getAllComments(pageable, null, null, null, false, null, null);
 
             // Assert
             assertNotNull(result);
@@ -267,7 +267,7 @@ class AdminCommentServiceTest {
             when(commentRepository.findByUserId(userId, pageable)).thenReturn(mockPage);
 
             // Act
-            Page<Comment> result = adminCommentService.getAllComments(pageable, userId, null, null, null);
+            Page<Comment> result = adminCommentService.getAllComments(pageable, userId, null, null, null, null, null);
 
             // Assert
             assertNotNull(result);
@@ -284,7 +284,7 @@ class AdminCommentServiceTest {
             when(commentRepository.findByUserIdAndHidden(userId, true, pageable)).thenReturn(mockPage);
 
             // Act
-            Page<Comment> result = adminCommentService.getAllComments(pageable, userId, true, null, null);
+            Page<Comment> result = adminCommentService.getAllComments(pageable, userId, null, null, true, null, null);
 
             // Assert
             assertNotNull(result);
@@ -301,7 +301,7 @@ class AdminCommentServiceTest {
             when(commentRepository.findByUserId(userId, pageable)).thenReturn(mockPage);
 
             // Act
-            Page<Comment> result = adminCommentService.getAllComments(pageable, userId, null, "createdAt", "desc");
+            Page<Comment> result = adminCommentService.getAllComments(pageable, userId, null, null, null, "createdAt", "desc");
 
             // Assert
             assertNotNull(result);
@@ -386,7 +386,7 @@ class AdminCommentServiceTest {
             when(commentRepository.findAll(pageable)).thenReturn(mockPage);
 
             // Act
-            Page<Comment> result = adminCommentService.getAllComments(pageable, null, null, null, null);
+            Page<Comment> result = adminCommentService.getAllComments(pageable, null, null, null, null, null, null);
 
             // Assert
             assertNotNull(result);
@@ -402,7 +402,7 @@ class AdminCommentServiceTest {
             when(commentRepository.findAll(pageable)).thenReturn(mockPage);
 
             // Act
-            Page<Comment> result = adminCommentService.getAllComments(pageable, null, null, null, null);
+            Page<Comment> result = adminCommentService.getAllComments(pageable, null, null, null, null, null, null);
 
             // Assert
             assertNotNull(result);
@@ -441,7 +441,7 @@ class AdminCommentServiceTest {
             when(commentRepository.findAllOrderByUserIdDesc(pageable)).thenReturn(mockPage);
 
             // Act
-            Page<Comment> result = adminCommentService.getAllComments(pageable, null, null, "UsErId", "desc");
+            Page<Comment> result = adminCommentService.getAllComments(pageable, null, null, null, null, "UsErId", "desc");
 
             // Assert
             assertNotNull(result);
@@ -457,7 +457,7 @@ class AdminCommentServiceTest {
             when(commentRepository.findAllOrderByCreatedAtAsc(pageable)).thenReturn(mockPage);
 
             // Act
-            Page<Comment> result = adminCommentService.getAllComments(pageable, null, null, "createdAt", "AsC");
+            Page<Comment> result = adminCommentService.getAllComments(pageable, null, null, null, null, "createdAt", "AsC");
 
             // Assert
             assertNotNull(result);
@@ -513,8 +513,8 @@ class AdminCommentServiceTest {
             when(commentRepository.findByUserId(userId, pageable)).thenReturn(mockPage);
 
             // Act
-            Page<Comment> result1 = adminCommentService.getAllComments(pageable, userId, null, null, null);
-            Page<Comment> result2 = adminCommentService.getAllComments(pageable, userId, null, null, null);
+            Page<Comment> result1 = adminCommentService.getAllComments(pageable, userId, null, null, null, null, null);
+            Page<Comment> result2 = adminCommentService.getAllComments(pageable, userId, null, null, null, null, null);
 
             // Assert
             assertNotNull(result1);
@@ -531,7 +531,7 @@ class AdminCommentServiceTest {
             when(commentRepository.findAll(pageable)).thenReturn(mockPage);
 
             // Act
-            Page<Comment> result = adminCommentService.getAllComments(pageable, null, null, "nonexistent", "asc");
+            Page<Comment> result = adminCommentService.getAllComments(pageable, null, null, null, null, "nonexistent", "asc");
 
             // Assert
             assertNotNull(result);
@@ -547,7 +547,7 @@ class AdminCommentServiceTest {
             when(commentRepository.findAllOrderByCreatedAtAsc(pageable)).thenReturn(mockPage);
 
             // Act - Special characters should not match "desc", so it becomes "asc"
-            Page<Comment> result = adminCommentService.getAllComments(pageable, null, null, "createdAt", "!@#");
+            Page<Comment> result = adminCommentService.getAllComments(pageable, null, null, null, null, "createdAt", "!@#");
 
             // Assert
             assertNotNull(result);
@@ -563,7 +563,7 @@ class AdminCommentServiceTest {
             when(commentRepository.findByHidden(false, pageable)).thenReturn(mockPage);
 
             // Act
-            Page<Comment> result = adminCommentService.getAllComments(pageable, null, false, null, null);
+            Page<Comment> result = adminCommentService.getAllComments(pageable, null, null, null, false, null, null);
 
             // Assert
             assertNotNull(result);
@@ -581,7 +581,7 @@ class AdminCommentServiceTest {
             when(commentRepository.findByUserId(userId, pageable)).thenReturn(mockPage);
 
             // Act
-            Page<Comment> result = adminCommentService.getAllComments(pageable, userId, null, null, null);
+            Page<Comment> result = adminCommentService.getAllComments(pageable, userId, null, null, null, null, null);
 
             // Assert
             assertNotNull(result);
@@ -599,7 +599,7 @@ class AdminCommentServiceTest {
             when(commentRepository.findByUserIdAndHidden(userId, false, pageable)).thenReturn(mockPage);
 
             // Act
-            Page<Comment> result = adminCommentService.getAllComments(pageable, userId, false, null, null);
+            Page<Comment> result = adminCommentService.getAllComments(pageable, userId, null, null, false, null, null);
 
             // Assert
             assertNotNull(result);
