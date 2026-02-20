@@ -184,6 +184,62 @@ public class MarketplaceController {
         }
     }
 
+    @Patch("/{itemId}/hide")
+    @Secured(SecurityRule.IS_AUTHENTICATED)
+    public HttpResponse<Object> hideItem(
+            @PathVariable UUID itemId,
+            HttpRequest<?> httpRequest) {
+        try {
+            UUID userId = getUserIdFromRequest(httpRequest);
+            log.info("PATCH /marketplace/{}/hide - Hiding item, user={}", itemId, userId);
+            marketplaceService.hideItem(itemId, userId);
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "Item hidden successfully");
+            log.info("PATCH /marketplace/{}/hide - Item hidden successfully", itemId);
+            return HttpResponse.ok(response);
+        } catch (IllegalArgumentException e) {
+            log.warn("PATCH /marketplace/{}/hide - Bad request: {}", itemId, e.getMessage());
+            if (e.getMessage().contains("not found")) {
+                return HttpResponse.notFound();
+            }
+            if (e.getMessage().contains("You can only hide your own items")) {
+                return HttpResponse.status(io.micronaut.http.HttpStatus.FORBIDDEN).body(error(e.getMessage()));
+            }
+            return HttpResponse.badRequest(error(e.getMessage()));
+        } catch (Exception e) {
+            log.error("PATCH /marketplace/{}/hide - Error hiding item", itemId, e);
+            return HttpResponse.badRequest(error("Failed to hide marketplace item"));
+        }
+    }
+
+    @Patch("/{itemId}/unhide")
+    @Secured(SecurityRule.IS_AUTHENTICATED)
+    public HttpResponse<Object> unhideItem(
+            @PathVariable UUID itemId,
+            HttpRequest<?> httpRequest) {
+        try {
+            UUID userId = getUserIdFromRequest(httpRequest);
+            log.info("PATCH /marketplace/{}/unhide - Unhiding item, user={}", itemId, userId);
+            marketplaceService.unhideItem(itemId, userId);
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "Item unhidden successfully");
+            log.info("PATCH /marketplace/{}/unhide - Item unhidden successfully", itemId);
+            return HttpResponse.ok(response);
+        } catch (IllegalArgumentException e) {
+            log.warn("PATCH /marketplace/{}/unhide - Bad request: {}", itemId, e.getMessage());
+            if (e.getMessage().contains("not found")) {
+                return HttpResponse.notFound();
+            }
+            if (e.getMessage().contains("You can only unhide your own items")) {
+                return HttpResponse.status(io.micronaut.http.HttpStatus.FORBIDDEN).body(error(e.getMessage()));
+            }
+            return HttpResponse.badRequest(error(e.getMessage()));
+        } catch (Exception e) {
+            log.error("PATCH /marketplace/{}/unhide - Error unhiding item", itemId, e);
+            return HttpResponse.badRequest(error("Failed to unhide marketplace item"));
+        }
+    }
+
     // ================= Comment Endpoints =================
 
     @io.micronaut.http.annotation.Post("/{itemId}/comments")

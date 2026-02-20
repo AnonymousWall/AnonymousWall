@@ -331,4 +331,34 @@ public class MarketplaceServiceImpl implements MarketplaceService {
         return condition.equals("new") || condition.equals("like-new") || 
                condition.equals("good") || condition.equals("fair") || condition.equals("poor");
     }
+
+    @Override
+    @Transactional
+    public void hideItem(UUID itemId, UUID userId) {
+        log.info("Hiding marketplace item {} for user {}", itemId, userId);
+        MarketplaceItem item = marketplaceItemRepository.findById(itemId)
+                .orElseThrow(() -> new IllegalArgumentException("Item not found"));
+        if (!item.getUserId().equals(userId)) {
+            throw new IllegalArgumentException("You can only hide your own items");
+        }
+        item.setHidden(true);
+        item.setUpdatedAt(java.time.OffsetDateTime.now());
+        marketplaceItemRepository.update(item);
+        log.info("Hid marketplace item {}", itemId);
+    }
+
+    @Override
+    @Transactional
+    public void unhideItem(UUID itemId, UUID userId) {
+        log.info("Unhiding marketplace item {} for user {}", itemId, userId);
+        MarketplaceItem item = marketplaceItemRepository.findById(itemId)
+                .orElseThrow(() -> new IllegalArgumentException("Item not found"));
+        if (!item.getUserId().equals(userId)) {
+            throw new IllegalArgumentException("You can only unhide your own items");
+        }
+        item.setHidden(false);
+        item.setUpdatedAt(java.time.OffsetDateTime.now());
+        marketplaceItemRepository.update(item);
+        log.info("Unhid marketplace item {}", itemId);
+    }
 }
