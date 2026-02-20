@@ -56,6 +56,14 @@ public interface MarketplaceItemRepository extends CrudRepository<MarketplaceIte
 
     List<MarketplaceItem> findByUserId(UUID userId);
 
+    Page<MarketplaceItem> findByUserId(UUID userId, Pageable pageable);
+
+    Page<MarketplaceItem> findAll(Pageable pageable);
+
+    Page<MarketplaceItem> findByHidden(boolean hidden, Pageable pageable);
+
+    Page<MarketplaceItem> findByUserIdAndHidden(UUID userId, boolean hidden, Pageable pageable);
+
     Page<MarketplaceItem> findByUserIdOrderByCreatedAtDesc(UUID userId, Pageable pageable);
 
     Page<MarketplaceItem> findByUserIdAndHiddenFalseOrderByCreatedAtDesc(UUID userId, Pageable pageable);

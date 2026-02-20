@@ -5,6 +5,9 @@ import com.anonymous.wall.entity.CommentReport;
 import com.anonymous.wall.entity.PostReport;
 import com.anonymous.wall.model.AdminCommentReportDTO;
 import com.anonymous.wall.model.AdminPostReportDTO;
+import com.anonymous.wall.model.AdminReportDTO;
+import com.anonymous.wall.model.AdminGetReportByIdTypeParameter;
+import com.anonymous.wall.model.AdminReportDTOStatus;
 import io.micronaut.core.annotation.Nullable;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
@@ -19,6 +22,7 @@ import org.slf4j.LoggerFactory;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
@@ -32,9 +36,6 @@ public class AdminReportController {
     @Inject
     private AdminReportService adminReportService;
     
-    /**
-     * Convert PostReport entity to AdminPostReportDTO
-     */
     private AdminPostReportDTO mapPostReportToDTO(PostReport report) {
         AdminPostReportDTO dto = new AdminPostReportDTO();
         dto.setId(report.getId());
@@ -46,9 +47,6 @@ public class AdminReportController {
         return dto;
     }
     
-    /**
-     * Convert CommentReport entity to AdminCommentReportDTO
-     */
     private AdminCommentReportDTO mapCommentReportToDTO(CommentReport report) {
         AdminCommentReportDTO dto = new AdminCommentReportDTO();
         dto.setId(report.getId());
@@ -59,10 +57,33 @@ public class AdminReportController {
         dto.setCreatedAt(report.getCreatedAt());
         return dto;
     }
+
+    private AdminReportDTO mapToAdminReportDTO(PostReport report) {
+        AdminReportDTO dto = new AdminReportDTO();
+        dto.setId(report.getId());
+        dto.setType(AdminGetReportByIdTypeParameter.POST);
+        dto.setTargetId(report.getPostId());
+        dto.setReporterUserId(report.getReporterUserId());
+        dto.setReportedUserId(report.getReportedUserId());
+        dto.setReason(report.getReason());
+        dto.setStatus(AdminReportDTOStatus.fromValue(report.getStatus()));
+        dto.setCreatedAt(report.getCreatedAt());
+        return dto;
+    }
+
+    private AdminReportDTO mapToAdminReportDTO(CommentReport report) {
+        AdminReportDTO dto = new AdminReportDTO();
+        dto.setId(report.getId());
+        dto.setType(AdminGetReportByIdTypeParameter.COMMENT);
+        dto.setTargetId(report.getCommentId());
+        dto.setReporterUserId(report.getReporterUserId());
+        dto.setReportedUserId(report.getReportedUserId());
+        dto.setReason(report.getReason());
+        dto.setStatus(AdminReportDTOStatus.fromValue(report.getStatus()));
+        dto.setCreatedAt(report.getCreatedAt());
+        return dto;
+    }
     
-    /**
-     * GET /admin/reports - List all reports with pagination
-     */
     @Get
     @Secured({"ADMIN", "MODERATOR"})
     public HttpResponse<Object> getAllReports(
@@ -71,22 +92,13 @@ public class AdminReportController {
             @Nullable @QueryValue String type,
             HttpRequest<?> request) {
         
-        log.info("Admin fetching reports - page: {}, limit: {}, type: {}", page, limit, type);
-        
-        // Validate pagination parameters
         if (page < 1) page = 1;
         if (limit < 1 || limit > 100) limit = 20;
         
-        // Create Pageable (0-based indexing)
         Pageable pageable = Pageable.from(page - 1, limit);
-        
-        // Build response
         Map<String, Object> response = new HashMap<>();
-        
-        // Track pagination info from the first query
         Page<?> paginationSource = null;
         
-        // Fetch reports based on type filter
         if (type == null || "post".equals(type)) {
             Page<PostReport> postReportsPage = adminReportService.getAllPostReports(pageable);
             List<AdminPostReportDTO> postReportDTOs = postReportsPage.getContent().stream()
@@ -107,7 +119,6 @@ public class AdminReportController {
             }
         }
         
-        // Add pagination info from first query
         if (paginationSource != null) {
             Map<String, Object> pagination = new HashMap<>();
             pagination.put("page", page);
@@ -117,6 +128,56 @@ public class AdminReportController {
             response.put("pagination", pagination);
         }
         
+        return HttpResponse.ok(response);
+    }
+
+    @Get("/{id}")
+    @Secured({"ADMIN", "MODERATOR"})
+    public HttpResponse<AdminReportDTO> getReportById(
+            @PathVariable String id,
+            @QueryValue String type) {
+        log.info("Admin fetching report by id: {}, type: {}", id, type);
+        UUID reportId = UUID.fromString(id);
+        AdminReportDTO dto;
+        if ("POST".equalsIgnoreCase(type)) {
+            dto = mapToAdminReportDTO(adminReportService.getPostReportById(reportId));
+        } else {
+            dto = mapToAdminReportDTO(adminReportService.getCommentReportById(reportId));
+        }
+        return HttpResponse.ok(dto);
+    }
+
+    @Put("/{id}/resolve")
+    @Secured({"ADMIN", "MODERATOR"})
+    public HttpResponse<Object> resolveReport(
+            @PathVariable String id,
+            @QueryValue String type) {
+        log.info("Admin resolving report: {}, type: {}", id, type);
+        UUID reportId = UUID.fromString(id);
+        if ("POST".equalsIgnoreCase(type)) {
+            adminReportService.resolvePostReport(reportId);
+        } else {
+            adminReportService.resolveCommentReport(reportId);
+        }
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "Report resolved successfully");
+        return HttpResponse.ok(response);
+    }
+
+    @Put("/{id}/reject")
+    @Secured({"ADMIN", "MODERATOR"})
+    public HttpResponse<Object> rejectReport(
+            @PathVariable String id,
+            @QueryValue String type) {
+        log.info("Admin rejecting report: {}, type: {}", id, type);
+        UUID reportId = UUID.fromString(id);
+        if ("POST".equalsIgnoreCase(type)) {
+            adminReportService.rejectPostReport(reportId);
+        } else {
+            adminReportService.rejectCommentReport(reportId);
+        }
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "Report rejected successfully");
         return HttpResponse.ok(response);
     }
 }

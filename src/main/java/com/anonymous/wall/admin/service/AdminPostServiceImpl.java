@@ -1,7 +1,9 @@
 package com.anonymous.wall.admin.service;
 
+import com.anonymous.wall.entity.Comment;
 import com.anonymous.wall.entity.Post;
 import com.anonymous.wall.model.SortBy;
+import com.anonymous.wall.repository.CommentRepository;
 import com.anonymous.wall.repository.PostRepository;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
@@ -22,6 +24,9 @@ public class AdminPostServiceImpl implements AdminPostService {
     
     @Inject
     private PostRepository postRepository;
+
+    @Inject
+    private CommentRepository commentRepository;
     
     /**
      * Get all posts with pagination and optional filters/sorting.
@@ -161,5 +166,29 @@ public class AdminPostServiceImpl implements AdminPostService {
             case MOST_COMMENTED -> postRepository.findByWallOrderByCommentCountDesc(wall, pageable);
             case LEAST_COMMENTED -> postRepository.findByWallOrderByCommentCountAsc(wall, pageable);
         };
+    }
+
+    @Override
+    public void hidePost(UUID postId) {
+        log.info("Admin hiding post: {}", postId);
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new IllegalArgumentException("Post not found with ID: " + postId));
+        post.setHidden(true);
+        postRepository.update(post);
+    }
+
+    @Override
+    public void unhidePost(UUID postId) {
+        log.info("Admin unhiding post: {}", postId);
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new IllegalArgumentException("Post not found with ID: " + postId));
+        post.setHidden(false);
+        postRepository.update(post);
+    }
+
+    @Override
+    public Page<Comment> getPostComments(UUID postId, Pageable pageable) {
+        log.info("Admin fetching comments for post: {}", postId);
+        return commentRepository.findByParentTypeAndParentId("POST", postId, pageable);
     }
 }

@@ -32,4 +32,14 @@ public interface PostReportRepository extends CrudRepository<PostReport, UUID> {
      * Find all post reports with pagination
      */
     Page<PostReport> findAll(Pageable pageable);
+
+    Page<PostReport> findAllOrderByCreatedAtDesc(Pageable pageable);
+
+    Page<PostReport> findByReporterUserId(UUID reporterUserId, Pageable pageable);
+
+    Page<PostReport> findByReportedUserId(UUID reportedUserId, Pageable pageable);
+
+    Page<PostReport> findByStatus(String status, Pageable pageable);
+
+    PostReport update(PostReport report);
 }

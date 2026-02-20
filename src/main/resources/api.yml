@@ -1938,7 +1938,7 @@ paths:
           description: User not found
 
   /admin/users/{id}/block:
-    post:
+    put:
       tags: [admin]
       summary: Block a user
       description: Admin endpoint to block a user from logging in and posting
@@ -1972,7 +1972,7 @@ paths:
           description: User not found
 
   /admin/users/{id}/unblock:
-    post:
+    put:
       tags: [admin]
       summary: Unblock a user
       description: Admin endpoint to unblock a previously blocked user
@@ -2143,6 +2143,144 @@ paths:
         "404":
           description: User not found
 
+  /admin/users/{id}/internships:
+    get:
+      tags: [admin]
+      summary: Get all internships by a user
+      operationId: adminGetUserInternships
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: page
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        "200":
+          description: User internships retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/AdminInternshipDTO"
+                  pagination:
+                    $ref: "#/components/schemas/PaginationInfo"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+
+  /admin/users/{id}/marketplaces:
+    get:
+      tags: [admin]
+      summary: Get all marketplace items by a user
+      operationId: adminGetUserMarketplaces
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: page
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        "200":
+          description: User marketplace items retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/AdminMarketplaceDTO"
+                  pagination:
+                    $ref: "#/components/schemas/PaginationInfo"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+
+  /admin/users/{id}/conversations:
+    get:
+      tags: [admin]
+      summary: Get all conversations for a user
+      operationId: adminGetUserConversations
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: page
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        "200":
+          description: User conversations retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/AdminConversationDTO"
+                  pagination:
+                    $ref: "#/components/schemas/PaginationInfo"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+
   /admin/posts:
     get:
       tags: [admin]
@@ -2277,6 +2415,112 @@ paths:
           description: Forbidden - admin access required
         "404":
           description: Post not found
+
+  /admin/posts/{id}/hide:
+    put:
+      tags: [admin]
+      summary: Hide a post
+      operationId: adminHidePost
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Post hidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Not found
+
+  /admin/posts/{id}/unhide:
+    put:
+      tags: [admin]
+      summary: Unhide a post
+      operationId: adminUnhidePost
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Post unhidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+
+  /admin/posts/{id}/comments:
+    get:
+      tags: [admin]
+      summary: Get comments for a post
+      operationId: adminGetPostComments
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: page
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        "200":
+          description: Post comments retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/AdminCommentDTO"
+                  pagination:
+                    $ref: "#/components/schemas/PaginationInfo"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
 
   /admin/posts/by-wall:
     get:
@@ -2473,6 +2717,64 @@ paths:
         "404":
           description: Comment not found
 
+  /admin/comments/{id}/hide:
+    put:
+      tags: [admin]
+      summary: Hide a comment
+      operationId: adminHideComment
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Comment hidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+
+  /admin/comments/{id}/unhide:
+    put:
+      tags: [admin]
+      summary: Unhide a comment
+      operationId: adminUnhideComment
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Comment unhidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+
   /admin/reports:
     get:
       tags: [admin]
@@ -2528,6 +2830,506 @@ paths:
           description: Unauthorized - authentication required
         "403":
           description: Forbidden - admin access required
+
+  /admin/reports/{id}:
+    get:
+      tags: [admin]
+      summary: Get a report by ID
+      operationId: adminGetReportById
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: type
+          required: true
+          schema:
+            type: string
+            enum: [POST, COMMENT]
+          description: Report type
+      responses:
+        "200":
+          description: Report retrieved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminReportDTO"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Not found
+
+  /admin/reports/{id}/resolve:
+    put:
+      tags: [admin]
+      summary: Resolve a report
+      operationId: adminResolveReport
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: type
+          required: true
+          schema:
+            type: string
+            enum: [POST, COMMENT]
+      responses:
+        "200":
+          description: Report resolved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+
+  /admin/reports/{id}/reject:
+    put:
+      tags: [admin]
+      summary: Reject a report
+      operationId: adminRejectReport
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: type
+          required: true
+          schema:
+            type: string
+            enum: [POST, COMMENT]
+      responses:
+        "200":
+          description: Report rejected
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+
+  /admin/internships:
+    get:
+      tags: [admin]
+      summary: Get all internships
+      operationId: adminGetInternships
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - in: query
+          name: userId
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: hidden
+          schema:
+            type: boolean
+        - in: query
+          name: sortBy
+          schema:
+            type: string
+            enum: [createdAt, commentCount]
+        - in: query
+          name: sortOrder
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+      responses:
+        "200":
+          description: Internships retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/AdminInternshipDTO"
+                  pagination:
+                    $ref: "#/components/schemas/PaginationInfo"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+
+  /admin/internships/{id}:
+    get:
+      tags: [admin]
+      summary: Get an internship by ID
+      operationId: adminGetInternshipById
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Internship retrieved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminInternshipDTO"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Not found
+
+  /admin/internships/{id}/hide:
+    put:
+      tags: [admin]
+      summary: Hide an internship
+      operationId: adminHideInternship
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Internship hidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+
+  /admin/internships/{id}/unhide:
+    put:
+      tags: [admin]
+      summary: Unhide an internship
+      operationId: adminUnhideInternship
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Internship unhidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+
+  /admin/marketplaces:
+    get:
+      tags: [admin]
+      summary: Get all marketplace items
+      operationId: adminGetMarketplaces
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - in: query
+          name: userId
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: hidden
+          schema:
+            type: boolean
+        - in: query
+          name: sortBy
+          schema:
+            type: string
+            enum: [createdAt, price, commentCount]
+        - in: query
+          name: sortOrder
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+      responses:
+        "200":
+          description: Marketplace items retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/AdminMarketplaceDTO"
+                  pagination:
+                    $ref: "#/components/schemas/PaginationInfo"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+
+  /admin/marketplaces/{id}:
+    get:
+      tags: [admin]
+      summary: Get a marketplace item by ID
+      operationId: adminGetMarketplaceById
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Marketplace item retrieved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminMarketplaceDTO"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Not found
+
+  /admin/marketplaces/{id}/hide:
+    put:
+      tags: [admin]
+      summary: Hide a marketplace item
+      operationId: adminHideMarketplace
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Marketplace item hidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+
+  /admin/marketplaces/{id}/unhide:
+    put:
+      tags: [admin]
+      summary: Unhide a marketplace item
+      operationId: adminUnhideMarketplace
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Marketplace item unhidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+
+  /admin/conversations:
+    get:
+      tags: [admin]
+      summary: Get all conversations
+      operationId: adminGetConversations
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - in: query
+          name: userId
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: sortBy
+          schema:
+            type: string
+            enum: [createdAt]
+        - in: query
+          name: sortOrder
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+      responses:
+        "200":
+          description: Conversations retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/AdminConversationDTO"
+                  pagination:
+                    $ref: "#/components/schemas/PaginationInfo"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+
+  /admin/conversations/{id}/messages:
+    get:
+      tags: [admin]
+      summary: Get messages in a conversation
+      operationId: adminGetConversationMessages
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Conversation ID
+        - in: query
+          name: page
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        "200":
+          description: Conversation messages retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ChatMessageDTO"
+                  pagination:
+                    $ref: "#/components/schemas/PaginationInfo"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
 
   /admin/school-domains:
     get:
@@ -3191,6 +3993,130 @@ components:
           type: string
           description: Name of the school
           example: "Stanford University"
+
+    AdminInternshipDTO:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        profileName:
+          type: string
+        company:
+          type: string
+        role:
+          type: string
+        salary:
+          type: string
+        location:
+          type: string
+        description:
+          type: string
+        deadline:
+          type: string
+          format: date
+        wall:
+          type: string
+          enum: [campus, national]
+        schoolDomain:
+          type: string
+        commentCount:
+          type: integer
+        hidden:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    AdminMarketplaceDTO:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        profileName:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        price:
+          type: number
+        category:
+          type: string
+        condition:
+          type: string
+        sold:
+          type: boolean
+        wall:
+          type: string
+          enum: [campus, national]
+        schoolDomain:
+          type: string
+        commentCount:
+          type: integer
+        hidden:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    AdminConversationDTO:
+      type: object
+      properties:
+        conversationId:
+          type: string
+          format: uuid
+        participantIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+        lastMessageAt:
+          type: string
+          format: date-time
+        messageCount:
+          type: integer
+
+    AdminReportDTO:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [POST, COMMENT]
+        targetId:
+          type: string
+          format: uuid
+          description: Post ID for POST reports, Comment ID for COMMENT reports
+        reporterUserId:
+          type: string
+          format: uuid
+        reportedUserId:
+          type: string
+          format: uuid
+        reason:
+          type: string
+        status:
+          type: string
+          enum: [PENDING, RESOLVED, REJECTED]
+        createdAt:
+          type: string
+          format: date-time
 
     # ----- Chat DTOs -----
     ChatMessageDTO:

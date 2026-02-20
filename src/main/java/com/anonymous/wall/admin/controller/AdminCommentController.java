@@ -31,9 +31,6 @@ public class AdminCommentController {
     @Inject
     private AdminCommentService adminCommentService;
     
-    /**
-     * Convert Comment entity to AdminCommentDTO
-     */
     private AdminCommentDTO mapCommentToDTO(Comment comment) {
         AdminCommentDTO dto = new AdminCommentDTO();
         dto.setId(comment.getId());
@@ -46,9 +43,6 @@ public class AdminCommentController {
         return dto;
     }
     
-    /**
-     * GET /admin/comments - List all comments with pagination
-     */
     @Get
     @Secured({"ADMIN", "MODERATOR"})
     public HttpResponse<Object> getAllComments(
@@ -60,28 +54,17 @@ public class AdminCommentController {
             @Nullable @QueryValue String sortOrder,
             HttpRequest<?> request) {
         
-        log.info("Admin fetching comments - page: {}, limit: {}, userId: {}, hidden: {}, sortBy: {}, sortOrder: {}", 
-                 page, limit, userId, hidden, sortBy, sortOrder);
-        
-        // Validate pagination parameters
         if (page < 1) page = 1;
         if (limit < 1 || limit > 100) limit = 20;
         
-        // Create Pageable (0-based indexing)
         Pageable pageable = Pageable.from(page - 1, limit);
-
-        // Parse userId if provided
         UUID userIdUuid = userId != null ? UUID.fromString(userId) : null;
-        
-        // Fetch comments with filters and sorting
         Page<Comment> commentsPage = adminCommentService.getAllComments(pageable, userIdUuid, hidden, sortBy, sortOrder);
         
-        // Map to DTOs
         List<AdminCommentDTO> commentDTOs = commentsPage.getContent().stream()
                 .map(this::mapCommentToDTO)
                 .collect(Collectors.toList());
         
-        // Build response
         Map<String, Object> response = new HashMap<>();
         response.put("data", commentDTOs);
         
@@ -95,36 +78,44 @@ public class AdminCommentController {
         return HttpResponse.ok(response);
     }
     
-    /**
-     * GET /admin/comments/{id} - Get a comment by ID
-     */
     @Get("/{id}")
     @Secured({"ADMIN", "MODERATOR"})
     public HttpResponse<AdminCommentDTO> getCommentById(@PathVariable String id) {
-        log.info("Admin fetching comment by id: {}", id);
-        
         UUID commentId = UUID.fromString(id);
         Comment comment = adminCommentService.getCommentById(commentId);
-        
-        AdminCommentDTO dto = mapCommentToDTO(comment);
-        
-        return HttpResponse.ok(dto);
+        return HttpResponse.ok(mapCommentToDTO(comment));
     }
     
-    /**
-     * DELETE /admin/comments/{id} - Soft delete a comment
-     */
     @Delete("/{id}")
     @Secured({"ADMIN", "MODERATOR"})
     public HttpResponse<Object> deleteComment(@PathVariable String id) {
         log.info("Admin deleting comment: {}", id);
-        
         UUID commentId = UUID.fromString(id);
         adminCommentService.deleteComment(commentId);
-        
         Map<String, String> response = new HashMap<>();
         response.put("message", "Comment deleted successfully");
-        
+        return HttpResponse.ok(response);
+    }
+
+    @Put("/{id}/hide")
+    @Secured({"ADMIN", "MODERATOR"})
+    public HttpResponse<Object> hideComment(@PathVariable String id) {
+        log.info("Admin hiding comment: {}", id);
+        UUID commentId = UUID.fromString(id);
+        adminCommentService.hideComment(commentId);
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "Comment hidden successfully");
+        return HttpResponse.ok(response);
+    }
+
+    @Put("/{id}/unhide")
+    @Secured({"ADMIN", "MODERATOR"})
+    public HttpResponse<Object> unhideComment(@PathVariable String id) {
+        log.info("Admin unhiding comment: {}", id);
+        UUID commentId = UUID.fromString(id);
+        adminCommentService.unhideComment(commentId);
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "Comment unhidden successfully");
         return HttpResponse.ok(response);
     }
 }

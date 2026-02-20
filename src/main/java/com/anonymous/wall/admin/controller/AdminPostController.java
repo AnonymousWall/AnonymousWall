@@ -1,7 +1,9 @@
 package com.anonymous.wall.admin.controller;
 
 import com.anonymous.wall.admin.service.AdminPostService;
+import com.anonymous.wall.entity.Comment;
 import com.anonymous.wall.entity.Post;
+import com.anonymous.wall.model.AdminCommentDTO;
 import com.anonymous.wall.model.AdminPostDTO;
 import com.anonymous.wall.model.AdminPostDTOWall;
 import com.anonymous.wall.model.SortBy;
@@ -33,9 +35,6 @@ public class AdminPostController {
     @Inject
     private AdminPostService adminPostService;
     
-    /**
-     * Convert Post entity to AdminPostDTO
-     */
     private AdminPostDTO mapPostToDTO(Post post) {
         AdminPostDTO dto = new AdminPostDTO();
         dto.setId(post.getId());
@@ -52,10 +51,19 @@ public class AdminPostController {
         dto.setUpdatedAt(post.getUpdatedAt());
         return dto;
     }
+
+    private AdminCommentDTO mapCommentToDTO(Comment comment) {
+        AdminCommentDTO dto = new AdminCommentDTO();
+        dto.setId(comment.getId());
+        dto.setPostId(comment.getParentId());
+        dto.setUserId(comment.getUserId());
+        dto.setProfileName(comment.getProfileName());
+        dto.setText(comment.getText());
+        dto.setHidden(comment.isHidden());
+        dto.setCreatedAt(comment.getCreatedAt());
+        return dto;
+    }
     
-    /**
-     * GET /admin/posts - List all posts with pagination and filters
-     */
     @Get
     @Secured({"ADMIN", "MODERATOR"})
     public HttpResponse<Object> getAllPosts(
@@ -67,28 +75,17 @@ public class AdminPostController {
             @Nullable @QueryValue String sortOrder,
             HttpRequest<?> request) {
         
-        log.info("Admin fetching posts - page: {}, limit: {}, userId: {}, hidden: {}, sortBy: {}, sortOrder: {}", 
-                 page, limit, userId, hidden, sortBy, sortOrder);
-        
-        // Validate pagination parameters
         if (page < 1) page = 1;
         if (limit < 1 || limit > 100) limit = 20;
         
-        // Create Pageable (0-based indexing)
         Pageable pageable = Pageable.from(page - 1, limit);
-        
-        // Parse userId if provided
         UUID userIdUuid = userId != null ? UUID.fromString(userId) : null;
-        
-        // Fetch posts with filters and sorting
         Page<Post> postsPage = adminPostService.getAllPosts(pageable, userIdUuid, hidden, sortBy, sortOrder);
         
-        // Map to DTOs
         List<AdminPostDTO> postDTOs = postsPage.getContent().stream()
                 .map(this::mapPostToDTO)
                 .collect(Collectors.toList());
         
-        // Build response
         Map<String, Object> response = new HashMap<>();
         response.put("data", postDTOs);
         
@@ -102,44 +99,78 @@ public class AdminPostController {
         return HttpResponse.ok(response);
     }
     
-    /**
-     * GET /admin/posts/{id} - Get a post by ID
-     */
     @Get("/{id}")
     @Secured({"ADMIN", "MODERATOR"})
     public HttpResponse<AdminPostDTO> getPostById(@PathVariable String id) {
-        log.info("Admin fetching post by id: {}", id);
-        
         UUID postId = UUID.fromString(id);
         Post post = adminPostService.getPostById(postId);
-        
-        AdminPostDTO dto = mapPostToDTO(post);
-        
-        return HttpResponse.ok(dto);
+        return HttpResponse.ok(mapPostToDTO(post));
     }
     
-    /**
-     * DELETE /admin/posts/{id} - Soft delete a post
-     */
     @Delete("/{id}")
     @Secured({"ADMIN", "MODERATOR"})
     public HttpResponse<Object> deletePost(@PathVariable String id) {
         log.info("Admin deleting post: {}", id);
-        
         UUID postId = UUID.fromString(id);
         adminPostService.deletePost(postId);
-        
         Map<String, String> response = new HashMap<>();
         response.put("message", "Post deleted successfully");
-        
+        return HttpResponse.ok(response);
+    }
+
+    @Put("/{id}/hide")
+    @Secured({"ADMIN", "MODERATOR"})
+    public HttpResponse<Object> hidePost(@PathVariable String id) {
+        log.info("Admin hiding post: {}", id);
+        UUID postId = UUID.fromString(id);
+        adminPostService.hidePost(postId);
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "Post hidden successfully");
+        return HttpResponse.ok(response);
+    }
+
+    @Put("/{id}/unhide")
+    @Secured({"ADMIN", "MODERATOR"})
+    public HttpResponse<Object> unhidePost(@PathVariable String id) {
+        log.info("Admin unhiding post: {}", id);
+        UUID postId = UUID.fromString(id);
+        adminPostService.unhidePost(postId);
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "Post unhidden successfully");
+        return HttpResponse.ok(response);
+    }
+
+    @Get("/{id}/comments")
+    @Secured({"ADMIN", "MODERATOR"})
+    public HttpResponse<Object> getPostComments(
+            @PathVariable String id,
+            @QueryValue(defaultValue = "1") int page,
+            @QueryValue(defaultValue = "20") int limit) {
+
+        if (page < 1) page = 1;
+        if (limit < 1 || limit > 100) limit = 20;
+
+        UUID postId = UUID.fromString(id);
+        Pageable pageable = Pageable.from(page - 1, limit);
+        Page<Comment> commentsPage = adminPostService.getPostComments(postId, pageable);
+
+        List<AdminCommentDTO> commentDTOs = commentsPage.getContent().stream()
+                .map(this::mapCommentToDTO)
+                .collect(Collectors.toList());
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("data", commentDTOs);
+
+        Map<String, Object> pagination = new HashMap<>();
+        pagination.put("page", page);
+        pagination.put("limit", limit);
+        pagination.put("total", commentsPage.getTotalSize());
+        pagination.put("totalPages", commentsPage.getTotalPages());
+        response.put("pagination", pagination);
+
         return HttpResponse.ok(response);
     }
     
-    /**
-     * GET /admin/posts/by-wall - Get posts by wall with sorting (admin version)
-     * Allows admin to filter by wall type (national/campus/all) and sort
-     * Does NOT filter by schoolDomain, includes both hidden and non-hidden posts
-     */
     @Get("/by-wall")
     @Secured({"ADMIN", "MODERATOR"})
     public HttpResponse<Object> getPostsByWall(
@@ -149,28 +180,17 @@ public class AdminPostController {
             @Nullable @QueryValue String sortBy,
             HttpRequest<?> request) {
         
-        log.info("Admin fetching posts by wall - wall: {}, page: {}, limit: {}, sortBy: {}", 
-                 wall, page, limit, sortBy);
-        
-        // Validate pagination parameters
         if (page < 1) page = 1;
         if (limit < 1 || limit > 100) limit = 20;
         
-        // Create Pageable (0-based indexing)
         Pageable pageable = Pageable.from(page - 1, limit);
-        
-        // Parse sortBy parameter
         SortBy sort = SortBy.parse(sortBy);
-        
-        // Fetch posts by wall with sorting
         Page<Post> postsPage = adminPostService.getPostsByWall(wall, pageable, sort);
         
-        // Map to DTOs
         List<AdminPostDTO> postDTOs = postsPage.getContent().stream()
                 .map(this::mapPostToDTO)
                 .collect(Collectors.toList());
         
-        // Build response
         Map<String, Object> response = new HashMap<>();
         response.put("data", postDTOs);
         

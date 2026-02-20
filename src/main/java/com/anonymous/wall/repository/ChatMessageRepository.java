@@ -62,4 +62,18 @@ public interface ChatMessageRepository extends CrudRepository<ChatMessage, UUID>
     List<UUID> findDistinctConversationIdBySenderIdOrReceiverId(UUID senderId, UUID receiverId);
 
     Optional<ChatMessage> findFirstByConversationIdOrderByCreatedAtDesc(UUID conversationId);
+
+    long countByConversationId(UUID conversationId);
+
+    @Query("SELECT DISTINCT conversation_id FROM chat_messages ORDER BY MAX(created_at) DESC LIMIT :limit OFFSET :offset")
+    List<UUID> findDistinctConversationIdsPaged(@Parameter("limit") int limit, @Parameter("offset") int offset);
+
+    @Query("SELECT COUNT(*) FROM (SELECT DISTINCT conversation_id FROM chat_messages) AS t")
+    long countDistinctConversations();
+
+    @Query("SELECT DISTINCT conversation_id FROM chat_messages WHERE sender_id = :userId OR receiver_id = :userId ORDER BY MAX(created_at) DESC LIMIT :limit OFFSET :offset")
+    List<UUID> findDistinctConversationIdsByUserIdPaged(@Parameter("userId") UUID userId, @Parameter("limit") int limit, @Parameter("offset") int offset);
+
+    @Query("SELECT COUNT(*) FROM (SELECT DISTINCT conversation_id FROM chat_messages WHERE sender_id = :userId OR receiver_id = :userId) AS t")
+    long countDistinctConversationsByUserId(@Parameter("userId") UUID userId);
 }

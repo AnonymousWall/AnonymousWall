@@ -105,4 +105,22 @@ public class AdminCommentServiceImpl implements AdminCommentService {
         commentRepository.update(comment);
         log.info("Comment soft-deleted successfully: {}", commentId);
     }
+
+    @Override
+    public void hideComment(UUID commentId) {
+        log.info("Admin hiding comment: {}", commentId);
+        Comment comment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new IllegalArgumentException("Comment not found with ID: " + commentId));
+        comment.setHidden(true);
+        commentRepository.update(comment);
+    }
+
+    @Override
+    public void unhideComment(UUID commentId) {
+        log.info("Admin unhiding comment: {}", commentId);
+        Comment comment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new IllegalArgumentException("Comment not found with ID: " + commentId));
+        comment.setHidden(false);
+        commentRepository.update(comment);
+    }
 }
