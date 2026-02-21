@@ -87,6 +87,19 @@ public interface CommentRepository extends CrudRepository<Comment, UUID> {
      * Find all comments for a user with pagination and hidden status (for admin purposes)
      */
     Page<Comment> findByUserIdAndHidden(UUID userId, boolean hidden, Pageable pageable);
+
+    // ===== Admin parentId/parentType filters =====
+    Page<Comment> findByParentId(UUID parentId, Pageable pageable);
+    Page<Comment> findByParentIdAndHidden(UUID parentId, boolean hidden, Pageable pageable);
+    Page<Comment> findByParentIdAndUserId(UUID parentId, UUID userId, Pageable pageable);
+    Page<Comment> findByParentIdAndUserIdAndHidden(UUID parentId, UUID userId, boolean hidden, Pageable pageable);
+
+    Page<Comment> findByParentTypeOrderByCreatedAtDesc(String parentType, Pageable pageable);
+    Page<Comment> findByParentTypeOrderByCreatedAtAsc(String parentType, Pageable pageable);
+    Page<Comment> findByParentTypeAndHidden(String parentType, boolean hidden, Pageable pageable);
+    Page<Comment> findByParentTypeAndUserId(String parentType, UUID userId, Pageable pageable);
+    Page<Comment> findByParentTypeAndUserIdAndHidden(String parentType, UUID userId, boolean hidden, Pageable pageable);
+    Page<Comment> findByParentTypeAndParentIdAndHidden(String parentType, UUID parentId, boolean hidden, Pageable pageable);
     
     // ===== Admin sorting - by creation time =====
     

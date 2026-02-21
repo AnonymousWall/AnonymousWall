@@ -25,6 +25,9 @@ public class PostReport {
     @MappedProperty("reason")
     private String reason;
 
+    @MappedProperty("status")
+    private String status = "PENDING";
+
     @MappedProperty("created_at")
     private OffsetDateTime createdAt = OffsetDateTime.now();
 
@@ -57,6 +60,9 @@ public class PostReport {
 
     public String getReason() { return reason; }
     public void setReason(String reason) { this.reason = reason; }
+
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
 
     public OffsetDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(OffsetDateTime createdAt) { this.createdAt = createdAt; }

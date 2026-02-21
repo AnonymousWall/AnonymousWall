@@ -106,6 +106,12 @@
         <addForeignKeyConstraint baseTableName="comments" baseColumnNames="user_id"
                                  constraintName="fk_comments_user"
                                  referencedTableName="users" referencedColumnNames="id"/>
+        <createIndex tableName="comments" indexName="idx_comments_parent_id">
+            <column name="parent_id"/>
+        </createIndex>
+        <createIndex tableName="comments" indexName="idx_comments_parent_type">
+            <column name="parent_type"/>
+        </createIndex>
     </changeSet>
 
     <!-- ================= Post Likes ================= -->
@@ -207,6 +213,9 @@
         </createIndex>
         <createIndex tableName="marketplace_items" indexName="idx_marketplace_sold">
             <column name="sold"/>
+        </createIndex>
+        <createIndex tableName="marketplace_items" indexName="idx_marketplace_is_hidden">
+            <column name="is_hidden"/>
         </createIndex>
     </changeSet>
 
@@ -333,6 +342,9 @@
                 <constraints nullable="false"/>
             </column>
             <column name="reason" type="VARCHAR(500)"/>
+            <column name="status" type="VARCHAR(20)" defaultValue="PENDING">
+                <constraints nullable="false"/>
+            </column>
             <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP"/>
         </createTable>
         <addForeignKeyConstraint baseTableName="post_reports" baseColumnNames="post_id"
@@ -355,6 +367,9 @@
         <createIndex tableName="post_reports" indexName="idx_post_reports_reported_user_id">
             <column name="reported_user_id"/>
         </createIndex>
+        <createIndex tableName="post_reports" indexName="idx_post_reports_status">
+            <column name="status"/>
+        </createIndex>
     </changeSet>
 
     <!-- ================= Comment Reports ================= -->
@@ -374,6 +389,9 @@
                 <constraints nullable="false"/>
             </column>
             <column name="reason" type="VARCHAR(500)"/>
+            <column name="status" type="VARCHAR(20)" defaultValue="PENDING">
+                <constraints nullable="false"/>
+            </column>
             <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP"/>
         </createTable>
         <addForeignKeyConstraint baseTableName="comment_reports" baseColumnNames="comment_id"
@@ -395,6 +413,9 @@
         </createIndex>
         <createIndex tableName="comment_reports" indexName="idx_comment_reports_reported_user_id">
             <column name="reported_user_id"/>
+        </createIndex>
+        <createIndex tableName="comment_reports" indexName="idx_comment_reports_status">
+            <column name="status"/>
         </createIndex>
     </changeSet>
 

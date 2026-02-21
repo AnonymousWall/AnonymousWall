@@ -241,7 +241,7 @@ class AdminUserControllerTest {
         void adminCanBlockUser() {
             // Act
             HttpResponse<Map> response = client.toBlocking().exchange(
-                HttpRequest.POST(BASE_PATH + "/" + targetUser.getId() + "/block", null)
+                HttpRequest.PUT(BASE_PATH + "/" + targetUser.getId() + "/block", null)
                     .bearerAuth(adminToken),
                 Map.class
             );
@@ -268,7 +268,7 @@ class AdminUserControllerTest {
 
             // Act
             HttpResponse<Map> response = client.toBlocking().exchange(
-                HttpRequest.POST(BASE_PATH + "/" + anotherTarget.getId() + "/block", null)
+                HttpRequest.PUT(BASE_PATH + "/" + anotherTarget.getId() + "/block", null)
                     .bearerAuth(moderatorToken),
                 Map.class
             );
@@ -289,7 +289,7 @@ class AdminUserControllerTest {
             HttpClientResponseException exception = assertThrows(
                 HttpClientResponseException.class,
                 () -> client.toBlocking().exchange(
-                    HttpRequest.POST(BASE_PATH + "/" + UUID.randomUUID() + "/block", null)
+                    HttpRequest.PUT(BASE_PATH + "/" + UUID.randomUUID() + "/block", null)
                         .bearerAuth(userToken),
                     Map.class
                 )
@@ -306,7 +306,7 @@ class AdminUserControllerTest {
             HttpClientResponseException exception = assertThrows(
                 HttpClientResponseException.class,
                 () -> client.toBlocking().exchange(
-                    HttpRequest.POST(BASE_PATH + "/" + UUID.randomUUID() + "/block", null),
+                    HttpRequest.PUT(BASE_PATH + "/" + UUID.randomUUID() + "/block", null),
                     Map.class
                 )
             );
@@ -329,7 +329,7 @@ class AdminUserControllerTest {
 
             // Act
             HttpResponse<Map> response = client.toBlocking().exchange(
-                HttpRequest.POST(BASE_PATH + "/" + targetUser.getId() + "/unblock", null)
+                HttpRequest.PUT(BASE_PATH + "/" + targetUser.getId() + "/unblock", null)
                     .bearerAuth(adminToken),
                 Map.class
             );
@@ -351,7 +351,7 @@ class AdminUserControllerTest {
             HttpClientResponseException exception = assertThrows(
                 HttpClientResponseException.class,
                 () -> client.toBlocking().exchange(
-                    HttpRequest.POST(BASE_PATH + "/" + UUID.randomUUID() + "/unblock", null)
+                    HttpRequest.PUT(BASE_PATH + "/" + UUID.randomUUID() + "/unblock", null)
                         .bearerAuth(userToken),
                     Map.class
                 )
@@ -450,7 +450,7 @@ class AdminUserControllerTest {
         void filterUsersByBlockedTrue() {
             // First block a user
             client.toBlocking().exchange(
-                HttpRequest.POST(BASE_PATH + "/" + targetUser.getId() + "/block", null)
+                HttpRequest.PUT(BASE_PATH + "/" + targetUser.getId() + "/block", null)
                     .bearerAuth(adminToken),
                 Map.class
             );

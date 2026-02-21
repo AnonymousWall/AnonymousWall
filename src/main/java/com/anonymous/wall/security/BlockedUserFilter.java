@@ -48,6 +48,12 @@ public class BlockedUserFilter implements HttpServerFilter, Ordered {
 
     @Override
     public Publisher<MutableHttpResponse<?>> doFilter(HttpRequest<?> request, ServerFilterChain chain) {
+        // Allow health check endpoint without authentication check
+        String path = request.getPath();
+        if (path.equals("/health") || path.startsWith("/health/")) {
+            return chain.proceed(request);
+        }
+
         Optional<Principal> principalOpt = request.getUserPrincipal();
 
         // Only check for authenticated requests

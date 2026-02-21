@@ -32,4 +32,14 @@ public interface CommentReportRepository extends CrudRepository<CommentReport, U
      * Find all comment reports with pagination
      */
     Page<CommentReport> findAll(Pageable pageable);
+
+    Page<CommentReport> findAllOrderByCreatedAtDesc(Pageable pageable);
+
+    Page<CommentReport> findByReporterUserId(UUID reporterUserId, Pageable pageable);
+
+    Page<CommentReport> findByReportedUserId(UUID reportedUserId, Pageable pageable);
+
+    Page<CommentReport> findByStatus(String status, Pageable pageable);
+
+    CommentReport update(CommentReport report);
 }

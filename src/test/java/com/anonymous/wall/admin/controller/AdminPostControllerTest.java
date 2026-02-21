@@ -258,33 +258,33 @@ class AdminPostControllerTest {
 
         @Test
         @Order(5)
-        @DisplayName("Positive: Admin can soft-delete a post")
-        void adminCanSoftDeletePost() {
+        @DisplayName("Positive: Admin can hide a post")
+        void adminCanHidePost() {
             // Act
             HttpResponse<Map> response = client.toBlocking().exchange(
-                HttpRequest.DELETE(BASE_PATH + "/" + testPost.getId())
+                HttpRequest.PUT(BASE_PATH + "/" + testPost.getId() + "/hide", null)
                     .bearerAuth(adminToken),
                 Map.class
             );
 
             // Assert
             assertEquals(HttpStatus.OK, response.getStatus());
-            assertTrue(response.body().get("message").toString().contains("deleted"));
+            assertTrue(response.body().get("message").toString().contains("hidden"));
 
             // Verify in database - post should be hidden
-            Post deletedPost = postRepository.findById(testPost.getId()).orElseThrow();
-            assertTrue(deletedPost.isHidden());
+            Post hiddenPost = postRepository.findById(testPost.getId()).orElseThrow();
+            assertTrue(hiddenPost.isHidden());
         }
 
         @Test
         @Order(2)
-        @DisplayName("Negative: Regular user cannot delete a post via admin endpoint")
-        void regularUserCannotDeletePost() {
+        @DisplayName("Negative: Regular user cannot hide a post via admin endpoint")
+        void regularUserCannotHidePost() {
             // Act & Assert
             HttpClientResponseException exception = assertThrows(
                 HttpClientResponseException.class,
                 () -> client.toBlocking().exchange(
-                    HttpRequest.DELETE(BASE_PATH + "/" + testPost.getId())
+                    HttpRequest.PUT(BASE_PATH + "/" + testPost.getId() + "/hide", null)
                         .bearerAuth(userToken),
                     Map.class
                 )
@@ -299,13 +299,13 @@ class AdminPostControllerTest {
 
         @Test
         @Order(3)
-        @DisplayName("Negative: Unauthenticated user cannot delete a post")
-        void unauthenticatedUserCannotDeletePost() {
+        @DisplayName("Negative: Unauthenticated user cannot hide a post")
+        void unauthenticatedUserCannotHidePost() {
             // Act & Assert
             HttpClientResponseException exception = assertThrows(
                 HttpClientResponseException.class,
                 () -> client.toBlocking().exchange(
-                    HttpRequest.DELETE(BASE_PATH + "/" + testPost.getId()),
+                    HttpRequest.PUT(BASE_PATH + "/" + testPost.getId() + "/hide", null),
                     Map.class
                 )
             );
@@ -315,14 +315,14 @@ class AdminPostControllerTest {
 
         @Test
         @Order(4)
-        @DisplayName("Negative: Admin gets error for non-existent post")
+        @DisplayName("Negative: Admin gets error for non-existent post on hide")
         void adminGetsErrorForNonExistentPost() {
             // Act & Assert
             UUID randomId = UUID.randomUUID();
             assertThrows(
                 HttpClientResponseException.class,
                 () -> client.toBlocking().exchange(
-                    HttpRequest.DELETE(BASE_PATH + "/" + randomId)
+                    HttpRequest.PUT(BASE_PATH + "/" + randomId + "/hide", null)
                         .bearerAuth(adminToken),
                     Map.class
                 )

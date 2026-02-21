@@ -33,58 +33,66 @@ public class AdminCommentServiceImpl implements AdminCommentService {
      * @return Page of comments matching the criteria
      */
     @Override
-    public Page<Comment> getAllComments(Pageable pageable, UUID userId, Boolean hidden, String sortBy, String sortOrder) {
-        log.info("Admin fetching comments - userId={}, hidden={}, sortBy={}, sortOrder={}",
-                 userId, hidden, sortBy, sortOrder);
+    public Page<Comment> getAllComments(Pageable pageable, UUID userId, UUID parentId, String parentType, Boolean hidden, String sortBy, String sortOrder) {
+        log.info("Admin fetching comments - userId={}, parentId={}, parentType={}, hidden={}, sortBy={}, sortOrder={}",
+                 userId, parentId, parentType, hidden, sortBy, sortOrder);
         
-        // Determine sort order (default to desc)
         boolean isDesc = sortOrder == null || sortOrder.equalsIgnoreCase("desc");
-        
-        // Case 1: No filters, no custom sorting - return all with default pagination
-        // Note: Without explicit ORDER BY, the result order is database-dependent and not guaranteed
+
+        // Handle parentId + parentType filter (both provided)
+        if (parentId != null && parentType != null) {
+            if (userId != null && hidden != null) return commentRepository.findByParentTypeAndParentIdAndHidden(parentType, parentId, hidden, pageable);
+            if (userId != null) return commentRepository.findByParentTypeAndParentId(parentType, parentId, pageable);
+            if (hidden != null) {
+                return isDesc ? commentRepository.findByParentTypeAndParentIdOrderByCreatedAtDesc(parentType, parentId, pageable)
+                              : commentRepository.findByParentTypeAndParentIdOrderByCreatedAtAsc(parentType, parentId, pageable);
+            }
+            return isDesc ? commentRepository.findByParentTypeAndParentIdOrderByCreatedAtDesc(parentType, parentId, pageable)
+                          : commentRepository.findByParentTypeAndParentIdOrderByCreatedAtAsc(parentType, parentId, pageable);
+        }
+
+        // Handle parentId filter
+        if (parentId != null) {
+            if (userId != null && hidden != null) return commentRepository.findByParentIdAndUserIdAndHidden(parentId, userId, hidden, pageable);
+            if (userId != null) return commentRepository.findByParentIdAndUserId(parentId, userId, pageable);
+            if (hidden != null) return commentRepository.findByParentIdAndHidden(parentId, hidden, pageable);
+            return commentRepository.findByParentId(parentId, pageable);
+        }
+
+        // Handle parentType filter
+        if (parentType != null) {
+            if (userId != null && hidden != null) return commentRepository.findByParentTypeAndUserIdAndHidden(parentType, userId, hidden, pageable);
+            if (userId != null) return commentRepository.findByParentTypeAndUserId(parentType, userId, pageable);
+            if (hidden != null) return commentRepository.findByParentTypeAndHidden(parentType, hidden, pageable);
+            return isDesc ? commentRepository.findByParentTypeOrderByCreatedAtDesc(parentType, pageable)
+                          : commentRepository.findByParentTypeOrderByCreatedAtAsc(parentType, pageable);
+        }
+
+        // No parentId/parentType filter - use existing logic
         if (userId == null && hidden == null && sortBy == null) {
             return commentRepository.findAll(pageable);
         }
         
-        // Case 2: No filters, but custom sorting specified - use sorting methods
         if (userId == null && hidden == null && sortBy != null) {
             switch (sortBy.toLowerCase()) {
                 case "createdat":
-                    return isDesc ?
-                        commentRepository.findAllOrderByCreatedAtDesc(pageable) :
-                        commentRepository.findAllOrderByCreatedAtAsc(pageable);
-                
+                    return isDesc ? commentRepository.findAllOrderByCreatedAtDesc(pageable)
+                                  : commentRepository.findAllOrderByCreatedAtAsc(pageable);
                 case "userid":
                 case "author":
-                    return isDesc ?
-                        commentRepository.findAllOrderByUserIdDesc(pageable) :
-                        commentRepository.findAllOrderByUserIdAsc(pageable);
-                
+                    return isDesc ? commentRepository.findAllOrderByUserIdDesc(pageable)
+                                  : commentRepository.findAllOrderByUserIdAsc(pageable);
                 default:
                     return commentRepository.findAll(pageable);
             }
         }
         
-        // Case 3: Filters specified (with or without sorting)
-        // Note: Micronaut Data filter methods (findByHidden, findByUserId, findByUserIdAndHidden)
-        // don't support dynamic sorting. Without explicit ORDER BY, result order is database-dependent.
-        // To add custom sorting with filters, we would need repository methods like:
-        // findByHiddenOrderByCreatedAtDesc, findByUserIdOrderByCreatedAtDesc, etc.
-        
-        if (sortBy != null) {
-            log.warn("sortBy parameter '{}' is not supported with filter parameters (userId={}, hidden={}) and will be ignored",
-                     sortBy, userId, hidden);
-        }
-        
         if (userId == null && hidden != null) {
-            // Filter by hidden status only
             return commentRepository.findByHidden(hidden, pageable);
         } else if (userId != null && hidden == null) {
-            // Filter by userId only
             return commentRepository.findByUserId(userId, pageable);
         }
         
-        // Filter by both userId and hidden (both are non-null if we reach here)
         return commentRepository.findByUserIdAndHidden(userId, hidden, pageable);
     }
     
@@ -104,5 +112,23 @@ public class AdminCommentServiceImpl implements AdminCommentService {
         comment.setHidden(true);
         commentRepository.update(comment);
         log.info("Comment soft-deleted successfully: {}", commentId);
+    }
+
+    @Override
+    public void hideComment(UUID commentId) {
+        log.info("Admin hiding comment: {}", commentId);
+        Comment comment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new IllegalArgumentException("Comment not found with ID: " + commentId));
+        comment.setHidden(true);
+        commentRepository.update(comment);
+    }
+
+    @Override
+    public void unhideComment(UUID commentId) {
+        log.info("Admin unhiding comment: {}", commentId);
+        Comment comment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new IllegalArgumentException("Comment not found with ID: " + commentId));
+        comment.setHidden(false);
+        commentRepository.update(comment);
     }
 }

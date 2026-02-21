@@ -1,7 +1,9 @@
 package com.anonymous.wall.admin.service;
 
+import com.anonymous.wall.entity.Comment;
 import com.anonymous.wall.entity.Post;
 import com.anonymous.wall.model.SortBy;
+import com.anonymous.wall.repository.CommentRepository;
 import com.anonymous.wall.repository.PostRepository;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
@@ -22,6 +24,9 @@ public class AdminPostServiceImpl implements AdminPostService {
     
     @Inject
     private PostRepository postRepository;
+
+    @Inject
+    private CommentRepository commentRepository;
     
     /**
      * Get all posts with pagination and optional filters/sorting.
@@ -34,68 +39,60 @@ public class AdminPostServiceImpl implements AdminPostService {
      * @return Page of posts matching the criteria
      */
     @Override
-    public Page<Post> getAllPosts(Pageable pageable, UUID userId, Boolean hidden, String sortBy, String sortOrder) {
-        log.info("Admin fetching posts - userId={}, hidden={}, sortBy={}, sortOrder={}", 
-                 userId, hidden, sortBy, sortOrder);
+    public Page<Post> getAllPosts(Pageable pageable, UUID userId, String wall, Boolean hidden, String sortBy, String sortOrder) {
+        log.info("Admin fetching posts - userId={}, wall={}, hidden={}, sortBy={}, sortOrder={}", 
+                 userId, wall, hidden, sortBy, sortOrder);
         
-        // Determine sort order (default to desc)
         boolean isDesc = sortOrder == null || sortOrder.equalsIgnoreCase("desc");
-        
-        // Case 1: No filters, no custom sorting - return all with default pagination
-        // Note: Without explicit ORDER BY, the result order is database-dependent and not guaranteed
+
+        // Handle wall filter
+        if (wall != null) {
+            if (userId != null && hidden != null) return postRepository.findByWallAndUserIdAndHidden(wall, userId, hidden, pageable);
+            if (userId != null) return postRepository.findByWallAndUserId(wall, userId, pageable);
+            if (hidden != null) return postRepository.findByWallAndHidden(wall, hidden, pageable);
+            // Wall only - use sorted methods
+            if (sortBy != null && sortBy.equalsIgnoreCase("createdAt")) {
+                return isDesc ? postRepository.findByWallOrderByCreatedAtDesc(wall, pageable)
+                              : postRepository.findByWallOrderByCreatedAtAsc(wall, pageable);
+            }
+            if (sortBy != null && sortBy.equalsIgnoreCase("likeCount")) {
+                return isDesc ? postRepository.findByWallOrderByLikeCountDesc(wall, pageable)
+                              : postRepository.findByWallOrderByLikeCountAsc(wall, pageable);
+            }
+            return postRepository.findByWall(wall, pageable);
+        }
+
+        // No wall filter - existing logic
         if (userId == null && hidden == null && sortBy == null) {
             return postRepository.findAll(pageable);
         }
         
-        // Case 2: No filters, but custom sorting specified - use sorting methods
         if (userId == null && hidden == null && sortBy != null) {
             switch (sortBy.toLowerCase()) {
                 case "createdat":
-                    return isDesc ?
-                        postRepository.findAllOrderByCreatedAtDesc(pageable) :
-                        postRepository.findAllOrderByCreatedAtAsc(pageable);
-                
+                    return isDesc ? postRepository.findAllOrderByCreatedAtDesc(pageable)
+                                  : postRepository.findAllOrderByCreatedAtAsc(pageable);
                 case "likecount":
-                    return isDesc ?
-                        postRepository.findAllOrderByLikeCountDesc(pageable) :
-                        postRepository.findAllOrderByLikeCountAsc(pageable);
-                
+                    return isDesc ? postRepository.findAllOrderByLikeCountDesc(pageable)
+                                  : postRepository.findAllOrderByLikeCountAsc(pageable);
                 case "commentcount":
-                    return isDesc ?
-                        postRepository.findAllOrderByCommentCountDesc(pageable) :
-                        postRepository.findAllOrderByCommentCountAsc(pageable);
-                
+                    return isDesc ? postRepository.findAllOrderByCommentCountDesc(pageable)
+                                  : postRepository.findAllOrderByCommentCountAsc(pageable);
                 case "userid":
                 case "author":
-                    return isDesc ?
-                        postRepository.findAllOrderByUserIdDesc(pageable) :
-                        postRepository.findAllOrderByUserIdAsc(pageable);
-                
+                    return isDesc ? postRepository.findAllOrderByUserIdDesc(pageable)
+                                  : postRepository.findAllOrderByUserIdAsc(pageable);
                 default:
                     return postRepository.findAll(pageable);
             }
         }
         
-        // Case 3: Filters specified (with or without sorting)
-        // Note: Micronaut Data filter methods (findByHidden, findByUserId, findByUserIdAndHidden)
-        // don't support dynamic sorting. Without explicit ORDER BY, result order is database-dependent.
-        // To add custom sorting with filters, we would need repository methods like:
-        // findByHiddenOrderByCreatedAtDesc, findByUserIdOrderByLikeCountDesc, etc.
-        
-        if (sortBy != null) {
-            log.warn("sortBy parameter '{}' is not supported with filter parameters (userId={}, hidden={}) and will be ignored",
-                     sortBy, userId, hidden);
-        }
-        
         if (userId == null && hidden != null) {
-            // Filter by hidden status only
             return postRepository.findByHidden(hidden, pageable);
         } else if (userId != null && hidden == null) {
-            // Filter by userId only
             return postRepository.findByUserId(userId, pageable);
         }
         
-        // Filter by both userId and hidden (both are non-null if we reach here)
         return postRepository.findByUserIdAndHidden(userId, hidden, pageable);
     }
     
@@ -161,5 +158,29 @@ public class AdminPostServiceImpl implements AdminPostService {
             case MOST_COMMENTED -> postRepository.findByWallOrderByCommentCountDesc(wall, pageable);
             case LEAST_COMMENTED -> postRepository.findByWallOrderByCommentCountAsc(wall, pageable);
         };
+    }
+
+    @Override
+    public void hidePost(UUID postId) {
+        log.info("Admin hiding post: {}", postId);
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new IllegalArgumentException("Post not found with ID: " + postId));
+        post.setHidden(true);
+        postRepository.update(post);
+    }
+
+    @Override
+    public void unhidePost(UUID postId) {
+        log.info("Admin unhiding post: {}", postId);
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new IllegalArgumentException("Post not found with ID: " + postId));
+        post.setHidden(false);
+        postRepository.update(post);
+    }
+
+    @Override
+    public Page<Comment> getPostComments(UUID postId, Pageable pageable) {
+        log.info("Admin fetching comments for post: {}", postId);
+        return commentRepository.findByParentTypeAndParentId("POST", postId, pageable);
     }
 }

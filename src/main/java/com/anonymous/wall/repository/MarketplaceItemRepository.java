@@ -16,6 +16,8 @@ public interface MarketplaceItemRepository extends CrudRepository<MarketplaceIte
 
     Page<MarketplaceItem> findAllOrderByCreatedAtDesc(Pageable pageable);
 
+    Page<MarketplaceItem> findAllOrderByCreatedAtAsc(Pageable pageable);
+
     Page<MarketplaceItem> findAllOrderByPriceAsc(Pageable pageable);
 
     Page<MarketplaceItem> findAllOrderByPriceDesc(Pageable pageable);
@@ -55,6 +57,14 @@ public interface MarketplaceItemRepository extends CrudRepository<MarketplaceIte
     Page<MarketplaceItem> findByWallAndSchoolDomainAndSoldAndHiddenFalseOrderByPriceDesc(String wall, String schoolDomain, boolean sold, Pageable pageable);
 
     List<MarketplaceItem> findByUserId(UUID userId);
+
+    Page<MarketplaceItem> findByUserId(UUID userId, Pageable pageable);
+
+    Page<MarketplaceItem> findAll(Pageable pageable);
+
+    Page<MarketplaceItem> findByHidden(boolean hidden, Pageable pageable);
+
+    Page<MarketplaceItem> findByUserIdAndHidden(UUID userId, boolean hidden, Pageable pageable);
 
     Page<MarketplaceItem> findByUserIdOrderByCreatedAtDesc(UUID userId, Pageable pageable);
 

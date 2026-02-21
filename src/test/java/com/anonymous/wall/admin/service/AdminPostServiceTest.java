@@ -51,7 +51,7 @@ class AdminPostServiceTest {
             when(postRepository.findAll(pageable)).thenReturn(mockPage);
 
             // Act
-            Page<Post> result = adminPostService.getAllPosts(pageable, null, null, null, null);
+            Page<Post> result = adminPostService.getAllPosts(pageable, null, null, null, null, null);
 
             // Assert
             assertNotNull(result);
@@ -68,7 +68,7 @@ class AdminPostServiceTest {
             when(postRepository.findAllOrderByCreatedAtDesc(pageable)).thenReturn(mockPage);
 
             // Act
-            Page<Post> result = adminPostService.getAllPosts(pageable, null, null, "createdAt", "desc");
+            Page<Post> result = adminPostService.getAllPosts(pageable, null, null, null, "createdAt", "desc");
 
             // Assert
             assertNotNull(result);
@@ -85,7 +85,7 @@ class AdminPostServiceTest {
             when(postRepository.findAllOrderByCreatedAtAsc(pageable)).thenReturn(mockPage);
 
             // Act
-            Page<Post> result = adminPostService.getAllPosts(pageable, null, null, "createdAt", "asc");
+            Page<Post> result = adminPostService.getAllPosts(pageable, null, null, null, "createdAt", "asc");
 
             // Assert
             assertNotNull(result);
@@ -101,7 +101,7 @@ class AdminPostServiceTest {
             when(postRepository.findAllOrderByLikeCountDesc(pageable)).thenReturn(mockPage);
 
             // Act
-            Page<Post> result = adminPostService.getAllPosts(pageable, null, null, "likeCount", "desc");
+            Page<Post> result = adminPostService.getAllPosts(pageable, null, null, null, "likeCount", "desc");
 
             // Assert
             assertNotNull(result);
@@ -117,7 +117,7 @@ class AdminPostServiceTest {
             when(postRepository.findAllOrderByLikeCountAsc(pageable)).thenReturn(mockPage);
 
             // Act
-            Page<Post> result = adminPostService.getAllPosts(pageable, null, null, "likeCount", "asc");
+            Page<Post> result = adminPostService.getAllPosts(pageable, null, null, null, "likeCount", "asc");
 
             // Assert
             assertNotNull(result);
@@ -133,7 +133,7 @@ class AdminPostServiceTest {
             when(postRepository.findAllOrderByCommentCountDesc(pageable)).thenReturn(mockPage);
 
             // Act
-            Page<Post> result = adminPostService.getAllPosts(pageable, null, null, "commentCount", "desc");
+            Page<Post> result = adminPostService.getAllPosts(pageable, null, null, null, "commentCount", "desc");
 
             // Assert
             assertNotNull(result);
@@ -149,7 +149,7 @@ class AdminPostServiceTest {
             when(postRepository.findAllOrderByCommentCountAsc(pageable)).thenReturn(mockPage);
 
             // Act
-            Page<Post> result = adminPostService.getAllPosts(pageable, null, null, "commentCount", "asc");
+            Page<Post> result = adminPostService.getAllPosts(pageable, null, null, null, "commentCount", "asc");
 
             // Assert
             assertNotNull(result);
@@ -165,7 +165,7 @@ class AdminPostServiceTest {
             when(postRepository.findAllOrderByUserIdDesc(pageable)).thenReturn(mockPage);
 
             // Act
-            Page<Post> result = adminPostService.getAllPosts(pageable, null, null, "userId", "desc");
+            Page<Post> result = adminPostService.getAllPosts(pageable, null, null, null, "userId", "desc");
 
             // Assert
             assertNotNull(result);
@@ -181,7 +181,7 @@ class AdminPostServiceTest {
             when(postRepository.findAllOrderByUserIdAsc(pageable)).thenReturn(mockPage);
 
             // Act
-            Page<Post> result = adminPostService.getAllPosts(pageable, null, null, "userId", "asc");
+            Page<Post> result = adminPostService.getAllPosts(pageable, null, null, null, "userId", "asc");
 
             // Assert
             assertNotNull(result);
@@ -197,7 +197,7 @@ class AdminPostServiceTest {
             when(postRepository.findAllOrderByUserIdDesc(pageable)).thenReturn(mockPage);
 
             // Act
-            Page<Post> result = adminPostService.getAllPosts(pageable, null, null, "author", "desc");
+            Page<Post> result = adminPostService.getAllPosts(pageable, null, null, null, "author", "desc");
 
             // Assert
             assertNotNull(result);
@@ -213,7 +213,7 @@ class AdminPostServiceTest {
             when(postRepository.findAllOrderByCreatedAtDesc(pageable)).thenReturn(mockPage);
 
             // Act
-            Page<Post> result = adminPostService.getAllPosts(pageable, null, null, "CREATEDAT", "DESC");
+            Page<Post> result = adminPostService.getAllPosts(pageable, null, null, null, "CREATEDAT", "DESC");
 
             // Assert
             assertNotNull(result);
@@ -229,7 +229,7 @@ class AdminPostServiceTest {
             when(postRepository.findAll(pageable)).thenReturn(mockPage);
 
             // Act
-            Page<Post> result = adminPostService.getAllPosts(pageable, null, null, "invalidField", "desc");
+            Page<Post> result = adminPostService.getAllPosts(pageable, null, null, null, "invalidField", "desc");
 
             // Assert
             assertNotNull(result);
@@ -245,7 +245,7 @@ class AdminPostServiceTest {
             when(postRepository.findAllOrderByCreatedAtDesc(pageable)).thenReturn(mockPage);
 
             // Act
-            Page<Post> result = adminPostService.getAllPosts(pageable, null, null, "createdAt", null);
+            Page<Post> result = adminPostService.getAllPosts(pageable, null, null, null, "createdAt", null);
 
             // Assert
             assertNotNull(result);
@@ -261,7 +261,7 @@ class AdminPostServiceTest {
             when(postRepository.findAllOrderByCreatedAtAsc(pageable)).thenReturn(mockPage);
 
             // Act
-            Page<Post> result = adminPostService.getAllPosts(pageable, null, null, "createdAt", "");
+            Page<Post> result = adminPostService.getAllPosts(pageable, null, null, null, "createdAt", "");
 
             // Assert
             assertNotNull(result);
@@ -282,7 +282,7 @@ class AdminPostServiceTest {
             when(postRepository.findByHidden(true, pageable)).thenReturn(mockPage);
 
             // Act
-            Page<Post> result = adminPostService.getAllPosts(pageable, null, true, null, null);
+            Page<Post> result = adminPostService.getAllPosts(pageable, null, null, true, null, null);
 
             // Assert
             assertNotNull(result);
@@ -299,7 +299,7 @@ class AdminPostServiceTest {
             when(postRepository.findByHidden(false, pageable)).thenReturn(mockPage);
 
             // Act
-            Page<Post> result = adminPostService.getAllPosts(pageable, null, false, null, null);
+            Page<Post> result = adminPostService.getAllPosts(pageable, null, null, false, null, null);
 
             // Assert
             assertNotNull(result);
@@ -316,7 +316,7 @@ class AdminPostServiceTest {
             when(postRepository.findByUserId(userId, pageable)).thenReturn(mockPage);
 
             // Act
-            Page<Post> result = adminPostService.getAllPosts(pageable, userId, null, null, null);
+            Page<Post> result = adminPostService.getAllPosts(pageable, userId, null, null, null, null);
 
             // Assert
             assertNotNull(result);
@@ -333,7 +333,7 @@ class AdminPostServiceTest {
             when(postRepository.findByUserIdAndHidden(userId, true, pageable)).thenReturn(mockPage);
 
             // Act
-            Page<Post> result = adminPostService.getAllPosts(pageable, userId, true, null, null);
+            Page<Post> result = adminPostService.getAllPosts(pageable, userId, null, true, null, null);
 
             // Assert
             assertNotNull(result);
@@ -350,7 +350,7 @@ class AdminPostServiceTest {
             when(postRepository.findByUserId(userId, pageable)).thenReturn(mockPage);
 
             // Act
-            Page<Post> result = adminPostService.getAllPosts(pageable, userId, null, "likeCount", "desc");
+            Page<Post> result = adminPostService.getAllPosts(pageable, userId, null, null, "likeCount", "desc");
 
             // Assert
             assertNotNull(result);
@@ -625,7 +625,7 @@ class AdminPostServiceTest {
             when(postRepository.findAll(pageable)).thenReturn(mockPage);
 
             // Act
-            Page<Post> result = adminPostService.getAllPosts(pageable, null, null, null, null);
+            Page<Post> result = adminPostService.getAllPosts(pageable, null, null, null, null, null);
 
             // Assert
             assertNotNull(result);
@@ -641,7 +641,7 @@ class AdminPostServiceTest {
             when(postRepository.findAll(pageable)).thenReturn(mockPage);
 
             // Act
-            Page<Post> result = adminPostService.getAllPosts(pageable, null, null, null, null);
+            Page<Post> result = adminPostService.getAllPosts(pageable, null, null, null, null, null);
 
             // Assert
             assertNotNull(result);
@@ -680,7 +680,7 @@ class AdminPostServiceTest {
             when(postRepository.findAllOrderByLikeCountDesc(pageable)).thenReturn(mockPage);
 
             // Act
-            Page<Post> result = adminPostService.getAllPosts(pageable, null, null, "LiKeCoUnT", "desc");
+            Page<Post> result = adminPostService.getAllPosts(pageable, null, null, null, "LiKeCoUnT", "desc");
 
             // Assert
             assertNotNull(result);
@@ -696,7 +696,7 @@ class AdminPostServiceTest {
             when(postRepository.findAllOrderByCreatedAtAsc(pageable)).thenReturn(mockPage);
 
             // Act
-            Page<Post> result = adminPostService.getAllPosts(pageable, null, null, "createdAt", "AsC");
+            Page<Post> result = adminPostService.getAllPosts(pageable, null, null, null, "createdAt", "AsC");
 
             // Assert
             assertNotNull(result);
