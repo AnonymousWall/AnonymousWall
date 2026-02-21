@@ -35,28 +35,6 @@ public class AdminReportController {
     
     @Inject
     private AdminReportService adminReportService;
-    
-    private AdminPostReportDTO mapPostReportToDTO(PostReport report) {
-        AdminPostReportDTO dto = new AdminPostReportDTO();
-        dto.setId(report.getId());
-        dto.setPostId(report.getPostId());
-        dto.setReporterUserId(report.getReporterUserId());
-        dto.setReportedUserId(report.getReportedUserId());
-        dto.setReason(report.getReason());
-        dto.setCreatedAt(report.getCreatedAt());
-        return dto;
-    }
-    
-    private AdminCommentReportDTO mapCommentReportToDTO(CommentReport report) {
-        AdminCommentReportDTO dto = new AdminCommentReportDTO();
-        dto.setId(report.getId());
-        dto.setCommentId(report.getCommentId());
-        dto.setReporterUserId(report.getReporterUserId());
-        dto.setReportedUserId(report.getReportedUserId());
-        dto.setReason(report.getReason());
-        dto.setCreatedAt(report.getCreatedAt());
-        return dto;
-    }
 
     private AdminReportDTO mapToAdminReportDTO(PostReport report) {
         AdminReportDTO dto = new AdminReportDTO();
@@ -101,8 +79,8 @@ public class AdminReportController {
         
         if (type == null || "post".equals(type)) {
             Page<PostReport> postReportsPage = adminReportService.getAllPostReports(pageable);
-            List<AdminPostReportDTO> postReportDTOs = postReportsPage.getContent().stream()
-                    .map(this::mapPostReportToDTO)
+            List<AdminReportDTO> postReportDTOs = postReportsPage.getContent().stream()
+                    .map(this::mapToAdminReportDTO)
                     .collect(Collectors.toList());
             response.put("postReports", postReportDTOs);
             paginationSource = postReportsPage;
@@ -110,8 +88,8 @@ public class AdminReportController {
         
         if (type == null || "comment".equals(type)) {
             Page<CommentReport> commentReportsPage = adminReportService.getAllCommentReports(pageable);
-            List<AdminCommentReportDTO> commentReportDTOs = commentReportsPage.getContent().stream()
-                    .map(this::mapCommentReportToDTO)
+            List<AdminReportDTO> commentReportDTOs = commentReportsPage.getContent().stream()
+                    .map(this::mapToAdminReportDTO)
                     .collect(Collectors.toList());
             response.put("commentReports", commentReportDTOs);
             if (paginationSource == null) {

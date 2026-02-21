@@ -3,6 +3,7 @@ package com.anonymous.wall.admin.controller;
 import com.anonymous.wall.admin.service.AdminCommentService;
 import com.anonymous.wall.entity.Comment;
 import com.anonymous.wall.model.AdminCommentDTO;
+import com.anonymous.wall.model.CommentDTOParentType;
 import io.micronaut.core.annotation.Nullable;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
@@ -35,6 +36,7 @@ public class AdminCommentController {
         AdminCommentDTO dto = new AdminCommentDTO();
         dto.setId(comment.getId());
         dto.setPostId(comment.getParentId());
+        dto.setParentType(CommentDTOParentType.valueOf(comment.getParentType()));
         dto.setUserId(comment.getUserId());
         dto.setProfileName(comment.getProfileName());
         dto.setText(comment.getText());
