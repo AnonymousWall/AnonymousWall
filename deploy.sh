@@ -104,7 +104,7 @@ fi
 print_info "Creating log directory..."
 sudo mkdir -p ${APP_DIR}/logs
 sudo chown 1001:1001 ${APP_DIR}/logs
-sudo chmod 755 ${APP_DIR}/logs
+sudo chmod 777 ${APP_DIR}/logs
 
 # Stop existing containers
 print_info "Stopping existing containers..."

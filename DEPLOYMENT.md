@@ -83,7 +83,7 @@ DATABASE_PASSWORD=YourDatabasePassword
 # Set variables
 BASTION_IP=$(cd ../AnonymousWallInfra && terraform output -raw bastion_public_ip)
 INSTANCE_IP=$(cd ../AnonymousWallInfra && terraform output -json instance_private_ips | jq -r '.[0]')
-SSH_KEY=~/.ssh/oci_instance_key
+SSH_KEY=~/.ssh/oci_key
 
 # Create a deployment tarball
 tar czf anonymouswall-deploy.tar.gz \
@@ -102,7 +102,7 @@ tar czf anonymouswall-deploy.tar.gz \
   micronaut-cli.yml
 
 # Transfer to bastion
-scp -i $SSH_KEY anonymouswall-deploy.tar.gz opc@$BASTION_IP:/tmp/
+scp -i ~/.ssh/oci_key anonymouswall-deploy.tar.gz opc@$BASTION_IP:/tmp/
 
 # Transfer from bastion to backend instance
 ssh -i $SSH_KEY opc@$BASTION_IP "scp /tmp/anonymouswall-deploy.tar.gz opc@$INSTANCE_IP:/tmp/"
@@ -115,15 +115,18 @@ ssh -i $SSH_KEY opc@$BASTION_IP "scp /tmp/anonymouswall-deploy.tar.gz opc@$INSTA
 ssh -i $SSH_KEY -J opc@$BASTION_IP opc@$INSTANCE_IP
 
 # Prepare application directory
-sudo mkdir -p /opt/anonymouswall/logs
 sudo mkdir -p /opt/anonymouswall/wallet
-sudo chown 1001:1001 /opt/anonymouswall/logs
-sudo chmod 755 /opt/anonymouswall/logs
 sudo chmod 755 /opt/anonymouswall/wallet
 
 # Extract files
 cd /opt/anonymouswall
 tar xzf /tmp/anonymouswall-deploy.tar.gz
+sudo mv Wallet_ANONWALLDB.zip wallet/
+cd wallet/
+sudo unzip Wallet_ANONWALLDB.zip
+
+# Run deployment
+./deploy.sh
 
 # IMPORTANT: Verify Podman is installed
 # The OCI cloud-init should have installed Podman, but verify:
@@ -137,6 +140,34 @@ sudo systemctl enable --now podman.socket
 
 # Run deployment script
 ./deploy.sh
+```
+
+```bash
+# Simple restart and check logs:
+podman rm -f anonymouswall-backend
+sudo systemctl restart anonymouswall
+journalctl -u anonymouswall -f
+
+# Just restart (safe, does everything):
+sudo systemctl restart anonymouswall
+
+# If container is stuck/crashed and restart isn't working:
+podman rm -f anonymouswall-backend
+sudo systemctl restart anonymouswall
+
+# To rebuild after code changes:
+podman build -t anonymouswall-backend:latest /opt/anonymouswall
+sudo systemctl restart anonymouswall
+```
+
+Useful commands:
+```bash
+Useful commands:
+  - View logs:       podman logs -f anonymouswall-backend
+  - Check status:    podman-compose -f docker-compose.prod.yml ps
+  - Stop app:        podman-compose -f docker-compose.prod.yml down
+  - Restart app:     podman-compose -f docker-compose.prod.yml restart
+  - Health check:    curl http://localhost:8080/health
 ```
 
 The script will:
@@ -218,7 +249,7 @@ If you prefer manual control:
 #### Step 1: SSH to Instance
 
 ```bash
-ssh -i ~/.ssh/oci_instance_key -J opc@<bastion-ip> opc@<instance-ip>
+ssh -i ~/.ssh/oci_key -J opc@<bastion-ip> opc@<instance-ip>
 ```
 
 #### Step 2: Prepare Application Directory
