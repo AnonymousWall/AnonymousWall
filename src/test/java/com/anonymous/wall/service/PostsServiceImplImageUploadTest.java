@@ -14,6 +14,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -73,12 +74,12 @@ class PostsServiceImplImageUploadTest {
     }
 
     @Nested
-    @DisplayName("createPost with image")
+    @DisplayName("createPost with images")
     class CreatePostWithImageTests {
 
         @Test
-        @DisplayName("Should create post with image when image is provided")
-        void shouldCreatePostWithImage() {
+        @DisplayName("Should create post with single image when provided")
+        void shouldCreatePostWithSingleImage() {
             UserEntity user = createUser("harvard.edu");
             when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
 
@@ -86,7 +87,7 @@ class PostsServiceImplImageUploadTest {
             when(mediaUtil.uploadPostImage(any(), any())).thenReturn(imageUrl);
 
             Post savedPost = createSavedPost(user.getId(), "Test", "Content", "campus", "harvard.edu");
-            savedPost.setImageUrl(imageUrl);
+            savedPost.setImageUrls(List.of(imageUrl));
             when(postRepository.save(any())).thenReturn(savedPost);
 
             CompletedFileUpload image = mock(CompletedFileUpload.class);
@@ -94,16 +95,60 @@ class PostsServiceImplImageUploadTest {
             when(image.getContentType()).thenReturn(Optional.of(MediaType.IMAGE_JPEG_TYPE));
 
             CreatePostRequest request = new CreatePostRequest("Test", "Content");
-            Post result = postsService.createPost(request, image, user.getId());
+            Post result = postsService.createPost(request, List.of(image), user.getId());
 
             assertNotNull(result);
-            assertEquals(imageUrl, result.getImageUrl());
+            assertEquals(List.of(imageUrl), result.getImageUrls());
             verify(mediaUtil, times(1)).uploadPostImage(image, user.getId());
         }
 
         @Test
-        @DisplayName("Should create post without image when image is null")
-        void shouldCreatePostWithoutImageWhenNull() {
+        @DisplayName("Should create post with multiple images")
+        void shouldCreatePostWithMultipleImages() {
+            UserEntity user = createUser("harvard.edu");
+            when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+
+            String url1 = "http://localhost:8080/media/posts/img1.jpg";
+            String url2 = "http://localhost:8080/media/posts/img2.png";
+            when(mediaUtil.uploadPostImage(any(), any())).thenReturn(url1, url2);
+
+            Post savedPost = createSavedPost(user.getId(), "Test", "Content", "campus", "harvard.edu");
+            savedPost.setImageUrls(List.of(url1, url2));
+            when(postRepository.save(any())).thenReturn(savedPost);
+
+            CompletedFileUpload img1 = mock(CompletedFileUpload.class);
+            when(img1.getSize()).thenReturn(1024L);
+            CompletedFileUpload img2 = mock(CompletedFileUpload.class);
+            when(img2.getSize()).thenReturn(2048L);
+
+            CreatePostRequest request = new CreatePostRequest("Test", "Content");
+            Post result = postsService.createPost(request, List.of(img1, img2), user.getId());
+
+            assertNotNull(result);
+            assertEquals(2, result.getImageUrls().size());
+            verify(mediaUtil, times(2)).uploadPostImage(any(), any());
+        }
+
+        @Test
+        @DisplayName("Should fail when more than 5 images are provided")
+        void shouldFailWhenTooManyImages() {
+            UserEntity user = createUser("harvard.edu");
+            CreatePostRequest request = new CreatePostRequest("Title", "Content");
+
+            List<CompletedFileUpload> images = List.of(
+                mock(CompletedFileUpload.class), mock(CompletedFileUpload.class),
+                mock(CompletedFileUpload.class), mock(CompletedFileUpload.class),
+                mock(CompletedFileUpload.class), mock(CompletedFileUpload.class)
+            );
+
+            IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> postsService.createPost(request, images, user.getId()));
+            assertTrue(ex.getMessage().contains("5"));
+        }
+
+        @Test
+        @DisplayName("Should create post without images when list is null")
+        void shouldCreatePostWithoutImagesWhenNull() {
             UserEntity user = createUser("harvard.edu");
             when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
 
@@ -114,13 +159,30 @@ class PostsServiceImplImageUploadTest {
             Post result = postsService.createPost(request, null, user.getId());
 
             assertNotNull(result);
-            assertNull(result.getImageUrl());
+            assertTrue(result.getImageUrls().isEmpty());
             verify(mediaUtil, never()).uploadPostImage(any(), any());
         }
 
         @Test
-        @DisplayName("Should create post without image when image size is zero")
-        void shouldCreatePostWithoutImageWhenSizeIsZero() {
+        @DisplayName("Should create post without images when list is empty")
+        void shouldCreatePostWithoutImagesWhenEmpty() {
+            UserEntity user = createUser("harvard.edu");
+            when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+
+            Post savedPost = createSavedPost(user.getId(), "Test", "Content", "campus", "harvard.edu");
+            when(postRepository.save(any())).thenReturn(savedPost);
+
+            CreatePostRequest request = new CreatePostRequest("Test", "Content");
+            Post result = postsService.createPost(request, List.of(), user.getId());
+
+            assertNotNull(result);
+            assertTrue(result.getImageUrls().isEmpty());
+            verify(mediaUtil, never()).uploadPostImage(any(), any());
+        }
+
+        @Test
+        @DisplayName("Should skip images with zero size")
+        void shouldSkipZeroSizeImages() {
             UserEntity user = createUser("harvard.edu");
             when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
 
@@ -131,7 +193,7 @@ class PostsServiceImplImageUploadTest {
             when(emptyImage.getSize()).thenReturn(0L);
 
             CreatePostRequest request = new CreatePostRequest("Test", "Content");
-            Post result = postsService.createPost(request, emptyImage, user.getId());
+            Post result = postsService.createPost(request, List.of(emptyImage), user.getId());
 
             assertNotNull(result);
             verify(mediaUtil, never()).uploadPostImage(any(), any());
@@ -171,7 +233,7 @@ class PostsServiceImplImageUploadTest {
             CreatePostRequest request = new CreatePostRequest("Title", "Content");
 
             IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                () -> postsService.createPost(request, image, user.getId()));
+                () -> postsService.createPost(request, List.of(image), user.getId()));
             assertTrue(ex.getMessage().contains("5MB"));
         }
     }

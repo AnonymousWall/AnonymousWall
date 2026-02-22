@@ -288,10 +288,13 @@ paths:
                   enum: [campus, national]
                   default: campus
                   description: Which wall to post to
-                image:
-                  type: string
-                  format: binary
-                  description: Optional image file (JPEG, PNG, or WEBP, max 5MB)
+                images:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                  maxItems: 5
+                  description: Optional image files (JPEG, PNG, or WEBP, max 5MB each, up to 5 images)
       responses:
         "201":
           description: Post created successfully
@@ -3581,10 +3584,11 @@ components:
         liked:
           type: boolean
           description: Whether current user has liked this post
-        imageUrl:
-          type: string
-          description: Optional URL of the image attached to the post
-          nullable: true
+        imageUrls:
+          type: array
+          items:
+            type: string
+          description: URLs of images attached to the post (up to 5)
         createdAt:
           type: string
           format: date-time

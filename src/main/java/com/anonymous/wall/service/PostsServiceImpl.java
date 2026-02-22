@@ -24,6 +24,7 @@ import jakarta.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,6 +37,7 @@ import java.util.stream.Collectors;
 public class PostsServiceImpl implements PostsService {
 
     private static final Logger log = LoggerFactory.getLogger(PostsServiceImpl.class);
+    private static final int MAX_IMAGES_PER_POST = 5;
 
     @Inject
     private PostRepository postRepository;
@@ -62,27 +64,36 @@ public class PostsServiceImpl implements PostsService {
     private MediaUtilInterface mediaUtil;
 
     /**
-     * Create a new post with optional image upload
+     * Create a new post with optional image uploads (up to 5 images)
      */
     @Override
     @Retryable(attempts = "3", delay = "500ms")
-    public Post createPost(CreatePostRequest request, CompletedFileUpload image, UUID userId) {
+    public Post createPost(CreatePostRequest request, List<CompletedFileUpload> images, UUID userId) {
+        // Validate image count before any DB access
+        if (images != null && images.size() > MAX_IMAGES_PER_POST) {
+            throw new IllegalArgumentException("Maximum " + MAX_IMAGES_PER_POST + " images per post allowed");
+        }
+
         String wall = validateAndResolveWall(request);
         UserEntity user = fetchUser(userId);
         String schoolDomain = resolveSchoolDomain(wall, user);
 
-        // Upload image if provided
-        String imageUrl = null;
-        if (image != null && image.getSize() > 0) {
-            imageUrl = mediaUtil.uploadPostImage(image, userId);
+        // Upload images
+        List<String> imageUrls = new ArrayList<>();
+        if (images != null) {
+            for (CompletedFileUpload image : images) {
+                if (image != null && image.getSize() > 0) {
+                    imageUrls.add(mediaUtil.uploadPostImage(image, userId));
+                }
+            }
         }
 
         Post post = new Post(userId, request.getTitle(), request.getContent(), wall, schoolDomain);
         post.setProfileName(user.getProfileName());
-        post.setImageUrl(imageUrl);
+        post.setImageUrls(imageUrls);
         Post savedPost = postRepository.save(post);
 
-        log.info("Post created: id={}, wall={}, schoolDomain={}, user={}, hasImage={}", savedPost.getId(), wall, schoolDomain, userId, imageUrl != null);
+        log.info("Post created: id={}, wall={}, schoolDomain={}, user={}, imageCount={}", savedPost.getId(), wall, schoolDomain, userId, imageUrls.size());
         return savedPost;
     }
 

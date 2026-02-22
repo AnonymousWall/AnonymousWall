@@ -75,7 +75,7 @@ public class PostsController {
 
     /**
      * POST /posts
-     * Create a new post (multipart/form-data with optional image)
+     * Create a new post (multipart/form-data with optional images)
      */
     @io.micronaut.http.annotation.Post(consumes = MediaType.MULTIPART_FORM_DATA)
     @Secured(SecurityRule.IS_AUTHENTICATED)
@@ -83,7 +83,7 @@ public class PostsController {
             @Part String title,
             @Part String content,
             @Part @Nullable String wall,
-            @Part @Nullable CompletedFileUpload image,
+            @Part @Nullable List<CompletedFileUpload> images,
             HttpRequest<?> httpRequest) {
         try {
             UUID userId = getUserIdFromRequest(httpRequest);
@@ -97,7 +97,7 @@ public class PostsController {
                     return HttpResponse.badRequest(error("Wall must be 'campus' or 'national'"));
                 }
             }
-            Post post = postsService.createPost(request, image, userId);
+            Post post = postsService.createPost(request, images, userId);
             PostDTO dto = mapPostToDTO(post);
 
             log.info("POST /posts - Post created successfully, postId={}", dto.getId());
@@ -538,7 +538,7 @@ public class PostsController {
         dto.setLikes(post.getLikeCount());
         dto.setComments(post.getCommentCount());
         dto.setLiked(post.isLiked());
-        dto.setImageUrl(post.getImageUrl());
+        dto.setImageUrls(post.getImageUrls());
         dto.setCreatedAt(post.getCreatedAt());
         dto.setUpdatedAt(post.getUpdatedAt());
 

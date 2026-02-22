@@ -1,9 +1,12 @@
 package com.anonymous.wall.entity;
 
 import io.micronaut.data.annotation.*;
+import io.micronaut.data.model.DataType;
 import io.micronaut.data.model.naming.NamingStrategies;
 
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @MappedEntity(value = "posts", namingStrategy = NamingStrategies.Raw.class)
@@ -40,8 +43,9 @@ public class Post implements Commentable {
     @MappedProperty("is_hidden")
     private boolean hidden = false; // Soft-delete flag
 
-    @MappedProperty("image_url")
-    private String imageUrl; // Optional image URL for post
+    @MappedProperty("image_urls")
+    @TypeDef(type = DataType.JSON)
+    private List<String> imageUrls = new ArrayList<>(); // Optional image URLs for post (up to 5)
 
     @MappedProperty("created_at")
     private OffsetDateTime createdAt = OffsetDateTime.now();
@@ -118,8 +122,8 @@ public class Post implements Commentable {
     public boolean isHidden() { return hidden; }
     public void setHidden(boolean hidden) { this.hidden = hidden; }
 
-    public String getImageUrl() { return imageUrl; }
-    public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
+    public List<String> getImageUrls() { return imageUrls; }
+    public void setImageUrls(List<String> imageUrls) { this.imageUrls = imageUrls != null ? imageUrls : new ArrayList<>(); }
 
     public Long getVersion() { return version; }
     public void setVersion(Long version) { this.version = version; }

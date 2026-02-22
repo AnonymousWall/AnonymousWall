@@ -15,9 +15,9 @@ import java.util.UUID;
 
 public interface PostsService {
     /**
-     * Create a new post with optional image upload
+     * Create a new post with optional image uploads (up to 5 images)
      */
-    Post createPost(CreatePostRequest request, CompletedFileUpload image, UUID userId);
+    Post createPost(CreatePostRequest request, List<CompletedFileUpload> images, UUID userId);
 
     /**
      * Get posts by wall type with pagination and sorting (optimized with schoolDomain from JWT)
