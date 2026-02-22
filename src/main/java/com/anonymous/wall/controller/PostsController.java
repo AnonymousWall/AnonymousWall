@@ -9,9 +9,12 @@ import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.HttpRequest;
+import io.micronaut.http.MediaType;
 import io.micronaut.http.annotation.*;
+import io.micronaut.http.multipart.CompletedFileUpload;
 import io.micronaut.security.annotation.Secured;
 import io.micronaut.security.rules.SecurityRule;
+import jakarta.annotation.Nullable;
 import jakarta.inject.Inject;
 import java.security.Principal;
 import org.slf4j.Logger;
@@ -72,16 +75,29 @@ public class PostsController {
 
     /**
      * POST /posts
-     * Create a new post
+     * Create a new post (multipart/form-data with optional image)
      */
-    @io.micronaut.http.annotation.Post
+    @io.micronaut.http.annotation.Post(consumes = MediaType.MULTIPART_FORM_DATA)
     @Secured(SecurityRule.IS_AUTHENTICATED)
-    public HttpResponse<Object> createPost(@Body CreatePostRequest request, HttpRequest<?> httpRequest) {
+    public HttpResponse<Object> createPost(
+            @Part String title,
+            @Part String content,
+            @Part @Nullable String wall,
+            @Part @Nullable CompletedFileUpload image,
+            HttpRequest<?> httpRequest) {
         try {
             UUID userId = getUserIdFromRequest(httpRequest);
-            log.info("POST /posts - Creating new post, user={}, content_length={}", userId, request.getContent().length());
+            log.info("POST /posts - Creating new post, user={}, content_length={}", userId, content.length());
 
-            Post post = postsService.createPost(request, userId);
+            CreatePostRequest request = new CreatePostRequest(title, content);
+            if (wall != null && !wall.isEmpty()) {
+                try {
+                    request.setWall(CreatePostRequestWall.fromValue(wall.toLowerCase()));
+                } catch (IllegalArgumentException e) {
+                    return HttpResponse.badRequest(error("Wall must be 'campus' or 'national'"));
+                }
+            }
+            Post post = postsService.createPost(request, image, userId);
             PostDTO dto = mapPostToDTO(post);
 
             log.info("POST /posts - Post created successfully, postId={}", dto.getId());
@@ -522,6 +538,7 @@ public class PostsController {
         dto.setLikes(post.getLikeCount());
         dto.setComments(post.getCommentCount());
         dto.setLiked(post.isLiked());
+        dto.setImageUrl(post.getImageUrl());
         dto.setCreatedAt(post.getCreatedAt());
         dto.setUpdatedAt(post.getUpdatedAt());
 

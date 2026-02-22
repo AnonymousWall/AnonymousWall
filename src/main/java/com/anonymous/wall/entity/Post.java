@@ -40,6 +40,9 @@ public class Post implements Commentable {
     @MappedProperty("is_hidden")
     private boolean hidden = false; // Soft-delete flag
 
+    @MappedProperty("image_url")
+    private String imageUrl; // Optional image URL for post
+
     @MappedProperty("created_at")
     private OffsetDateTime createdAt = OffsetDateTime.now();
 
@@ -114,6 +117,9 @@ public class Post implements Commentable {
 
     public boolean isHidden() { return hidden; }
     public void setHidden(boolean hidden) { this.hidden = hidden; }
+
+    public String getImageUrl() { return imageUrl; }
+    public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
 
     public Long getVersion() { return version; }
     public void setVersion(Long version) { this.version = version; }
