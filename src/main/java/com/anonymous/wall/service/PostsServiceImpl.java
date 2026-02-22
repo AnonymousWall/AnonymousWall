@@ -62,24 +62,6 @@ public class PostsServiceImpl implements PostsService {
     private MediaUtilInterface mediaUtil;
 
     /**
-     * Create a new post
-     */
-    @Override
-    @Retryable(attempts = "3", delay = "500ms")
-    public Post createPost(CreatePostRequest request, UUID userId) {
-        String wall = validateAndResolveWall(request);
-        UserEntity user = fetchUser(userId);
-        String schoolDomain = resolveSchoolDomain(wall, user);
-
-        Post post = new Post(userId, request.getTitle(), request.getContent(), wall, schoolDomain);
-        post.setProfileName(user.getProfileName());
-        Post savedPost = postRepository.save(post);
-
-        log.info("Post created: id={}, wall={}, schoolDomain={}, user={}", savedPost.getId(), wall, schoolDomain, userId);
-        return savedPost;
-    }
-
-    /**
      * Create a new post with optional image upload
      */
     @Override

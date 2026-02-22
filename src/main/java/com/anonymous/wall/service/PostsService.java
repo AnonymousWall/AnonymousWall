@@ -15,11 +15,6 @@ import java.util.UUID;
 
 public interface PostsService {
     /**
-     * Create a new post
-     */
-    Post createPost(CreatePostRequest request, UUID userId);
-
-    /**
      * Create a new post with optional image upload
      */
     Post createPost(CreatePostRequest request, CompletedFileUpload image, UUID userId);

@@ -77,7 +77,7 @@ class ProfileNameServiceTests {
             CreatePostRequest request = new CreatePostRequest("Test Title", "Test post content");
 
             // Act
-            Post post = postsService.createPost(request, userCustomName.getId());
+            Post post = postsService.createPost(request, null, userCustomName.getId());
 
             // Assert
             assertEquals("Alice Wonder", post.getProfileName());
@@ -96,7 +96,7 @@ class ProfileNameServiceTests {
             CreatePostRequest request = new CreatePostRequest("Test Title", "Anonymous post");
 
             // Act
-            Post post = postsService.createPost(request, userDefaultName.getId());
+            Post post = postsService.createPost(request, null, userDefaultName.getId());
 
             // Assert
             assertEquals("Anonymous", post.getProfileName());
@@ -113,7 +113,7 @@ class ProfileNameServiceTests {
             // First post
             CreatePostRequest request1 = new CreatePostRequest("Test Title", "First post");
 
-            Post post1 = postsService.createPost(request1, userDefaultName.getId());
+            Post post1 = postsService.createPost(request1, null, userDefaultName.getId());
             assertEquals("Anonymous", post1.getProfileName());
 
             // Change profile name
@@ -123,7 +123,7 @@ class ProfileNameServiceTests {
             // Second post
             CreatePostRequest request2 = new CreatePostRequest("Test Title", "Second post");
 
-            Post post2 = postsService.createPost(request2, userDefaultName.getId());
+            Post post2 = postsService.createPost(request2, null, userDefaultName.getId());
             assertEquals("New Name", post2.getProfileName());
 
             // Verify first post still has original name
@@ -139,7 +139,7 @@ class ProfileNameServiceTests {
             CreatePostRequest request = new CreatePostRequest("Test Title", "Test content");
 
             // Act
-            Post post = postsService.createPost(request, userCustomName.getId());
+            Post post = postsService.createPost(request, null, userCustomName.getId());
 
             // Assert
             assertNotNull(post.getProfileName());
@@ -302,7 +302,7 @@ class ProfileNameServiceTests {
             // Create post
             CreatePostRequest postRequest = new CreatePostRequest("Retain Title", "Post with original name");
 
-            Post post = postsService.createPost(postRequest, testUser.getId());
+            Post post = postsService.createPost(postRequest, null, testUser.getId());
             assertEquals("Original Name", post.getProfileName());
 
             // Change user's profile name
