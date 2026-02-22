@@ -6,7 +6,7 @@ import com.anonymous.wall.entity.EmailVerificationCode;
 import com.anonymous.wall.repository.EmailVerificationCodeRepository;
 import com.anonymous.wall.util.PasswordUtil;
 import com.anonymous.wall.util.CodeGenerator;
-import com.anonymous.wall.util.EmailUtil;
+import com.anonymous.wall.util.EmailUtilInterface;
 import com.anonymous.wall.util.EmailValidator;
 
 import io.micronaut.transaction.annotation.Transactional;
@@ -26,6 +26,9 @@ public class AuthServiceImpl implements AuthService {
 
     @Inject
     private UserService userService;
+
+    @Inject
+    private EmailUtilInterface emailUtil;
 
     @Inject
     private EmailVerificationCodeRepository emailCodeRepository;
@@ -52,7 +55,7 @@ public class AuthServiceImpl implements AuthService {
         log.debug("Verification code stored in database, email: {}, purpose: {}", request.getEmail(), purpose);
 
         // Send email (fake for local testing)
-        EmailUtil.sendVerificationCodeEmail(request.getEmail(), code, purpose);
+        emailUtil.sendVerificationCodeEmail(request.getEmail(), code, purpose);
         log.info("Verification code sent to email: {}, purpose: {}", request.getEmail(), purpose);
     }
 
@@ -294,7 +297,7 @@ public class AuthServiceImpl implements AuthService {
         emailCodeRepository.save(resetCode);
         log.debug("Password reset code saved in database for email: {}", request.getEmail());
 
-        EmailUtil.sendVerificationCodeEmail(request.getEmail(), code, "reset_password");
+        emailUtil.sendVerificationCodeEmail(request.getEmail(), code, "reset_password");
         log.info("Password reset code sent to email: {}", request.getEmail());
 
         return user;

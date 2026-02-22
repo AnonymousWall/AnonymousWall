@@ -1,19 +1,23 @@
 package com.anonymous.wall.util;
 
+import io.micronaut.context.annotation.Requires;
+import jakarta.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Email utility - for local testing, prints to console instead of sending real emails
  */
-public class EmailUtil {
+@Singleton
+@Requires(notEnv = "prod")
+public class EmailUtil implements EmailUtilInterface {
     private static final Logger log = LoggerFactory.getLogger(EmailUtil.class);
 
     /**
      * Send verification code email (fake - logs to console)
      * In production, replace with actual email service (SendGrid, AWS SES, etc.)
      */
-    public static void sendVerificationCodeEmail(String email, String code, String purpose) {
+    public void sendVerificationCodeEmail(String email, String code, String purpose) {
         String subject = switch (purpose) {
             case "register" -> "Campus Wall - Verify Your Email";
             case "login" -> "Campus Wall - Login Code";

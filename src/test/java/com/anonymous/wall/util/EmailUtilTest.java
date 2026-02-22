@@ -1,5 +1,6 @@
 package com.anonymous.wall.util;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -11,6 +12,13 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @DisplayName("EmailUtil Tests")
 class EmailUtilTest {
+
+    private EmailUtilInterface emailUtil;
+
+    @BeforeEach
+    void setUp() {
+        emailUtil = new EmailUtil();
+    }
 
     @Nested
     @DisplayName("Positive Cases - Valid Email Sending")
@@ -24,7 +32,7 @@ class EmailUtilTest {
             System.setOut(new PrintStream(outContent));
 
             try {
-                EmailUtil.sendVerificationCodeEmail("test@harvard.edu", "123456", "register");
+                emailUtil.sendVerificationCodeEmail("test@harvard.edu", "123456", "register");
                 
                 String output = outContent.toString();
                 assertTrue(output.contains("test@harvard.edu"), "Should contain recipient email");
@@ -43,7 +51,7 @@ class EmailUtilTest {
             System.setOut(new PrintStream(outContent));
 
             try {
-                EmailUtil.sendVerificationCodeEmail("user@mit.edu", "654321", "login");
+                emailUtil.sendVerificationCodeEmail("user@mit.edu", "654321", "login");
                 
                 String output = outContent.toString();
                 assertTrue(output.contains("user@mit.edu"), "Should contain recipient email");
@@ -61,7 +69,7 @@ class EmailUtilTest {
             System.setOut(new PrintStream(outContent));
 
             try {
-                EmailUtil.sendVerificationCodeEmail("student@stanford.edu", "789012", "reset_password");
+                emailUtil.sendVerificationCodeEmail("student@stanford.edu", "789012", "reset_password");
                 
                 String output = outContent.toString();
                 assertTrue(output.contains("student@stanford.edu"), "Should contain recipient email");
@@ -79,7 +87,7 @@ class EmailUtilTest {
             System.setOut(new PrintStream(outContent));
 
             try {
-                EmailUtil.sendVerificationCodeEmail("test@yale.edu", "111111", "unknown_purpose");
+                emailUtil.sendVerificationCodeEmail("test@yale.edu", "111111", "unknown_purpose");
                 
                 String output = outContent.toString();
                 assertTrue(output.contains("test@yale.edu"), "Should contain recipient email");
@@ -98,7 +106,7 @@ class EmailUtilTest {
         @DisplayName("Should handle null email gracefully")
         void shouldHandleNullEmail() {
             assertDoesNotThrow(() -> {
-                EmailUtil.sendVerificationCodeEmail(null, "123456", "register");
+                emailUtil.sendVerificationCodeEmail(null, "123456", "register");
             }, "Should not throw exception for null email");
         }
 
@@ -110,7 +118,7 @@ class EmailUtilTest {
             System.setOut(new PrintStream(outContent));
 
             try {
-                EmailUtil.sendVerificationCodeEmail("test@test.edu", null, "register");
+                emailUtil.sendVerificationCodeEmail("test@test.edu", null, "register");
                 
                 String output = outContent.toString();
                 assertTrue(output.contains("test@test.edu"), "Should still contain email");
@@ -124,7 +132,7 @@ class EmailUtilTest {
         @DisplayName("Should handle null purpose gracefully")
         void shouldHandleNullPurpose() {
             assertDoesNotThrow(() -> {
-                EmailUtil.sendVerificationCodeEmail("test@test.edu", "123456", null);
+                emailUtil.sendVerificationCodeEmail("test@test.edu", "123456", null);
             }, "Should handle null purpose with default case");
         }
 
@@ -136,7 +144,7 @@ class EmailUtilTest {
             System.setOut(new PrintStream(outContent));
 
             try {
-                EmailUtil.sendVerificationCodeEmail("", "123456", "register");
+                emailUtil.sendVerificationCodeEmail("", "123456", "register");
                 
                 String output = outContent.toString();
                 assertTrue(output.contains("FAKE EMAIL SENT"), "Should still attempt to send");
@@ -153,7 +161,7 @@ class EmailUtilTest {
             System.setOut(new PrintStream(outContent));
 
             try {
-                EmailUtil.sendVerificationCodeEmail("test@test.edu", "", "register");
+                emailUtil.sendVerificationCodeEmail("test@test.edu", "", "register");
                 
                 String output = outContent.toString();
                 assertTrue(output.contains("test@test.edu"), "Should contain email");
@@ -173,7 +181,7 @@ class EmailUtilTest {
             String longEmail = "a".repeat(200) + "@university.edu";
             
             assertDoesNotThrow(() -> {
-                EmailUtil.sendVerificationCodeEmail(longEmail, "123456", "register");
+                emailUtil.sendVerificationCodeEmail(longEmail, "123456", "register");
             }, "Should handle very long email");
         }
 
@@ -187,7 +195,7 @@ class EmailUtilTest {
             System.setOut(new PrintStream(outContent));
 
             try {
-                EmailUtil.sendVerificationCodeEmail("test@test.edu", longCode, "register");
+                emailUtil.sendVerificationCodeEmail("test@test.edu", longCode, "register");
                 
                 String output = outContent.toString();
                 assertTrue(output.contains(longCode), "Should contain the long code");
@@ -206,7 +214,7 @@ class EmailUtilTest {
             System.setOut(new PrintStream(outContent));
 
             try {
-                EmailUtil.sendVerificationCodeEmail(emailWithSpecialChars, "123456", "register");
+                emailUtil.sendVerificationCodeEmail(emailWithSpecialChars, "123456", "register");
                 
                 String output = outContent.toString();
                 assertTrue(output.contains(emailWithSpecialChars), "Should handle special characters");
@@ -225,7 +233,7 @@ class EmailUtilTest {
             System.setOut(new PrintStream(outContent));
 
             try {
-                EmailUtil.sendVerificationCodeEmail("test@test.edu", codeWithSpecialChars, "register");
+                emailUtil.sendVerificationCodeEmail("test@test.edu", codeWithSpecialChars, "register");
                 
                 String output = outContent.toString();
                 assertTrue(output.contains(codeWithSpecialChars), "Should handle special characters in code");
@@ -241,7 +249,7 @@ class EmailUtilTest {
             String unicodeCode = "验证码123";
             
             assertDoesNotThrow(() -> {
-                EmailUtil.sendVerificationCodeEmail(unicodeEmail, unicodeCode, "register");
+                emailUtil.sendVerificationCodeEmail(unicodeEmail, unicodeCode, "register");
             }, "Should handle Unicode characters");
         }
 
@@ -256,7 +264,7 @@ class EmailUtilTest {
                 System.setOut(new PrintStream(outContent));
 
                 try {
-                    EmailUtil.sendVerificationCodeEmail("test@test.edu", "123456", purpose);
+                    emailUtil.sendVerificationCodeEmail("test@test.edu", "123456", purpose);
                     
                     String output = outContent.toString();
                     assertTrue(output.contains("test@test.edu"), 
@@ -277,7 +285,7 @@ class EmailUtilTest {
             System.setOut(new PrintStream(outContent));
 
             try {
-                EmailUtil.sendVerificationCodeEmail("test@test.edu", "123456", "");
+                emailUtil.sendVerificationCodeEmail("test@test.edu", "123456", "");
                 
                 String output = outContent.toString();
                 assertTrue(output.contains("test@test.edu"), "Should handle empty purpose");
@@ -299,7 +307,7 @@ class EmailUtilTest {
             System.setOut(new PrintStream(outContent));
 
             try {
-                EmailUtil.sendVerificationCodeEmail("test@test.edu", "123456", "register");
+                emailUtil.sendVerificationCodeEmail("test@test.edu", "123456", "register");
                 
                 String output = outContent.toString();
                 assertTrue(output.contains("╔"), "Should contain box drawing characters");
@@ -317,10 +325,10 @@ class EmailUtilTest {
         @DisplayName("Should not throw exceptions during email sending")
         void shouldNotThrowExceptions() {
             assertDoesNotThrow(() -> {
-                EmailUtil.sendVerificationCodeEmail("test@test.edu", "123456", "register");
-                EmailUtil.sendVerificationCodeEmail("test@test.edu", "123456", "login");
-                EmailUtil.sendVerificationCodeEmail("test@test.edu", "123456", "reset_password");
-                EmailUtil.sendVerificationCodeEmail("test@test.edu", "123456", "other");
+                emailUtil.sendVerificationCodeEmail("test@test.edu", "123456", "register");
+                emailUtil.sendVerificationCodeEmail("test@test.edu", "123456", "login");
+                emailUtil.sendVerificationCodeEmail("test@test.edu", "123456", "reset_password");
+                emailUtil.sendVerificationCodeEmail("test@test.edu", "123456", "other");
             }, "Should never throw exceptions");
         }
     }

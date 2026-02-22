@@ -52,6 +52,7 @@ class BlockedUserFilterTest {
         @DisplayName("Should allow unauthenticated requests to pass through")
         void shouldAllowUnauthenticatedRequests() {
             // Arrange
+            when(request.getPath()).thenReturn("/api/v1/posts");
             when(request.getUserPrincipal()).thenReturn(Optional.empty());
             when(chain.proceed(request)).thenReturn(Mono.empty());
 
@@ -73,7 +74,7 @@ class BlockedUserFilterTest {
         void shouldAllowNonBlockedUser() {
             // Arrange
             UUID userId = UUID.randomUUID();
-
+            when(request.getPath()).thenReturn("/api/v1/posts");
             when(request.getUserPrincipal()).thenReturn(Optional.of(principal));
             when(principal.getName()).thenReturn(userId.toString());
             when(userService.isUserBlocked(userId)).thenReturn(false);
@@ -127,6 +128,7 @@ class BlockedUserFilterTest {
         @DisplayName("Should handle invalid UUID format gracefully")
         void shouldHandleInvalidUuidFormat() {
             // Arrange
+            when(request.getPath()).thenReturn("/api/v1/posts");
             when(request.getUserPrincipal()).thenReturn(Optional.of(principal));
             when(principal.getName()).thenReturn("invalid-uuid");
             when(chain.proceed(request)).thenReturn(Mono.empty());
@@ -144,6 +146,7 @@ class BlockedUserFilterTest {
         void shouldHandleUserNotFound() {
             // Arrange
             UUID userId = UUID.randomUUID();
+            when(request.getPath()).thenReturn("/api/v1/posts");
             when(request.getUserPrincipal()).thenReturn(Optional.of(principal));
             when(principal.getName()).thenReturn(userId.toString());
             // Service returns false when user not found (handled in UserServiceImpl.isUserBlocked)
@@ -156,6 +159,19 @@ class BlockedUserFilterTest {
             // Assert
             verify(userService).isUserBlocked(userId);
             verify(chain).proceed(request);
+        }
+
+        @Test
+        @DisplayName("Should allow health check without any auth check")
+        void shouldAllowHealthCheck() {
+            when(request.getPath()).thenReturn("/health");
+            when(chain.proceed(request)).thenReturn(Mono.empty());
+
+            filter.doFilter(request, chain);
+
+            verify(chain).proceed(request);
+            verifyNoInteractions(userService);
+            verifyNoInteractions(principal);
         }
     }
 }

@@ -4,6 +4,8 @@ import com.anonymous.wall.entity.EmailVerificationCode;
 import com.anonymous.wall.entity.UserEntity;
 import com.anonymous.wall.model.*;
 import com.anonymous.wall.repository.EmailVerificationCodeRepository;
+import com.anonymous.wall.util.EmailUtil;
+import com.anonymous.wall.util.EmailUtilInterface;
 import com.anonymous.wall.util.PasswordUtil;
 import com.anonymous.wall.util.SchoolDomainWhitelist;
 import org.junit.jupiter.api.BeforeEach;
@@ -27,12 +29,14 @@ class AuthServiceImplTest {
     private UserService userService;
     private EmailVerificationCodeRepository emailCodeRepository;
     private SchoolDomainService schoolDomainService;
+    private EmailUtilInterface emailUtil;
 
     @BeforeEach
     void setUp() {
         userService = mock(UserService.class);
         emailCodeRepository = mock(EmailVerificationCodeRepository.class);
         schoolDomainService = mock(SchoolDomainService.class);
+        emailUtil = mock(EmailUtilInterface.class); // mock it, don't instantiate EmailUtil directly
         
         // Setup school domain service mock to accept harvard.edu emails
         when(schoolDomainService.isDomainApproved(anyString())).thenReturn(false);
@@ -51,6 +55,10 @@ class AuthServiceImplTest {
             var emailRepoField = AuthServiceImpl.class.getDeclaredField("emailCodeRepository");
             emailRepoField.setAccessible(true);
             emailRepoField.set(authService, emailCodeRepository);
+
+            var emailUtilField = AuthServiceImpl.class.getDeclaredField("emailUtil"); // add this
+            emailUtilField.setAccessible(true);
+            emailUtilField.set(authService, emailUtil);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
