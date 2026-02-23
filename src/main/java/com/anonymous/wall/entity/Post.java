@@ -75,6 +75,7 @@ public class Post implements Commentable {
         this.profileName = "Anonymous";
         this.likeCount = 0;
         this.commentCount = 0;
+        this.imageUrls = new ArrayList<>();
         this.hidden = false;
         this.createdAt = OffsetDateTime.now();
         this.updatedAt = OffsetDateTime.now();

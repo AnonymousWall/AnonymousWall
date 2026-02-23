@@ -12,19 +12,24 @@ import io.micronaut.http.HttpRequest;
 import io.micronaut.http.MediaType;
 import io.micronaut.http.annotation.*;
 import io.micronaut.http.multipart.CompletedFileUpload;
+import io.micronaut.http.multipart.CompletedPart;
+import io.micronaut.http.server.multipart.MultipartBody;
+import io.micronaut.scheduling.TaskExecutors;
+import io.micronaut.scheduling.annotation.ExecuteOn;
 import io.micronaut.security.annotation.Secured;
 import io.micronaut.security.rules.SecurityRule;
 import jakarta.annotation.Nullable;
 import jakarta.inject.Inject;
+
+import java.nio.charset.StandardCharsets;
 import java.security.Principal;
+
+import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Controller("/api/v1/posts")
@@ -79,15 +84,45 @@ public class PostsController {
      */
     @io.micronaut.http.annotation.Post(consumes = MediaType.MULTIPART_FORM_DATA)
     @Secured(SecurityRule.IS_AUTHENTICATED)
+    @ExecuteOn(TaskExecutors.BLOCKING)
     public HttpResponse<Object> createPost(
-            @Part String title,
-            @Part String content,
-            @Part @Nullable String wall,
-            @Part @Nullable List<CompletedFileUpload> images,
+            @Body MultipartBody body,
             HttpRequest<?> httpRequest) {
         try {
             UUID userId = getUserIdFromRequest(httpRequest);
-            log.info("POST /posts - Creating new post, user={}, content_length={}", userId, content.length());
+            log.info("POST /posts - Creating new post, user={}", userId);
+            // Safe to block here because @ExecuteOn(BLOCKING) moves us off the event loop
+            List<CompletedPart> parts = Flux.from(body).collectList().block();
+
+            String title = null;
+            String content = null;
+            String wall = null;
+            List<CompletedFileUpload> images = new ArrayList<>();
+
+            for (CompletedPart part : parts) {
+                if (part instanceof CompletedFileUpload file) {
+                    if ("images".equals(file.getName()) && file.getSize() > 0) {
+                        images.add(file);
+                    }
+                } else {
+                    String value = new String(part.getBytes(), StandardCharsets.UTF_8);
+                    switch (part.getName()) {
+                        case "title"   -> title = value;
+                        case "content" -> content = value;
+                        case "wall"    -> wall = value;
+                    }
+                }
+            }
+
+            log.info("POST /posts - user={}, content_length={}, imageCount={}",
+                    userId, content != null ? content.length() : 0, images.size());
+
+            if (title == null || title.isBlank()) {
+                return HttpResponse.badRequest(error("Title is required"));
+            }
+            if (content == null || content.isBlank()) {
+                return HttpResponse.badRequest(error("Content is required"));
+            }
 
             CreatePostRequest request = new CreatePostRequest(title, content);
             if (wall != null && !wall.isEmpty()) {
@@ -97,11 +132,13 @@ public class PostsController {
                     return HttpResponse.badRequest(error("Wall must be 'campus' or 'national'"));
                 }
             }
+
             Post post = postsService.createPost(request, images, userId);
             PostDTO dto = mapPostToDTO(post);
 
             log.info("POST /posts - Post created successfully, postId={}", dto.getId());
             return HttpResponse.created(dto);
+
         } catch (IllegalArgumentException e) {
             log.warn("POST /posts - Bad request: {}", e.getMessage());
             return HttpResponse.badRequest(error(e.getMessage()));
@@ -110,6 +147,7 @@ public class PostsController {
             return HttpResponse.badRequest(error("Failed to create post"));
         }
     }
+
 
     /**
      * GET /posts/{postId}
