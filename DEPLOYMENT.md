@@ -109,7 +109,7 @@ ssh -i $SSH_KEY opc@$BASTION_IP "scp /tmp/anonymouswall-deploy.tar.gz opc@$INSTA
 ```
 
 #### Step 3: Deploy on OCI Instance
-
+Make sure Repositories are setting to Oracle!
 ```bash
 # SSH to the backend instance via bastion
 ssh -i $SSH_KEY -J opc@$BASTION_IP opc@$INSTANCE_IP

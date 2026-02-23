@@ -75,6 +75,7 @@ public class Post implements Commentable {
         this.profileName = "Anonymous";
         this.likeCount = 0;
         this.commentCount = 0;
+        this.imageUrls = new ArrayList<>();
         this.hidden = false;
         this.createdAt = OffsetDateTime.now();
         this.updatedAt = OffsetDateTime.now();
@@ -127,6 +128,11 @@ public class Post implements Commentable {
 
     public Long getVersion() { return version; }
     public void setVersion(Long version) { this.version = version; }
+
+    public void addImageUrl(String url) {
+        if (this.imageUrls == null) this.imageUrls = new ArrayList<>();
+        this.imageUrls.add(url);
+    }
 
     /**
      * Increment like count atomically

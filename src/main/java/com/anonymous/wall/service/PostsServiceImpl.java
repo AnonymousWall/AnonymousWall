@@ -68,32 +68,16 @@ public class PostsServiceImpl implements PostsService {
      */
     @Override
     @Retryable(attempts = "3", delay = "500ms")
-    public Post createPost(CreatePostRequest request, List<CompletedFileUpload> images, UUID userId) {
-        // Validate image count before any DB access
-        if (images != null && images.size() > MAX_IMAGES_PER_POST) {
-            throw new IllegalArgumentException("Maximum " + MAX_IMAGES_PER_POST + " images per post allowed");
-        }
-
+    public Post createPost(CreatePostRequest request, UUID userId) {
         String wall = validateAndResolveWall(request);
         UserEntity user = fetchUser(userId);
         String schoolDomain = resolveSchoolDomain(wall, user);
 
-        // Upload images
-        List<String> imageUrls = new ArrayList<>();
-        if (images != null) {
-            for (CompletedFileUpload image : images) {
-                if (image != null && image.getSize() > 0) {
-                    imageUrls.add(mediaUtil.uploadPostImage(image, userId));
-                }
-            }
-        }
-
         Post post = new Post(userId, request.getTitle(), request.getContent(), wall, schoolDomain);
         post.setProfileName(user.getProfileName());
-        post.setImageUrls(imageUrls);
         Post savedPost = postRepository.save(post);
 
-        log.info("Post created: id={}, wall={}, schoolDomain={}, user={}, imageCount={}", savedPost.getId(), wall, schoolDomain, userId, imageUrls.size());
+        log.info("Post created: id={}, wall={}, schoolDomain={}, user={}", savedPost.getId(), wall, schoolDomain, userId);
         return savedPost;
     }
 

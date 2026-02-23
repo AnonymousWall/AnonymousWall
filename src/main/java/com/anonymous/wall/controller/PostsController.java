@@ -3,8 +3,10 @@ package com.anonymous.wall.controller;
 import com.anonymous.wall.entity.Post;
 import com.anonymous.wall.entity.Comment;
 import com.anonymous.wall.model.*;
+import com.anonymous.wall.repository.PostRepository;
 import com.anonymous.wall.service.PostsService;
 import com.anonymous.wall.service.CommentsService;
+import com.anonymous.wall.util.MediaUtilInterface;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
 import io.micronaut.http.HttpResponse;
@@ -20,6 +22,7 @@ import java.security.Principal;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,7 +41,12 @@ public class PostsController {
     @Inject
     private CommentsService commentsService;
 
-    // Helper to extract user ID from Principal
+    @Inject
+    private MediaUtilInterface mediaUtil;
+
+    @Inject
+    private PostRepository postRepository;
+
     private UUID getUserIdFromRequest(HttpRequest<?> request) {
         Optional<Principal> principalOpt = request.getUserPrincipal();
 
@@ -75,29 +83,18 @@ public class PostsController {
 
     /**
      * POST /posts
-     * Create a new post (multipart/form-data with optional images)
+     * Create a new post (JSON body)
      */
-    @io.micronaut.http.annotation.Post(consumes = MediaType.MULTIPART_FORM_DATA)
+    @io.micronaut.http.annotation.Post
     @Secured(SecurityRule.IS_AUTHENTICATED)
     public HttpResponse<Object> createPost(
-            @Part String title,
-            @Part String content,
-            @Part @Nullable String wall,
-            @Part @Nullable List<CompletedFileUpload> images,
+            @Body CreatePostRequest request,
             HttpRequest<?> httpRequest) {
         try {
             UUID userId = getUserIdFromRequest(httpRequest);
-            log.info("POST /posts - Creating new post, user={}, content_length={}", userId, content.length());
+            log.info("POST /posts - Creating new post, user={}", userId);
 
-            CreatePostRequest request = new CreatePostRequest(title, content);
-            if (wall != null && !wall.isEmpty()) {
-                try {
-                    request.setWall(CreatePostRequestWall.fromValue(wall.toLowerCase()));
-                } catch (IllegalArgumentException e) {
-                    return HttpResponse.badRequest(error("Wall must be 'campus' or 'national'"));
-                }
-            }
-            Post post = postsService.createPost(request, images, userId);
+            Post post = postsService.createPost(request, userId);
             PostDTO dto = mapPostToDTO(post);
 
             log.info("POST /posts - Post created successfully, postId={}", dto.getId());
@@ -108,6 +105,49 @@ public class PostsController {
         } catch (Exception e) {
             log.error("POST /posts - Error creating post", e);
             return HttpResponse.badRequest(error("Failed to create post"));
+        }
+    }
+
+    /**
+     * POST /posts/{postId}/images
+     * Upload an image for a post
+     */
+    @io.micronaut.http.annotation.Post("/{postId}/images")
+    @Secured(SecurityRule.IS_AUTHENTICATED)
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    public HttpResponse<Object> uploadPostImage(
+            @PathVariable UUID postId,
+            @Part("image") CompletedFileUpload image,
+            HttpRequest<?> httpRequest) {
+        try {
+            UUID userId = getUserIdFromRequest(httpRequest);
+            log.info("POST /posts/{}/images - user={}, filename={}, size={}", postId, userId, image.getFilename(), image.getSize());
+
+            // Verify post exists and belongs to user
+            Optional<Post> postOpt = postRepository.findById(postId);
+            if (postOpt.isEmpty()) {
+                return HttpResponse.notFound();
+            }
+            Post post = postOpt.get();
+            if (!post.getUserId().equals(userId)) {
+                return HttpResponse.status(io.micronaut.http.HttpStatus.FORBIDDEN).body(error("Not your post"));
+            }
+
+            String url = mediaUtil.uploadPostImage(image, userId);
+            log.info("Uploaded image for post {}: {}", postId, url);
+
+            post.addImageUrl(url);
+            postRepository.update(post);
+
+            Map<String, String> response = new HashMap<>();
+            response.put("url", url);
+            return HttpResponse.created(response);
+        } catch (IllegalArgumentException e) {
+            log.warn("POST /posts/{}/images - Bad request: {}", postId, e.getMessage());
+            return HttpResponse.badRequest(error(e.getMessage()));
+        } catch (Exception e) {
+            log.error("POST /posts/{}/images - Error uploading image", postId, e);
+            return HttpResponse.badRequest(error("Failed to upload image"));
         }
     }
 

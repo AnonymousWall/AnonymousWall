@@ -40,6 +40,11 @@ services:
       - SMTP_PORT=${SMTP_PORT:-587}
       - SMTP_USERNAME=${SMTP_USERNAME:-}
       - SMTP_PASSWORD=${SMTP_PASSWORD:-}
+
+      # OCI bucket configuration for file storage (optional)
+      - OCI_NAMESPACE=${OCI_NAMESPACE}
+      - MEDIA_BUCKET_NAME=${MEDIA_BUCKET_NAME}
+      - MEDIA_BUCKET_URL=${MEDIA_BUCKET_URL}
       
     volumes:
       # Persist logs

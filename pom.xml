@@ -21,7 +21,7 @@
         <micronaut.runtime>netty</micronaut.runtime>
         <micronaut.aot.enabled>false</micronaut.aot.enabled>
         <micronaut.aot.packageName>com.anonymous.wall.aot.generated</micronaut.aot.packageName>
-<!--    https://guides.micronaut.io/latest/micronaut-openapi-generator-server-maven-java.html-->
+        <!--    https://guides.micronaut.io/latest/micronaut-openapi-generator-server-maven-java.html-->
         <micronaut.openapi.generate.server>true</micronaut.openapi.generate.server>
         <micronaut.openapi.date.time.format>OFFSET_DATETIME</micronaut.openapi.date.time.format>
         <micronaut.openapi.definition>src/main/resources/api.yml</micronaut.openapi.definition>
@@ -50,8 +50,30 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
+            <!-- Force all OCI SDK transitive deps to same version -->
+            <dependency>
+                <groupId>com.oracle.oci.sdk</groupId>
+                <artifactId>oci-java-sdk-common-httpclient</artifactId>
+                <version>3.79.0</version>
+            </dependency>
+            <dependency>
+                <groupId>com.oracle.oci.sdk</groupId>
+                <artifactId>oci-java-sdk-objectstorage-generated</artifactId>
+                <version>3.79.0</version>
+            </dependency>
+            <dependency>
+                <groupId>com.oracle.oci.sdk</groupId>
+                <artifactId>oci-java-sdk-objectstorage-extensions</artifactId>
+                <version>3.79.0</version>
+            </dependency>
+            <dependency>
+                <groupId>com.oracle.oci.sdk</groupId>
+                <artifactId>oci-java-sdk-circuitbreaker</artifactId>
+                <version>3.79.0</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
+
     <dependencies>
         <dependency>
             <groupId>at.favre.lib</groupId>
@@ -123,11 +145,11 @@
             <artifactId>micronaut-reactor-http-client</artifactId>
             <scope>compile</scope>
         </dependency>
-<!--        <dependency>-->
-<!--            <groupId>io.micronaut.redis</groupId>-->
-<!--            <artifactId>micronaut-redis-lettuce</artifactId>-->
-<!--            <scope>compile</scope>-->
-<!--        </dependency>-->
+        <!--        <dependency>-->
+        <!--            <groupId>io.micronaut.redis</groupId>-->
+        <!--            <artifactId>micronaut-redis-lettuce</artifactId>-->
+        <!--            <scope>compile</scope>-->
+        <!--        </dependency>-->
         <dependency>
             <groupId>io.micronaut.security</groupId>
             <artifactId>micronaut-security-jwt</artifactId>
@@ -184,13 +206,11 @@
             <artifactId>oraclepki</artifactId>
             <version>21.19.0.0</version>
         </dependency>
-
         <dependency>
             <groupId>com.oracle.database.security</groupId>
             <artifactId>osdt_core</artifactId>
             <version>21.19.0.0</version>
         </dependency>
-
         <dependency>
             <groupId>com.oracle.database.security</groupId>
             <artifactId>osdt_cert</artifactId>
@@ -200,7 +220,16 @@
             <groupId>com.oracle.oci.sdk</groupId>
             <artifactId>oci-java-sdk-objectstorage</artifactId>
             <version>3.79.0</version>
-            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.oracle.oci.sdk</groupId>
+            <artifactId>oci-java-sdk-common</artifactId>
+            <version>3.79.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.oracle.oci.sdk</groupId>
+            <artifactId>oci-java-sdk-common-httpclient-jersey3</artifactId>
+            <version>3.79.0</version>
         </dependency>
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
