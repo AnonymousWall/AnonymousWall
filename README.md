@@ -47,6 +47,7 @@ A Micronaut-based REST API for anonymous campus social networking. Users registe
 ✅ **Internship postings** (campus and national walls, with comments)  
 ✅ **Marketplace listings** (campus and national walls, with comments)  
 ✅ **Polymorphic comment system** (single comment system shared by posts, internships, and marketplace)  
+✅ **Image uploads** (optional multi-image upload, up to 5 images per post or marketplace item)  
 
 ---
 
@@ -314,13 +315,13 @@ CREATE TABLE marketplace_items (
     description TEXT,
     price DECIMAL(10,2) NOT NULL,
     category VARCHAR(100),
-    condition VARCHAR(20),               -- "new", "like_new", "good", "fair", "poor"
+    condition VARCHAR(20),               -- "new", "like-new", "good", "fair"
     sold BOOLEAN DEFAULT false NOT NULL,
-    contact_info VARCHAR(255),
     wall VARCHAR(20) DEFAULT 'campus',   -- "campus" or "national"
     school_domain VARCHAR(255),          -- NULL for national, set for campus
     comment_count INT DEFAULT 0,
     is_hidden BOOLEAN DEFAULT false,
+    image_urls TEXT,                     -- JSON array of image URLs (up to 5)
     version BIGINT DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -1188,17 +1189,16 @@ Response: 200 OK
 ```http
 POST /api/v1/marketplace
 Authorization: Bearer {jwt-token}
-Content-Type: application/json
+Content-Type: multipart/form-data
 
-{
-    "title": "Used Calculus Textbook",
-    "price": 45.99,
-    "description": "Barely used, excellent condition",
-    "category": "books",
-    "condition": "like_new",
-    "contactInfo": "johndoe@harvard.edu",
-    "wall": "campus"
-}
+title=Used Calculus Textbook
+price=45.99
+description=Barely used, excellent condition
+category=books
+condition=like-new
+wall=campus
+images[]=<optional binary file 1>
+images[]=<optional binary file 2>
 
 Response: 201 Created
 {
@@ -1207,11 +1207,11 @@ Response: 201 Created
     "price": 45.99,
     "description": "Barely used, excellent condition",
     "category": "books",
-    "condition": "like_new",
-    "contactInfo": "johndoe@harvard.edu",
+    "condition": "like-new",
     "sold": false,
     "wall": "CAMPUS",
     "comments": 0,
+    "imageUrls": ["http://localhost:8080/media/marketplace/uuid1.jpg"],
     "author": {
         "id": "uuid",
         "profileName": "John Doe",
@@ -1227,11 +1227,11 @@ Response: 201 Created
 - `title` maximum length: **255 characters**
 - `price` is **required** and must be **≥ 0**
 - `price` maximum value: **99,999,999.99** (DECIMAL(10,2))
-- `description` is optional (max length: 5000 characters)
+- `description` is optional
 - `category` is optional
-- `condition` is optional, valid values: "new", "like_new", "good", "fair", "poor"
-- `contactInfo` is optional
+- `condition` is optional, valid values: "new", "like-new", "good", "fair"
 - `wall` is optional (defaults to "campus"), must be "campus" or "national"
+- `images` is optional; up to **5 images** per item; each must be JPEG, PNG, or WEBP and max **5MB**
 
 **Wall Rules:**
 - **Campus wall**: Only users from the same school can see the item

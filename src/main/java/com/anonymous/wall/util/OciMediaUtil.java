@@ -49,6 +49,11 @@ public class OciMediaUtil implements MediaUtilInterface {
         return upload(file, "chat");
     }
 
+    @Override
+    public String uploadMarketplaceImage(CompletedFileUpload file, UUID userId) {
+        return upload(file, "marketplace");
+    }
+
     private String upload(CompletedFileUpload file, String prefix) {
         validateFile(file);
         try {

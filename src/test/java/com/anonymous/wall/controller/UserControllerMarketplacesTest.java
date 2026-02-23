@@ -96,9 +96,9 @@ class UserControllerMarketplacesTest {
         @Test
         @DisplayName("Should return user's own marketplace items")
         void shouldReturnUserOwnMarketplaceItems() {
-            marketplaceService.createItem(new CreateItemRequest("Laptop", 500.0f), testUser1.getId());
-            marketplaceService.createItem(new CreateItemRequest("Textbook", 30.0f), testUser1.getId());
-            marketplaceService.createItem(new CreateItemRequest("Bike", 200.0f), testUser2.getId());
+            marketplaceService.createItem(new CreateItemRequest("Laptop", 500.0f), null, testUser1.getId());
+            marketplaceService.createItem(new CreateItemRequest("Textbook", 30.0f), null, testUser1.getId());
+            marketplaceService.createItem(new CreateItemRequest("Bike", 200.0f), null, testUser2.getId());
 
             HttpRequest<?> request = HttpRequest.GET(BASE_PATH).bearerAuth(jwtToken1);
             HttpResponse<Map> response = client.toBlocking().exchange(request, Map.class);
@@ -139,10 +139,10 @@ class UserControllerMarketplacesTest {
         @DisplayName("Should only return user's own marketplace items, not others")
         void shouldOnlyReturnOwnItems() {
             for (int i = 0; i < 3; i++) {
-                marketplaceService.createItem(new CreateItemRequest("Item1-" + i, (float) (i + 10)), testUser1.getId());
+                marketplaceService.createItem(new CreateItemRequest("Item1-" + i, (float) (i + 10)), null, testUser1.getId());
             }
             for (int i = 0; i < 5; i++) {
-                marketplaceService.createItem(new CreateItemRequest("Item2-" + i, (float) (i + 20)), testUser2.getId());
+                marketplaceService.createItem(new CreateItemRequest("Item2-" + i, (float) (i + 20)), null, testUser2.getId());
             }
 
             HttpRequest<?> request = HttpRequest.GET(BASE_PATH).bearerAuth(jwtToken1);
@@ -165,7 +165,7 @@ class UserControllerMarketplacesTest {
         @DisplayName("Should paginate marketplace items correctly")
         void shouldPaginateItemsCorrectly() {
             for (int i = 0; i < 25; i++) {
-                marketplaceService.createItem(new CreateItemRequest("Item " + i, (float) (i + 1)), testUser1.getId());
+                marketplaceService.createItem(new CreateItemRequest("Item " + i, (float) (i + 1)), null, testUser1.getId());
             }
 
             String endpoint = BASE_PATH + "?page=1&limit=20";
@@ -203,7 +203,7 @@ class UserControllerMarketplacesTest {
         @DisplayName("Should sort marketplace items by newest first (default)")
         void shouldSortByNewestFirst() throws InterruptedException {
             for (int i = 1; i <= 3; i++) {
-                marketplaceService.createItem(new CreateItemRequest("Item " + i, (float) i), testUser1.getId());
+                marketplaceService.createItem(new CreateItemRequest("Item " + i, (float) i), null, testUser1.getId());
                 Thread.sleep(1000);
             }
 
@@ -224,7 +224,7 @@ class UserControllerMarketplacesTest {
         @DisplayName("Should sort marketplace items by oldest first")
         void shouldSortByOldestFirst() throws InterruptedException {
             for (int i = 1; i <= 3; i++) {
-                marketplaceService.createItem(new CreateItemRequest("Item " + i, (float) i), testUser1.getId());
+                marketplaceService.createItem(new CreateItemRequest("Item " + i, (float) i), null, testUser1.getId());
                 Thread.sleep(1000);
             }
 
@@ -249,10 +249,10 @@ class UserControllerMarketplacesTest {
         @Test
         @DisplayName("Should exclude hidden marketplace items")
         void shouldExcludeHiddenItems() {
-            marketplaceService.createItem(new CreateItemRequest("Laptop", 500.0f), testUser1.getId());
+            marketplaceService.createItem(new CreateItemRequest("Laptop", 500.0f), null, testUser1.getId());
             MarketplaceItem item2 = marketplaceService.createItem(
-                new CreateItemRequest("Textbook", 30.0f), testUser1.getId());
-            marketplaceService.createItem(new CreateItemRequest("Bike", 200.0f), testUser1.getId());
+                new CreateItemRequest("Textbook", 30.0f), null, testUser1.getId());
+            marketplaceService.createItem(new CreateItemRequest("Bike", 200.0f), null, testUser1.getId());
 
             item2.setHidden(true);
             marketplaceItemRepository.update(item2);
@@ -276,7 +276,7 @@ class UserControllerMarketplacesTest {
         @Test
         @DisplayName("Should handle invalid page parameter")
         void shouldHandleInvalidPageParameter() {
-            marketplaceService.createItem(new CreateItemRequest("Laptop", 500.0f), testUser1.getId());
+            marketplaceService.createItem(new CreateItemRequest("Laptop", 500.0f), null, testUser1.getId());
 
             String endpoint = BASE_PATH + "?page=0";
             HttpRequest<?> request = HttpRequest.GET(endpoint).bearerAuth(jwtToken1);
@@ -292,7 +292,7 @@ class UserControllerMarketplacesTest {
         @Test
         @DisplayName("Should handle limit out of bounds")
         void shouldHandleLimitOutOfBounds() {
-            marketplaceService.createItem(new CreateItemRequest("Laptop", 500.0f), testUser1.getId());
+            marketplaceService.createItem(new CreateItemRequest("Laptop", 500.0f), null, testUser1.getId());
 
             String endpoint = BASE_PATH + "?limit=200";
             HttpRequest<?> request = HttpRequest.GET(endpoint).bearerAuth(jwtToken1);

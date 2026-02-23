@@ -1,10 +1,13 @@
 package com.anonymous.wall.entity;
 
 import io.micronaut.data.annotation.*;
+import io.micronaut.data.model.DataType;
 import io.micronaut.data.model.naming.NamingStrategies;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @MappedEntity(value = "marketplace_items", namingStrategy = NamingStrategies.Raw.class)
@@ -50,6 +53,10 @@ public class MarketplaceItem implements Commentable {
     @MappedProperty("is_hidden")
     private boolean hidden = false;
 
+    @MappedProperty("image_urls")
+    @TypeDef(type = DataType.JSON)
+    private List<String> imageUrls = new ArrayList<>(); // Optional image URLs (up to 5)
+
     @Version
     @MappedProperty("version")
     private Long version = 0L;
@@ -75,6 +82,7 @@ public class MarketplaceItem implements Commentable {
         this.profileName = "Anonymous";
         this.sold = false;
         this.wall = "campus";
+        this.imageUrls = new ArrayList<>();
         this.commentCount = 0;
         this.hidden = false;
         this.createdAt = OffsetDateTime.now();
@@ -122,6 +130,9 @@ public class MarketplaceItem implements Commentable {
 
     public boolean isHidden() { return hidden; }
     public void setHidden(boolean hidden) { this.hidden = hidden; }
+
+    public List<String> getImageUrls() { return imageUrls; }
+    public void setImageUrls(List<String> imageUrls) { this.imageUrls = imageUrls != null ? imageUrls : new ArrayList<>(); }
 
     public Long getVersion() { return version; }
     public void setVersion(Long version) { this.version = version; }

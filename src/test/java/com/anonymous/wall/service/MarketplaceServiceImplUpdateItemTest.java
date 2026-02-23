@@ -58,7 +58,7 @@ class MarketplaceServiceImplUpdateItemTest {
         request.setDescription("Original Description");
         request.setCategory("Books");
         request.setCondition(CreateItemRequestCondition.GOOD);
-        testItem = marketplaceService.createItem(request, testUser.getId());
+        testItem = marketplaceService.createItem(request, null, testUser.getId());
     }
 
     @AfterEach

@@ -142,4 +142,23 @@ class LocalMediaUtilTest {
             assertTrue(url.endsWith(".jpg"));
         }
     }
+
+    @Nested
+    @DisplayName("uploadMarketplaceImage")
+    class UploadMarketplaceImageTests {
+
+        @Test
+        @DisplayName("Should upload marketplace image and return URL with marketplace prefix")
+        void shouldUploadMarketplaceImage() throws IOException {
+            byte[] bytes = new byte[]{(byte) 0xFF, (byte) 0xD8};
+            CompletedFileUpload file = mockFile("image/jpeg", 2L, bytes);
+            UUID userId = UUID.randomUUID();
+
+            String url = localMediaUtil.uploadMarketplaceImage(file, userId);
+
+            assertNotNull(url);
+            assertTrue(url.startsWith("http://localhost:8080/media/marketplace/"));
+            assertTrue(url.endsWith(".jpg"));
+        }
+    }
 }
