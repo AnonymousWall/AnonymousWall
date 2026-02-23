@@ -352,7 +352,7 @@ public class UserController {
             dto.setWall(ItemDTOWall.valueOf(item.getWall().toUpperCase()));
         }
         dto.setComments(item.getCommentCount());
-        dto.setImageUrls(item.getImageUrls());
+        dto.setImageUrls(item.getImageUrls() != null ? item.getImageUrls() : new ArrayList<>());
         dto.setCreatedAt(item.getCreatedAt());
         dto.setUpdatedAt(item.getUpdatedAt());
 
