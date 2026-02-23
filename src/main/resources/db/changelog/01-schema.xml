@@ -73,6 +73,7 @@
             <column name="comment_count" type="INT" defaultValueNumeric="0"/>
             <column name="is_hidden" type="BOOLEAN" defaultValueBoolean="false"/>
             <column name="version" type="BIGINT" defaultValueNumeric="0"/>
+            <column name="image_urls" type="TEXT"/>
             <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP"/>
             <column name="updated_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP"/>
         </createTable>

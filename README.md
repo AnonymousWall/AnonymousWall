@@ -530,23 +530,24 @@ Response: 200 OK
 ```http
 POST /api/v1/posts
 Authorization: Bearer {jwt-token}
-Content-Type: application/json
+Content-Type: multipart/form-data
 
-{
-    "title": "My First Post Title",    // NEW - REQUIRED (1-255 chars)
-    "content": "This is my first post!",
-    "wall": "campus"  // or "national", optional, defaults to "campus"
-}
+title=My First Post Title
+content=This is my first post!
+wall=campus
+images[]=<optional binary file 1>
+images[]=<optional binary file 2>
 
 Response: 201 Created
 {
     "id": "uuid",
-    "title": "My First Post Title",     // NEW
+    "title": "My First Post Title",
     "content": "This is my first post!",
     "wall": "CAMPUS",
     "likes": 0,
     "comments": 0,
     "liked": false,
+    "imageUrls": ["http://localhost:8080/media/posts/uuid1.jpg", "http://localhost:8080/media/posts/uuid2.jpg"],
     "author": {
         "id": "uuid",
         "profileName": "Anonymous",
@@ -563,6 +564,7 @@ Response: 201 Created
 - `content` is **required** (cannot be null, empty, or whitespace-only)
 - `content` maximum length: **5000 characters**
 - `wall` is optional (defaults to "campus"), must be "campus" or "national"
+- `images` is optional; up to **5 images** per post; each must be JPEG, PNG, or WEBP and max **5MB**
 
 **Error Responses:**
 ```json

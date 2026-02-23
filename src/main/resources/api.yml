@@ -261,16 +261,40 @@ paths:
     post:
       tags: [posts]
       summary: Create a new post
-      description: Create a new anonymous post on the wall
+      description: Create a new anonymous post on the wall. Image upload is optional.
       operationId: createPost
       security:
         - bearerAuth: []
       requestBody:
         required: true
         content:
-          application/json:
+          multipart/form-data:
             schema:
-              $ref: "#/components/schemas/CreatePostRequest"
+              type: object
+              required: [title, content]
+              properties:
+                title:
+                  type: string
+                  minLength: 1
+                  maxLength: 255
+                  description: Post title
+                content:
+                  type: string
+                  minLength: 1
+                  maxLength: 5000
+                  description: Post content text
+                wall:
+                  type: string
+                  enum: [campus, national]
+                  default: campus
+                  description: Which wall to post to
+                images:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                  maxItems: 5
+                  description: Optional image files (JPEG, PNG, or WEBP, max 5MB each, up to 5 images)
       responses:
         "201":
           description: Post created successfully
@@ -3560,6 +3584,11 @@ components:
         liked:
           type: boolean
           description: Whether current user has liked this post
+        imageUrls:
+          type: array
+          items:
+            type: string
+          description: URLs of images attached to the post (up to 5)
         createdAt:
           type: string
           format: date-time

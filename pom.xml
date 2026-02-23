@@ -50,6 +50,27 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
+            <!-- Force all OCI SDK transitive deps to same version -->
+            <dependency>
+                <groupId>com.oracle.oci.sdk</groupId>
+                <artifactId>oci-java-sdk-common-httpclient</artifactId>
+                <version>3.79.0</version>
+            </dependency>
+            <dependency>
+                <groupId>com.oracle.oci.sdk</groupId>
+                <artifactId>oci-java-sdk-objectstorage-generated</artifactId>
+                <version>3.79.0</version>
+            </dependency>
+            <dependency>
+                <groupId>com.oracle.oci.sdk</groupId>
+                <artifactId>oci-java-sdk-objectstorage-extensions</artifactId>
+                <version>3.79.0</version>
+            </dependency>
+            <dependency>
+                <groupId>com.oracle.oci.sdk</groupId>
+                <artifactId>oci-java-sdk-circuitbreaker</artifactId>
+                <version>3.79.0</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
     <dependencies>
@@ -195,6 +216,21 @@
             <groupId>com.oracle.database.security</groupId>
             <artifactId>osdt_cert</artifactId>
             <version>21.19.0.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.oracle.oci.sdk</groupId>
+            <artifactId>oci-java-sdk-objectstorage</artifactId>
+            <version>3.79.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.oracle.oci.sdk</groupId>
+            <artifactId>oci-java-sdk-common</artifactId>
+            <version>3.79.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.oracle.oci.sdk</groupId>
+            <artifactId>oci-java-sdk-common-httpclient-jersey3</artifactId>
+            <version>3.79.0</version>
         </dependency>
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>

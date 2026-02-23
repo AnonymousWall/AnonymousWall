@@ -7,6 +7,7 @@ import com.anonymous.wall.model.CreateCommentRequest;
 import com.anonymous.wall.model.SortBy;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
+import io.micronaut.http.multipart.CompletedFileUpload;
 
 import java.util.List;
 import java.util.Map;
@@ -14,9 +15,9 @@ import java.util.UUID;
 
 public interface PostsService {
     /**
-     * Create a new post
+     * Create a new post with optional image uploads (up to 5 images)
      */
-    Post createPost(CreatePostRequest request, UUID userId);
+    Post createPost(CreatePostRequest request, List<CompletedFileUpload> images, UUID userId);
 
     /**
      * Get posts by wall type with pagination and sorting (optimized with schoolDomain from JWT)

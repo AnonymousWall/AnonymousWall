@@ -12,9 +12,11 @@ import com.anonymous.wall.repository.PostRepository;
 import com.anonymous.wall.repository.CommentRepository;
 import com.anonymous.wall.repository.PostLikeRepository;
 import com.anonymous.wall.repository.UserRepository;
+import com.anonymous.wall.util.MediaUtilInterface;
 import io.micronaut.context.event.ApplicationEventPublisher;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
+import io.micronaut.http.multipart.CompletedFileUpload;
 import io.micronaut.transaction.annotation.Transactional;
 import io.micronaut.retry.annotation.Retryable;
 import jakarta.inject.Inject;
@@ -22,6 +24,7 @@ import jakarta.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,6 +37,7 @@ import java.util.stream.Collectors;
 public class PostsServiceImpl implements PostsService {
 
     private static final Logger log = LoggerFactory.getLogger(PostsServiceImpl.class);
+    private static final int MAX_IMAGES_PER_POST = 5;
 
     @Inject
     private PostRepository postRepository;
@@ -56,12 +60,47 @@ public class PostsServiceImpl implements PostsService {
     @Inject
     private ApplicationEventPublisher<PostHiddenEvent> postHiddenEventPublisher;
 
+    @Inject
+    private MediaUtilInterface mediaUtil;
+
     /**
-     * Create a new post
+     * Create a new post with optional image uploads (up to 5 images)
      */
     @Override
     @Retryable(attempts = "3", delay = "500ms")
-    public Post createPost(CreatePostRequest request, UUID userId) {
+    public Post createPost(CreatePostRequest request, List<CompletedFileUpload> images, UUID userId) {
+        // Validate image count before any DB access
+        if (images != null && images.size() > MAX_IMAGES_PER_POST) {
+            throw new IllegalArgumentException("Maximum " + MAX_IMAGES_PER_POST + " images per post allowed");
+        }
+
+        String wall = validateAndResolveWall(request);
+        UserEntity user = fetchUser(userId);
+        String schoolDomain = resolveSchoolDomain(wall, user);
+
+        // Upload images
+        List<String> imageUrls = new ArrayList<>();
+        if (images != null) {
+            for (CompletedFileUpload image : images) {
+                if (image != null && image.getSize() > 0) {
+                    imageUrls.add(mediaUtil.uploadPostImage(image, userId));
+                }
+            }
+        }
+
+        Post post = new Post(userId, request.getTitle(), request.getContent(), wall, schoolDomain);
+        post.setProfileName(user.getProfileName());
+        post.setImageUrls(imageUrls);
+        Post savedPost = postRepository.save(post);
+
+        log.info("Post created: id={}, wall={}, schoolDomain={}, user={}, imageCount={}", savedPost.getId(), wall, schoolDomain, userId, imageUrls.size());
+        return savedPost;
+    }
+
+    /**
+     * Validate request fields and resolve the wall value
+     */
+    private String validateAndResolveWall(CreatePostRequest request) {
         if (request.getTitle() == null || request.getTitle().trim().isEmpty()) {
             throw new IllegalArgumentException("Post title cannot be empty");
         }
@@ -78,7 +117,6 @@ public class PostsServiceImpl implements PostsService {
             throw new IllegalArgumentException("Post content exceeds maximum length of 5000 characters");
         }
 
-        // Handle wall type - could be enum or string
         String wall = "campus";
         if (request.getWall() != null) {
             wall = request.getWall().toString().toLowerCase();
@@ -88,29 +126,32 @@ public class PostsServiceImpl implements PostsService {
             throw new IllegalArgumentException("Wall must be 'campus' or 'national'");
         }
 
-        // Fetch user's school domain
+        return wall;
+    }
+
+    /**
+     * Fetch user by ID, throwing if not found
+     */
+    private UserEntity fetchUser(UUID userId) {
         Optional<UserEntity> userOpt = userRepository.findById(userId);
         if (userOpt.isEmpty()) {
             throw new IllegalArgumentException("User not found");
         }
+        return userOpt.get();
+    }
 
-        UserEntity user = userOpt.get();
-        String schoolDomain = null;
-
-        // For campus posts, school_domain must be set
-        if (wall.equals("campus")) {
-            schoolDomain = user.getSchoolDomain();
-            if (schoolDomain == null || schoolDomain.trim().isEmpty()) {
-                throw new IllegalArgumentException("Cannot post to campus wall without school domain");
-            }
+    /**
+     * Resolve school domain for campus posts
+     */
+    private String resolveSchoolDomain(String wall, UserEntity user) {
+        if (!wall.equals("campus")) {
+            return null;
         }
-
-        Post post = new Post(userId, request.getTitle(), request.getContent(), wall, schoolDomain);
-        post.setProfileName(user.getProfileName());
-        Post savedPost = postRepository.save(post);
-
-        log.info("Post created: id={}, wall={}, schoolDomain={}, user={}", savedPost.getId(), wall, schoolDomain, userId);
-        return savedPost;
+        String schoolDomain = user.getSchoolDomain();
+        if (schoolDomain == null || schoolDomain.trim().isEmpty()) {
+            throw new IllegalArgumentException("Cannot post to campus wall without school domain");
+        }
+        return schoolDomain;
     }
 
     /**
