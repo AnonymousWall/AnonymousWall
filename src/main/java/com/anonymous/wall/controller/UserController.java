@@ -394,6 +394,7 @@ public class UserController {
         dto.setLikes(post.getLikeCount());
         dto.setComments(post.getCommentCount());
         dto.setLiked(post.isLiked());
+        dto.setImageUrls(post.getImageUrls());
         dto.setCreatedAt(post.getCreatedAt());
         dto.setUpdatedAt(post.getUpdatedAt());
 
