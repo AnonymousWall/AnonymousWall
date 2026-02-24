@@ -189,4 +189,126 @@ class AdminMarketplaceControllerTest {
             assertEquals(HttpStatus.FORBIDDEN, exception.getStatus());
         }
     }
+
+    @Nested
+    @DisplayName("Get Marketplace Item Images Endpoint Tests")
+    class GetMarketplaceImagesTests {
+
+        @Test
+        @Order(1)
+        @DisplayName("Positive: Admin can get images for a marketplace item with no images")
+        void adminCanGetImagesForItemWithNoImages() {
+            HttpResponse<Map> response = client.toBlocking().exchange(
+                HttpRequest.GET(BASE_PATH + "/" + testItem.getId() + "/images").bearerAuth(adminToken),
+                Map.class
+            );
+            assertEquals(HttpStatus.OK, response.getStatus());
+            assertNotNull(response.body());
+            assertEquals(testItem.getId().toString(), response.body().get("marketplaceItemId"));
+            List<?> imageUrls = (List<?>) response.body().get("imageUrls");
+            assertNotNull(imageUrls);
+            assertTrue(imageUrls.isEmpty());
+        }
+
+        @Test
+        @Order(2)
+        @DisplayName("Positive: Admin can get images for a marketplace item with images")
+        void adminCanGetImagesForItemWithImages() {
+            // Arrange - create an item with images
+            MarketplaceItem itemWithImages = new MarketplaceItem();
+            itemWithImages.setUserId(regularUser.getId());
+            itemWithImages.setTitle("Item With Images");
+            itemWithImages.setDescription("Description");
+            itemWithImages.setPrice(new BigDecimal("25.00"));
+            itemWithImages.setCategory("electronics");
+            itemWithImages.setCondition("new");
+            itemWithImages.setWall("campus");
+            itemWithImages.setSchoolDomain("test.edu");
+            itemWithImages.setImageUrls(List.of("http://example.com/item1.jpg", "http://example.com/item2.png"));
+            itemWithImages = marketplaceItemRepository.save(itemWithImages);
+
+            HttpResponse<Map> response = client.toBlocking().exchange(
+                HttpRequest.GET(BASE_PATH + "/" + itemWithImages.getId() + "/images").bearerAuth(adminToken),
+                Map.class
+            );
+            assertEquals(HttpStatus.OK, response.getStatus());
+            assertNotNull(response.body());
+            assertEquals(itemWithImages.getId().toString(), response.body().get("marketplaceItemId"));
+            List<?> imageUrls = (List<?>) response.body().get("imageUrls");
+            assertNotNull(imageUrls);
+            assertEquals(2, imageUrls.size());
+            assertTrue(imageUrls.contains("http://example.com/item1.jpg"));
+            assertTrue(imageUrls.contains("http://example.com/item2.png"));
+        }
+
+        @Test
+        @Order(3)
+        @DisplayName("Negative: Regular user cannot get marketplace item images via admin endpoint")
+        void regularUserCannotGetMarketplaceImages() {
+            HttpClientResponseException exception = assertThrows(
+                HttpClientResponseException.class,
+                () -> client.toBlocking().exchange(
+                    HttpRequest.GET(BASE_PATH + "/" + testItem.getId() + "/images").bearerAuth(userToken),
+                    Map.class
+                )
+            );
+            assertEquals(HttpStatus.FORBIDDEN, exception.getStatus());
+        }
+
+        @Test
+        @Order(4)
+        @DisplayName("Negative: Unauthenticated user cannot get marketplace item images")
+        void unauthenticatedUserCannotGetMarketplaceImages() {
+            HttpClientResponseException exception = assertThrows(
+                HttpClientResponseException.class,
+                () -> client.toBlocking().exchange(
+                    HttpRequest.GET(BASE_PATH + "/" + testItem.getId() + "/images"),
+                    Map.class
+                )
+            );
+            assertEquals(HttpStatus.UNAUTHORIZED, exception.getStatus());
+        }
+
+        @Test
+        @Order(5)
+        @DisplayName("Edge Case: Admin gets error for images of non-existent marketplace item")
+        void adminGetsNotFoundForImagesOfNonExistentItem() {
+            java.util.UUID randomId = java.util.UUID.randomUUID();
+            assertThrows(
+                HttpClientResponseException.class,
+                () -> client.toBlocking().exchange(
+                    HttpRequest.GET(BASE_PATH + "/" + randomId + "/images").bearerAuth(adminToken),
+                    Map.class
+                )
+            );
+        }
+
+        @Test
+        @Order(6)
+        @DisplayName("Edge Case: Admin can get images for a hidden marketplace item")
+        void adminCanGetImagesForHiddenItem() {
+            // Arrange - create a hidden item with images
+            MarketplaceItem hiddenItem = new MarketplaceItem();
+            hiddenItem.setUserId(regularUser.getId());
+            hiddenItem.setTitle("Hidden Item With Images");
+            hiddenItem.setDescription("Description");
+            hiddenItem.setPrice(new BigDecimal("5.00"));
+            hiddenItem.setCategory("books");
+            hiddenItem.setCondition("fair");
+            hiddenItem.setWall("campus");
+            hiddenItem.setSchoolDomain("test.edu");
+            hiddenItem.setHidden(true);
+            hiddenItem.setImageUrls(List.of("http://example.com/hidden-item.jpg"));
+            hiddenItem = marketplaceItemRepository.save(hiddenItem);
+
+            HttpResponse<Map> response = client.toBlocking().exchange(
+                HttpRequest.GET(BASE_PATH + "/" + hiddenItem.getId() + "/images").bearerAuth(adminToken),
+                Map.class
+            );
+            assertEquals(HttpStatus.OK, response.getStatus());
+            List<?> imageUrls = (List<?>) response.body().get("imageUrls");
+            assertNotNull(imageUrls);
+            assertEquals(1, imageUrls.size());
+        }
+    }
 }

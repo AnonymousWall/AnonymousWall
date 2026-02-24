@@ -4,6 +4,7 @@ import com.anonymous.wall.entity.MarketplaceItem;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
 
+import java.util.List;
 import java.util.UUID;
 
 public interface AdminMarketplaceService {
@@ -12,4 +13,5 @@ public interface AdminMarketplaceService {
     void hideMarketplace(UUID id);
     void unhideMarketplace(UUID id);
     Page<MarketplaceItem> getMarketplacesByUserId(UUID userId, Pageable pageable);
+    List<String> getMarketplaceImages(UUID id);
 }

@@ -43,6 +43,7 @@ public class AdminMarketplaceController {
         dto.setSchoolDomain(item.getSchoolDomain());
         dto.setCommentCount(item.getCommentCount());
         dto.setHidden(item.isHidden());
+        dto.setImageUrls(item.getImageUrls());
         dto.setCreatedAt(item.getCreatedAt());
         dto.setUpdatedAt(item.getUpdatedAt());
         return dto;
@@ -106,6 +107,17 @@ public class AdminMarketplaceController {
         adminMarketplaceService.unhideMarketplace(UUID.fromString(id));
         Map<String, String> response = new HashMap<>();
         response.put("message", "Marketplace item unhidden successfully");
+        return HttpResponse.ok(response);
+    }
+
+    @Get("/{id}/images")
+    @Secured({"ADMIN", "MODERATOR"})
+    public HttpResponse<Object> getMarketplaceImages(@PathVariable String id) {
+        UUID itemId = UUID.fromString(id);
+        List<String> imageUrls = adminMarketplaceService.getMarketplaceImages(itemId);
+        Map<String, Object> response = new HashMap<>();
+        response.put("marketplaceItemId", itemId);
+        response.put("imageUrls", imageUrls);
         return HttpResponse.ok(response);
     }
 }
