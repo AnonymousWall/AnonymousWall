@@ -9,6 +9,7 @@ import jakarta.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
 import java.util.UUID;
 
 @Singleton
@@ -72,5 +73,13 @@ public class AdminMarketplaceServiceImpl implements AdminMarketplaceService {
     public Page<MarketplaceItem> getMarketplacesByUserId(UUID userId, Pageable pageable) {
         log.info("Admin fetching marketplaces for user: {}", userId);
         return marketplaceItemRepository.findByUserIdOrderByCreatedAtDesc(userId, pageable);
+    }
+
+    @Override
+    public List<String> getMarketplaceImages(UUID id) {
+        log.info("Admin fetching images for marketplace item: {}", id);
+        MarketplaceItem item = marketplaceItemRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Marketplace item not found with ID: " + id));
+        return item.getImageUrls();
     }
 }

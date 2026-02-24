@@ -6,6 +6,7 @@ import com.anonymous.wall.model.SortBy;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
 
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -26,4 +27,6 @@ public interface AdminPostService {
     void unhidePost(UUID postId);
 
     Page<Comment> getPostComments(UUID postId, Pageable pageable);
+
+    List<String> getPostImages(UUID postId);
 }
