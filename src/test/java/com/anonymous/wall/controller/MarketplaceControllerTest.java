@@ -150,9 +150,9 @@ class MarketplaceControllerTest {
         }
 
         @Test
-        @DisplayName("Should return imageUrls in response")
-        void shouldReturnImageUrlsInResponse() {
-            MultipartBody body = multipartItem("Item with images", "50.00");
+        @DisplayName("Should return null imageUrls when no images uploaded")
+        void shouldReturnNullImageUrlsWhenNoImagesUploaded() {
+            MultipartBody body = multipartItem("Item without images", "50.00");
 
             HttpResponse<ItemDTO> response = client.toBlocking().exchange(
                 HttpRequest.POST(BASE_PATH, body)
@@ -164,8 +164,7 @@ class MarketplaceControllerTest {
             assertEquals(HttpStatus.CREATED, response.getStatus());
             ItemDTO responseBody = response.body();
             assertNotNull(responseBody);
-            // imageUrls should be present (empty list when no images uploaded)
-            assertNotNull(responseBody.getImageUrls());
+            assertNull(responseBody.getImageUrls());
         }
 
         @Test
