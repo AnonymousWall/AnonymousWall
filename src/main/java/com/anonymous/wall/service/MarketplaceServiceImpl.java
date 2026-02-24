@@ -8,9 +8,11 @@ import com.anonymous.wall.model.UpdateItemRequest;
 import com.anonymous.wall.repository.CommentRepository;
 import com.anonymous.wall.repository.MarketplaceItemRepository;
 import com.anonymous.wall.repository.UserRepository;
+import com.anonymous.wall.util.MediaUtilInterface;
 import io.micronaut.context.event.ApplicationEventPublisher;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
+import io.micronaut.http.multipart.CompletedFileUpload;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import jakarta.transaction.Transactional;
@@ -19,6 +21,8 @@ import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -26,6 +30,7 @@ import java.util.UUID;
 public class MarketplaceServiceImpl implements MarketplaceService {
 
     private static final Logger log = LoggerFactory.getLogger(MarketplaceServiceImpl.class);
+    private static final int MAX_IMAGES_PER_ITEM = 5;
 
     @Inject
     private MarketplaceItemRepository marketplaceItemRepository;
@@ -39,10 +44,18 @@ public class MarketplaceServiceImpl implements MarketplaceService {
     @Inject
     private ApplicationEventPublisher<MarketplaceItemHiddenEvent> marketplaceItemHiddenEventPublisher;
 
+    @Inject
+    private MediaUtilInterface mediaUtil;
+
     @Override
     @Transactional
-    public MarketplaceItem createItem(CreateItemRequest request, UUID userId) {
+    public MarketplaceItem createItem(CreateItemRequest request, List<CompletedFileUpload> images, UUID userId) {
         log.info("Creating marketplace item for user {}", userId);
+
+        // Validate image count before any DB access
+        if (images != null && images.size() > MAX_IMAGES_PER_ITEM) {
+            throw new IllegalArgumentException("Maximum " + MAX_IMAGES_PER_ITEM + " images per item allowed");
+        }
 
         Optional<UserEntity> userOpt = userRepository.findById(userId);
         if (userOpt.isEmpty()) {
@@ -109,8 +122,19 @@ public class MarketplaceServiceImpl implements MarketplaceService {
         item.setCreatedAt(OffsetDateTime.now());
         item.setUpdatedAt(OffsetDateTime.now());
 
+        // Upload images
+        List<String> imageUrls = new ArrayList<>();
+        if (images != null) {
+            for (CompletedFileUpload image : images) {
+                if (image != null && image.getSize() > 0) {
+                    imageUrls.add(mediaUtil.uploadMarketplaceImage(image, userId));
+                }
+            }
+        }
+        item.setImageUrls(imageUrls);
+
         MarketplaceItem saved = marketplaceItemRepository.save(item);
-        log.info("Created marketplace item {} for user {}, wall={}, schoolDomain={}", saved.getId(), userId, wall, schoolDomain);
+        log.info("Created marketplace item {} for user {}, wall={}, schoolDomain={}, imageCount={}", saved.getId(), userId, wall, schoolDomain, imageUrls.size());
         return saved;
     }
 

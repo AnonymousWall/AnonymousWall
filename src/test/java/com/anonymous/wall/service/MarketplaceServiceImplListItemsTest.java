@@ -64,9 +64,9 @@ class MarketplaceServiceImplListItemsTest {
             CreateItemRequest request3 = new CreateItemRequest("Item 3", 30f);
             request3.setDescription("Third");
 
-            marketplaceService.createItem(request1, testUser.getId());
-            marketplaceService.createItem(request2, testUser.getId());
-            marketplaceService.createItem(request3, testUser.getId());
+            marketplaceService.createItem(request1, null, testUser.getId());
+            marketplaceService.createItem(request2, null, testUser.getId());
+            marketplaceService.createItem(request3, null, testUser.getId());
 
             // Act
             Pageable pageable = Pageable.from(0, 10);
@@ -92,9 +92,9 @@ class MarketplaceServiceImplListItemsTest {
             CreateItemRequest request3 = new CreateItemRequest("Cheap", 10f);
             request3.setDescription("Low price");
 
-            marketplaceService.createItem(request1, testUser.getId());
-            marketplaceService.createItem(request2, testUser.getId());
-            MarketplaceItem cheapItem = marketplaceService.createItem(request3, testUser.getId());
+            marketplaceService.createItem(request1, null, testUser.getId());
+            marketplaceService.createItem(request2, null, testUser.getId());
+            MarketplaceItem cheapItem = marketplaceService.createItem(request3, null, testUser.getId());
 
             // Act
             Pageable pageable = Pageable.from(0, 10);
@@ -120,9 +120,9 @@ class MarketplaceServiceImplListItemsTest {
             CreateItemRequest request3 = new CreateItemRequest("Expensive", 100f);
             request3.setDescription("High");
 
-            marketplaceService.createItem(request1, testUser.getId());
-            marketplaceService.createItem(request2, testUser.getId());
-            MarketplaceItem expensiveItem = marketplaceService.createItem(request3, testUser.getId());
+            marketplaceService.createItem(request1, null, testUser.getId());
+            marketplaceService.createItem(request2, null, testUser.getId());
+            MarketplaceItem expensiveItem = marketplaceService.createItem(request3, null, testUser.getId());
 
             // Act
             Pageable pageable = Pageable.from(0, 10);
@@ -144,7 +144,7 @@ class MarketplaceServiceImplListItemsTest {
             for (int i = 1; i <= 5; i++) {
                 CreateItemRequest request = new CreateItemRequest("Item " + i, (float) i * 10);
                 request.setDescription("Description " + i);
-                marketplaceService.createItem(request, testUser.getId());
+                marketplaceService.createItem(request, null, testUser.getId());
             }
 
             // Act - Get page 1 with size 2
@@ -181,7 +181,7 @@ class MarketplaceServiceImplListItemsTest {
             // Arrange
             CreateItemRequest request = new CreateItemRequest("Test", 10f);
             request.setDescription("Test");
-            marketplaceService.createItem(request, testUser.getId());
+            marketplaceService.createItem(request, null, testUser.getId());
 
             // Act
             Pageable pageable = Pageable.from(0, 10);
@@ -197,7 +197,7 @@ class MarketplaceServiceImplListItemsTest {
             // Arrange
             CreateItemRequest request = new CreateItemRequest("Test", 10f);
             request.setDescription("Test");
-            marketplaceService.createItem(request, testUser.getId());
+            marketplaceService.createItem(request, null, testUser.getId());
 
             // Act
             Pageable pageable = Pageable.from(0, 10);
@@ -219,7 +219,7 @@ class MarketplaceServiceImplListItemsTest {
             for (int i = 1; i <= 3; i++) {
                 CreateItemRequest request = new CreateItemRequest("Item " + i, (float) i);
                 request.setDescription("Desc");
-                marketplaceService.createItem(request, testUser.getId());
+                marketplaceService.createItem(request, null, testUser.getId());
             }
 
             // Act
@@ -237,7 +237,7 @@ class MarketplaceServiceImplListItemsTest {
             // Arrange
             CreateItemRequest request = new CreateItemRequest("Test", 10f);
             request.setDescription("Test");
-            marketplaceService.createItem(request, testUser.getId());
+            marketplaceService.createItem(request, null, testUser.getId());
 
             // Act - Request page 10
             Pageable pageable = Pageable.from(10, 10);
@@ -253,12 +253,12 @@ class MarketplaceServiceImplListItemsTest {
         void shouldFilterByUnsoldItems() {
             // Arrange - Create sold and unsold items
             CreateItemRequest soldRequest = new CreateItemRequest("Sold Item", 100.0f);
-            MarketplaceItem soldItem = marketplaceService.createItem(soldRequest, testUser.getId());
+            MarketplaceItem soldItem = marketplaceService.createItem(soldRequest, null, testUser.getId());
             soldItem.setSold(true);
             marketplaceItemRepository.update(soldItem);
 
             CreateItemRequest unsoldRequest = new CreateItemRequest("Available Item", 200.0f);
-            marketplaceService.createItem(unsoldRequest, testUser.getId());
+            marketplaceService.createItem(unsoldRequest, null, testUser.getId());
 
             // Act - Filter for unsold items only
             Pageable pageable = Pageable.from(0, 10);
@@ -275,12 +275,12 @@ class MarketplaceServiceImplListItemsTest {
         void shouldFilterBySoldItems() {
             // Arrange - Create sold and unsold items
             CreateItemRequest soldRequest = new CreateItemRequest("Sold Item", 100.0f);
-            MarketplaceItem soldItem = marketplaceService.createItem(soldRequest, testUser.getId());
+            MarketplaceItem soldItem = marketplaceService.createItem(soldRequest, null, testUser.getId());
             soldItem.setSold(true);
             marketplaceItemRepository.update(soldItem);
 
             CreateItemRequest unsoldRequest = new CreateItemRequest("Available Item", 200.0f);
-            marketplaceService.createItem(unsoldRequest, testUser.getId());
+            marketplaceService.createItem(unsoldRequest, null, testUser.getId());
 
             // Act - Filter for sold items only
             Pageable pageable = Pageable.from(0, 10);
@@ -297,12 +297,12 @@ class MarketplaceServiceImplListItemsTest {
         void shouldReturnAllItemsWhenSoldIsNull() {
             // Arrange - Create sold and unsold items
             CreateItemRequest soldRequest = new CreateItemRequest("Sold Item", 100.0f);
-            MarketplaceItem soldItem = marketplaceService.createItem(soldRequest, testUser.getId());
+            MarketplaceItem soldItem = marketplaceService.createItem(soldRequest, null, testUser.getId());
             soldItem.setSold(true);
             marketplaceItemRepository.update(soldItem);
 
             CreateItemRequest unsoldRequest = new CreateItemRequest("Available Item", 200.0f);
-            marketplaceService.createItem(unsoldRequest, testUser.getId());
+            marketplaceService.createItem(unsoldRequest, null, testUser.getId());
 
             // Act - No sold filter
             Pageable pageable = Pageable.from(0, 10);

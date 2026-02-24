@@ -7,4 +7,5 @@ import java.util.UUID;
 public interface MediaUtilInterface {
     String uploadPostImage(CompletedFileUpload file, UUID userId);
     String uploadChatImage(CompletedFileUpload file, UUID userId);
+    String uploadMarketplaceImage(CompletedFileUpload file, UUID userId);
 }

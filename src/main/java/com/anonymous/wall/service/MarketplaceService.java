@@ -5,12 +5,14 @@ import com.anonymous.wall.model.CreateItemRequest;
 import com.anonymous.wall.model.UpdateItemRequest;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
+import io.micronaut.http.multipart.CompletedFileUpload;
 
+import java.util.List;
 import java.util.UUID;
 
 public interface MarketplaceService {
 
-    MarketplaceItem createItem(CreateItemRequest request, UUID userId);
+    MarketplaceItem createItem(CreateItemRequest request, List<CompletedFileUpload> images, UUID userId);
 
     MarketplaceItem updateItem(UUID itemId, UpdateItemRequest request, UUID userId);
 

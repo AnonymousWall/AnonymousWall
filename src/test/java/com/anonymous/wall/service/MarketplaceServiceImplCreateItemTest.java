@@ -64,7 +64,7 @@ class MarketplaceServiceImplCreateItemTest {
             request.setCondition(CreateItemRequestCondition.NEW);
 
             // Act
-            MarketplaceItem result = marketplaceService.createItem(request, testUser.getId());
+            MarketplaceItem result = marketplaceService.createItem(request, null, testUser.getId());
 
             // Assert
             assertNotNull(result);
@@ -89,7 +89,7 @@ class MarketplaceServiceImplCreateItemTest {
             request.setPrice(0f);
 
             // Act
-            MarketplaceItem result = marketplaceService.createItem(request, testUser.getId());
+            MarketplaceItem result = marketplaceService.createItem(request, null, testUser.getId());
 
             // Assert
             assertNotNull(result);
@@ -109,7 +109,7 @@ class MarketplaceServiceImplCreateItemTest {
             request.setDescription("Free stuff");
 
             // Act
-            MarketplaceItem result = marketplaceService.createItem(request, testUser.getId());
+            MarketplaceItem result = marketplaceService.createItem(request, null, testUser.getId());
 
             // Assert
             assertNotNull(result);
@@ -126,7 +126,7 @@ class MarketplaceServiceImplCreateItemTest {
                 request.setCondition(condition);
 
                 // Act
-                MarketplaceItem result = marketplaceService.createItem(request, testUser.getId());
+                MarketplaceItem result = marketplaceService.createItem(request, null, testUser.getId());
 
                 // Assert
                 assertNotNull(result);
@@ -142,7 +142,7 @@ class MarketplaceServiceImplCreateItemTest {
             request.setDescription("Description");
 
             // Act
-            MarketplaceItem result = marketplaceService.createItem(request, testUser.getId());
+            MarketplaceItem result = marketplaceService.createItem(request, null, testUser.getId());
 
             // Assert
             assertEquals("Trimmed Title", result.getTitle());
@@ -163,7 +163,7 @@ class MarketplaceServiceImplCreateItemTest {
 
             // Act & Assert
             IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
-                marketplaceService.createItem(request, nonExistentUserId);
+                marketplaceService.createItem(request, null, nonExistentUserId);
             });
             assertTrue(exception.getMessage().contains("User not found"));
         }
@@ -177,7 +177,7 @@ class MarketplaceServiceImplCreateItemTest {
 
             // Act & Assert
             IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
-                marketplaceService.createItem(request, testUser.getId());
+                marketplaceService.createItem(request, null, testUser.getId());
             });
             assertTrue(exception.getMessage().contains("Title is required"));
         }
@@ -191,7 +191,7 @@ class MarketplaceServiceImplCreateItemTest {
 
             // Act & Assert
             IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
-                marketplaceService.createItem(request, testUser.getId());
+                marketplaceService.createItem(request, null, testUser.getId());
             });
             assertTrue(exception.getMessage().contains("Title is required"));
         }
@@ -206,7 +206,7 @@ class MarketplaceServiceImplCreateItemTest {
 
             // Act & Assert
             IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
-                marketplaceService.createItem(request, testUser.getId());
+                marketplaceService.createItem(request, null, testUser.getId());
             });
             assertTrue(exception.getMessage().contains("Price is required"));
         }
@@ -220,7 +220,7 @@ class MarketplaceServiceImplCreateItemTest {
 
             // Act & Assert
             IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
-                marketplaceService.createItem(request, testUser.getId());
+                marketplaceService.createItem(request, null, testUser.getId());
             });
             assertTrue(exception.getMessage().contains("Price must be greater than or equal to 0"));
         }
@@ -239,7 +239,7 @@ class MarketplaceServiceImplCreateItemTest {
             request.setDescription("Description");
 
             // Act
-            MarketplaceItem result = marketplaceService.createItem(request, testUser.getId());
+            MarketplaceItem result = marketplaceService.createItem(request, null, testUser.getId());
 
             // Assert
             assertNotNull(result);
@@ -256,7 +256,7 @@ class MarketplaceServiceImplCreateItemTest {
 
             // Act & Assert
             IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
-                marketplaceService.createItem(request, testUser.getId());
+                marketplaceService.createItem(request, null, testUser.getId());
             });
             assertTrue(exception.getMessage().contains("Title cannot exceed 255 characters"));
         }
@@ -269,7 +269,7 @@ class MarketplaceServiceImplCreateItemTest {
             request.setDescription("Description");
 
             // Act
-            MarketplaceItem result = marketplaceService.createItem(request, testUser.getId());
+            MarketplaceItem result = marketplaceService.createItem(request, null, testUser.getId());
 
             // Assert
             assertNotNull(result);
@@ -284,7 +284,7 @@ class MarketplaceServiceImplCreateItemTest {
             request.setDescription("Very expensive");
 
             // Act
-            MarketplaceItem result = marketplaceService.createItem(request, testUser.getId());
+            MarketplaceItem result = marketplaceService.createItem(request, null, testUser.getId());
 
             // Assert
             assertNotNull(result);

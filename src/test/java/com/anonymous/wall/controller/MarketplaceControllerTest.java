@@ -9,9 +9,11 @@ import com.anonymous.wall.service.JwtTokenService;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.HttpStatus;
+import io.micronaut.http.MediaType;
 import io.micronaut.http.client.HttpClient;
 import io.micronaut.http.client.annotation.Client;
 import io.micronaut.http.client.exceptions.HttpClientResponseException;
+import io.micronaut.http.client.multipart.MultipartBody;
 import io.micronaut.test.extensions.junit5.annotation.MicronautTest;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.*;
@@ -43,6 +45,17 @@ class MarketplaceControllerTest {
     private JwtTokenService jwtTokenService;
 
     private static final String BASE_PATH = "/api/v1/marketplace";
+    // Minimal valid JPEG bytes (2x2 image)
+    private static final byte[] MINIMAL_JPEG = {
+        (byte)0xFF,(byte)0xD8,(byte)0xFF,(byte)0xE0,0x00,0x10,0x4A,0x46,0x49,0x46,0x00,0x01,
+        0x01,0x00,0x00,0x01,0x00,0x01,0x00,0x00,(byte)0xFF,(byte)0xDB,0x00,0x43,0x00,0x08,
+        0x06,0x06,0x07,0x06,0x05,0x08,0x07,0x07,0x07,0x09,0x09,0x08,0x0A,0x0C,0x14,0x0D,
+        0x0C,0x0B,0x0B,0x0C,0x19,0x12,0x13,0x0F,0x14,0x1D,0x1A,(byte)0xFF,(byte)0xC0,0x00,
+        0x0B,0x08,0x00,0x02,0x00,0x02,0x01,0x01,0x11,0x00,(byte)0xFF,(byte)0xC4,0x00,0x1F,
+        0x00,0x00,0x01,0x05,0x01,0x01,0x01,0x01,0x01,0x01,0x00,0x00,0x00,0x00,0x00,0x00,
+        0x00,0x00,0x01,0x02,0x03,0x04,0x05,0x06,0x07,0x08,0x09,0x0A,0x0B,(byte)0xFF,(byte)0xDA,
+        0x00,0x08,0x01,0x01,0x00,0x00,0x3F,0x00,(byte)0xFB,0x28,(byte)0xA2,(byte)0x8A,(byte)0xFF,(byte)0xD9
+    };
 
     private UserEntity testUser;
     private UserEntity otherUser;
@@ -79,6 +92,20 @@ class MarketplaceControllerTest {
         marketplaceItemRepository.deleteAll();
     }
 
+    private MultipartBody multipartItem(String title, String price, String description, String condition, String category) {
+        MultipartBody.Builder builder = MultipartBody.builder();
+        if (title != null) builder.addPart("title", title);
+        if (price != null) builder.addPart("price", price);
+        if (description != null) builder.addPart("description", description);
+        if (condition != null) builder.addPart("condition", condition);
+        if (category != null) builder.addPart("category", category);
+        return builder.build();
+    }
+
+    private MultipartBody multipartItem(String title, String price) {
+        return multipartItem(title, price, null, null, null);
+    }
+
     @Nested
     @DisplayName("Create Item - POST /marketplace")
     class CreateItemTests {
@@ -86,68 +113,122 @@ class MarketplaceControllerTest {
         @Test
         @DisplayName("Should create item with all fields")
         void shouldCreateItemWithAllFields() {
-            Map<String, Object> request = new HashMap<>();
-            request.put("title", "MacBook Pro");
-            request.put("description", "Excellent condition, barely used");
-            request.put("price", 1500.00f);
-            request.put("category", "Electronics");
-            request.put("condition", "like-new");
+            MultipartBody body = multipartItem("MacBook Pro", "1500.00", "Excellent condition, barely used", "like-new", "Electronics");
 
             HttpResponse<ItemDTO> response = client.toBlocking().exchange(
-                HttpRequest.POST(BASE_PATH, request)
+                HttpRequest.POST(BASE_PATH, body)
+                    .contentType(MediaType.MULTIPART_FORM_DATA_TYPE)
                     .header("Authorization", "Bearer " + jwtToken),
                 ItemDTO.class
             );
 
             assertEquals(HttpStatus.CREATED, response.getStatus());
-            ItemDTO body = response.body();
-            assertNotNull(body);
-            assertEquals("MacBook Pro", body.getTitle());
-            assertEquals("Excellent condition, barely used", body.getDescription());
-            assertNotNull(body.getPrice());
-            assertEquals("Electronics", body.getCategory());
-            assertEquals("like-new", body.getCondition().getValue());
-            assertFalse(body.getSold());
-            assertNotNull(body.getAuthor());
-            assertEquals("TestSeller", body.getAuthor().getProfileName());
-            assertFalse(body.getAuthor().getIsAnonymous());
-            assertNotNull(body.getCreatedAt());
-            assertNotNull(body.getUpdatedAt());
+            ItemDTO body2 = response.body();
+            assertNotNull(body2);
+            assertEquals("MacBook Pro", body2.getTitle());
+            assertEquals("Excellent condition, barely used", body2.getDescription());
+            assertNotNull(body2.getPrice());
+            assertEquals("Electronics", body2.getCategory());
+            assertEquals("like-new", body2.getCondition().getValue());
+            assertFalse(body2.getSold());
+            assertNotNull(body2.getAuthor());
+            assertEquals("TestSeller", body2.getAuthor().getProfileName());
+            assertFalse(body2.getAuthor().getIsAnonymous());
+            assertNotNull(body2.getCreatedAt());
+            assertNotNull(body2.getUpdatedAt());
         }
 
         @Test
         @DisplayName("Should create item with minimum required fields")
         void shouldCreateItemWithMinimumFields() {
-            Map<String, Object> request = new HashMap<>();
-            request.put("title", "Textbook");
-            request.put("price", 25.00f);
+            MultipartBody body = multipartItem("Textbook", "25.00");
 
             HttpResponse<ItemDTO> response = client.toBlocking().exchange(
-                HttpRequest.POST(BASE_PATH, request)
+                HttpRequest.POST(BASE_PATH, body)
+                    .contentType(MediaType.MULTIPART_FORM_DATA_TYPE)
                     .header("Authorization", "Bearer " + jwtToken),
                 ItemDTO.class
             );
 
             assertEquals(HttpStatus.CREATED, response.getStatus());
-            ItemDTO body = response.body();
-            assertNotNull(body);
-            assertEquals("Textbook", body.getTitle());
-            assertNull(body.getDescription());
-            assertNull(body.getCategory());
-            assertNull(body.getCondition());
-            assertFalse(body.getSold());
+            ItemDTO responseBody = response.body();
+            assertNotNull(responseBody);
+            assertEquals("Textbook", responseBody.getTitle());
+            assertNull(responseBody.getDescription());
+            assertNull(responseBody.getCategory());
+            assertNull(responseBody.getCondition());
+            assertFalse(responseBody.getSold());
+        }
+
+        @Test
+        @DisplayName("Should return imageUrls in response when created with images")
+        void shouldReturnImageUrlsWhenCreatedWithImages() {
+            MultipartBody body = MultipartBody.builder()
+                .addPart("title", "Item with image")
+                .addPart("price", "99.00")
+                .addPart("images", "test.jpg", MediaType.IMAGE_JPEG_TYPE, MINIMAL_JPEG)
+                .build();
+
+            HttpResponse<ItemDTO> response = client.toBlocking().exchange(
+                HttpRequest.POST(BASE_PATH, body)
+                    .contentType(MediaType.MULTIPART_FORM_DATA_TYPE)
+                    .header("Authorization", "Bearer " + jwtToken),
+                ItemDTO.class
+            );
+
+            assertEquals(HttpStatus.CREATED, response.getStatus());
+            ItemDTO responseBody = response.body();
+            assertNotNull(responseBody);
+            assertNotNull(responseBody.getImageUrls());
+            assertFalse(responseBody.getImageUrls().isEmpty());
+        }
+
+        @Test
+        @DisplayName("Should return null imageUrls when no images uploaded")
+        void shouldReturnNullImageUrlsWhenNoImagesUploaded() {
+            MultipartBody body = multipartItem("Item without images", "50.00");
+
+            HttpResponse<ItemDTO> response = client.toBlocking().exchange(
+                HttpRequest.POST(BASE_PATH, body)
+                    .contentType(MediaType.MULTIPART_FORM_DATA_TYPE)
+                    .header("Authorization", "Bearer " + jwtToken),
+                ItemDTO.class
+            );
+
+            assertEquals(HttpStatus.CREATED, response.getStatus());
+            ItemDTO responseBody = response.body();
+            assertNotNull(responseBody);
+            assertNull(responseBody.getImageUrls());
         }
 
         @Test
         @DisplayName("Should fail when title is missing")
         void shouldFailWhenTitleMissing() {
-            Map<String, Object> request = new HashMap<>();
-            request.put("price", 100.00f);
+            MultipartBody body = multipartItem(null, "100.00");
 
             HttpClientResponseException exception = assertThrows(
                 HttpClientResponseException.class,
                 () -> client.toBlocking().exchange(
-                    HttpRequest.POST(BASE_PATH, request)
+                    HttpRequest.POST(BASE_PATH, body)
+                        .contentType(MediaType.MULTIPART_FORM_DATA_TYPE)
+                        .header("Authorization", "Bearer " + jwtToken),
+                    ItemDTO.class
+                )
+            );
+
+            assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
+        }
+
+        @Test
+        @DisplayName("Should fail when price is missing")
+        void shouldFailWhenPriceMissing() {
+            MultipartBody body = multipartItem("Item", null);
+
+            HttpClientResponseException exception = assertThrows(
+                HttpClientResponseException.class,
+                () -> client.toBlocking().exchange(
+                    HttpRequest.POST(BASE_PATH, body)
+                        .contentType(MediaType.MULTIPART_FORM_DATA_TYPE)
                         .header("Authorization", "Bearer " + jwtToken),
                     ItemDTO.class
                 )
@@ -159,14 +240,13 @@ class MarketplaceControllerTest {
         @Test
         @DisplayName("Should fail when price is negative")
         void shouldFailWhenPriceNegative() {
-            Map<String, Object> request = new HashMap<>();
-            request.put("title", "Item");
-            request.put("price", -10.00f);
+            MultipartBody body = multipartItem("Item", "-10.00");
 
             HttpClientResponseException exception = assertThrows(
                 HttpClientResponseException.class,
                 () -> client.toBlocking().exchange(
-                    HttpRequest.POST(BASE_PATH, request)
+                    HttpRequest.POST(BASE_PATH, body)
+                        .contentType(MediaType.MULTIPART_FORM_DATA_TYPE)
                         .header("Authorization", "Bearer " + jwtToken),
                     ItemDTO.class
                 )
@@ -178,14 +258,13 @@ class MarketplaceControllerTest {
         @Test
         @DisplayName("Should fail without authentication")
         void shouldFailWithoutAuth() {
-            Map<String, Object> request = new HashMap<>();
-            request.put("title", "Item");
-            request.put("price", 100.00f);
+            MultipartBody body = multipartItem("Item", "100.00");
 
             HttpClientResponseException exception = assertThrows(
                 HttpClientResponseException.class,
                 () -> client.toBlocking().exchange(
-                    HttpRequest.POST(BASE_PATH, request),
+                    HttpRequest.POST(BASE_PATH, body)
+                        .contentType(MediaType.MULTIPART_FORM_DATA_TYPE),
                     ItemDTO.class
                 )
             );

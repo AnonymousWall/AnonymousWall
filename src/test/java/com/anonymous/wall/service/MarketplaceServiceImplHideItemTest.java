@@ -61,7 +61,7 @@ class MarketplaceServiceImplHideItemTest {
         @DisplayName("Should hide item successfully")
         void shouldHideItemSuccessfully() {
             CreateItemRequest request = new CreateItemRequest("Old Textbook", 20f);
-            MarketplaceItem created = marketplaceService.createItem(request, testUser.getId());
+            MarketplaceItem created = marketplaceService.createItem(request, null, testUser.getId());
             assertFalse(created.isHidden());
 
             marketplaceService.hideItem(created.getId(), testUser.getId());
@@ -74,7 +74,7 @@ class MarketplaceServiceImplHideItemTest {
         @DisplayName("Should fail to hide when not owner")
         void shouldFailToHideWhenNotOwner() {
             CreateItemRequest request = new CreateItemRequest("Old Textbook", 20f);
-            MarketplaceItem created = marketplaceService.createItem(request, testUser.getId());
+            MarketplaceItem created = marketplaceService.createItem(request, null, testUser.getId());
 
             IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
@@ -104,7 +104,7 @@ class MarketplaceServiceImplHideItemTest {
         @DisplayName("Should unhide item successfully")
         void shouldUnhideItemSuccessfully() {
             CreateItemRequest request = new CreateItemRequest("Old Textbook", 20f);
-            MarketplaceItem created = marketplaceService.createItem(request, testUser.getId());
+            MarketplaceItem created = marketplaceService.createItem(request, null, testUser.getId());
             marketplaceService.hideItem(created.getId(), testUser.getId());
 
             MarketplaceItem hidden = marketplaceItemRepository.findById(created.getId()).orElseThrow();
@@ -120,7 +120,7 @@ class MarketplaceServiceImplHideItemTest {
         @DisplayName("Should fail to unhide when not owner")
         void shouldFailToUnhideWhenNotOwner() {
             CreateItemRequest request = new CreateItemRequest("Old Textbook", 20f);
-            MarketplaceItem created = marketplaceService.createItem(request, testUser.getId());
+            MarketplaceItem created = marketplaceService.createItem(request, null, testUser.getId());
             marketplaceService.hideItem(created.getId(), testUser.getId());
 
             IllegalArgumentException exception = assertThrows(

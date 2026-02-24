@@ -1071,9 +1071,38 @@ paths:
       requestBody:
         required: true
         content:
-          application/json:
+          multipart/form-data:
             schema:
-              $ref: "#/components/schemas/CreateItemRequest"
+              type: object
+              required: [title, price]
+              properties:
+                title:
+                  type: string
+                  description: Item title
+                description:
+                  type: string
+                  description: Item description
+                price:
+                  type: string
+                  description: Item price
+                category:
+                  type: string
+                  description: Item category
+                condition:
+                  type: string
+                  enum: [new, like-new, good, fair]
+                  description: Condition of the item
+                wall:
+                  type: string
+                  enum: [campus, national]
+                  default: campus
+                  description: Which wall to post to
+                images:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                  description: Optional image files (JPEG, PNG, or WEBP, max 5MB each, up to 5 images)
       responses:
         "201":
           description: Item created successfully
@@ -3788,6 +3817,11 @@ components:
         comments:
           type: integer
           description: Number of comments
+        imageUrls:
+          type: array
+          items:
+            type: string
+          description: URLs of images attached to the item (up to 5)
         author:
           type: object
           properties:
