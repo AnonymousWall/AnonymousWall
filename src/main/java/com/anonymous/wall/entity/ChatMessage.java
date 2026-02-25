@@ -27,6 +27,7 @@ public class ChatMessage {
     private UUID conversationId;
 
     @MappedProperty("content")
+    @Nullable
     private String content;
 
     @MappedProperty("image_url")

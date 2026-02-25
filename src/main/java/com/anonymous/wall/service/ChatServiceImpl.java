@@ -98,7 +98,7 @@ public class ChatServiceImpl implements ChatService {
 
         // Create and save message
         ChatMessage message = new ChatMessage(senderId, receiverId, conversationId,
-                hasContent ? content.trim() : "");
+                hasContent ? content.trim() : null);
         message.setImageUrl(imageUrl);
         message.setCreatedAt(OffsetDateTime.now());
         message.setReadStatus(false);
