@@ -1,5 +1,6 @@
 package com.anonymous.wall.entity;
 
+import io.micronaut.core.annotation.Nullable;
 import io.micronaut.data.annotation.*;
 import io.micronaut.data.model.naming.NamingStrategies;
 
@@ -27,6 +28,10 @@ public class ChatMessage {
 
     @MappedProperty("content")
     private String content;
+
+    @MappedProperty("image_url")
+    @Nullable
+    private String imageUrl;
 
     @MappedProperty("read_status")
     private boolean readStatus = false;
@@ -96,6 +101,14 @@ public class ChatMessage {
 
     public void setContent(String content) {
         this.content = content;
+    }
+
+    public String getImageUrl() {
+        return imageUrl;
+    }
+
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
     }
 
     public boolean isReadStatus() {

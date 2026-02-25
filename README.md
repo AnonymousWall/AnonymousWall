@@ -1857,7 +1857,25 @@ The Chat API provides **one-to-one messaging** capabilities with both REST endpo
 
 ### REST Endpoints
 
-#### 1. Send Message
+#### 1. Upload Chat Image
+```http
+POST /api/v1/chat/images
+Authorization: Bearer {jwt-token}
+Content-Type: multipart/form-data
+
+Form field: image (JPEG, PNG, or WEBP, max 5MB)
+
+Response: 201 Created
+{
+  "url": "https://storage.example.com/chat/image.jpg"
+}
+```
+
+**Validations:**
+- Image must be JPEG, PNG, or WEBP format
+- Maximum file size: 5MB
+
+#### 2. Send Message
 ```http
 POST /api/v1/chat/messages
 Authorization: Bearer {jwt-token}
@@ -1865,7 +1883,8 @@ Content-Type: application/json
 
 {
   "receiverId": "uuid-of-receiver",
-  "content": "Hello! This is a test message."
+  "content": "Hello! This is a test message.",
+  "imageUrl": "https://storage.example.com/chat/image.jpg"
 }
 
 Response: 201 Created
@@ -1874,15 +1893,18 @@ Response: 201 Created
   "senderId": "sender-uuid",
   "receiverId": "receiver-uuid",
   "content": "Hello! This is a test message.",
+  "imageUrl": "https://storage.example.com/chat/image.jpg",
   "readStatus": false,
   "createdAt": "2026-02-14T08:00:00Z"
 }
 ```
 
 **Validations:**
-- Message content: 1-5000 characters
+- At least one of `content` or `imageUrl` must be provided
+- Message content: max 5000 characters
 - Receiver must exist and not be blocked
 - Sender must not be blocked
+- Also pushes message to receiver via WebSocket if online
 
 #### 2. Get Message History
 ```http

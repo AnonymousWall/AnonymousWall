@@ -589,6 +589,9 @@
             <column name="content" type="TEXT">
                 <constraints nullable="false"/>
             </column>
+            <column name="image_url" type="VARCHAR(1000)">
+                <constraints nullable="true"/>
+            </column>
             <column name="read_status" type="BOOLEAN" defaultValueBoolean="false">
                 <constraints nullable="false"/>
             </column>

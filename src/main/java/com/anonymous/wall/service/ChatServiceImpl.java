@@ -40,6 +40,13 @@ public class ChatServiceImpl implements ChatService {
     @Transactional
     @Retryable
     public ChatMessage sendMessage(UUID senderId, UUID receiverId, String content) {
+        return sendMessage(senderId, receiverId, content, null);
+    }
+
+    @Override
+    @Transactional
+    @Retryable
+    public ChatMessage sendMessage(UUID senderId, UUID receiverId, String content, String imageUrl) {
         log.debug("Sending message from {} to {}", senderId, receiverId);
 
         // Validate input
@@ -47,11 +54,13 @@ public class ChatServiceImpl implements ChatService {
             throw new IllegalArgumentException("Sender ID and receiver ID must not be null");
         }
 
-        if (content == null || content.trim().isEmpty()) {
-            throw new IllegalArgumentException("Message content must not be empty");
+        boolean hasContent = content != null && !content.trim().isEmpty();
+        boolean hasImage = imageUrl != null && !imageUrl.trim().isEmpty();
+        if (!hasContent && !hasImage) {
+            throw new IllegalArgumentException("Message must have content or an image");
         }
 
-        if (content.length() > 5000) {
+        if (hasContent && content.length() > 5000) {
             throw new IllegalArgumentException("Message content exceeds maximum length of 5000 characters");
         }
 
@@ -88,12 +97,14 @@ public class ChatServiceImpl implements ChatService {
         UUID conversationId = ConversationIdGenerator.generate(senderId, receiverId);
 
         // Create and save message
-        ChatMessage message = new ChatMessage(senderId, receiverId, conversationId, content.trim());
+        ChatMessage message = new ChatMessage(senderId, receiverId, conversationId,
+                hasContent ? content.trim() : "");
+        message.setImageUrl(imageUrl);
         message.setCreatedAt(OffsetDateTime.now());
         message.setReadStatus(false);
 
         ChatMessage savedMessage = chatMessageRepository.save(message);
-        log.info("Message sent from {} to {}, message ID: {}, conversation ID: {}", 
+        log.info("Message sent from {} to {}, message ID: {}, conversation ID: {}",
                  senderId, receiverId, savedMessage.getId(), conversationId);
 
         return savedMessage;
@@ -170,6 +181,7 @@ public class ChatServiceImpl implements ChatService {
             lastMessageDTO.setSenderId(lastMessage.getSenderId());
             lastMessageDTO.setReceiverId(lastMessage.getReceiverId());
             lastMessageDTO.setContent(lastMessage.getContent());
+            lastMessageDTO.setImageUrl(lastMessage.getImageUrl());
             lastMessageDTO.setReadStatus(lastMessage.isReadStatus());
             lastMessageDTO.setCreatedAt(lastMessage.getCreatedAt());
             conversation.setLastMessage(lastMessageDTO);

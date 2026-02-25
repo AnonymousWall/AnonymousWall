@@ -27,6 +27,19 @@ public interface ChatService {
     ChatMessage sendMessage(UUID senderId, UUID receiverId, String content);
 
     /**
+     * Send a message with optional image from one user to another.
+     * At least one of content or imageUrl must be provided.
+     *
+     * @param senderId ID of the sender
+     * @param receiverId ID of the receiver
+     * @param content Message content (optional if imageUrl is present)
+     * @param imageUrl URL of the image (optional if content is present)
+     * @return The saved ChatMessage
+     * @throws IllegalArgumentException if receiver is blocked, doesn't exist, or neither content nor imageUrl is provided
+     */
+    ChatMessage sendMessage(UUID senderId, UUID receiverId, String content, String imageUrl);
+
+    /**
      * Get message history between two users with pagination.
      * Messages are returned in chronological order (oldest first).
      * 

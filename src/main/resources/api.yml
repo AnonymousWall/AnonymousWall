@@ -1737,6 +1737,43 @@ paths:
 
   # =================== Chat ===================
 
+  /chat/images:
+    post:
+      tags: [chat]
+      summary: Upload a chat image
+      description: Upload an image to use in a chat message. Returns the image URL immediately.
+      operationId: uploadChatImage
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - image
+              properties:
+                image:
+                  type: string
+                  format: binary
+                  description: Image file (JPEG, PNG, or WEBP, max 5MB)
+      responses:
+        "201":
+          description: Image uploaded successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  url:
+                    type: string
+                    description: URL of the uploaded image
+        "400":
+          description: Invalid image (wrong format, too large, etc.)
+        "401":
+          description: Unauthorized - authentication required
+
   /chat/conversations:
     get:
       tags: [chat]
@@ -4245,6 +4282,9 @@ components:
         content:
           type: string
           description: Message content
+        imageUrl:
+          type: string
+          description: URL of the attached image
         readStatus:
           type: boolean
           description: Whether the message has been read
@@ -4256,7 +4296,6 @@ components:
       type: object
       required:
         - receiverId
-        - content
       properties:
         receiverId:
           type: string
@@ -4264,9 +4303,11 @@ components:
           description: UUID of the message receiver
         content:
           type: string
-          minLength: 1
           maxLength: 5000
-          description: Message content
+          description: Message content (optional if imageUrl is provided)
+        imageUrl:
+          type: string
+          description: URL of the attached image (optional if content is provided)
 
     ConversationDTO:
       type: object
