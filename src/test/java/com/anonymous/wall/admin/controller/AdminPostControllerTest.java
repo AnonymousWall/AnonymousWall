@@ -689,4 +689,133 @@ class AdminPostControllerTest {
             assertEquals(HttpStatus.UNAUTHORIZED, exception.getStatus());
         }
     }
+
+    @Nested
+    @DisplayName("Get Post Images Endpoint Tests")
+    class GetPostImagesTests {
+
+        @Test
+        @DisplayName("Positive: Admin can get images for a post with no images")
+        void adminCanGetImagesForPostWithNoImages() {
+            // Act
+            HttpResponse<Map> response = client.toBlocking().exchange(
+                HttpRequest.GET(BASE_PATH + "/" + testPost.getId() + "/images")
+                    .bearerAuth(adminToken),
+                Map.class
+            );
+
+            // Assert
+            assertEquals(HttpStatus.OK, response.getStatus());
+            assertNotNull(response.body());
+            assertEquals(testPost.getId().toString(), response.body().get("postId"));
+            List<?> imageUrls = (List<?>) response.body().get("imageUrls");
+            assertNotNull(imageUrls);
+            assertTrue(imageUrls.isEmpty());
+        }
+
+        @Test
+        @DisplayName("Positive: Admin can get images for a post with images")
+        void adminCanGetImagesForPostWithImages() {
+            // Arrange - create a post with images
+            Post postWithImages = new Post();
+            postWithImages.setUserId(regularUser.getId());
+            postWithImages.setTitle("Post With Images");
+            postWithImages.setContent("Content");
+            postWithImages.setWall("campus");
+            postWithImages.setSchoolDomain("test.edu");
+            postWithImages.setImageUrls(List.of("http://example.com/img1.jpg", "http://example.com/img2.png"));
+            postWithImages = postRepository.save(postWithImages);
+
+            // Act
+            HttpResponse<Map> response = client.toBlocking().exchange(
+                HttpRequest.GET(BASE_PATH + "/" + postWithImages.getId() + "/images")
+                    .bearerAuth(adminToken),
+                Map.class
+            );
+
+            // Assert
+            assertEquals(HttpStatus.OK, response.getStatus());
+            assertNotNull(response.body());
+            assertEquals(postWithImages.getId().toString(), response.body().get("postId"));
+            List<?> imageUrls = (List<?>) response.body().get("imageUrls");
+            assertNotNull(imageUrls);
+            assertEquals(2, imageUrls.size());
+            assertTrue(imageUrls.contains("http://example.com/img1.jpg"));
+            assertTrue(imageUrls.contains("http://example.com/img2.png"));
+        }
+
+        @Test
+        @DisplayName("Negative: Regular user cannot get post images via admin endpoint")
+        void regularUserCannotGetPostImages() {
+            // Act & Assert
+            HttpClientResponseException exception = assertThrows(
+                HttpClientResponseException.class,
+                () -> client.toBlocking().exchange(
+                    HttpRequest.GET(BASE_PATH + "/" + testPost.getId() + "/images")
+                        .bearerAuth(userToken),
+                    Map.class
+                )
+            );
+
+            assertEquals(HttpStatus.FORBIDDEN, exception.getStatus());
+        }
+
+        @Test
+        @DisplayName("Negative: Unauthenticated user cannot get post images")
+        void unauthenticatedUserCannotGetPostImages() {
+            // Act & Assert
+            HttpClientResponseException exception = assertThrows(
+                HttpClientResponseException.class,
+                () -> client.toBlocking().exchange(
+                    HttpRequest.GET(BASE_PATH + "/" + testPost.getId() + "/images"),
+                    Map.class
+                )
+            );
+
+            assertEquals(HttpStatus.UNAUTHORIZED, exception.getStatus());
+        }
+
+        @Test
+        @DisplayName("Edge Case: Admin gets 404 for images of non-existent post")
+        void adminGetsNotFoundForImagesOfNonExistentPost() {
+            // Act & Assert
+            UUID randomId = UUID.randomUUID();
+            assertThrows(
+                HttpClientResponseException.class,
+                () -> client.toBlocking().exchange(
+                    HttpRequest.GET(BASE_PATH + "/" + randomId + "/images")
+                        .bearerAuth(adminToken),
+                    Map.class
+                )
+            );
+        }
+
+        @Test
+        @DisplayName("Edge Case: Admin can get images for a hidden post")
+        void adminCanGetImagesForHiddenPost() {
+            // Arrange - create a hidden post with images
+            Post hiddenPost = new Post();
+            hiddenPost.setUserId(regularUser.getId());
+            hiddenPost.setTitle("Hidden Post With Images");
+            hiddenPost.setContent("Content");
+            hiddenPost.setWall("campus");
+            hiddenPost.setSchoolDomain("test.edu");
+            hiddenPost.setHidden(true);
+            hiddenPost.setImageUrls(List.of("http://example.com/hidden-img.jpg"));
+            hiddenPost = postRepository.save(hiddenPost);
+
+            // Act
+            HttpResponse<Map> response = client.toBlocking().exchange(
+                HttpRequest.GET(BASE_PATH + "/" + hiddenPost.getId() + "/images")
+                    .bearerAuth(adminToken),
+                Map.class
+            );
+
+            // Assert
+            assertEquals(HttpStatus.OK, response.getStatus());
+            List<?> imageUrls = (List<?>) response.body().get("imageUrls");
+            assertNotNull(imageUrls);
+            assertEquals(1, imageUrls.size());
+        }
+    }
 }

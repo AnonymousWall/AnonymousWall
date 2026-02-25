@@ -2549,6 +2549,45 @@ paths:
         "403":
           description: Forbidden
 
+  /admin/posts/{id}/images:
+    get:
+      tags: [admin]
+      summary: Get images for a post
+      description: Admin endpoint to retrieve the list of image URLs associated with a specific post
+      operationId: adminGetPostImages
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Post ID
+      responses:
+        "200":
+          description: Post images retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  postId:
+                    type: string
+                    format: uuid
+                  imageUrls:
+                    type: array
+                    items:
+                      type: string
+                    description: URLs of images attached to the post (up to 5)
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Post not found
+
   /admin/posts/by-wall:
     get:
       tags: [admin]
@@ -3237,6 +3276,45 @@ paths:
         "403":
           description: Forbidden
 
+  /admin/marketplaces/{id}/images:
+    get:
+      tags: [admin]
+      summary: Get images for a marketplace item
+      description: Admin endpoint to retrieve the list of image URLs associated with a specific marketplace item
+      operationId: adminGetMarketplaceImages
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Marketplace item ID
+      responses:
+        "200":
+          description: Marketplace item images retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  marketplaceItemId:
+                    type: string
+                    format: uuid
+                  imageUrls:
+                    type: array
+                    items:
+                      type: string
+                    description: URLs of images attached to the marketplace item (up to 5)
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Marketplace item not found
+
   /admin/conversations:
     get:
       tags: [admin]
@@ -3911,6 +3989,11 @@ components:
           type: integer
         hidden:
           type: boolean
+        imageUrls:
+          type: array
+          items:
+            type: string
+          description: URLs of images attached to the post (up to 5)
         createdAt:
           type: string
           format: date-time
@@ -4089,6 +4172,11 @@ components:
           type: integer
         hidden:
           type: boolean
+        imageUrls:
+          type: array
+          items:
+            type: string
+          description: URLs of images attached to the item (up to 5)
         createdAt:
           type: string
           format: date-time

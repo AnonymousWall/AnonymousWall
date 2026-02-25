@@ -2696,6 +2696,31 @@ GET /api/v1/admin/posts/by-wall?wall=national&page=2&limit=50
 
 **Access:** ADMIN or MODERATOR
 
+#### 5. Get Post Images
+```http
+GET /api/v1/admin/posts/{postId}/images
+Authorization: Bearer {admin-jwt-token}
+
+Response: 200 OK
+{
+    "postId": "uuid",
+    "imageUrls": [
+        "http://example.com/media/posts/uuid1.jpg",
+        "http://example.com/media/posts/uuid2.png"
+    ]
+}
+```
+
+**Effect:**
+- Returns the list of image URLs associated with the specified post
+- Returns an empty array if the post has no images
+- Works for both hidden and non-hidden posts
+
+**Error Responses:**
+- `404 Not Found` - Post with specified ID does not exist
+
+**Access:** ADMIN or MODERATOR
+
 ---
 
 ### Admin Comment Moderation Endpoints
@@ -2981,6 +3006,31 @@ Authorization: Bearer {admin-jwt-token}
 Response: 200 OK
 { "message": "Marketplace item unhidden successfully" }
 ```
+**Access:** ADMIN or MODERATOR
+
+#### 5. Get Marketplace Item Images
+```http
+GET /api/v1/admin/marketplaces/{id}/images
+Authorization: Bearer {admin-jwt-token}
+
+Response: 200 OK
+{
+    "marketplaceItemId": "uuid",
+    "imageUrls": [
+        "http://example.com/media/marketplace/uuid1.jpg",
+        "http://example.com/media/marketplace/uuid2.png"
+    ]
+}
+```
+
+**Effect:**
+- Returns the list of image URLs associated with the specified marketplace item
+- Returns an empty array if the item has no images
+- Works for both hidden and non-hidden items
+
+**Error Responses:**
+- `404 Not Found` - Marketplace item with specified ID does not exist
+
 **Access:** ADMIN or MODERATOR
 
 ---

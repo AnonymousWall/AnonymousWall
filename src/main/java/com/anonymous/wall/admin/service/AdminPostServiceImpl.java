@@ -12,6 +12,7 @@ import jakarta.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -182,5 +183,13 @@ public class AdminPostServiceImpl implements AdminPostService {
     public Page<Comment> getPostComments(UUID postId, Pageable pageable) {
         log.info("Admin fetching comments for post: {}", postId);
         return commentRepository.findByParentTypeAndParentId("POST", postId, pageable);
+    }
+
+    @Override
+    public List<String> getPostImages(UUID postId) {
+        log.info("Admin fetching images for post: {}", postId);
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new IllegalArgumentException("Post not found with ID: " + postId));
+        return post.getImageUrls();
     }
 }

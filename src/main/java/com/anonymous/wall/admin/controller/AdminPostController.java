@@ -47,6 +47,7 @@ public class AdminPostController {
         dto.setLikeCount(post.getLikeCount());
         dto.setCommentCount(post.getCommentCount());
         dto.setHidden(post.isHidden());
+        dto.setImageUrls(post.getImageUrls());
         dto.setCreatedAt(post.getCreatedAt());
         dto.setUpdatedAt(post.getUpdatedAt());
         return dto;
@@ -158,6 +159,17 @@ public class AdminPostController {
         pagination.put("totalPages", commentsPage.getTotalPages());
         response.put("pagination", pagination);
 
+        return HttpResponse.ok(response);
+    }
+
+    @Get("/{id}/images")
+    @Secured({"ADMIN", "MODERATOR"})
+    public HttpResponse<Object> getPostImages(@PathVariable String id) {
+        UUID postId = UUID.fromString(id);
+        List<String> imageUrls = adminPostService.getPostImages(postId);
+        Map<String, Object> response = new HashMap<>();
+        response.put("postId", postId);
+        response.put("imageUrls", imageUrls);
         return HttpResponse.ok(response);
     }
     
