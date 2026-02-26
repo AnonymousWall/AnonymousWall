@@ -542,6 +542,12 @@
             <column name="domain" value="jhu.edu"/>
             <column name="school_name" value="Johns Hopkins University"/>
         </insert>
+        <insert tableName="school_domains">
+            <column name="id" value="e37d88f1-bd17-407f-a97e-6e5372911a15"/>
+            <column name="domain" value="msu.edu"/>
+            <column name="school_name" value="Michigan State University"/>
+        </insert>
+
 
         <!-- UK Universities -->
         <insert tableName="school_domains">
