@@ -104,16 +104,24 @@ public class ChatWebSocketHandler {
                 // Handle chat message
                 String receiverIdStr = (String) messageData.get("receiverId");
                 String content = (String) messageData.get("content");
+                String imageUrl = (String) messageData.get("imageUrl");
 
-                if (receiverIdStr == null || content == null) {
-                    sendError(session, "Missing receiverId or content");
+                if (receiverIdStr == null) {
+                    sendError(session, "Missing receiverId");
+                    return;
+                }
+
+                boolean hasContent = content != null && !content.trim().isEmpty();
+                boolean hasImage = imageUrl != null && !imageUrl.trim().isEmpty();
+                if (!hasContent && !hasImage) {
+                    sendError(session, "Message must have content or an image");
                     return;
                 }
 
                 UUID receiverId = UUID.fromString(receiverIdStr);
 
                 // Save message via service
-                ChatMessage chatMessage = chatService.sendMessage(senderId, receiverId, content);
+                ChatMessage chatMessage = chatService.sendMessage(senderId, receiverId, content, imageUrl);
 
                 // Convert to DTO
                 ChatMessageDTO messageDTO = convertToDTO(chatMessage);
@@ -325,6 +333,7 @@ public class ChatWebSocketHandler {
         dto.setSenderId(message.getSenderId());
         dto.setReceiverId(message.getReceiverId());
         dto.setContent(message.getContent());
+        dto.setImageUrl(message.getImageUrl());
         dto.setReadStatus(message.isReadStatus());
         dto.setCreatedAt(message.getCreatedAt());
         return dto;

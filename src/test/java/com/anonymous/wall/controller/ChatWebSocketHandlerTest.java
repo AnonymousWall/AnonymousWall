@@ -171,14 +171,14 @@ class ChatWebSocketHandlerTest {
             savedMessage.setCreatedAt(OffsetDateTime.now());
 
             when(objectMapper.readValue(any(byte[].class), eq(Map.class))).thenReturn(messageData);
-            when(chatService.sendMessage(testUser1Id, testUser2Id, "Hello")).thenReturn(savedMessage);
+            when(chatService.sendMessage(testUser1Id, testUser2Id, "Hello", null)).thenReturn(savedMessage);
             when(objectMapper.writeValueAsString(any())).thenReturn("{\"type\":\"message\"}");
 
             // Act
             handler.onMessage(messageJson, mockSession);
 
             // Assert
-            verify(chatService, times(1)).sendMessage(testUser1Id, testUser2Id, "Hello");
+            verify(chatService, times(1)).sendMessage(testUser1Id, testUser2Id, "Hello", null);
             verify(mockSession, times(1)).sendAsync(anyString());
         }
 
@@ -468,14 +468,14 @@ class ChatWebSocketHandlerTest {
             savedMessage.setCreatedAt(OffsetDateTime.now());
 
             when(objectMapper.readValue(any(byte[].class), eq(Map.class))).thenReturn(messageData);
-            when(chatService.sendMessage(testUser1Id, testUser2Id, "Test message")).thenReturn(savedMessage);
+            when(chatService.sendMessage(testUser1Id, testUser2Id, "Test message", null)).thenReturn(savedMessage);
             when(objectMapper.writeValueAsString(any())).thenReturn("{\"type\":\"message\"}");
 
             // Act
             handler.onMessage(messageJson, mockSession);
 
             // Assert
-            verify(chatService, times(1)).sendMessage(testUser1Id, testUser2Id, "Test message");
+            verify(chatService, times(1)).sendMessage(testUser1Id, testUser2Id, "Test message", null);
             assertNotNull(savedMessage.getConversationId(), "ConversationId should be set on saved message");
         }
 

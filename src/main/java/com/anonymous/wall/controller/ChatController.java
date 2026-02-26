@@ -5,11 +5,16 @@ import com.anonymous.wall.model.ChatMessageDTO;
 import com.anonymous.wall.model.ConversationDTO;
 import com.anonymous.wall.model.SendMessageRequest;
 import com.anonymous.wall.service.ChatService;
+import com.anonymous.wall.util.MediaUtilInterface;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpResponse;
+import io.micronaut.http.MediaType;
 import io.micronaut.http.annotation.*;
+import io.micronaut.http.multipart.CompletedFileUpload;
+import io.micronaut.scheduling.TaskExecutors;
+import io.micronaut.scheduling.annotation.ExecuteOn;
 import io.micronaut.security.annotation.Secured;
 import io.micronaut.security.rules.SecurityRule;
 import jakarta.inject.Inject;
@@ -35,6 +40,9 @@ public class ChatController {
 
     @Inject
     private ChatWebSocketHandler chatWebSocketHandler;
+
+    @Inject
+    private MediaUtilInterface mediaUtil;
 
     /**
      * Helper to extract user ID from Principal
@@ -128,6 +136,31 @@ public class ChatController {
     }
 
     /**
+     * POST /chat/images
+     * Upload a chat image, returns URL immediately
+     */
+    @Post("/images")
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    @ExecuteOn(TaskExecutors.BLOCKING)
+    public HttpResponse<?> uploadChatImage(
+            @Part("image") CompletedFileUpload image,
+            HttpRequest<?> httpRequest) {
+        try {
+            UUID userId = getUserIdFromRequest(httpRequest);
+            log.info("POST /chat/images - user={}, size={}", userId, image.getSize());
+
+            String url = mediaUtil.uploadChatImage(image, userId);
+
+            return HttpResponse.created(Map.of("url", url));
+        } catch (IllegalArgumentException e) {
+            return HttpResponse.badRequest(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            log.error("POST /chat/images - Error uploading image", e);
+            return HttpResponse.serverError(Map.of("error", "Failed to upload image"));
+        }
+    }
+
+    /**
      * POST /chat/messages
      * Send a chat message
      */
@@ -140,10 +173,19 @@ public class ChatController {
             log.debug("Sending message from {} to {}", senderId, receiverId);
 
             // Send message
-            ChatMessage message = chatService.sendMessage(senderId, receiverId, request.getContent());
+            ChatMessage message = chatService.sendMessage(
+                    senderId, receiverId, request.getContent(), request.getImageUrl());
 
             // Convert to DTO
             ChatMessageDTO messageDTO = convertToDTO(message);
+
+            // Push to receiver via WebSocket if online
+            Map<String, Object> wsMessage = new HashMap<>();
+            wsMessage.put("type", "message");
+            wsMessage.put("message", messageDTO);
+            chatWebSocketHandler.broadcastToUser(
+                    receiverId,
+                    chatWebSocketHandler.serializeToJson(wsMessage));
 
             return HttpResponse.created(messageDTO);
         } catch (IllegalArgumentException e) {
@@ -245,6 +287,7 @@ public class ChatController {
         dto.setSenderId(message.getSenderId());
         dto.setReceiverId(message.getReceiverId());
         dto.setContent(message.getContent());
+        dto.setImageUrl(message.getImageUrl());
         dto.setReadStatus(message.isReadStatus());
         dto.setCreatedAt(message.getCreatedAt());
         return dto;

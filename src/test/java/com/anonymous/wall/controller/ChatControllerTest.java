@@ -107,10 +107,8 @@ class ChatControllerTest {
         @DisplayName("Should send message successfully")
         void shouldSendMessageSuccessfully() {
             // Arrange
-            SendMessageRequest request = new SendMessageRequest(
-                testUser2.getId(),
-                "Hello, this is a test message!"
-            );
+            SendMessageRequest request = new SendMessageRequest(testUser2.getId());
+            request.setContent("Hello, this is a test message!");
 
             // Act
             HttpResponse<ChatMessageDTO> response = client.toBlocking().exchange(
@@ -135,10 +133,8 @@ class ChatControllerTest {
         @DisplayName("Should fail to send message without authentication")
         void shouldFailWithoutAuth() {
             // Arrange
-            SendMessageRequest request = new SendMessageRequest(
-                testUser2.getId(),
-                "Test message"
-            );
+            SendMessageRequest request = new SendMessageRequest(testUser2.getId());
+            request.setContent("Test message");
 
             // Act & Assert
             HttpClientResponseException exception = assertThrows(
@@ -156,10 +152,8 @@ class ChatControllerTest {
         @DisplayName("Should fail to send message to blocked user")
         void shouldFailToSendToBlockedUser() {
             // Arrange
-            SendMessageRequest request = new SendMessageRequest(
-                blockedUser.getId(),
-                "Test message"
-            );
+            SendMessageRequest request = new SendMessageRequest(blockedUser.getId());
+            request.setContent("Test message");
 
             // Act & Assert
             HttpClientResponseException exception = assertThrows(
@@ -176,13 +170,10 @@ class ChatControllerTest {
 
         @Test
         @Order(4)
-        @DisplayName("Should fail with empty message content")
-        void shouldFailWithEmptyContent() {
-            // Arrange
-            SendMessageRequest request = new SendMessageRequest(
-                testUser2.getId(),
-                ""
-            );
+        @DisplayName("Should fail when neither content nor imageUrl is provided")
+        void shouldFailWithNeitherContentNorImageUrl() {
+            // Arrange - request with no content and no imageUrl
+            SendMessageRequest request = new SendMessageRequest(testUser2.getId());
 
             // Act & Assert
             HttpClientResponseException exception = assertThrows(
@@ -195,6 +186,52 @@ class ChatControllerTest {
             );
 
             assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
+        }
+
+        @Test
+        @Order(5)
+        @DisplayName("Should send image-only message successfully")
+        void shouldSendImageOnlyMessageSuccessfully() {
+            // Arrange
+            SendMessageRequest request = new SendMessageRequest(testUser2.getId());
+            request.setImageUrl("https://example.com/chat/image.jpg");
+
+            // Act
+            HttpResponse<ChatMessageDTO> response = client.toBlocking().exchange(
+                HttpRequest.POST(BASE_PATH + "/messages", request)
+                    .bearerAuth(user1Token),
+                ChatMessageDTO.class
+            );
+
+            // Assert
+            assertEquals(HttpStatus.CREATED, response.getStatus());
+            assertNotNull(response.body());
+            ChatMessageDTO message = response.body();
+            assertEquals("https://example.com/chat/image.jpg", message.getImageUrl());
+        }
+
+        @Test
+        @Order(6)
+        @DisplayName("Should send message with both content and imageUrl")
+        void shouldSendMessageWithContentAndImageUrl() {
+            // Arrange
+            SendMessageRequest request = new SendMessageRequest(testUser2.getId());
+            request.setContent("Check this image!");
+            request.setImageUrl("https://example.com/chat/image.jpg");
+
+            // Act
+            HttpResponse<ChatMessageDTO> response = client.toBlocking().exchange(
+                HttpRequest.POST(BASE_PATH + "/messages", request)
+                    .bearerAuth(user1Token),
+                ChatMessageDTO.class
+            );
+
+            // Assert
+            assertEquals(HttpStatus.CREATED, response.getStatus());
+            assertNotNull(response.body());
+            ChatMessageDTO message = response.body();
+            assertEquals("Check this image!", message.getContent());
+            assertEquals("https://example.com/chat/image.jpg", message.getImageUrl());
         }
     }
 

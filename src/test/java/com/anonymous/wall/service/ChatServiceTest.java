@@ -135,6 +135,57 @@ class ChatServiceTest {
             // Assert
             assertEquals("Hello with spaces", result.getContent());
         }
+
+        @Test
+        @DisplayName("Should send image-only message successfully")
+        void shouldSendImageOnlyMessage() {
+            // Arrange
+            String imageUrl = "https://example.com/chat/image.jpg";
+
+            when(userRepository.findById(testUser1Id)).thenReturn(Optional.of(testUser1));
+            when(userRepository.findById(testUser2Id)).thenReturn(Optional.of(testUser2));
+            when(chatMessageRepository.save(any(ChatMessage.class))).thenAnswer(invocation -> {
+                ChatMessage message = invocation.getArgument(0);
+                message.setId(UUID.randomUUID());
+                return message;
+            });
+
+            // Act
+            ChatMessage result = chatService.sendMessage(testUser1Id, testUser2Id, null, imageUrl);
+
+            // Assert
+            assertNotNull(result);
+            assertEquals(imageUrl, result.getImageUrl());
+            assertEquals(testUser1Id, result.getSenderId());
+            assertEquals(testUser2Id, result.getReceiverId());
+            assertFalse(result.isReadStatus());
+            verify(chatMessageRepository, times(1)).save(any(ChatMessage.class));
+        }
+
+        @Test
+        @DisplayName("Should send message with both content and imageUrl")
+        void shouldSendMessageWithContentAndImage() {
+            // Arrange
+            String content = "Check this image!";
+            String imageUrl = "https://example.com/chat/image.jpg";
+
+            when(userRepository.findById(testUser1Id)).thenReturn(Optional.of(testUser1));
+            when(userRepository.findById(testUser2Id)).thenReturn(Optional.of(testUser2));
+            when(chatMessageRepository.save(any(ChatMessage.class))).thenAnswer(invocation -> {
+                ChatMessage message = invocation.getArgument(0);
+                message.setId(UUID.randomUUID());
+                return message;
+            });
+
+            // Act
+            ChatMessage result = chatService.sendMessage(testUser1Id, testUser2Id, content, imageUrl);
+
+            // Assert
+            assertNotNull(result);
+            assertEquals(content, result.getContent());
+            assertEquals(imageUrl, result.getImageUrl());
+            verify(chatMessageRepository, times(1)).save(any(ChatMessage.class));
+        }
     }
 
     @Nested
@@ -168,41 +219,41 @@ class ChatServiceTest {
         }
 
         @Test
-        @DisplayName("Should throw exception when content is null")
-        void shouldThrowExceptionWhenContentIsNull() {
+        @DisplayName("Should throw exception when both content and imageUrl are null")
+        void shouldThrowExceptionWhenBothContentAndImageUrlAreNull() {
             // Act & Assert
             IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
-                () -> chatService.sendMessage(testUser1Id, testUser2Id, null)
+                () -> chatService.sendMessage(testUser1Id, testUser2Id, null, null)
             );
             
-            assertEquals("Message content must not be empty", exception.getMessage());
+            assertEquals("Message must have content or an image", exception.getMessage());
             verify(chatMessageRepository, never()).save(any());
         }
 
         @Test
-        @DisplayName("Should throw exception when content is empty")
-        void shouldThrowExceptionWhenContentIsEmpty() {
+        @DisplayName("Should throw exception when content is empty and imageUrl is null")
+        void shouldThrowExceptionWhenContentIsEmptyAndNoImage() {
             // Act & Assert
             IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
-                () -> chatService.sendMessage(testUser1Id, testUser2Id, "")
+                () -> chatService.sendMessage(testUser1Id, testUser2Id, "", null)
             );
             
-            assertEquals("Message content must not be empty", exception.getMessage());
+            assertEquals("Message must have content or an image", exception.getMessage());
             verify(chatMessageRepository, never()).save(any());
         }
 
         @Test
-        @DisplayName("Should throw exception when content is only whitespace")
-        void shouldThrowExceptionWhenContentIsOnlyWhitespace() {
+        @DisplayName("Should throw exception when content is only whitespace and no imageUrl")
+        void shouldThrowExceptionWhenContentIsOnlyWhitespaceAndNoImage() {
             // Act & Assert
             IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
-                () -> chatService.sendMessage(testUser1Id, testUser2Id, "   ")
+                () -> chatService.sendMessage(testUser1Id, testUser2Id, "   ", null)
             );
             
-            assertEquals("Message content must not be empty", exception.getMessage());
+            assertEquals("Message must have content or an image", exception.getMessage());
             verify(chatMessageRepository, never()).save(any());
         }
 
