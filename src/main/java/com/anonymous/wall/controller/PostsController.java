@@ -289,7 +289,7 @@ public class PostsController {
 
             Pageable pageable = Pageable.from(page - 1, limit);
             com.anonymous.wall.model.SortBy sortBy = com.anonymous.wall.model.SortBy.parse(sort);
-            Page<Comment> commentPage = commentsService.getCommentsWithPagination(CommentParentType.POST, postId, pageable, sortBy);
+            Page<Comment> commentPage = commentsService.getCommentsWithPagination(CommentParentType.POST, postId, pageable, sortBy, userId);
 
             List<CommentDTO> dtos = commentPage.getContent().stream()
                     .map(this::mapCommentToDTO)

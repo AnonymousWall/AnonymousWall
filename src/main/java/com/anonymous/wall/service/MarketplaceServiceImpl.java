@@ -24,7 +24,9 @@ import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Singleton
 public class MarketplaceServiceImpl implements MarketplaceService {
@@ -46,6 +48,9 @@ public class MarketplaceServiceImpl implements MarketplaceService {
 
     @Inject
     private MediaUtilInterface mediaUtil;
+
+    @Inject
+    private UserBlockService userBlockService;
 
     @Override
     @Transactional
@@ -233,6 +238,8 @@ public class MarketplaceServiceImpl implements MarketplaceService {
             sortBy = "newest";
         }
 
+        Page<MarketplaceItem> result;
+
         if ("campus".equals(wall)) {
             if (schoolDomain == null || schoolDomain.trim().isEmpty()) {
                 throw new IllegalArgumentException("School domain is required to view campus marketplace items");
@@ -240,26 +247,34 @@ public class MarketplaceServiceImpl implements MarketplaceService {
             if (category != null) {
                 switch (sortBy.toLowerCase()) {
                     case "oldest":
-                        return marketplaceItemRepository.findByWallAndSchoolDomainAndCategoryAndHiddenFalseOrderByCreatedAtAsc("campus", schoolDomain, category, pageable);
+                        result = marketplaceItemRepository.findByWallAndSchoolDomainAndCategoryAndHiddenFalseOrderByCreatedAtAsc("campus", schoolDomain, category, pageable);
+                        break;
                     case "price-asc":
-                        return marketplaceItemRepository.findByWallAndSchoolDomainAndCategoryAndHiddenFalseOrderByPriceAsc("campus", schoolDomain, category, pageable);
+                        result = marketplaceItemRepository.findByWallAndSchoolDomainAndCategoryAndHiddenFalseOrderByPriceAsc("campus", schoolDomain, category, pageable);
+                        break;
                     case "price-desc":
-                        return marketplaceItemRepository.findByWallAndSchoolDomainAndCategoryAndHiddenFalseOrderByPriceDesc("campus", schoolDomain, category, pageable);
+                        result = marketplaceItemRepository.findByWallAndSchoolDomainAndCategoryAndHiddenFalseOrderByPriceDesc("campus", schoolDomain, category, pageable);
+                        break;
                     case "newest":
                     default:
-                        return marketplaceItemRepository.findByWallAndSchoolDomainAndCategoryAndHiddenFalseOrderByCreatedAtDesc("campus", schoolDomain, category, pageable);
+                        result = marketplaceItemRepository.findByWallAndSchoolDomainAndCategoryAndHiddenFalseOrderByCreatedAtDesc("campus", schoolDomain, category, pageable);
+                        break;
                 }
             } else {
                 switch (sortBy.toLowerCase()) {
                     case "oldest":
-                        return marketplaceItemRepository.findByWallAndSchoolDomainAndHiddenFalseOrderByCreatedAtAsc("campus", schoolDomain, pageable);
+                        result = marketplaceItemRepository.findByWallAndSchoolDomainAndHiddenFalseOrderByCreatedAtAsc("campus", schoolDomain, pageable);
+                        break;
                     case "price-asc":
-                        return marketplaceItemRepository.findByWallAndSchoolDomainAndHiddenFalseOrderByPriceAsc("campus", schoolDomain, pageable);
+                        result = marketplaceItemRepository.findByWallAndSchoolDomainAndHiddenFalseOrderByPriceAsc("campus", schoolDomain, pageable);
+                        break;
                     case "price-desc":
-                        return marketplaceItemRepository.findByWallAndSchoolDomainAndHiddenFalseOrderByPriceDesc("campus", schoolDomain, pageable);
+                        result = marketplaceItemRepository.findByWallAndSchoolDomainAndHiddenFalseOrderByPriceDesc("campus", schoolDomain, pageable);
+                        break;
                     case "newest":
                     default:
-                        return marketplaceItemRepository.findByWallAndSchoolDomainAndHiddenFalseOrderByCreatedAtDesc("campus", schoolDomain, pageable);
+                        result = marketplaceItemRepository.findByWallAndSchoolDomainAndHiddenFalseOrderByCreatedAtDesc("campus", schoolDomain, pageable);
+                        break;
                 }
             }
         } else {
@@ -267,29 +282,49 @@ public class MarketplaceServiceImpl implements MarketplaceService {
             if (category != null) {
                 switch (sortBy.toLowerCase()) {
                     case "oldest":
-                        return marketplaceItemRepository.findByWallAndCategoryAndHiddenFalseOrderByCreatedAtAsc("national", category, pageable);
+                        result = marketplaceItemRepository.findByWallAndCategoryAndHiddenFalseOrderByCreatedAtAsc("national", category, pageable);
+                        break;
                     case "price-asc":
-                        return marketplaceItemRepository.findByWallAndCategoryAndHiddenFalseOrderByPriceAsc("national", category, pageable);
+                        result = marketplaceItemRepository.findByWallAndCategoryAndHiddenFalseOrderByPriceAsc("national", category, pageable);
+                        break;
                     case "price-desc":
-                        return marketplaceItemRepository.findByWallAndCategoryAndHiddenFalseOrderByPriceDesc("national", category, pageable);
+                        result = marketplaceItemRepository.findByWallAndCategoryAndHiddenFalseOrderByPriceDesc("national", category, pageable);
+                        break;
                     case "newest":
                     default:
-                        return marketplaceItemRepository.findByWallAndCategoryAndHiddenFalseOrderByCreatedAtDesc("national", category, pageable);
+                        result = marketplaceItemRepository.findByWallAndCategoryAndHiddenFalseOrderByCreatedAtDesc("national", category, pageable);
+                        break;
                 }
             } else {
                 switch (sortBy.toLowerCase()) {
                     case "oldest":
-                        return marketplaceItemRepository.findByWallAndHiddenFalseOrderByCreatedAtAsc("national", pageable);
+                        result = marketplaceItemRepository.findByWallAndHiddenFalseOrderByCreatedAtAsc("national", pageable);
+                        break;
                     case "price-asc":
-                        return marketplaceItemRepository.findByWallAndHiddenFalseOrderByPriceAsc("national", pageable);
+                        result = marketplaceItemRepository.findByWallAndHiddenFalseOrderByPriceAsc("national", pageable);
+                        break;
                     case "price-desc":
-                        return marketplaceItemRepository.findByWallAndHiddenFalseOrderByPriceDesc("national", pageable);
+                        result = marketplaceItemRepository.findByWallAndHiddenFalseOrderByPriceDesc("national", pageable);
+                        break;
                     case "newest":
                     default:
-                        return marketplaceItemRepository.findByWallAndHiddenFalseOrderByCreatedAtDesc("national", pageable);
+                        result = marketplaceItemRepository.findByWallAndHiddenFalseOrderByCreatedAtDesc("national", pageable);
+                        break;
                 }
             }
         }
+
+        // Filter out items from users blocked in either direction
+        Set<UUID> blockedUserIds = userBlockService.getCombinedBlockedUserIds(userId);
+        if (!blockedUserIds.isEmpty()) {
+            List<MarketplaceItem> filtered = result.getContent().stream()
+                    .filter(i -> !blockedUserIds.contains(i.getUserId()))
+                    .collect(Collectors.toList());
+            long removed = result.getContent().size() - filtered.size();
+            result = Page.of(filtered, result.getPageable(), result.getTotalSize() - removed);
+        }
+
+        return result;
     }
 
     @Override

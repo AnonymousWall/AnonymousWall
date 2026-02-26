@@ -63,6 +63,9 @@ public class PostsServiceImpl implements PostsService {
     @Inject
     private MediaUtilInterface mediaUtil;
 
+    @Inject
+    private UserBlockService userBlockService;
+
     /**
      * Create a new post with optional image uploads (up to 5 images)
      */
@@ -193,6 +196,16 @@ public class PostsServiceImpl implements PostsService {
                 posts = getPostsWithSort("campus", schoolDomain, pageable, sortBy);
                 log.debug("Retrieved {} campus posts (sort: {}) for user: {}, schoolDomain: {}", posts.getNumberOfElements(), sortBy, currentUserId, schoolDomain);
             }
+        }
+
+        // Filter out posts from users blocked in either direction
+        Set<UUID> blockedUserIds = userBlockService.getCombinedBlockedUserIds(currentUserId);
+        if (!blockedUserIds.isEmpty()) {
+            List<Post> filteredContent = posts.getContent().stream()
+                    .filter(p -> !blockedUserIds.contains(p.getUserId()))
+                    .collect(Collectors.toList());
+            long removed = posts.getContent().size() - filteredContent.size();
+            posts = Page.of(filteredContent, posts.getPageable(), posts.getTotalSize() - removed);
         }
 
         // Enrich posts with like/comment counts and check if current user liked (batch operation)

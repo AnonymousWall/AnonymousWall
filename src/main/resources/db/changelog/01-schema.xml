@@ -627,4 +627,35 @@
         </createIndex>
     </changeSet>
 
+    <changeSet id="17-create-user-blocks-table" author="copilot">
+        <createTable tableName="user_blocks">
+            <column name="id" type="CHAR(36)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="blocker_id" type="CHAR(36)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="blocked_id" type="CHAR(36)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="user_blocks" baseColumnNames="blocker_id"
+                                 constraintName="fk_user_blocks_blocker"
+                                 referencedTableName="users" referencedColumnNames="id"/>
+        <addForeignKeyConstraint baseTableName="user_blocks" baseColumnNames="blocked_id"
+                                 constraintName="fk_user_blocks_blocked"
+                                 referencedTableName="users" referencedColumnNames="id"/>
+        <createIndex tableName="user_blocks" indexName="idx_user_blocks_blocker">
+            <column name="blocker_id"/>
+        </createIndex>
+        <createIndex tableName="user_blocks" indexName="idx_user_blocks_blocked">
+            <column name="blocked_id"/>
+        </createIndex>
+        <addUniqueConstraint tableName="user_blocks" columnNames="blocker_id,blocked_id"
+                             constraintName="uq_user_blocks_blocker_blocked"/>
+    </changeSet>
+
 </databaseChangeLog>

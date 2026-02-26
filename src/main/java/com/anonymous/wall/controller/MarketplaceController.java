@@ -383,7 +383,7 @@ public class MarketplaceController {
 
             Pageable pageable = Pageable.from(page - 1, limit);
             SortBy sortBy = SortBy.parse(sort);
-            Page<Comment> commentPage = commentsService.getCommentsWithPagination(CommentParentType.MARKETPLACE, itemId, pageable, sortBy);
+            Page<Comment> commentPage = commentsService.getCommentsWithPagination(CommentParentType.MARKETPLACE, itemId, pageable, sortBy, userId);
 
             List<CommentDTO> dtos = commentPage.getContent().stream()
                     .map(this::mapCommentToDTO)

@@ -18,8 +18,11 @@ import org.slf4j.LoggerFactory;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Singleton
 public class InternshipServiceImpl implements InternshipService {
@@ -37,6 +40,9 @@ public class InternshipServiceImpl implements InternshipService {
 
     @Inject
     private ApplicationEventPublisher<InternshipHiddenEvent> internshipHiddenEventPublisher;
+
+    @Inject
+    private UserBlockService userBlockService;
 
     @Override
     @Transactional
@@ -131,27 +137,45 @@ public class InternshipServiceImpl implements InternshipService {
             sortBy = "newest";
         }
 
+        Page<Internship> result;
+
         if ("campus".equals(wall)) {
             if (schoolDomain == null || schoolDomain.trim().isEmpty()) {
                 throw new IllegalArgumentException("School domain is required to view campus internships");
             }
             switch (sortBy.toLowerCase()) {
                 case "oldest":
-                    return internshipRepository.findByWallAndSchoolDomainAndHiddenFalseOrderByCreatedAtAsc("campus", schoolDomain, pageable);
+                    result = internshipRepository.findByWallAndSchoolDomainAndHiddenFalseOrderByCreatedAtAsc("campus", schoolDomain, pageable);
+                    break;
                 case "newest":
                 default:
-                    return internshipRepository.findByWallAndSchoolDomainAndHiddenFalseOrderByCreatedAtDesc("campus", schoolDomain, pageable);
+                    result = internshipRepository.findByWallAndSchoolDomainAndHiddenFalseOrderByCreatedAtDesc("campus", schoolDomain, pageable);
+                    break;
             }
         } else {
             // National wall
             switch (sortBy.toLowerCase()) {
                 case "oldest":
-                    return internshipRepository.findByWallAndHiddenFalseOrderByCreatedAtAsc("national", pageable);
+                    result = internshipRepository.findByWallAndHiddenFalseOrderByCreatedAtAsc("national", pageable);
+                    break;
                 case "newest":
                 default:
-                    return internshipRepository.findByWallAndHiddenFalseOrderByCreatedAtDesc("national", pageable);
+                    result = internshipRepository.findByWallAndHiddenFalseOrderByCreatedAtDesc("national", pageable);
+                    break;
             }
         }
+
+        // Filter out internships from users blocked in either direction
+        Set<UUID> blockedUserIds = userBlockService.getCombinedBlockedUserIds(userId);
+        if (!blockedUserIds.isEmpty()) {
+            List<Internship> filtered = result.getContent().stream()
+                    .filter(i -> !blockedUserIds.contains(i.getUserId()))
+                    .collect(Collectors.toList());
+            long removed = result.getContent().size() - filtered.size();
+            result = Page.of(filtered, result.getPageable(), result.getTotalSize() - removed);
+        }
+
+        return result;
     }
 
     @Override

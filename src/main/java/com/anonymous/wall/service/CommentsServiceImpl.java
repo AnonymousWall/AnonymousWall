@@ -14,8 +14,11 @@ import jakarta.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Singleton
 public class CommentsServiceImpl implements CommentsService {
@@ -39,6 +42,9 @@ public class CommentsServiceImpl implements CommentsService {
 
     @Inject
     private CommentReportRepository commentReportRepository;
+
+    @Inject
+    private com.anonymous.wall.service.UserBlockService userBlockService;
 
     /**
      * Resolve a Commentable entity by its parent type and ID.
@@ -159,6 +165,26 @@ public class CommentsServiceImpl implements CommentsService {
 
         log.info("Retrieved {} comments for {} {}, sort: {}, total: {}", comments.getNumberOfElements(), parentType, parentId, sortBy, comments.getTotalSize());
         return comments;
+    }
+
+    /**
+     * Get comments for a parent entity with pagination, sorting, and block filtering.
+     */
+    @Override
+    public Page<Comment> getCommentsWithPagination(CommentParentType parentType, UUID parentId, Pageable pageable, SortBy sortBy, UUID currentUserId) {
+        Page<Comment> comments = getCommentsWithPagination(parentType, parentId, pageable, sortBy);
+        if (currentUserId == null) {
+            return comments;
+        }
+        Set<UUID> blockedUserIds = userBlockService.getCombinedBlockedUserIds(currentUserId);
+        if (blockedUserIds.isEmpty()) {
+            return comments;
+        }
+        List<Comment> filtered = comments.getContent().stream()
+                .filter(c -> !blockedUserIds.contains(c.getUserId()))
+                .collect(Collectors.toList());
+        long removed = comments.getContent().size() - filtered.size();
+        return Page.of(filtered, comments.getPageable(), comments.getTotalSize() - removed);
     }
 
     /**

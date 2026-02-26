@@ -21,6 +21,12 @@ public interface CommentsService {
     Page<Comment> getCommentsWithPagination(CommentParentType parentType, UUID parentId, Pageable pageable, SortBy sortBy);
 
     /**
+     * Get comments for a parent entity with pagination, sorting, and block filtering.
+     * Comments from users that have a block relationship with currentUserId are excluded.
+     */
+    Page<Comment> getCommentsWithPagination(CommentParentType parentType, UUID parentId, Pageable pageable, SortBy sortBy, UUID currentUserId);
+
+    /**
      * Hide a comment (soft-delete)
      * Only the comment author can hide their own comment
      */

@@ -29,6 +29,7 @@ class ChatServiceTest {
     private ChatServiceImpl chatService;
     private ChatMessageRepository chatMessageRepository;
     private UserRepository userRepository;
+    private UserBlockService userBlockService;
 
     private UUID testUser1Id;
     private UUID testUser2Id;
@@ -41,6 +42,7 @@ class ChatServiceTest {
     void setUp() {
         chatMessageRepository = mock(ChatMessageRepository.class);
         userRepository = mock(UserRepository.class);
+        userBlockService = mock(UserBlockService.class);
         
         chatService = new ChatServiceImpl();
         
@@ -52,6 +54,10 @@ class ChatServiceTest {
             var userRepoField = ChatServiceImpl.class.getDeclaredField("userRepository");
             userRepoField.setAccessible(true);
             userRepoField.set(chatService, userRepository);
+
+            var userBlockServiceField = ChatServiceImpl.class.getDeclaredField("userBlockService");
+            userBlockServiceField.setAccessible(true);
+            userBlockServiceField.set(chatService, userBlockService);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -81,6 +87,9 @@ class ChatServiceTest {
         blockedUser.setSchoolDomain("harvard.edu");
         blockedUser.setProfileName("BlockedUser");
         blockedUser.setBlocked(true);
+
+        // Default: users are not blocked in any direction
+        when(userBlockService.isBlockedInAnyDirection(any(UUID.class), any(UUID.class))).thenReturn(false);
     }
 
     @Nested
