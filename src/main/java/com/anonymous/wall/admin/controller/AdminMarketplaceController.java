@@ -38,7 +38,6 @@ public class AdminMarketplaceController {
         dto.setPrice(item.getPrice());
         dto.setCategory(item.getCategory());
         dto.setCondition(item.getCondition());
-        dto.setSold(item.isSold());
         dto.setWall(AdminPostDTOWall.fromValue(item.getWall()));
         dto.setSchoolDomain(item.getSchoolDomain());
         dto.setCommentCount(item.getCommentCount());

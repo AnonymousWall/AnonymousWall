@@ -116,7 +116,6 @@ public class MarketplaceServiceImpl implements MarketplaceService {
         item.setPrice(price);
         item.setCategory(request.getCategory() != null ? request.getCategory() : null);
         item.setCondition(request.getCondition() != null ? request.getCondition().getValue() : null);
-        item.setSold(false);
         item.setWall(wall);
         item.setSchoolDomain(schoolDomain);
         item.setCreatedAt(OffsetDateTime.now());
@@ -196,11 +195,6 @@ public class MarketplaceServiceImpl implements MarketplaceService {
             updated = true;
         }
 
-        if (request.getSold() != null) {
-            item.setSold(request.getSold());
-            updated = true;
-        }
-
         if (updated) {
             item.setUpdatedAt(OffsetDateTime.now());
             MarketplaceItem saved = marketplaceItemRepository.update(item);
@@ -213,23 +207,11 @@ public class MarketplaceServiceImpl implements MarketplaceService {
     }
 
     @Override
-    public Page<MarketplaceItem> listItems(Pageable pageable, String sortBy, Boolean sold) {
-        log.info("Listing marketplace items with sortBy={}, sold={}", sortBy, sold);
+    public Page<MarketplaceItem> listItems(Pageable pageable, String sortBy) {
+        log.info("Listing marketplace items with sortBy={}", sortBy);
 
         if (sortBy == null) {
             sortBy = "newest";
-        }
-
-        if (sold != null) {
-            switch (sortBy.toLowerCase()) {
-                case "price-asc":
-                    return marketplaceItemRepository.findBySoldOrderByPriceAsc(sold, pageable);
-                case "price-desc":
-                    return marketplaceItemRepository.findBySoldOrderByPriceDesc(sold, pageable);
-                case "newest":
-                default:
-                    return marketplaceItemRepository.findBySoldOrderByCreatedAtDesc(sold, pageable);
-            }
         }
 
         switch (sortBy.toLowerCase()) {
@@ -244,8 +226,8 @@ public class MarketplaceServiceImpl implements MarketplaceService {
     }
 
     @Override
-    public Page<MarketplaceItem> getItemsByWall(String wall, Pageable pageable, UUID userId, String schoolDomain, String sortBy, Boolean sold) {
-        log.info("Listing marketplace items by wall={}, sortBy={}, schoolDomain={}, sold={}", wall, sortBy, schoolDomain, sold);
+    public Page<MarketplaceItem> getItemsByWall(String wall, Pageable pageable, UUID userId, String schoolDomain, String sortBy) {
+        log.info("Listing marketplace items by wall={}, sortBy={}, schoolDomain={}", wall, sortBy, schoolDomain);
 
         if (sortBy == null) {
             sortBy = "newest";
@@ -254,19 +236,6 @@ public class MarketplaceServiceImpl implements MarketplaceService {
         if ("campus".equals(wall)) {
             if (schoolDomain == null || schoolDomain.trim().isEmpty()) {
                 throw new IllegalArgumentException("School domain is required to view campus marketplace items");
-            }
-            if (sold != null) {
-                switch (sortBy.toLowerCase()) {
-                    case "oldest":
-                        return marketplaceItemRepository.findByWallAndSchoolDomainAndSoldAndHiddenFalseOrderByCreatedAtAsc("campus", schoolDomain, sold, pageable);
-                    case "price-asc":
-                        return marketplaceItemRepository.findByWallAndSchoolDomainAndSoldAndHiddenFalseOrderByPriceAsc("campus", schoolDomain, sold, pageable);
-                    case "price-desc":
-                        return marketplaceItemRepository.findByWallAndSchoolDomainAndSoldAndHiddenFalseOrderByPriceDesc("campus", schoolDomain, sold, pageable);
-                    case "newest":
-                    default:
-                        return marketplaceItemRepository.findByWallAndSchoolDomainAndSoldAndHiddenFalseOrderByCreatedAtDesc("campus", schoolDomain, sold, pageable);
-                }
             }
             switch (sortBy.toLowerCase()) {
                 case "oldest":
@@ -281,19 +250,6 @@ public class MarketplaceServiceImpl implements MarketplaceService {
             }
         } else {
             // National wall
-            if (sold != null) {
-                switch (sortBy.toLowerCase()) {
-                    case "oldest":
-                        return marketplaceItemRepository.findByWallAndSoldAndHiddenFalseOrderByCreatedAtAsc("national", sold, pageable);
-                    case "price-asc":
-                        return marketplaceItemRepository.findByWallAndSoldAndHiddenFalseOrderByPriceAsc("national", sold, pageable);
-                    case "price-desc":
-                        return marketplaceItemRepository.findByWallAndSoldAndHiddenFalseOrderByPriceDesc("national", sold, pageable);
-                    case "newest":
-                    default:
-                        return marketplaceItemRepository.findByWallAndSoldAndHiddenFalseOrderByCreatedAtDesc("national", sold, pageable);
-                }
-            }
             switch (sortBy.toLowerCase()) {
                 case "oldest":
                     return marketplaceItemRepository.findByWallAndHiddenFalseOrderByCreatedAtAsc("national", pageable);

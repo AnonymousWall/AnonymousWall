@@ -192,9 +192,6 @@
             </column>
             <column name="category" type="VARCHAR(100)"/>
             <column name="condition" type="VARCHAR(20)"/>
-            <column name="sold" type="BOOLEAN" defaultValueBoolean="false">
-                <constraints nullable="false"/>
-            </column>
             <column name="wall" type="VARCHAR(20)" defaultValue="campus"/>
             <column name="school_domain" type="VARCHAR(255)"/>
             <column name="comment_count" type="INT" defaultValueNumeric="0"/>
@@ -212,9 +209,6 @@
         </createIndex>
         <createIndex tableName="marketplace_items" indexName="idx_marketplace_price">
             <column name="price"/>
-        </createIndex>
-        <createIndex tableName="marketplace_items" indexName="idx_marketplace_sold">
-            <column name="sold"/>
         </createIndex>
         <createIndex tableName="marketplace_items" indexName="idx_marketplace_is_hidden">
             <column name="is_hidden"/>

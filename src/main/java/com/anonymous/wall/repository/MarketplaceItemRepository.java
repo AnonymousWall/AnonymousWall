@@ -39,23 +39,6 @@ public interface MarketplaceItemRepository extends CrudRepository<MarketplaceIte
 
     Page<MarketplaceItem> findByWallAndSchoolDomainAndHiddenFalseOrderByPriceDesc(String wall, String schoolDomain, Pageable pageable);
 
-    // Wall + sold filtered queries
-    Page<MarketplaceItem> findByWallAndSoldAndHiddenFalseOrderByCreatedAtDesc(String wall, boolean sold, Pageable pageable);
-
-    Page<MarketplaceItem> findByWallAndSoldAndHiddenFalseOrderByCreatedAtAsc(String wall, boolean sold, Pageable pageable);
-
-    Page<MarketplaceItem> findByWallAndSoldAndHiddenFalseOrderByPriceAsc(String wall, boolean sold, Pageable pageable);
-
-    Page<MarketplaceItem> findByWallAndSoldAndHiddenFalseOrderByPriceDesc(String wall, boolean sold, Pageable pageable);
-
-    Page<MarketplaceItem> findByWallAndSchoolDomainAndSoldAndHiddenFalseOrderByCreatedAtDesc(String wall, String schoolDomain, boolean sold, Pageable pageable);
-
-    Page<MarketplaceItem> findByWallAndSchoolDomainAndSoldAndHiddenFalseOrderByCreatedAtAsc(String wall, String schoolDomain, boolean sold, Pageable pageable);
-
-    Page<MarketplaceItem> findByWallAndSchoolDomainAndSoldAndHiddenFalseOrderByPriceAsc(String wall, String schoolDomain, boolean sold, Pageable pageable);
-
-    Page<MarketplaceItem> findByWallAndSchoolDomainAndSoldAndHiddenFalseOrderByPriceDesc(String wall, String schoolDomain, boolean sold, Pageable pageable);
-
     List<MarketplaceItem> findByUserId(UUID userId);
 
     Page<MarketplaceItem> findByUserId(UUID userId, Pageable pageable);
@@ -73,12 +56,6 @@ public interface MarketplaceItemRepository extends CrudRepository<MarketplaceIte
     Page<MarketplaceItem> findByUserIdAndHiddenFalseOrderByCreatedAtAsc(UUID userId, Pageable pageable);
 
     Optional<MarketplaceItem> findById(UUID id);
-
-    Page<MarketplaceItem> findBySoldOrderByCreatedAtDesc(boolean sold, Pageable pageable);
-
-    Page<MarketplaceItem> findBySoldOrderByPriceAsc(boolean sold, Pageable pageable);
-
-    Page<MarketplaceItem> findBySoldOrderByPriceDesc(boolean sold, Pageable pageable);
 
     Page<MarketplaceItem> findByCategoryOrderByCreatedAtDesc(String category, Pageable pageable);
 

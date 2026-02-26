@@ -16,9 +16,9 @@ public interface MarketplaceService {
 
     MarketplaceItem updateItem(UUID itemId, UpdateItemRequest request, UUID userId);
 
-    Page<MarketplaceItem> listItems(Pageable pageable, String sortBy, Boolean sold);
+    Page<MarketplaceItem> listItems(Pageable pageable, String sortBy);
 
-    Page<MarketplaceItem> getItemsByWall(String wall, Pageable pageable, UUID userId, String schoolDomain, String sortBy, Boolean sold);
+    Page<MarketplaceItem> getItemsByWall(String wall, Pageable pageable, UUID userId, String schoolDomain, String sortBy);
 
     MarketplaceItem getItem(UUID itemId);
 

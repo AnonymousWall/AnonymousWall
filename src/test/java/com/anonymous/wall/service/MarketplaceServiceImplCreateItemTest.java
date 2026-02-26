@@ -75,7 +75,6 @@ class MarketplaceServiceImplCreateItemTest {
             assertEquals(0, new BigDecimal("99.99").compareTo(result.getPrice().setScale(2, RoundingMode.HALF_UP)));
             assertEquals("Electronics", result.getCategory());
             assertEquals("new", result.getCondition());
-            assertFalse(result.isSold());
             assertEquals(testUser.getId(), result.getUserId());
             assertNotNull(result.getCreatedAt());
             assertNotNull(result.getUpdatedAt());
@@ -98,7 +97,6 @@ class MarketplaceServiceImplCreateItemTest {
             assertEquals(0, BigDecimal.ZERO.compareTo(result.getPrice()));
             assertNull(result.getCategory());
             assertNull(result.getCondition());
-            assertFalse(result.isSold());
         }
 
         @Test

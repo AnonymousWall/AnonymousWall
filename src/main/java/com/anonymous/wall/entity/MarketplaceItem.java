@@ -38,9 +38,6 @@ public class MarketplaceItem implements Commentable {
     @MappedProperty("condition")
     private String condition;
 
-    @MappedProperty("sold")
-    private boolean sold = false;
-
     @MappedProperty("wall")
     private String wall = "campus";
 
@@ -80,7 +77,6 @@ public class MarketplaceItem implements Commentable {
         this.category = category;
         this.condition = condition;
         this.profileName = "Anonymous";
-        this.sold = false;
         this.wall = "campus";
         this.imageUrls = new ArrayList<>();
         this.commentCount = 0;
@@ -115,9 +111,6 @@ public class MarketplaceItem implements Commentable {
 
     public String getCondition() { return condition; }
     public void setCondition(String condition) { this.condition = condition; }
-
-    public boolean isSold() { return sold; }
-    public void setSold(boolean sold) { this.sold = sold; }
 
     public String getWall() { return wall; }
     public void setWall(String wall) { this.wall = wall; }

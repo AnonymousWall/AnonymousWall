@@ -346,8 +346,6 @@ public class UserController {
             }
         }
 
-        dto.setSold(item.isSold());
-
         if (item.getWall() != null) {
             dto.setWall(ItemDTOWall.valueOf(item.getWall().toUpperCase()));
         }
