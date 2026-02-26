@@ -39,6 +39,24 @@ public interface MarketplaceItemRepository extends CrudRepository<MarketplaceIte
 
     Page<MarketplaceItem> findByWallAndSchoolDomainAndHiddenFalseOrderByPriceDesc(String wall, String schoolDomain, Pageable pageable);
 
+    // Category-filtered queries - national wall
+    Page<MarketplaceItem> findByWallAndCategoryAndHiddenFalseOrderByCreatedAtDesc(String wall, String category, Pageable pageable);
+
+    Page<MarketplaceItem> findByWallAndCategoryAndHiddenFalseOrderByCreatedAtAsc(String wall, String category, Pageable pageable);
+
+    Page<MarketplaceItem> findByWallAndCategoryAndHiddenFalseOrderByPriceAsc(String wall, String category, Pageable pageable);
+
+    Page<MarketplaceItem> findByWallAndCategoryAndHiddenFalseOrderByPriceDesc(String wall, String category, Pageable pageable);
+
+    // Category-filtered queries - campus wall
+    Page<MarketplaceItem> findByWallAndSchoolDomainAndCategoryAndHiddenFalseOrderByCreatedAtDesc(String wall, String schoolDomain, String category, Pageable pageable);
+
+    Page<MarketplaceItem> findByWallAndSchoolDomainAndCategoryAndHiddenFalseOrderByCreatedAtAsc(String wall, String schoolDomain, String category, Pageable pageable);
+
+    Page<MarketplaceItem> findByWallAndSchoolDomainAndCategoryAndHiddenFalseOrderByPriceAsc(String wall, String schoolDomain, String category, Pageable pageable);
+
+    Page<MarketplaceItem> findByWallAndSchoolDomainAndCategoryAndHiddenFalseOrderByPriceDesc(String wall, String schoolDomain, String category, Pageable pageable);
+
     List<MarketplaceItem> findByUserId(UUID userId);
 
     Page<MarketplaceItem> findByUserId(UUID userId, Pageable pageable);

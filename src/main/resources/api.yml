@@ -1087,6 +1087,7 @@ paths:
                   description: Item price
                 category:
                   type: string
+                  enum: [textbooks, electronics, furniture, clothing, stationery, sports, transport, food, services, housing, tickets, other]
                   description: Item category
                 condition:
                   type: string
@@ -1149,6 +1150,12 @@ paths:
             enum: [campus, national]
             default: campus
           description: Which wall to view marketplace items from
+        - in: query
+          name: category
+          schema:
+            type: string
+            enum: [textbooks, electronics, furniture, clothing, stationery, sports, transport, food, services, housing, tickets, other]
+          description: Filter items by category
       responses:
         "200":
           description: Marketplace items retrieved successfully
@@ -3869,7 +3876,8 @@ components:
           description: Item price
         category:
           type: string
-          description: Item category (e.g., books, electronics, furniture)
+          enum: [textbooks, electronics, furniture, clothing, stationery, sports, transport, food, services, housing, tickets, other]
+          description: Item category
         condition:
           type: string
           enum: [new, like-new, good, fair]
@@ -3896,7 +3904,8 @@ components:
           description: Item price
         category:
           type: string
-          description: Item category (e.g., books, electronics, furniture)
+          enum: [textbooks, electronics, furniture, clothing, stationery, sports, transport, food, services, housing, tickets, other]
+          description: Item category
         condition:
           type: string
           enum: [new, like-new, good, fair]
@@ -3916,6 +3925,7 @@ components:
           format: float
         category:
           type: string
+          enum: [textbooks, electronics, furniture, clothing, stationery, sports, transport, food, services, housing, tickets, other]
         condition:
           type: string
           enum: [new, like-new, good, fair]

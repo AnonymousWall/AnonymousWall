@@ -18,7 +18,7 @@ public interface MarketplaceService {
 
     Page<MarketplaceItem> listItems(Pageable pageable, String sortBy);
 
-    Page<MarketplaceItem> getItemsByWall(String wall, Pageable pageable, UUID userId, String schoolDomain, String sortBy);
+    Page<MarketplaceItem> getItemsByWall(String wall, Pageable pageable, UUID userId, String schoolDomain, String sortBy, String category);
 
     MarketplaceItem getItem(UUID itemId);
 
