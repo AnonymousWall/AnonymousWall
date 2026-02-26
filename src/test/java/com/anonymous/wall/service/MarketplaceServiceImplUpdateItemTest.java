@@ -3,6 +3,7 @@ package com.anonymous.wall.service;
 import com.anonymous.wall.entity.MarketplaceItem;
 import com.anonymous.wall.entity.UserEntity;
 import com.anonymous.wall.model.CreateItemRequest;
+import com.anonymous.wall.model.CreateItemRequestCategory;
 import com.anonymous.wall.model.CreateItemRequestCondition;
 import com.anonymous.wall.model.UpdateItemRequest;
 import com.anonymous.wall.repository.MarketplaceItemRepository;
@@ -56,7 +57,7 @@ class MarketplaceServiceImplUpdateItemTest {
         // Create test item
         CreateItemRequest request = new CreateItemRequest("Original Title", 50f);
         request.setDescription("Original Description");
-        request.setCategory("Books");
+        request.setCategory(CreateItemRequestCategory.TEXTBOOKS);
         request.setCondition(CreateItemRequestCondition.GOOD);
         testItem = marketplaceService.createItem(request, null, testUser.getId());
     }
@@ -109,7 +110,7 @@ class MarketplaceServiceImplUpdateItemTest {
             request.setTitle("Completely New");
             request.setDescription("New description");
             request.setPrice(100f);
-            request.setCategory("Electronics");
+            request.setCategory(CreateItemRequestCategory.ELECTRONICS);
             request.setCondition(CreateItemRequestCondition.LIKE_NEW);
 
             // Act
@@ -119,7 +120,7 @@ class MarketplaceServiceImplUpdateItemTest {
             assertEquals("Completely New", result.getTitle());
             assertEquals("New description", result.getDescription());
             assertEquals(0, BigDecimal.valueOf(100).compareTo(result.getPrice()));
-            assertEquals("Electronics", result.getCategory());
+            assertEquals("electronics", result.getCategory());
             assertEquals("like-new", result.getCondition());
         }
 

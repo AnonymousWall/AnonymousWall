@@ -3,6 +3,7 @@ package com.anonymous.wall.service;
 import com.anonymous.wall.entity.MarketplaceItem;
 import com.anonymous.wall.entity.UserEntity;
 import com.anonymous.wall.model.CreateItemRequest;
+import com.anonymous.wall.model.CreateItemRequestCategory;
 import com.anonymous.wall.model.CreateItemRequestCondition;
 import com.anonymous.wall.repository.MarketplaceItemRepository;
 import com.anonymous.wall.repository.UserRepository;
@@ -60,7 +61,7 @@ class MarketplaceServiceImplCreateItemTest {
             // Arrange
             CreateItemRequest request = new CreateItemRequest("Test Item", 99.99f);
             request.setDescription("Description");
-            request.setCategory("Electronics");
+            request.setCategory(CreateItemRequestCategory.ELECTRONICS);
             request.setCondition(CreateItemRequestCondition.NEW);
 
             // Act
@@ -73,7 +74,7 @@ class MarketplaceServiceImplCreateItemTest {
             assertEquals("Description", result.getDescription());
             // Compare with 2 decimal places (matching DECIMAL(10,2) in database)
             assertEquals(0, new BigDecimal("99.99").compareTo(result.getPrice().setScale(2, RoundingMode.HALF_UP)));
-            assertEquals("Electronics", result.getCategory());
+            assertEquals("electronics", result.getCategory());
             assertEquals("new", result.getCondition());
             assertEquals(testUser.getId(), result.getUserId());
             assertNotNull(result.getCreatedAt());

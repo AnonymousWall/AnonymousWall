@@ -1193,7 +1193,7 @@ Content-Type: multipart/form-data
 title=Used Calculus Textbook
 price=45.99
 description=Barely used, excellent condition
-category=books
+category=textbooks
 condition=like-new
 wall=campus
 images[]=<optional binary file 1>
@@ -1205,7 +1205,7 @@ Response: 201 Created
     "title": "Used Calculus Textbook",
     "price": 45.99,
     "description": "Barely used, excellent condition",
-    "category": "books",
+    "category": "textbooks",
     "condition": "like-new",
     "wall": "CAMPUS",
     "comments": 0,
@@ -1226,7 +1226,7 @@ Response: 201 Created
 - `price` is **required** and must be **≥ 0**
 - `price` maximum value: **99,999,999.99** (DECIMAL(10,2))
 - `description` is optional
-- `category` is optional
+- `category` is optional, valid values: `textbooks`, `electronics`, `furniture`, `clothing`, `stationery`, `sports`, `transport`, `food`, `services`, `housing`, `tickets`, `other`
 - `condition` is optional, valid values: "new", "like-new", "good", "fair"
 - `wall` is optional (defaults to "campus"), must be "campus" or "national"
 - `images` is optional; up to **5 images** per item; each must be JPEG, PNG, or WEBP and max **5MB**
@@ -1281,7 +1281,7 @@ Response: 200 OK
             "title": "Used Calculus Textbook",
             "price": 45.99,
             "description": "Barely used, excellent condition",
-            "category": "books",
+            "category": "textbooks",
             "condition": "like_new",
             "contactInfo": "johndoe@harvard.edu",
             "wall": "CAMPUS",
@@ -1312,6 +1312,7 @@ Response: 200 OK
   - `newest` - Sort by creation date descending (newest first)
   - `price-asc` - Sort by price ascending (lowest first)
   - `price-desc` - Sort by price descending (highest first)
+- `category` (optional) - Filter by category. Valid values: `textbooks`, `electronics`, `furniture`, `clothing`, `stationery`, `sports`, `transport`, `food`, `services`, `housing`, `tickets`, `other`
 
 **Wall Rules:**
 - **Campus**: Returns only items from the same school as the authenticated user
@@ -1322,6 +1323,8 @@ Response: 200 OK
 GET /api/v1/marketplace?wall=campus&sortBy=price-asc
 GET /api/v1/marketplace?wall=national&page=1&limit=10
 GET /api/v1/marketplace?sortBy=newest
+GET /api/v1/marketplace?category=electronics&sortBy=price-asc
+GET /api/v1/marketplace?wall=campus&category=textbooks&sortBy=newest
 ```
 
 #### 3. Get Marketplace Item by ID
@@ -1335,7 +1338,7 @@ Response: 200 OK
     "title": "Used Calculus Textbook",
     "price": 45.99,
     "description": "Barely used, excellent condition",
-    "category": "books",
+    "category": "textbooks",
     "condition": "like_new",
     "contactInfo": "johndoe@harvard.edu",
     "wall": "CAMPUS",
@@ -1376,7 +1379,7 @@ Response: 200 OK
     "title": "Used Calculus Textbook - Price Reduced",
     "price": 35.99,
     "description": "Barely used, excellent condition",
-    "category": "books",
+    "category": "textbooks",
     "condition": "like_new",
     "contactInfo": "johndoe@harvard.edu",
     "wall": "CAMPUS",
@@ -1401,7 +1404,7 @@ Response: 200 OK
 - `title` (max 255 characters, cannot be empty/whitespace-only)
 - `price` (must be ≥ 0 if provided)
 - `description` (max 5000 characters)
-- `category`
+- `category` (must be one of: `textbooks`, `electronics`, `furniture`, `clothing`, `stationery`, `sports`, `transport`, `food`, `services`, `housing`, `tickets`, `other`)
 - `condition` (must be valid enum value)
 - `contactInfo`
 

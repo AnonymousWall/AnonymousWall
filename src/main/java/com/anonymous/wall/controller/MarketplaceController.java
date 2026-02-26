@@ -136,7 +136,11 @@ public class MarketplaceController {
                 request.setDescription(description);
             }
             if (category != null && !category.isBlank()) {
-                request.setCategory(category);
+                try {
+                    request.setCategory(CreateItemRequestCategory.fromValue(category));
+                } catch (IllegalArgumentException e) {
+                    return HttpResponse.badRequest(error("Invalid category. Must be one of: textbooks, electronics, furniture, clothing, stationery, sports, transport, food, services, housing, tickets, other"));
+                }
             }
             if (condition != null && !condition.isBlank()) {
                 try {
@@ -173,18 +177,30 @@ public class MarketplaceController {
             @QueryValue(defaultValue = "1") int page,
             @QueryValue(defaultValue = "20") int limit,
             @QueryValue(defaultValue = "newest") String sortBy,
+            @QueryValue Optional<String> category,
             HttpRequest<?> httpRequest) {
         try {
             UUID userId = getUserIdFromRequest(httpRequest);
             String schoolDomain = getSchoolDomainFromRequest(httpRequest);
-            log.info("GET /marketplace - Listing items, user={}, wall={}, page={}, limit={}, sortBy={}", 
-                    userId, wall, page, limit, sortBy);
+            String categoryValue = category.orElse(null);
+            log.info("GET /marketplace - Listing items, user={}, wall={}, page={}, limit={}, sortBy={}, category={}", 
+                    userId, wall, page, limit, sortBy, categoryValue);
 
             if (page < 1) page = 1;
             if (limit < 1 || limit > 100) limit = 20;
 
+            if (categoryValue != null && !categoryValue.isBlank()) {
+                try {
+                    ListItemsCategoryParameter.fromValue(categoryValue);
+                } catch (IllegalArgumentException e) {
+                    return HttpResponse.badRequest(error("Invalid category. Must be one of: textbooks, electronics, furniture, clothing, stationery, sports, transport, food, services, housing, tickets, other"));
+                }
+            } else {
+                categoryValue = null;
+            }
+
             Pageable pageable = Pageable.from(page - 1, limit);
-            Page<MarketplaceItem> items = marketplaceService.getItemsByWall(wall, pageable, userId, schoolDomain, sortBy);
+            Page<MarketplaceItem> items = marketplaceService.getItemsByWall(wall, pageable, userId, schoolDomain, sortBy, categoryValue);
 
             List<ItemDTO> dtos = items.getContent().stream()
                     .map(this::mapItemToDTO)
@@ -464,7 +480,14 @@ public class MarketplaceController {
         dto.setTitle(item.getTitle());
         dto.setDescription(item.getDescription());
         dto.setPrice(item.getPrice() != null ? item.getPrice().floatValue() : null);
-        dto.setCategory(item.getCategory());
+
+        if (item.getCategory() != null) {
+            try {
+                dto.setCategory(ListItemsCategoryParameter.fromValue(item.getCategory()));
+            } catch (IllegalArgumentException e) {
+                log.warn("Invalid category value: {}", item.getCategory());
+            }
+        }
 
         if (item.getCondition() != null) {
             try {

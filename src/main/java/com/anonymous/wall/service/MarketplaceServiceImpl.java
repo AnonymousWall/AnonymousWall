@@ -114,7 +114,7 @@ public class MarketplaceServiceImpl implements MarketplaceService {
         item.setTitle(trimmedTitle);
         item.setDescription(request.getDescription() != null ? request.getDescription() : null);
         item.setPrice(price);
-        item.setCategory(request.getCategory() != null ? request.getCategory() : null);
+        item.setCategory(request.getCategory() != null ? request.getCategory().getValue() : null);
         item.setCondition(request.getCondition() != null ? request.getCondition().getValue() : null);
         item.setWall(wall);
         item.setSchoolDomain(schoolDomain);
@@ -182,7 +182,7 @@ public class MarketplaceServiceImpl implements MarketplaceService {
         }
 
         if (request.getCategory() != null) {
-            item.setCategory(request.getCategory());
+            item.setCategory(request.getCategory().getValue());
             updated = true;
         }
 
@@ -226,8 +226,8 @@ public class MarketplaceServiceImpl implements MarketplaceService {
     }
 
     @Override
-    public Page<MarketplaceItem> getItemsByWall(String wall, Pageable pageable, UUID userId, String schoolDomain, String sortBy) {
-        log.info("Listing marketplace items by wall={}, sortBy={}, schoolDomain={}", wall, sortBy, schoolDomain);
+    public Page<MarketplaceItem> getItemsByWall(String wall, Pageable pageable, UUID userId, String schoolDomain, String sortBy, String category) {
+        log.info("Listing marketplace items by wall={}, sortBy={}, schoolDomain={}, category={}", wall, sortBy, schoolDomain, category);
 
         if (sortBy == null) {
             sortBy = "newest";
@@ -237,29 +237,57 @@ public class MarketplaceServiceImpl implements MarketplaceService {
             if (schoolDomain == null || schoolDomain.trim().isEmpty()) {
                 throw new IllegalArgumentException("School domain is required to view campus marketplace items");
             }
-            switch (sortBy.toLowerCase()) {
-                case "oldest":
-                    return marketplaceItemRepository.findByWallAndSchoolDomainAndHiddenFalseOrderByCreatedAtAsc("campus", schoolDomain, pageable);
-                case "price-asc":
-                    return marketplaceItemRepository.findByWallAndSchoolDomainAndHiddenFalseOrderByPriceAsc("campus", schoolDomain, pageable);
-                case "price-desc":
-                    return marketplaceItemRepository.findByWallAndSchoolDomainAndHiddenFalseOrderByPriceDesc("campus", schoolDomain, pageable);
-                case "newest":
-                default:
-                    return marketplaceItemRepository.findByWallAndSchoolDomainAndHiddenFalseOrderByCreatedAtDesc("campus", schoolDomain, pageable);
+            if (category != null) {
+                switch (sortBy.toLowerCase()) {
+                    case "oldest":
+                        return marketplaceItemRepository.findByWallAndSchoolDomainAndCategoryAndHiddenFalseOrderByCreatedAtAsc("campus", schoolDomain, category, pageable);
+                    case "price-asc":
+                        return marketplaceItemRepository.findByWallAndSchoolDomainAndCategoryAndHiddenFalseOrderByPriceAsc("campus", schoolDomain, category, pageable);
+                    case "price-desc":
+                        return marketplaceItemRepository.findByWallAndSchoolDomainAndCategoryAndHiddenFalseOrderByPriceDesc("campus", schoolDomain, category, pageable);
+                    case "newest":
+                    default:
+                        return marketplaceItemRepository.findByWallAndSchoolDomainAndCategoryAndHiddenFalseOrderByCreatedAtDesc("campus", schoolDomain, category, pageable);
+                }
+            } else {
+                switch (sortBy.toLowerCase()) {
+                    case "oldest":
+                        return marketplaceItemRepository.findByWallAndSchoolDomainAndHiddenFalseOrderByCreatedAtAsc("campus", schoolDomain, pageable);
+                    case "price-asc":
+                        return marketplaceItemRepository.findByWallAndSchoolDomainAndHiddenFalseOrderByPriceAsc("campus", schoolDomain, pageable);
+                    case "price-desc":
+                        return marketplaceItemRepository.findByWallAndSchoolDomainAndHiddenFalseOrderByPriceDesc("campus", schoolDomain, pageable);
+                    case "newest":
+                    default:
+                        return marketplaceItemRepository.findByWallAndSchoolDomainAndHiddenFalseOrderByCreatedAtDesc("campus", schoolDomain, pageable);
+                }
             }
         } else {
             // National wall
-            switch (sortBy.toLowerCase()) {
-                case "oldest":
-                    return marketplaceItemRepository.findByWallAndHiddenFalseOrderByCreatedAtAsc("national", pageable);
-                case "price-asc":
-                    return marketplaceItemRepository.findByWallAndHiddenFalseOrderByPriceAsc("national", pageable);
-                case "price-desc":
-                    return marketplaceItemRepository.findByWallAndHiddenFalseOrderByPriceDesc("national", pageable);
-                case "newest":
-                default:
-                    return marketplaceItemRepository.findByWallAndHiddenFalseOrderByCreatedAtDesc("national", pageable);
+            if (category != null) {
+                switch (sortBy.toLowerCase()) {
+                    case "oldest":
+                        return marketplaceItemRepository.findByWallAndCategoryAndHiddenFalseOrderByCreatedAtAsc("national", category, pageable);
+                    case "price-asc":
+                        return marketplaceItemRepository.findByWallAndCategoryAndHiddenFalseOrderByPriceAsc("national", category, pageable);
+                    case "price-desc":
+                        return marketplaceItemRepository.findByWallAndCategoryAndHiddenFalseOrderByPriceDesc("national", category, pageable);
+                    case "newest":
+                    default:
+                        return marketplaceItemRepository.findByWallAndCategoryAndHiddenFalseOrderByCreatedAtDesc("national", category, pageable);
+                }
+            } else {
+                switch (sortBy.toLowerCase()) {
+                    case "oldest":
+                        return marketplaceItemRepository.findByWallAndHiddenFalseOrderByCreatedAtAsc("national", pageable);
+                    case "price-asc":
+                        return marketplaceItemRepository.findByWallAndHiddenFalseOrderByPriceAsc("national", pageable);
+                    case "price-desc":
+                        return marketplaceItemRepository.findByWallAndHiddenFalseOrderByPriceDesc("national", pageable);
+                    case "newest":
+                    default:
+                        return marketplaceItemRepository.findByWallAndHiddenFalseOrderByCreatedAtDesc("national", pageable);
+                }
             }
         }
     }

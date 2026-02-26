@@ -336,7 +336,14 @@ public class UserController {
         dto.setTitle(item.getTitle());
         dto.setDescription(item.getDescription());
         dto.setPrice(item.getPrice() != null ? item.getPrice().floatValue() : null);
-        dto.setCategory(item.getCategory());
+
+        if (item.getCategory() != null) {
+            try {
+                dto.setCategory(ListItemsCategoryParameter.fromValue(item.getCategory()));
+            } catch (IllegalArgumentException e) {
+                log.warn("Invalid category value: {}", item.getCategory());
+            }
+        }
 
         if (item.getCondition() != null) {
             try {

@@ -113,7 +113,7 @@ class MarketplaceControllerTest {
         @Test
         @DisplayName("Should create item with all fields")
         void shouldCreateItemWithAllFields() {
-            MultipartBody body = multipartItem("MacBook Pro", "1500.00", "Excellent condition, barely used", "like-new", "Electronics");
+            MultipartBody body = multipartItem("MacBook Pro", "1500.00", "Excellent condition, barely used", "like-new", "electronics");
 
             HttpResponse<ItemDTO> response = client.toBlocking().exchange(
                 HttpRequest.POST(BASE_PATH, body)
@@ -128,7 +128,8 @@ class MarketplaceControllerTest {
             assertEquals("MacBook Pro", body2.getTitle());
             assertEquals("Excellent condition, barely used", body2.getDescription());
             assertNotNull(body2.getPrice());
-            assertEquals("Electronics", body2.getCategory());
+            assertNotNull(body2.getCategory());
+            assertEquals("electronics", body2.getCategory().getValue());
             assertEquals("like-new", body2.getCondition().getValue());
             assertNotNull(body2.getAuthor());
             assertEquals("TestSeller", body2.getAuthor().getProfileName());
@@ -285,7 +286,7 @@ class MarketplaceControllerTest {
             item.setTitle("Test Item");
             item.setDescription("Description");
             item.setPrice(new BigDecimal("50.00"));
-            item.setCategory("Books");
+            item.setCategory("textbooks");
             item.setCondition("good");
             item = marketplaceItemRepository.save(item);
 
@@ -300,7 +301,7 @@ class MarketplaceControllerTest {
             assertNotNull(body);
             assertEquals("Test Item", body.getTitle());
             assertEquals("Description", body.getDescription());
-            assertEquals("Books", body.getCategory());
+            assertEquals("textbooks", body.getCategory().getValue());
             assertEquals("good", body.getCondition().getValue());
             assertEquals("TestSeller", body.getAuthor().getProfileName());
         }
@@ -408,6 +409,60 @@ class MarketplaceControllerTest {
             Map body = response.body();
             List items = (List) body.get("data");
             assertEquals(2, items.size());
+        }
+
+        @Test
+        @DisplayName("Should filter items by category")
+        void shouldFilterByCategory() {
+            // Create electronics items
+            for (int i = 1; i <= 3; i++) {
+                MarketplaceItem item = new MarketplaceItem();
+                item.setUserId(testUser.getId());
+                item.setSchoolDomain("test.edu");
+                item.setTitle("Electronics " + i);
+                item.setPrice(new BigDecimal(i * 100));
+                item.setCategory("electronics");
+                marketplaceItemRepository.save(item);
+            }
+            // Create a textbooks item
+            MarketplaceItem textbookItem = new MarketplaceItem();
+            textbookItem.setUserId(testUser.getId());
+            textbookItem.setSchoolDomain("test.edu");
+            textbookItem.setTitle("Textbook");
+            textbookItem.setPrice(new BigDecimal("25.00"));
+            textbookItem.setCategory("textbooks");
+            marketplaceItemRepository.save(textbookItem);
+
+            HttpResponse<Map> response = client.toBlocking().exchange(
+                HttpRequest.GET(BASE_PATH + "?category=electronics")
+                    .header("Authorization", "Bearer " + jwtToken),
+                Map.class
+            );
+
+            assertEquals(HttpStatus.OK, response.getStatus());
+            Map body = response.body();
+            List items = (List) body.get("data");
+            assertEquals(3, items.size());
+            // Verify all returned items are electronics
+            for (Object obj : items) {
+                Map itemMap = (Map) obj;
+                assertEquals("electronics", itemMap.get("category"));
+            }
+        }
+
+        @Test
+        @DisplayName("Should return 400 for invalid category")
+        void shouldReturn400ForInvalidCategory() {
+            HttpClientResponseException exception = assertThrows(
+                HttpClientResponseException.class,
+                () -> client.toBlocking().exchange(
+                    HttpRequest.GET(BASE_PATH + "?category=invalid-category")
+                        .header("Authorization", "Bearer " + jwtToken),
+                    Map.class
+                )
+            );
+
+            assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
         }
 
         @Test

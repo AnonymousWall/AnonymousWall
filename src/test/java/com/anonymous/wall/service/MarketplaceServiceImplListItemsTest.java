@@ -3,6 +3,7 @@ package com.anonymous.wall.service;
 import com.anonymous.wall.entity.MarketplaceItem;
 import com.anonymous.wall.entity.UserEntity;
 import com.anonymous.wall.model.CreateItemRequest;
+import com.anonymous.wall.model.CreateItemRequestCategory;
 import com.anonymous.wall.repository.MarketplaceItemRepository;
 import com.anonymous.wall.repository.UserRepository;
 import io.micronaut.data.model.Page;
@@ -209,42 +210,127 @@ class MarketplaceServiceImplListItemsTest {
     }
 
     @Nested
-    @DisplayName("List Items - Boundary Cases")
-    class ListItemsBoundaryTests {
+    @DisplayName("List Items - Category Filter")
+    class ListItemsCategoryFilterTests {
 
         @Test
-        @DisplayName("Should handle large page size")
-        void shouldHandleLargePageSize() {
-            // Arrange - Create 3 items
-            for (int i = 1; i <= 3; i++) {
-                CreateItemRequest request = new CreateItemRequest("Item " + i, (float) i);
-                request.setDescription("Desc");
-                marketplaceService.createItem(request, null, testUser.getId());
-            }
+        @DisplayName("Should filter items by category")
+        void shouldFilterItemsByCategory() {
+            // Arrange - Create items with different categories
+            CreateItemRequest electronics1 = new CreateItemRequest("Laptop", 500f);
+            electronics1.setCategory(CreateItemRequestCategory.ELECTRONICS);
+            marketplaceService.createItem(electronics1, null, testUser.getId());
+
+            CreateItemRequest electronics2 = new CreateItemRequest("Phone", 300f);
+            electronics2.setCategory(CreateItemRequestCategory.ELECTRONICS);
+            marketplaceService.createItem(electronics2, null, testUser.getId());
+
+            CreateItemRequest textbook = new CreateItemRequest("Math Book", 30f);
+            textbook.setCategory(CreateItemRequestCategory.TEXTBOOKS);
+            marketplaceService.createItem(textbook, null, testUser.getId());
 
             // Act
-            Pageable pageable = Pageable.from(0, 100);
-            Page<MarketplaceItem> result = marketplaceService.listItems(pageable, "newest");
+            Pageable pageable = Pageable.from(0, 10);
+            Page<MarketplaceItem> result = marketplaceService.getItemsByWall(
+                "campus", pageable, testUser.getId(), "test.edu", "newest", "electronics");
 
-            // Assert
-            assertEquals(3, result.getTotalSize());
-            assertEquals(3, result.getContent().size());
+            // Assert - should only return electronics items
+            assertEquals(2, result.getTotalSize());
+            assertTrue(result.getContent().stream()
+                .allMatch(item -> "electronics".equals(item.getCategory())));
         }
 
         @Test
-        @DisplayName("Should handle page beyond available items")
-        void shouldHandlePageBeyondAvailable() {
+        @DisplayName("Should return all items when no category filter")
+        void shouldReturnAllItemsWithoutCategoryFilter() {
             // Arrange
-            CreateItemRequest request = new CreateItemRequest("Test", 10f);
-            request.setDescription("Test");
-            marketplaceService.createItem(request, null, testUser.getId());
+            CreateItemRequest req1 = new CreateItemRequest("Laptop", 500f);
+            req1.setCategory(CreateItemRequestCategory.ELECTRONICS);
+            marketplaceService.createItem(req1, null, testUser.getId());
 
-            // Act - Request page 10
-            Pageable pageable = Pageable.from(10, 10);
-            Page<MarketplaceItem> result = marketplaceService.listItems(pageable, "newest");
+            CreateItemRequest req2 = new CreateItemRequest("Math Book", 30f);
+            req2.setCategory(CreateItemRequestCategory.TEXTBOOKS);
+            marketplaceService.createItem(req2, null, testUser.getId());
+
+            CreateItemRequest req3 = new CreateItemRequest("Chair", 50f);
+            req3.setCategory(CreateItemRequestCategory.FURNITURE);
+            marketplaceService.createItem(req3, null, testUser.getId());
+
+            // Act - no category filter
+            Pageable pageable = Pageable.from(0, 10);
+            Page<MarketplaceItem> result = marketplaceService.getItemsByWall(
+                "campus", pageable, testUser.getId(), "test.edu", "newest", null);
+
+            // Assert - should return all items
+            assertEquals(3, result.getTotalSize());
+        }
+
+        @Test
+        @DisplayName("Should sort filtered items by price ascending")
+        void shouldSortFilteredItemsByPriceAsc() {
+            // Arrange
+            CreateItemRequest cheap = new CreateItemRequest("Basic Phone", 100f);
+            cheap.setCategory(CreateItemRequestCategory.ELECTRONICS);
+            marketplaceService.createItem(cheap, null, testUser.getId());
+
+            CreateItemRequest expensive = new CreateItemRequest("Gaming PC", 2000f);
+            expensive.setCategory(CreateItemRequestCategory.ELECTRONICS);
+            marketplaceService.createItem(expensive, null, testUser.getId());
+
+            CreateItemRequest mid = new CreateItemRequest("Tablet", 500f);
+            mid.setCategory(CreateItemRequestCategory.ELECTRONICS);
+            marketplaceService.createItem(mid, null, testUser.getId());
+
+            // Act
+            Pageable pageable = Pageable.from(0, 10);
+            Page<MarketplaceItem> result = marketplaceService.getItemsByWall(
+                "campus", pageable, testUser.getId(), "test.edu", "price-asc", "electronics");
 
             // Assert
-            assertEquals(1, result.getTotalSize());
+            assertEquals(3, result.getTotalSize());
+            List<MarketplaceItem> items = result.getContent();
+            assertTrue(items.get(0).getPrice().floatValue() <= items.get(1).getPrice().floatValue());
+            assertTrue(items.get(1).getPrice().floatValue() <= items.get(2).getPrice().floatValue());
+        }
+
+        @Test
+        @DisplayName("Should sort filtered items by price descending")
+        void shouldSortFilteredItemsByPriceDesc() {
+            // Arrange
+            CreateItemRequest cheap = new CreateItemRequest("Basic Phone", 100f);
+            cheap.setCategory(CreateItemRequestCategory.ELECTRONICS);
+            marketplaceService.createItem(cheap, null, testUser.getId());
+
+            CreateItemRequest expensive = new CreateItemRequest("Gaming PC", 2000f);
+            expensive.setCategory(CreateItemRequestCategory.ELECTRONICS);
+            marketplaceService.createItem(expensive, null, testUser.getId());
+
+            // Act
+            Pageable pageable = Pageable.from(0, 10);
+            Page<MarketplaceItem> result = marketplaceService.getItemsByWall(
+                "campus", pageable, testUser.getId(), "test.edu", "price-desc", "electronics");
+
+            // Assert
+            assertEquals(2, result.getTotalSize());
+            List<MarketplaceItem> items = result.getContent();
+            assertTrue(items.get(0).getPrice().floatValue() >= items.get(1).getPrice().floatValue());
+        }
+
+        @Test
+        @DisplayName("Should return empty when no items match category")
+        void shouldReturnEmptyWhenNoCategoryMatch() {
+            // Arrange
+            CreateItemRequest req = new CreateItemRequest("Laptop", 500f);
+            req.setCategory(CreateItemRequestCategory.ELECTRONICS);
+            marketplaceService.createItem(req, null, testUser.getId());
+
+            // Act
+            Pageable pageable = Pageable.from(0, 10);
+            Page<MarketplaceItem> result = marketplaceService.getItemsByWall(
+                "campus", pageable, testUser.getId(), "test.edu", "newest", "furniture");
+
+            // Assert
+            assertEquals(0, result.getTotalSize());
             assertTrue(result.getContent().isEmpty());
         }
     }
