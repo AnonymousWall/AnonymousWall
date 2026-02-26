@@ -34,6 +34,7 @@ public class AdminChatController {
         dto.setSenderId(msg.getSenderId());
         dto.setReceiverId(msg.getReceiverId());
         dto.setContent(msg.getContent());
+        dto.setImageUrl(msg.getImageUrl());
         dto.setReadStatus(msg.isReadStatus());
         dto.setCreatedAt(msg.getCreatedAt());
         return dto;
