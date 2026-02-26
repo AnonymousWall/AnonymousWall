@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-@JdbcRepository(dialect = Dialect.MYSQL)
+@JdbcRepository(dialect = Dialect.ORACLE)
 public interface PostRepository extends CrudRepository<Post, UUID> {
 
     // ===== Sorting by Created Time (Default) =====

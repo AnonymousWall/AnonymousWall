@@ -8,7 +8,7 @@ import io.micronaut.data.repository.CrudRepository;
 import java.util.Optional;
 import java.util.UUID;
 
-@JdbcRepository(dialect = Dialect.MYSQL)
+@JdbcRepository(dialect = Dialect.ORACLE)
 public interface EmailVerificationCodeRepository extends CrudRepository<EmailVerificationCode, UUID> {
     Optional<EmailVerificationCode> findByEmailAndCodeAndPurpose(String email, String code, String purpose);
     void deleteByEmail(String email);
