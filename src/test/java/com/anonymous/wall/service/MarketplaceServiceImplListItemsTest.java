@@ -70,7 +70,7 @@ class MarketplaceServiceImplListItemsTest {
 
             // Act
             Pageable pageable = Pageable.from(0, 10);
-            Page<MarketplaceItem> result = marketplaceService.listItems(pageable, "newest", null);
+            Page<MarketplaceItem> result = marketplaceService.listItems(pageable, "newest");
 
             // Assert
             assertEquals(3, result.getTotalSize());
@@ -98,7 +98,7 @@ class MarketplaceServiceImplListItemsTest {
 
             // Act
             Pageable pageable = Pageable.from(0, 10);
-            Page<MarketplaceItem> result = marketplaceService.listItems(pageable, "price-asc", null);
+            Page<MarketplaceItem> result = marketplaceService.listItems(pageable, "price-asc");
 
             // Assert
             List<MarketplaceItem> items = result.getContent();
@@ -126,7 +126,7 @@ class MarketplaceServiceImplListItemsTest {
 
             // Act
             Pageable pageable = Pageable.from(0, 10);
-            Page<MarketplaceItem> result = marketplaceService.listItems(pageable, "price-desc", null);
+            Page<MarketplaceItem> result = marketplaceService.listItems(pageable, "price-desc");
 
             // Assert
             List<MarketplaceItem> items = result.getContent();
@@ -149,11 +149,11 @@ class MarketplaceServiceImplListItemsTest {
 
             // Act - Get page 1 with size 2
             Pageable pageable1 = Pageable.from(0, 2);
-            Page<MarketplaceItem> page1 = marketplaceService.listItems(pageable1, "newest", null);
+            Page<MarketplaceItem> page1 = marketplaceService.listItems(pageable1, "newest");
 
             // Act - Get page 2 with size 2
             Pageable pageable2 = Pageable.from(1, 2);
-            Page<MarketplaceItem> page2 = marketplaceService.listItems(pageable2, "newest", null);
+            Page<MarketplaceItem> page2 = marketplaceService.listItems(pageable2, "newest");
 
             // Assert
             assertEquals(5, page1.getTotalSize());
@@ -168,7 +168,7 @@ class MarketplaceServiceImplListItemsTest {
         void shouldReturnEmptyListWhenNoItems() {
             // Act
             Pageable pageable = Pageable.from(0, 10);
-            Page<MarketplaceItem> result = marketplaceService.listItems(pageable, "newest", null);
+            Page<MarketplaceItem> result = marketplaceService.listItems(pageable, "newest");
 
             // Assert
             assertEquals(0, result.getTotalSize());
@@ -185,7 +185,7 @@ class MarketplaceServiceImplListItemsTest {
 
             // Act
             Pageable pageable = Pageable.from(0, 10);
-            Page<MarketplaceItem> result = marketplaceService.listItems(pageable, null, null);
+            Page<MarketplaceItem> result = marketplaceService.listItems(pageable, null);
 
             // Assert
             assertEquals(1, result.getTotalSize());
@@ -201,7 +201,7 @@ class MarketplaceServiceImplListItemsTest {
 
             // Act
             Pageable pageable = Pageable.from(0, 10);
-            Page<MarketplaceItem> result = marketplaceService.listItems(pageable, "invalid-sort", null);
+            Page<MarketplaceItem> result = marketplaceService.listItems(pageable, "invalid-sort");
 
             // Assert - Should default to newest
             assertEquals(1, result.getTotalSize());
@@ -224,7 +224,7 @@ class MarketplaceServiceImplListItemsTest {
 
             // Act
             Pageable pageable = Pageable.from(0, 100);
-            Page<MarketplaceItem> result = marketplaceService.listItems(pageable, "newest", null);
+            Page<MarketplaceItem> result = marketplaceService.listItems(pageable, "newest");
 
             // Assert
             assertEquals(3, result.getTotalSize());
@@ -241,7 +241,7 @@ class MarketplaceServiceImplListItemsTest {
 
             // Act - Request page 10
             Pageable pageable = Pageable.from(10, 10);
-            Page<MarketplaceItem> result = marketplaceService.listItems(pageable, "newest", null);
+            Page<MarketplaceItem> result = marketplaceService.listItems(pageable, "newest");
 
             // Assert
             assertEquals(1, result.getTotalSize());
