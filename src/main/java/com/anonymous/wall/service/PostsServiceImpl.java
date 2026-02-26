@@ -198,7 +198,9 @@ public class PostsServiceImpl implements PostsService {
             }
         }
 
-        // Filter out posts from users blocked in either direction
+        // Filter out posts from users blocked in either direction.
+        // Note: pagination total is approximated (subtracts filtered count from DB total);
+        // for perfectly accurate counts, a DB-level NOT IN query would be required.
         Set<UUID> blockedUserIds = userBlockService.getCombinedBlockedUserIds(currentUserId);
         if (!blockedUserIds.isEmpty()) {
             List<Post> filteredContent = posts.getContent().stream()

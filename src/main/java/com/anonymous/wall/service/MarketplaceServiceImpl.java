@@ -314,7 +314,9 @@ public class MarketplaceServiceImpl implements MarketplaceService {
             }
         }
 
-        // Filter out items from users blocked in either direction
+        // Filter out items from users blocked in either direction.
+        // Note: pagination total is approximated; for perfectly accurate counts,
+        // a DB-level NOT IN query would be required.
         Set<UUID> blockedUserIds = userBlockService.getCombinedBlockedUserIds(userId);
         if (!blockedUserIds.isEmpty()) {
             List<MarketplaceItem> filtered = result.getContent().stream()
