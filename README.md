@@ -316,7 +316,6 @@ CREATE TABLE marketplace_items (
     price DECIMAL(10,2) NOT NULL,
     category VARCHAR(100),
     condition VARCHAR(20),               -- "new", "like-new", "good", "fair"
-    sold BOOLEAN DEFAULT false NOT NULL,
     wall VARCHAR(20) DEFAULT 'campus',   -- "campus" or "national"
     school_domain VARCHAR(255),          -- NULL for national, set for campus
     comment_count INT DEFAULT 0,
@@ -1208,7 +1207,6 @@ Response: 201 Created
     "description": "Barely used, excellent condition",
     "category": "books",
     "condition": "like-new",
-    "sold": false,
     "wall": "CAMPUS",
     "comments": 0,
     "imageUrls": ["http://localhost:8080/media/marketplace/uuid1.jpg"],
@@ -1272,7 +1270,7 @@ Response: 201 Created
 
 #### 2. List Marketplace Items
 ```http
-GET /api/v1/marketplace?wall=campus&page=1&limit=20&sortBy=newest&sold=false
+GET /api/v1/marketplace?wall=campus&page=1&limit=20&sortBy=newest
 Authorization: Bearer {jwt-token}
 
 Response: 200 OK
@@ -1286,7 +1284,6 @@ Response: 200 OK
             "category": "books",
             "condition": "like_new",
             "contactInfo": "johndoe@harvard.edu",
-            "sold": false,
             "wall": "CAMPUS",
             "comments": 2,
             "author": {
@@ -1315,10 +1312,6 @@ Response: 200 OK
   - `newest` - Sort by creation date descending (newest first)
   - `price-asc` - Sort by price ascending (lowest first)
   - `price-desc` - Sort by price descending (highest first)
-- `sold` (optional) - Filter by sold status:
-  - `true` - Show only sold items
-  - `false` - Show only unsold items
-  - omit parameter - Show all items (both sold and unsold)
 
 **Wall Rules:**
 - **Campus**: Returns only items from the same school as the authenticated user
@@ -1326,8 +1319,8 @@ Response: 200 OK
 
 **Examples:**
 ```http
-GET /api/v1/marketplace?wall=campus&sold=false&sortBy=price-asc
-GET /api/v1/marketplace?wall=national&sold=true&page=1&limit=10
+GET /api/v1/marketplace?wall=campus&sortBy=price-asc
+GET /api/v1/marketplace?wall=national&page=1&limit=10
 GET /api/v1/marketplace?sortBy=newest
 ```
 
@@ -1345,7 +1338,6 @@ Response: 200 OK
     "category": "books",
     "condition": "like_new",
     "contactInfo": "johndoe@harvard.edu",
-    "sold": false,
     "wall": "CAMPUS",
     "comments": 2,
     "author": {
@@ -1375,8 +1367,7 @@ Content-Type: application/json
 
 {
     "title": "Used Calculus Textbook - Price Reduced",
-    "price": 35.99,
-    "sold": true
+    "price": 35.99
 }
 
 Response: 200 OK
@@ -1388,7 +1379,6 @@ Response: 200 OK
     "category": "books",
     "condition": "like_new",
     "contactInfo": "johndoe@harvard.edu",
-    "sold": true,
     "wall": "CAMPUS",
     "comments": 2,
     "author": {
@@ -1414,7 +1404,6 @@ Response: 200 OK
 - `category`
 - `condition` (must be valid enum value)
 - `contactInfo`
-- `sold` (boolean - mark item as sold/unsold)
 
 **Ownership Validation:**
 - Users can only update their own items
@@ -1455,12 +1444,6 @@ Response: 200 OK
 
 **Update Examples:**
 ```http
-// Mark item as sold
-PUT /api/v1/marketplace/{itemId}
-{
-    "sold": true
-}
-
 // Update only price
 PUT /api/v1/marketplace/{itemId}
 {
@@ -1472,8 +1455,7 @@ PUT /api/v1/marketplace/{itemId}
 {
     "title": "Updated Title",
     "price": 30.00,
-    "description": "Updated description",
-    "sold": false
+    "description": "Updated description"
 }
 ```
 
@@ -1777,7 +1759,6 @@ Response: 200 OK
             "price": 1200.0,
             "category": "electronics",
             "condition": "like-new",
-            "sold": false,
             "wall": "campus",
             "comments": 2,
             "author": {

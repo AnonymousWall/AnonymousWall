@@ -3901,9 +3901,6 @@ components:
           type: string
           enum: [new, like-new, good, fair]
           description: Condition of the item
-        sold:
-          type: boolean
-          description: Whether the item has been sold
 
     ItemDTO:
       type: object
@@ -3922,9 +3919,6 @@ components:
         condition:
           type: string
           enum: [new, like-new, good, fair]
-        sold:
-          type: boolean
-          default: false
         wall:
           type: string
           enum: [campus, national]
@@ -4198,8 +4192,6 @@ components:
           type: string
         condition:
           type: string
-        sold:
-          type: boolean
         wall:
           type: string
           enum: [campus, national]

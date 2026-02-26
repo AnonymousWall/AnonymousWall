@@ -102,21 +102,6 @@ class MarketplaceServiceImplUpdateItemTest {
         }
 
         @Test
-        @DisplayName("Should update sold status")
-        void shouldUpdateSoldStatus() {
-            // Arrange
-            UpdateItemRequest request = new UpdateItemRequest();
-            request.setSold(true);
-
-            // Act
-            MarketplaceItem result = marketplaceService.updateItem(testItem.getId(), request, testUser.getId());
-
-            // Assert
-            assertTrue(result.isSold());
-            assertEquals("Original Title", result.getTitle());
-        }
-
-        @Test
         @DisplayName("Should update all fields")
         void shouldUpdateAllFields() {
             // Arrange
@@ -126,7 +111,6 @@ class MarketplaceServiceImplUpdateItemTest {
             request.setPrice(100f);
             request.setCategory("Electronics");
             request.setCondition(CreateItemRequestCondition.LIKE_NEW);
-            request.setSold(true);
 
             // Act
             MarketplaceItem result = marketplaceService.updateItem(testItem.getId(), request, testUser.getId());
@@ -137,7 +121,6 @@ class MarketplaceServiceImplUpdateItemTest {
             assertEquals(0, BigDecimal.valueOf(100).compareTo(result.getPrice()));
             assertEquals("Electronics", result.getCategory());
             assertEquals("like-new", result.getCondition());
-            assertTrue(result.isSold());
         }
 
         @Test

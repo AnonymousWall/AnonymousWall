@@ -130,7 +130,6 @@ class MarketplaceControllerTest {
             assertNotNull(body2.getPrice());
             assertEquals("Electronics", body2.getCategory());
             assertEquals("like-new", body2.getCondition().getValue());
-            assertFalse(body2.getSold());
             assertNotNull(body2.getAuthor());
             assertEquals("TestSeller", body2.getAuthor().getProfileName());
             assertFalse(body2.getAuthor().getIsAnonymous());
@@ -157,7 +156,6 @@ class MarketplaceControllerTest {
             assertNull(responseBody.getDescription());
             assertNull(responseBody.getCategory());
             assertNull(responseBody.getCondition());
-            assertFalse(responseBody.getSold());
         }
 
         @Test
@@ -289,7 +287,6 @@ class MarketplaceControllerTest {
             item.setPrice(new BigDecimal("50.00"));
             item.setCategory("Books");
             item.setCondition("good");
-            item.setSold(false);
             item = marketplaceItemRepository.save(item);
 
             HttpResponse<ItemDTO> response = client.toBlocking().exchange(
@@ -305,7 +302,6 @@ class MarketplaceControllerTest {
             assertEquals("Description", body.getDescription());
             assertEquals("Books", body.getCategory());
             assertEquals("good", body.getCondition().getValue());
-            assertFalse(body.getSold());
             assertEquals("TestSeller", body.getAuthor().getProfileName());
         }
 
@@ -360,7 +356,6 @@ class MarketplaceControllerTest {
                 item.setSchoolDomain("test.edu");
                 item.setTitle("Item " + i);
                 item.setPrice(new BigDecimal(i * 10));
-                item.setSold(false);
                 marketplaceItemRepository.save(item);
             }
 
@@ -383,38 +378,6 @@ class MarketplaceControllerTest {
             assertEquals(1, pagination.get("page"));
             assertEquals(3, pagination.get("limit"));
             assertEquals(5, pagination.get("total"));
-        }
-
-        @Test
-        @DisplayName("Should filter items by sold status")
-        void shouldFilterBySoldStatus() {
-            // Create sold and unsold items
-            MarketplaceItem soldItem = new MarketplaceItem();
-            soldItem.setUserId(testUser.getId());
-            soldItem.setSchoolDomain("test.edu");
-            soldItem.setTitle("Sold Item");
-            soldItem.setPrice(new BigDecimal("100.00"));
-            soldItem.setSold(true);
-            marketplaceItemRepository.save(soldItem);
-
-            MarketplaceItem unsoldItem = new MarketplaceItem();
-            unsoldItem.setUserId(testUser.getId());
-            unsoldItem.setSchoolDomain("test.edu");
-            unsoldItem.setTitle("Available Item");
-            unsoldItem.setPrice(new BigDecimal("200.00"));
-            unsoldItem.setSold(false);
-            marketplaceItemRepository.save(unsoldItem);
-
-            HttpResponse<Map> response = client.toBlocking().exchange(
-                HttpRequest.GET(BASE_PATH + "?sold=false")
-                    .header("Authorization", "Bearer " + jwtToken),
-                Map.class
-            );
-
-            assertEquals(HttpStatus.OK, response.getStatus());
-            Map body = response.body();
-            List items = (List) body.get("data");
-            assertEquals(1, items.size());
         }
 
         @Test
@@ -518,32 +481,6 @@ class MarketplaceControllerTest {
         }
 
         @Test
-        @DisplayName("Should mark item as sold")
-        void shouldMarkAsSold() {
-            MarketplaceItem item = new MarketplaceItem();
-            item.setUserId(testUser.getId());
-            item.setSchoolDomain("test.edu");
-            item.setTitle("Item");
-            item.setPrice(new BigDecimal("100.00"));
-            item.setSold(false);
-            item = marketplaceItemRepository.save(item);
-
-            Map<String, Object> updateRequest = new HashMap<>();
-            updateRequest.put("sold", true);
-
-            HttpResponse<ItemDTO> response = client.toBlocking().exchange(
-                HttpRequest.PUT(BASE_PATH + "/" + item.getId(), updateRequest)
-                    .header("Authorization", "Bearer " + jwtToken),
-                ItemDTO.class
-            );
-
-            assertEquals(HttpStatus.OK, response.getStatus());
-            ItemDTO body = response.body();
-            assertNotNull(body);
-            assertTrue(body.getSold());
-        }
-
-        @Test
         @DisplayName("Should update multiple fields")
         void shouldUpdateMultipleFields() {
             MarketplaceItem item = new MarketplaceItem();
@@ -558,7 +495,6 @@ class MarketplaceControllerTest {
             updateRequest.put("title", "Updated Item");
             updateRequest.put("description", "New description");
             updateRequest.put("price", 200.00f);
-            updateRequest.put("sold", true);
 
             HttpResponse<ItemDTO> response = client.toBlocking().exchange(
                 HttpRequest.PUT(BASE_PATH + "/" + item.getId(), updateRequest)
@@ -571,7 +507,6 @@ class MarketplaceControllerTest {
             assertNotNull(body);
             assertEquals("Updated Item", body.getTitle());
             assertEquals("New description", body.getDescription());
-            assertTrue(body.getSold());
         }
 
         @Test

@@ -7,7 +7,6 @@ import com.anonymous.wall.model.*;
 import com.anonymous.wall.repository.UserRepository;
 import com.anonymous.wall.service.CommentsService;
 import com.anonymous.wall.service.MarketplaceService;
-import io.micronaut.core.annotation.Nullable;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
 import io.micronaut.http.HttpRequest;
@@ -174,19 +173,18 @@ public class MarketplaceController {
             @QueryValue(defaultValue = "1") int page,
             @QueryValue(defaultValue = "20") int limit,
             @QueryValue(defaultValue = "newest") String sortBy,
-            @Nullable @QueryValue Boolean sold,
             HttpRequest<?> httpRequest) {
         try {
             UUID userId = getUserIdFromRequest(httpRequest);
             String schoolDomain = getSchoolDomainFromRequest(httpRequest);
-            log.info("GET /marketplace - Listing items, user={}, wall={}, page={}, limit={}, sortBy={}, sold={}", 
-                    userId, wall, page, limit, sortBy, sold);
+            log.info("GET /marketplace - Listing items, user={}, wall={}, page={}, limit={}, sortBy={}", 
+                    userId, wall, page, limit, sortBy);
 
             if (page < 1) page = 1;
             if (limit < 1 || limit > 100) limit = 20;
 
             Pageable pageable = Pageable.from(page - 1, limit);
-            Page<MarketplaceItem> items = marketplaceService.getItemsByWall(wall, pageable, userId, schoolDomain, sortBy, sold);
+            Page<MarketplaceItem> items = marketplaceService.getItemsByWall(wall, pageable, userId, schoolDomain, sortBy);
 
             List<ItemDTO> dtos = items.getContent().stream()
                     .map(this::mapItemToDTO)
@@ -475,8 +473,6 @@ public class MarketplaceController {
                 log.warn("Invalid condition value: {}", item.getCondition());
             }
         }
-
-        dto.setSold(item.isSold());
 
         if (item.getWall() != null) {
             dto.setWall(ItemDTOWall.valueOf(item.getWall().toUpperCase()));
