@@ -4420,6 +4420,9 @@ components:
           type: string
           format: uuid
           description: ID of the blocked user
+        profileName:
+          type: string
+          description: Profile name of the blocked user
         createdAt:
           type: string
           format: date-time

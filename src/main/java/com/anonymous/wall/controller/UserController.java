@@ -355,7 +355,7 @@ public class UserController {
 
     /**
      * GET /users/me/blocks
-     * Get the list of users blocked by the authenticated user
+     * Get the list of users blocked by the authenticated user, including each blocked user's profile name.
      */
     @Get("/me/blocks")
     @Secured(SecurityRule.IS_AUTHENTICATED)
@@ -367,6 +367,10 @@ public class UserController {
                 Map<String, Object> item = new HashMap<>();
                 item.put("blockedUserId", block.getBlockedId().toString());
                 item.put("createdAt", block.getCreatedAt());
+                // Enrich with blocked user's profile name
+                userService.findById(block.getBlockedId()).ifPresent(u ->
+                    item.put("profileName", u.getProfileName())
+                );
                 return item;
             }).collect(Collectors.toList());
             Map<String, Object> resp = new HashMap<>();

@@ -1860,6 +1860,7 @@ Response: 200 OK
     "data": [
         {
             "blockedUserId": "uuid",
+            "profileName": "Anonymous",
             "createdAt": "2026-01-28T..."
         }
     ]

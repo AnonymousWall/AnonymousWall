@@ -281,6 +281,23 @@ class UserBlockServiceImplTest {
             assertEquals(2, result.size());
             verify(userBlockRepository, times(1)).findByBlockerId(blockerId);
         }
+
+        @Test
+        @DisplayName("Positive: Each UserBlock record contains the correct blockedId for profile name lookup")
+        void shouldContainCorrectBlockedIdForProfileNameLookup() {
+            UUID blockerId = UUID.randomUUID();
+            UUID target1 = UUID.randomUUID();
+            UUID target2 = UUID.randomUUID();
+            UserBlock b1 = new UserBlock(blockerId, target1);
+            UserBlock b2 = new UserBlock(blockerId, target2);
+            when(userBlockRepository.findByBlockerId(blockerId)).thenReturn(List.of(b1, b2));
+
+            List<UserBlock> result = userBlockService.getBlockList(blockerId);
+
+            assertEquals(2, result.size());
+            assertEquals(target1, result.get(0).getBlockedId());
+            assertEquals(target2, result.get(1).getBlockedId());
+        }
     }
 
     // ================= Helper =================

@@ -173,6 +173,27 @@ class UserBlockControllerTest {
     }
 
     @Test
+    @DisplayName("Positive: Block list entry includes blocked user profile name")
+    void shouldIncludeProfileNameInBlockList() {
+        // Block userB first
+        client.toBlocking().exchange(
+                HttpRequest.POST(BLOCKS_PATH + "/" + userB.getId(), null).bearerAuth(tokenA), Map.class);
+
+        HttpRequest<?> request = HttpRequest.GET(BLOCKS_PATH).bearerAuth(tokenA);
+        var response = client.toBlocking().exchange(request, Map.class);
+
+        assertEquals(HttpStatus.OK, response.getStatus());
+        Map<?, ?> body = response.body();
+        assertNotNull(body);
+        java.util.List<?> data = (java.util.List<?>) body.get("data");
+        assertEquals(1, data.size());
+        Map<?, ?> entry = (Map<?, ?>) data.get(0);
+        assertEquals(userB.getId().toString(), entry.get("blockedUserId"));
+        assertEquals("UserB", entry.get("profileName"));
+        assertNotNull(entry.get("createdAt"));
+    }
+
+    @Test
     @DisplayName("Positive: Get empty block list when no blocks exist")
     void shouldGetEmptyBlockList() {
         HttpRequest<?> request = HttpRequest.GET(BLOCKS_PATH).bearerAuth(tokenA);
