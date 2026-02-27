@@ -1742,6 +1742,92 @@ paths:
         "401":
           description: Unauthorized - authentication required
 
+  /users/me/blocks/{targetUserId}:
+    post:
+      tags: [users]
+      summary: Block a user
+      description: Block another user. After blocking, neither user will see each other's posts, comments, internships, marketplace items, or conversations.
+      operationId: blockUser
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: targetUserId
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID of the user to block
+      responses:
+        "200":
+          description: User blocked successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "User blocked successfully"
+        "400":
+          description: Invalid request (self-block, already blocked, user not found)
+        "401":
+          description: Unauthorized
+
+    delete:
+      tags: [users]
+      summary: Unblock a user
+      description: Unblock a previously blocked user, restoring normal visibility between the two users.
+      operationId: unblockUser
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: targetUserId
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID of the user to unblock
+      responses:
+        "200":
+          description: User unblocked successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "User unblocked successfully"
+        "400":
+          description: Invalid request (user not found or not blocked)
+        "401":
+          description: Unauthorized
+
+  /users/me/blocks:
+    get:
+      tags: [users]
+      summary: Get block list
+      description: Get a list of all users that the authenticated user has blocked.
+      operationId: getBlockList
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Block list retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/BlockedUserDTO"
+        "401":
+          description: Unauthorized
+
   # =================== Chat ===================
 
   /chat/images:
@@ -4326,6 +4412,21 @@ components:
         unreadCount:
           type: integer
           description: Number of unread messages from this user
+
+    BlockedUserDTO:
+      type: object
+      properties:
+        blockedUserId:
+          type: string
+          format: uuid
+          description: ID of the blocked user
+        profileName:
+          type: string
+          description: Profile name of the blocked user
+        createdAt:
+          type: string
+          format: date-time
+          description: When the block was created
 
     # ----- Pagination -----
     PaginationInfo:

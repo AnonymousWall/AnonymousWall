@@ -4,12 +4,14 @@ import com.anonymous.wall.entity.Comment;
 import com.anonymous.wall.entity.Internship;
 import com.anonymous.wall.entity.MarketplaceItem;
 import com.anonymous.wall.entity.Post;
+import com.anonymous.wall.entity.UserBlock;
 import com.anonymous.wall.entity.UserEntity;
 import com.anonymous.wall.mapper.UserMapper;
 import com.anonymous.wall.model.*;
 import com.anonymous.wall.service.CommentsService;
 import com.anonymous.wall.service.InternshipService;
 import com.anonymous.wall.service.MarketplaceService;
+import com.anonymous.wall.service.UserBlockService;
 import com.anonymous.wall.service.UserService;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
@@ -17,8 +19,10 @@ import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.annotation.Body;
 import io.micronaut.http.annotation.Controller;
+import io.micronaut.http.annotation.Delete;
 import io.micronaut.http.annotation.Get;
 import io.micronaut.http.annotation.Patch;
+import io.micronaut.http.annotation.PathVariable;
 import io.micronaut.http.annotation.QueryValue;
 import io.micronaut.security.annotation.Secured;
 import io.micronaut.security.rules.SecurityRule;
@@ -49,6 +53,9 @@ public class UserController {
 
     @Inject
     private UserService userService;
+
+    @Inject
+    private UserBlockService userBlockService;
 
     @Inject
     private UserMapper userMapper;
@@ -299,6 +306,80 @@ public class UserController {
         } catch (Exception e) {
             log.error("PATCH /users/me/profile/name - Error updating profile name", e);
             return HttpResponse.badRequest(error("Failed to update profile name"));
+        }
+    }
+
+    // ================= Block/Unblock Endpoints =================
+
+    /**
+     * POST /users/me/blocks/{targetUserId}
+     * Block another user
+     */
+    @io.micronaut.http.annotation.Post("/me/blocks/{targetUserId}")
+    @Secured(SecurityRule.IS_AUTHENTICATED)
+    public HttpResponse<Object> blockUser(@PathVariable String targetUserId, HttpRequest<?> httpRequest) {
+        try {
+            UUID currentUserId = getUserIdFromRequest(httpRequest);
+            UUID targetId = UUID.fromString(targetUserId);
+            userBlockService.blockUser(currentUserId, targetId);
+            Map<String, String> resp = new HashMap<>();
+            resp.put("message", "User blocked successfully");
+            return HttpResponse.ok(resp);
+        } catch (IllegalArgumentException e) {
+            return HttpResponse.badRequest(error(e.getMessage()));
+        } catch (Exception e) {
+            return HttpResponse.badRequest(error("Failed to block user"));
+        }
+    }
+
+    /**
+     * DELETE /users/me/blocks/{targetUserId}
+     * Unblock a previously blocked user
+     */
+    @Delete("/me/blocks/{targetUserId}")
+    @Secured(SecurityRule.IS_AUTHENTICATED)
+    public HttpResponse<Object> unblockUser(@PathVariable String targetUserId, HttpRequest<?> httpRequest) {
+        try {
+            UUID currentUserId = getUserIdFromRequest(httpRequest);
+            UUID targetId = UUID.fromString(targetUserId);
+            userBlockService.unblockUser(currentUserId, targetId);
+            Map<String, String> resp = new HashMap<>();
+            resp.put("message", "User unblocked successfully");
+            return HttpResponse.ok(resp);
+        } catch (IllegalArgumentException e) {
+            return HttpResponse.badRequest(error(e.getMessage()));
+        } catch (Exception e) {
+            return HttpResponse.badRequest(error("Failed to unblock user"));
+        }
+    }
+
+    /**
+     * GET /users/me/blocks
+     * Get the list of users blocked by the authenticated user, including each blocked user's profile name.
+     */
+    @Get("/me/blocks")
+    @Secured(SecurityRule.IS_AUTHENTICATED)
+    public HttpResponse<Object> getBlockList(HttpRequest<?> httpRequest) {
+        try {
+            UUID currentUserId = getUserIdFromRequest(httpRequest);
+            List<UserBlock> blocks = userBlockService.getBlockList(currentUserId);
+            List<Map<String, Object>> data = blocks.stream().map(block -> {
+                Map<String, Object> item = new HashMap<>();
+                item.put("blockedUserId", block.getBlockedId().toString());
+                item.put("createdAt", block.getCreatedAt());
+                // Enrich with blocked user's profile name
+                userService.findById(block.getBlockedId()).ifPresent(u ->
+                    item.put("profileName", u.getProfileName())
+                );
+                return item;
+            }).collect(Collectors.toList());
+            Map<String, Object> resp = new HashMap<>();
+            resp.put("data", data);
+            return HttpResponse.ok(resp);
+        } catch (IllegalArgumentException e) {
+            return HttpResponse.badRequest(error(e.getMessage()));
+        } catch (Exception e) {
+            return HttpResponse.badRequest(error("Failed to get block list"));
         }
     }
 

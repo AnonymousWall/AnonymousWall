@@ -36,6 +36,9 @@ public class ChatServiceImpl implements ChatService {
     @Inject
     private UserRepository userRepository;
 
+    @Inject
+    private UserBlockService userBlockService;
+
     @Override
     @Transactional
     @Retryable
@@ -91,6 +94,12 @@ public class ChatServiceImpl implements ChatService {
         if (sender.isBlocked()) {
             log.warn("Blocked user attempting to send message: {}", senderId);
             throw new IllegalArgumentException("Blocked users cannot send messages");
+        }
+
+        // Check user-level block in either direction
+        if (userBlockService.isBlockedInAnyDirection(senderId, receiverId)) {
+            log.warn("Cannot send message between users with a block relationship: {} and {}", senderId, receiverId);
+            throw new IllegalArgumentException("Cannot send message to this user");
         }
 
         // Generate deterministic conversation ID
@@ -166,6 +175,12 @@ public class ChatServiceImpl implements ChatService {
             }
 
             UserEntity partner = partnerOpt.get();
+
+            // Skip conversations with users that have a block relationship
+            if (userBlockService.isBlockedInAnyDirection(userId, partnerId)) {
+                log.debug("Skipping conversation with blocked/blocking partner: {}", partnerId);
+                continue;
+            }
 
             // Get unread count for this conversation
             long unreadCount = chatMessageRepository.countByConversationIdAndReceiverIdAndReadStatusFalse(conversationId, userId);

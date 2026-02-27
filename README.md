@@ -1820,6 +1820,56 @@ Response: 200 OK
 - The API returns immediately after updating the user profile
 - Posts, comments, internships, and marketplace items are updated in the background for better performance
 
+#### 6. Block a User
+```http
+POST /api/v1/users/me/blocks/{targetUserId}
+Authorization: Bearer {jwt-token}
+
+Response: 200 OK
+{
+    "message": "User blocked successfully"
+}
+```
+
+**Notes:**
+- Cannot block yourself
+- Cannot block an already-blocked user
+- After blocking, neither user sees the other's posts, comments, internships, marketplace items, or conversations
+
+#### 7. Unblock a User
+```http
+DELETE /api/v1/users/me/blocks/{targetUserId}
+Authorization: Bearer {jwt-token}
+
+Response: 200 OK
+{
+    "message": "User unblocked successfully"
+}
+```
+
+**Notes:**
+- The target user must currently be blocked by the authenticated user
+
+#### 8. Get Block List
+```http
+GET /api/v1/users/me/blocks
+Authorization: Bearer {jwt-token}
+
+Response: 200 OK
+{
+    "data": [
+        {
+            "blockedUserId": "uuid",
+            "profileName": "Anonymous",
+            "createdAt": "2026-01-28T..."
+        }
+    ]
+}
+```
+
+**Notes:**
+- Returns all users blocked by the authenticated user
+
 ---
 
 ## Chat API Documentation

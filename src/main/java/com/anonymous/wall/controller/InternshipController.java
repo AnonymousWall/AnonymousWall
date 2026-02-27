@@ -258,7 +258,7 @@ public class InternshipController {
 
             Pageable pageable = Pageable.from(page - 1, limit);
             SortBy sortBy = SortBy.parse(sort);
-            Page<Comment> commentPage = commentsService.getCommentsWithPagination(CommentParentType.INTERNSHIP, internshipId, pageable, sortBy);
+            Page<Comment> commentPage = commentsService.getCommentsWithPagination(CommentParentType.INTERNSHIP, internshipId, pageable, sortBy, userId);
 
             List<CommentDTO> dtos = commentPage.getContent().stream()
                     .map(this::mapCommentToDTO)
