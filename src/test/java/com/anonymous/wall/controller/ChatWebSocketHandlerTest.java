@@ -3,6 +3,7 @@ package com.anonymous.wall.controller;
 import com.anonymous.wall.entity.ChatMessage;
 import com.anonymous.wall.model.ChatMessageDTO;
 import com.anonymous.wall.service.ChatService;
+import com.anonymous.wall.service.RedisPubSubService;
 import io.micronaut.security.authentication.Authentication;
 import io.micronaut.serde.ObjectMapper;
 import io.micronaut.websocket.WebSocketBroadcaster;
@@ -32,6 +33,7 @@ class ChatWebSocketHandlerTest {
     private ChatService chatService;
     private WebSocketBroadcaster broadcaster;
     private ObjectMapper objectMapper;
+    private RedisPubSubService redisPubSubService;
     private WebSocketSession mockSession;
     private Authentication mockAuth;
 
@@ -43,6 +45,7 @@ class ChatWebSocketHandlerTest {
         chatService = mock(ChatService.class);
         broadcaster = mock(WebSocketBroadcaster.class);
         objectMapper = mock(ObjectMapper.class);
+        redisPubSubService = mock(RedisPubSubService.class);
 
         handler = new ChatWebSocketHandler();
 
@@ -58,6 +61,10 @@ class ChatWebSocketHandlerTest {
         var objectMapperField = ChatWebSocketHandler.class.getDeclaredField("objectMapper");
         objectMapperField.setAccessible(true);
         objectMapperField.set(handler, objectMapper);
+
+        var redisPubSubServiceField = ChatWebSocketHandler.class.getDeclaredField("redisPubSubService");
+        redisPubSubServiceField.setAccessible(true);
+        redisPubSubServiceField.set(handler, redisPubSubService);
 
         // Setup test data
         testUser1Id = UUID.randomUUID();
