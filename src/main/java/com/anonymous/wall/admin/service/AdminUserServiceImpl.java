@@ -98,6 +98,7 @@ public class AdminUserServiceImpl implements AdminUserService {
     
     @Override
     @CacheInvalidate(value = "blocked-users", parameters = {"userId"})
+    @CacheInvalidate(value = "user-block-sets", parameters = {"userId"})
     public void blockUser(UUID userId) {
         log.info("Admin blocking user: {}", userId);
         UserEntity user = getUserById(userId);
@@ -108,6 +109,7 @@ public class AdminUserServiceImpl implements AdminUserService {
     
     @Override
     @CacheInvalidate(value = "blocked-users", parameters = {"userId"})
+    @CacheInvalidate(value = "user-block-sets", parameters = {"userId"})
     public void unblockUser(UUID userId) {
         log.info("Admin unblocking user: {}", userId);
         UserEntity user = getUserById(userId);
