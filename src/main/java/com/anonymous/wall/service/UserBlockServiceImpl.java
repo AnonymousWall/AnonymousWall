@@ -29,6 +29,10 @@ public class UserBlockServiceImpl implements UserBlockService {
     @Inject
     private UserRepository userRepository;
 
+    @Inject
+    @jakarta.inject.Named("user-block-sets")
+    private io.micronaut.cache.SyncCache<Object> blockSetsCache;
+
     /**
      * Block a user.
      * Invalidates cache for both blocker and target:
@@ -50,6 +54,7 @@ public class UserBlockServiceImpl implements UserBlockService {
         }
         UserBlock block = new UserBlock(blockerId, targetUserId);
         userBlockRepository.save(block);
+        invalidateBothUsers(blockerId, targetUserId);
         log.info("User {} blocked user {}", blockerId, targetUserId);
     }
 
@@ -68,7 +73,14 @@ public class UserBlockServiceImpl implements UserBlockService {
             throw new IllegalArgumentException("User is not blocked");
         }
         userBlockRepository.deleteByBlockerIdAndBlockedId(blockerId, targetUserId);
+        invalidateBothUsers(blockerId, targetUserId);
         log.info("User {} unblocked user {}", blockerId, targetUserId);
+    }
+
+    private void invalidateBothUsers(UUID userId1, UUID userId2) {
+        blockSetsCache.invalidate(userId1);
+        blockSetsCache.invalidate(userId2);
+        log.debug("Invalidated user-block-sets cache for {} and {}", userId1, userId2);
     }
 
     /**
