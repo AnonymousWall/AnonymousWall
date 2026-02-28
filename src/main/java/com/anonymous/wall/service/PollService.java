@@ -23,7 +23,7 @@ public interface PollService {
      * @param userId the voting user ID
      * @return the saved PollVote
      * @throws IllegalArgumentException if post is not a poll, option does not belong to post, or post is hidden
-     * @throws IllegalStateException (409) if user has already voted
+     * @throws PollServiceImpl.DuplicateVoteException if user has already voted (maps to HTTP 409)
      */
     PollVote vote(UUID postId, UUID optionId, UUID userId);
 
