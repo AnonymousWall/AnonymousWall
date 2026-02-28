@@ -183,8 +183,8 @@ class UserBlockServiceImplTest {
         void shouldReturnTrueWhenABlockedB() {
             UUID userA = UUID.randomUUID();
             UUID userB = UUID.randomUUID();
-            when(userBlockRepository.existsByBlockerIdAndBlockedId(userA, userB)).thenReturn(true);
-            when(userBlockRepository.existsByBlockerIdAndBlockedId(userB, userA)).thenReturn(false);
+            when(userBlockRepository.findByBlockerId(userA)).thenReturn(List.of(new UserBlock(userA, userB)));
+            when(userBlockRepository.findByBlockedId(userA)).thenReturn(List.of());
 
             assertTrue(userBlockService.isBlockedInAnyDirection(userA, userB));
         }
@@ -194,8 +194,8 @@ class UserBlockServiceImplTest {
         void shouldReturnTrueWhenBBlockedA() {
             UUID userA = UUID.randomUUID();
             UUID userB = UUID.randomUUID();
-            when(userBlockRepository.existsByBlockerIdAndBlockedId(userA, userB)).thenReturn(false);
-            when(userBlockRepository.existsByBlockerIdAndBlockedId(userB, userA)).thenReturn(true);
+            when(userBlockRepository.findByBlockerId(userA)).thenReturn(List.of());
+            when(userBlockRepository.findByBlockedId(userA)).thenReturn(List.of(new UserBlock(userB, userA)));
 
             assertTrue(userBlockService.isBlockedInAnyDirection(userA, userB));
         }
@@ -205,8 +205,8 @@ class UserBlockServiceImplTest {
         void shouldReturnFalseWhenNoBlock() {
             UUID userA = UUID.randomUUID();
             UUID userB = UUID.randomUUID();
-            when(userBlockRepository.existsByBlockerIdAndBlockedId(userA, userB)).thenReturn(false);
-            when(userBlockRepository.existsByBlockerIdAndBlockedId(userB, userA)).thenReturn(false);
+            when(userBlockRepository.findByBlockerId(userA)).thenReturn(List.of());
+            when(userBlockRepository.findByBlockedId(userA)).thenReturn(List.of());
 
             assertFalse(userBlockService.isBlockedInAnyDirection(userA, userB));
         }

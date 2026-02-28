@@ -83,7 +83,7 @@ public class ChatServiceImpl implements ChatService {
 
         UserEntity receiver = receiverOpt.get();
 
-        // Check if receiver is blocked
+        // Check if receiver is blocked (admin-level block)
         if (receiver.isBlocked()) {
             log.warn("Attempt to send message to blocked user: {}", receiverId);
             throw new IllegalArgumentException("Cannot send message to a blocked user");
@@ -96,8 +96,9 @@ public class ChatServiceImpl implements ChatService {
             throw new IllegalArgumentException("Blocked users cannot send messages");
         }
 
-        // Check user-level block in either direction
-        if (userBlockService.isBlockedInAnyDirection(senderId, receiverId)) {
+        // Check user-level block in either direction using cached combined set
+        // getCombinedBlockedUserIds is cached — avoids two DB queries per message send
+        if (userBlockService.getCombinedBlockedUserIds(senderId).contains(receiverId)) {
             log.warn("Cannot send message between users with a block relationship: {} and {}", senderId, receiverId);
             throw new IllegalArgumentException("Cannot send message to this user");
         }
@@ -114,7 +115,7 @@ public class ChatServiceImpl implements ChatService {
 
         ChatMessage savedMessage = chatMessageRepository.save(message);
         log.info("Message sent from {} to {}, message ID: {}, conversation ID: {}",
-                 senderId, receiverId, savedMessage.getId(), conversationId);
+                senderId, receiverId, savedMessage.getId(), conversationId);
 
         return savedMessage;
     }
@@ -177,7 +178,8 @@ public class ChatServiceImpl implements ChatService {
             UserEntity partner = partnerOpt.get();
 
             // Skip conversations with users that have a block relationship
-            if (userBlockService.isBlockedInAnyDirection(userId, partnerId)) {
+            // Uses cached getCombinedBlockedUserIds — avoids DB hit per conversation
+            if (userBlockService.getCombinedBlockedUserIds(userId).contains(partnerId)) {
                 log.debug("Skipping conversation with blocked/blocking partner: {}", partnerId);
                 continue;
             }
