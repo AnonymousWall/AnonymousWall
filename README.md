@@ -283,6 +283,29 @@ CREATE TABLE comment_reports (
 );
 ```
 
+### Poll Options Table
+```sql
+CREATE TABLE poll_options (
+    id UUID PRIMARY KEY,
+    post_id UUID NOT NULL REFERENCES posts(id),
+    option_text VARCHAR(100) NOT NULL,   -- Max 100 characters
+    vote_count INT DEFAULT 0,
+    display_order INT DEFAULT 0          -- 0–3, preserves option ordering
+);
+```
+
+### Poll Votes Table
+```sql
+CREATE TABLE poll_votes (
+    id UUID PRIMARY KEY,
+    post_id UUID NOT NULL REFERENCES posts(id),
+    option_id UUID NOT NULL REFERENCES poll_options(id),
+    user_id UUID NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(post_id, user_id)             -- One vote per user per poll
+);
+```
+
 ### Internships Table
 ```sql
 CREATE TABLE internships (
@@ -860,6 +883,109 @@ Response: 201 Created
 - `reason` is optional (max length: 500 characters)
 - Reporting a comment increments the report count for the comment author
 - Duplicate reports by the same user will return: `400 Bad Request`
+
+#### 13. Create Poll Post
+```http
+POST /api/v1/posts
+Authorization: Bearer {jwt-token}
+Content-Type: multipart/form-data
+
+title=What is your favorite language?
+postType=poll
+pollOptions=Java
+pollOptions=Python
+pollOptions=JavaScript
+wall=campus
+
+Response: 201 Created
+{
+    "id": "uuid",
+    "title": "What is your favorite language?",
+    "content": "",
+    "wall": "CAMPUS",
+    "postType": "poll",
+    "totalVotes": 0,
+    "poll": {
+        "options": [
+            {"id": "uuid", "optionText": "Java", "displayOrder": 0, "voteCount": null, "percentage": null},
+            {"id": "uuid", "optionText": "Python", "displayOrder": 1, "voteCount": null, "percentage": null},
+            {"id": "uuid", "optionText": "JavaScript", "displayOrder": 2, "voteCount": null, "percentage": null}
+        ],
+        "totalVotes": 0,
+        "userVotedOptionId": null,
+        "resultsVisible": false
+    },
+    "likes": 0,
+    "comments": 0,
+    "liked": false,
+    "imageUrls": [],
+    "author": {
+        "id": "uuid",
+        "profileName": "Anonymous",
+        "isAnonymous": true
+    },
+    "createdAt": "2026-01-28T...",
+    "updatedAt": "2026-01-28T..."
+}
+```
+
+**Request Validation:**
+- `postType` must be `standard` or `poll` (default: `standard`)
+- `pollOptions` required when `postType=poll`, 2–4 items, each max **100 characters**
+- `content` is optional for poll posts
+- Poll options cannot be edited after creation
+
+#### 14. Vote on a Poll
+```http
+POST /api/v1/posts/{postId}/vote
+Authorization: Bearer {jwt-token}
+Content-Type: application/json
+
+{
+    "optionId": "uuid"
+}
+
+Response: 200 OK
+{
+    "poll": {
+        "options": [
+            {"id": "uuid", "optionText": "Java", "displayOrder": 0, "voteCount": 1, "percentage": 100.0},
+            {"id": "uuid", "optionText": "Python", "displayOrder": 1, "voteCount": 0, "percentage": 0.0}
+        ],
+        "totalVotes": 1,
+        "userVotedOptionId": "uuid",
+        "resultsVisible": true
+    },
+    "message": "Vote cast successfully"
+}
+```
+
+**Notes:**
+- A user can only vote once per poll — second attempt returns `409 Conflict`
+- After voting, results (vote counts and percentages) are always visible to the voter
+- `optionId` must belong to the specified poll post
+
+#### 15. Get Poll Data
+```http
+GET /api/v1/posts/{postId}/poll?viewResults=true
+Authorization: Bearer {jwt-token}
+
+Response: 200 OK
+{
+    "options": [
+        {"id": "uuid", "optionText": "Java", "displayOrder": 0, "voteCount": 5, "percentage": 71.4},
+        {"id": "uuid", "optionText": "Python", "displayOrder": 1, "voteCount": 2, "percentage": 28.6}
+    ],
+    "totalVotes": 7,
+    "userVotedOptionId": null,
+    "resultsVisible": true
+}
+```
+
+**Notes:**
+- `voteCount` and `percentage` are `null` unless the user has voted OR `?viewResults=true` is passed
+- `totalVotes` is always visible regardless of vote/view status
+- Returns `400` if the post is not a poll, `404` if post not found or hidden
 
 ### Internship Endpoints
 

@@ -658,4 +658,72 @@
                              constraintName="uq_user_blocks_blocker_blocked"/>
     </changeSet>
 
+    <!-- ================= Poll Feature ================= -->
+    <changeSet id="18-add-poll-columns-to-posts" author="copilot">
+        <addColumn tableName="posts">
+            <column name="post_type" type="VARCHAR(10)" defaultValue="standard">
+                <constraints nullable="false"/>
+            </column>
+            <column name="total_votes" type="INT" defaultValueNumeric="0"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="19-create-poll-options-table" author="copilot">
+        <createTable tableName="poll_options">
+            <column name="id" type="CHAR(36)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="post_id" type="CHAR(36)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="option_text" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="vote_count" type="INT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="display_order" type="INT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="poll_options" baseColumnNames="post_id"
+                                 constraintName="fk_poll_options_post"
+                                 referencedTableName="posts" referencedColumnNames="id"/>
+        <createIndex tableName="poll_options" indexName="idx_poll_options_post_id">
+            <column name="post_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="20-create-poll-votes-table" author="copilot">
+        <createTable tableName="poll_votes">
+            <column name="id" type="CHAR(36)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="post_id" type="CHAR(36)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="option_id" type="CHAR(36)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="user_id" type="CHAR(36)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP"/>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="poll_votes" baseColumnNames="post_id"
+                                 constraintName="fk_poll_votes_post"
+                                 referencedTableName="posts" referencedColumnNames="id"/>
+        <addForeignKeyConstraint baseTableName="poll_votes" baseColumnNames="option_id"
+                                 constraintName="fk_poll_votes_option"
+                                 referencedTableName="poll_options" referencedColumnNames="id"/>
+        <addUniqueConstraint tableName="poll_votes" columnNames="post_id,user_id"
+                             constraintName="uk_poll_votes_post_user"/>
+        <createIndex tableName="poll_votes" indexName="idx_poll_votes_post_id">
+            <column name="post_id"/>
+        </createIndex>
+        <createIndex tableName="poll_votes" indexName="idx_poll_votes_user_id">
+            <column name="user_id"/>
+        </createIndex>
+    </changeSet>
+
 </databaseChangeLog>

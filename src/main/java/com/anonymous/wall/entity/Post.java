@@ -57,6 +57,12 @@ public class Post implements Commentable {
     @MappedProperty("version")
     private Long version = 0L; // Optimistic locking version
 
+    @MappedProperty("post_type")
+    private String postType = "standard"; // "standard" or "poll"
+
+    @MappedProperty("total_votes")
+    private int totalVotes = 0; // Total votes for poll posts
+
     // Transient fields for DTOs (not persisted)
     @Transient
     private boolean liked = false; // Does current user like this post
@@ -128,6 +134,12 @@ public class Post implements Commentable {
 
     public Long getVersion() { return version; }
     public void setVersion(Long version) { this.version = version; }
+
+    public String getPostType() { return postType; }
+    public void setPostType(String postType) { this.postType = postType != null ? postType : "standard"; }
+
+    public int getTotalVotes() { return totalVotes; }
+    public void setTotalVotes(int totalVotes) { this.totalVotes = totalVotes; }
 
     /**
      * Increment like count atomically
