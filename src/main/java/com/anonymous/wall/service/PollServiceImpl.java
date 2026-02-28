@@ -70,7 +70,7 @@ public class PollServiceImpl implements PollService {
         // Verify option belongs to this post
         Optional<PollOption> optionOpt = pollOptionRepository.findById(optionId);
         if (optionOpt.isEmpty() || !optionOpt.get().getPostId().equals(postId)) {
-            throw new IllegalArgumentException("Poll option not found: " + optionId);
+            throw new IllegalArgumentException("Poll option does not belong to this poll: " + optionId);
         }
 
         // Increment option vote count
