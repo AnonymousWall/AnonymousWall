@@ -125,7 +125,9 @@ class PollServiceTest {
         @Test
         @DisplayName("Create poll with 1 option fails with validation error")
         void shouldFailWith1Option() {
-            Post post = postsService.createPost(new CreatePostRequest("Poll", ""), null, testUser.getId());
+            CreatePostRequest req1 = new CreatePostRequest("Poll", "");
+            req1.setPostType(CreatePostRequestPostType.POLL);
+            Post post = postsService.createPost(req1, null, testUser.getId());
             UUID postId = post.getId();
 
             IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
@@ -136,7 +138,9 @@ class PollServiceTest {
         @Test
         @DisplayName("Create poll with 5 options fails with validation error")
         void shouldFailWith5Options() {
-            Post post = postsService.createPost(new CreatePostRequest("Poll", ""), null, testUser.getId());
+            CreatePostRequest req5 = new CreatePostRequest("Poll", "");
+            req5.setPostType(CreatePostRequestPostType.POLL);
+            Post post = postsService.createPost(req5, null, testUser.getId());
             UUID postId = post.getId();
 
             IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
@@ -148,7 +152,9 @@ class PollServiceTest {
         @Test
         @DisplayName("Option text over 100 chars fails with validation error")
         void shouldFailWithOptionTextOver100Chars() {
-            Post post = postsService.createPost(new CreatePostRequest("Poll", ""), null, testUser.getId());
+            CreatePostRequest req100 = new CreatePostRequest("Poll", "");
+            req100.setPostType(CreatePostRequestPostType.POLL);
+            Post post = postsService.createPost(req100, null, testUser.getId());
             UUID postId = post.getId();
             String longText = "X".repeat(101);
 

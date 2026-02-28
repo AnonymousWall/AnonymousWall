@@ -39,6 +39,12 @@ class UserBlockServiceImplTest {
             var userRepoField = UserBlockServiceImpl.class.getDeclaredField("userRepository");
             userRepoField.setAccessible(true);
             userRepoField.set(userBlockService, userRepository);
+
+            @SuppressWarnings("unchecked")
+            io.micronaut.cache.SyncCache<Object> mockCache = mock(io.micronaut.cache.SyncCache.class);
+            var cacheField = UserBlockServiceImpl.class.getDeclaredField("blockSetsCache");
+            cacheField.setAccessible(true);
+            cacheField.set(userBlockService, mockCache);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
