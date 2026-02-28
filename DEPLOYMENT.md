@@ -31,6 +31,7 @@ Before deploying, ensure you have:
 - [ ] `instance_private_ips` from Terraform output
 - [ ] `adb_connection_strings` from Terraform output (for DATABASE_URL)
 - [ ] `adb_wallet_content` from Terraform output (ADB wallet for mTLS connections)
+- [ ] `redis_private_ip` from Terraform output (for multi-instance WebSocket broadcasting)
 - [ ] ADB admin password (set during Terraform deployment)
 - [ ] SSH private key for OCI instances
 - [ ] Generated JWT secret (min 32 characters): `openssl rand -base64 32`
@@ -73,8 +74,9 @@ DATABASE_URL=jdbc:oracle:thin:@anonwalldb_high?TNS_ADMIN=/opt/anonymouswall/wall
 DATABASE_USER=ADMIN
 DATABASE_PASSWORD=YourDatabasePassword
 
-# Optional: Redis configuration (defaults to localhost:6379)
-# REDIS_URI=redis://localhost:6379
+# Required for multi-instance WebSocket broadcasting via Redis Pub/Sub
+# Get REDIS_PRIVATE_IP from: terraform output redis_private_ip
+REDIS_URI=redis://:YOUR_REDIS_PASSWORD@REDIS_PRIVATE_IP:6379
 ```
 
 #### Step 2: Transfer Files to OCI Instance
@@ -297,7 +299,8 @@ JWT_GENERATOR_SIGNATURE_SECRET=your-secret-key-min-32-chars
 DATABASE_URL=jdbc:oracle:thin:@anonwalldb_high?TNS_ADMIN=/app/wallet
 DATABASE_USER=ADMIN
 DATABASE_PASSWORD=YourDatabasePassword
-# REDIS_URI=redis://localhost:6379  # Optional, defaults to localhost
+# Required for multi-instance WebSocket broadcasting (get IP from terraform output redis_private_ip)
+REDIS_URI=redis://:YOUR_REDIS_PASSWORD@REDIS_PRIVATE_IP:6379
 EOF
 
 # Note: DATABASE_URL connects to OCI Autonomous Database (ADB)
@@ -334,9 +337,9 @@ The application requires these environment variables for production deployment:
 - `DATABASE_URL` - JDBC connection to OCI Autonomous Database
 - `DATABASE_USER` - ADB username (typically `admin`)
 - `DATABASE_PASSWORD` - ADB password (from Terraform)
+- `REDIS_URI` - Redis connection for cross-instance WebSocket broadcasting (e.g. `redis://:password@host:6379`)
 
 **OPTIONAL (with defaults):**
-- `REDIS_URI` - Redis connection (default: `redis://localhost:6379`)
 - `DB_TYPE` - Database type (default: `oracle`)
 - `DB_DIALECT` - SQL dialect (default: `ORACLE`)
 - `DB_DRIVER` - JDBC driver (default: `oracle.jdbc.OracleDriver`)
@@ -351,6 +354,7 @@ The application requires these environment variables for production deployment:
 | `DATABASE_URL` | JDBC connection string to OCI Autonomous Database (ADB) | `jdbc:oracle:thin:@your-adb-connection-string` |
 | `DATABASE_USER` | ADB username | `ADMIN` |
 | `DATABASE_PASSWORD` | ADB password | Complex password from Terraform |
+| `REDIS_URI` | Redis connection for WebSocket Pub/Sub (required for multi-instance) | `redis://:password@REDIS_PRIVATE_IP:6379` — get IP with `terraform output redis_private_ip` |
 
 **Note:** OCI Autonomous Database (ADB) uses Oracle Database, so we use the Oracle JDBC driver and protocol.
 
@@ -358,14 +362,11 @@ The application requires these environment variables for production deployment:
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `REDIS_URI` | Redis connection string | `redis://localhost:6379` |
 | `SMTP_HOST` | Email server host | - |
 | `SMTP_PORT` | Email server port | `587` |
 | `SMTP_USERNAME` | Email username | - |
 | `SMTP_PASSWORD` | Email password | - |
 | `LOG_DIR` | Log directory | `/app/logs` |
-
-**Note:** Redis is optional with a sensible default. If not specified, the application will attempt to connect to Redis at `localhost:6379`.
 
 ## Updating the Application
 
@@ -536,6 +537,29 @@ echo $DATABASE_URL
 # Ensure ADB wallet is properly configured if using mTLS
 ```
 
+### Redis Connection Issues
+
+If WebSocket messages are not delivered cross-instance, or you see Redis connection errors in logs:
+
+```bash
+# Check if REDIS_URI is set correctly in the container
+podman exec anonymouswall-backend env | grep REDIS
+
+# Check application logs for Redis errors
+podman logs anonymouswall-backend | grep -i "redis\|pubsub\|lettuce"
+
+# Test Redis connectivity from the container
+podman exec -it anonymouswall-backend sh
+# Inside container:
+# nc -zv REDIS_PRIVATE_IP 6379
+```
+
+**Common issues:**
+- `REDIS_URI` not set or pointing to localhost on a multi-instance deployment — each instance must use the same shared Redis host.
+- OCI security list not allowing TCP 6379 from the backend subnet to the Redis subnet — check OCI VCN security rules.
+- Wrong password in URI — verify with `terraform output redis_password` (if output is defined) or check OCI Redis configuration.
+- Redis not running — verify the OCI Cache (Redis) resource is in ACTIVE state in the OCI Console.
+
 ### Load Balancer Can't Reach Backend
 
 ```bash
@@ -589,6 +613,12 @@ terraform apply
 ```
 
 The load balancer will automatically distribute traffic to all healthy instances.
+
+> **Important:** All instances must point to the same Redis server via `REDIS_URI`.
+> Redis Pub/Sub is used for WebSocket broadcasting — without it, a message received by
+> instance 2 cannot push a WebSocket notification to a user connected to instance 1.
+> Get the Redis private IP from: `terraform output redis_private_ip`
+> Set in `.env` on every instance: `REDIS_URI=redis://:YOUR_REDIS_PASSWORD@REDIS_PRIVATE_IP:6379`
 
 ### Vertical Scaling
 

@@ -3,6 +3,7 @@ package com.anonymous.wall.controller;
 import com.anonymous.wall.entity.ChatMessage;
 import com.anonymous.wall.model.ChatMessageDTO;
 import com.anonymous.wall.service.ChatService;
+import com.anonymous.wall.service.RedisPubSubService;
 import io.micronaut.core.annotation.Nullable;
 import io.micronaut.security.annotation.Secured;
 import io.micronaut.security.authentication.Authentication;
@@ -41,6 +42,9 @@ public class ChatWebSocketHandler {
     @Inject
     private ObjectMapper objectMapper;
 
+    @Inject
+    private RedisPubSubService redisPubSubService;
+
     // Map to track user sessions: userId -> Set of sessions
     private final Map<UUID, Set<WebSocketSession>> userSessions = new ConcurrentHashMap<>();
 
@@ -53,8 +57,21 @@ public class ChatWebSocketHandler {
         try {
             UUID userId = getUserIdFromSession(session);
             
-            // Add session to user's session set
-            userSessions.computeIfAbsent(userId, k -> ConcurrentHashMap.newKeySet()).add(session);
+            // Add session to user's session set; track whether this is the first session atomically
+            boolean[] isFirstSession = {false};
+            userSessions.compute(userId, (k, sessions) -> {
+                if (sessions == null) {
+                    sessions = ConcurrentHashMap.newKeySet();
+                    isFirstSession[0] = true;
+                }
+                sessions.add(session);
+                return sessions;
+            });
+
+            // Only subscribe once per user per instance (on first session)
+            if (isFirstSession[0]) {
+                redisPubSubService.subscribe(userId, message -> deliverToLocalSessions(userId, message));
+            }
             
             log.info("WebSocket connection opened for user: {}, session: {}", userId, session.getId());
             
@@ -234,6 +251,7 @@ public class ChatWebSocketHandler {
                 sessions.remove(session);
                 if (sessions.isEmpty()) {
                     userSessions.remove(userId);
+                    redisPubSubService.unsubscribe(userId);
                 }
             }
             
@@ -282,9 +300,18 @@ public class ChatWebSocketHandler {
     }
 
     /**
-     * Broadcast message to a specific user (all their active sessions).
+     * Broadcast message to a specific user via Redis Pub/Sub.
+     * Redis routes the message to whichever instance has the user's WebSocket session.
      */
     public void broadcastToUser(UUID userId, String message) {
+        redisPubSubService.publish(userId, message);
+    }
+
+    /**
+     * Deliver a message to all local WebSocket sessions for a user.
+     * Called by the Redis subscriber callback.
+     */
+    private void deliverToLocalSessions(UUID userId, String message) {
         Set<WebSocketSession> sessions = userSessions.get(userId);
         if (sessions != null && !sessions.isEmpty()) {
             for (WebSocketSession session : sessions) {
@@ -292,10 +319,9 @@ public class ChatWebSocketHandler {
                     session.sendAsync(message);
                 }
             }
-            log.debug("Broadcasted message to user {} ({} sessions)", userId, sessions.size());
-        } else {
-            log.debug("User {} is not connected, message not delivered via WebSocket", userId);
+            log.debug("Delivered Redis message to user {} ({} local sessions)", userId, sessions.size());
         }
+        // If no local sessions: user is on another instance, that instance's subscriber will deliver it.
     }
 
     /**
