@@ -3,6 +3,8 @@ package com.anonymous.wall.controller;
 import com.anonymous.wall.entity.Post;
 import com.anonymous.wall.entity.UserEntity;
 import com.anonymous.wall.model.PostDTO;
+import com.anonymous.wall.repository.PollOptionRepository;
+import com.anonymous.wall.repository.PollVoteRepository;
 import com.anonymous.wall.repository.PostRepository;
 import com.anonymous.wall.repository.UserRepository;
 import com.anonymous.wall.service.JwtTokenService;
@@ -18,6 +20,8 @@ import io.micronaut.test.extensions.junit5.annotation.MicronautTest;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.*;
 
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -38,6 +42,12 @@ class PostsCreateControllerTest {
     PostRepository postRepository;
 
     @Inject
+    PollOptionRepository pollOptionRepository;
+
+    @Inject
+    PollVoteRepository pollVoteRepository;
+
+    @Inject
     private JwtTokenService jwtTokenService;
 
     private static final String BASE_PATH = "/api/v1/posts";
@@ -49,6 +59,11 @@ class PostsCreateControllerTest {
 
     @BeforeEach
     void setUp() {
+        // Clean up in FK-safe order
+        pollVoteRepository.deleteAll();
+        pollOptionRepository.deleteAll();
+        postRepository.deleteAll();
+
         // All users register with school email and have school domain
         testUserCampus = new UserEntity();
         testUserCampus.setEmail("student" + System.currentTimeMillis() + "@harvard.edu");
@@ -66,12 +81,12 @@ class PostsCreateControllerTest {
         testUserDifferentSchool.setPasswordSet(true);
         testUserDifferentSchool = userRepository.save(testUserDifferentSchool);
         jwtTokenDifferentSchool = jwtTokenService.generateToken(testUserDifferentSchool);
-
-        postRepository.deleteAll();
     }
 
     @AfterEach
     void tearDown() {
+        pollVoteRepository.deleteAll();
+        pollOptionRepository.deleteAll();
         postRepository.deleteAll();
     }
 
@@ -85,6 +100,17 @@ class PostsCreateControllerTest {
 
     private MultipartBody multipart(String title, String content) {
         return multipart(title, content, null);
+    }
+
+    private MultipartBody pollMultipart(String title, String wall, String... options) {
+        MultipartBody.Builder builder = MultipartBody.builder();
+        if (title != null) builder.addPart("title", title);
+        builder.addPart("postType", "poll");
+        if (wall != null) builder.addPart("wall", wall);
+        for (String option : options) {
+            builder.addPart("pollOptions", option);
+        }
+        return builder.build();
     }
 
     @Nested
@@ -654,6 +680,216 @@ class PostsCreateControllerTest {
             assertEquals("John Doe", postDTO.getAuthor().getProfileName());
             assertNotNull(postDTO.getAuthor().getId());
             assertNotEquals("John Doe", postDTO.getAuthor().getId());
+        }
+    }
+
+    @Nested
+    @DisplayName("Create Poll Post - Positive Cases")
+    class CreatePollPostPositiveTests {
+
+        @Test
+        @DisplayName("Should create poll post with 2 options")
+        void shouldCreatePollWith2Options() {
+            HttpResponse<Map> response = client.toBlocking().exchange(
+                HttpRequest.POST(BASE_PATH, pollMultipart("Best language?", "campus", "Java", "Python"))
+                    .contentType(MediaType.MULTIPART_FORM_DATA_TYPE)
+                    .header("Authorization", "Bearer " + jwtTokenCampus),
+                Map.class
+            );
+
+            assertEquals(HttpStatus.CREATED, response.getStatus());
+            Map<?, ?> body = response.body();
+            assertEquals("poll", body.get("postType"));
+            assertEquals(0, body.get("totalVotes"));
+
+            Map<?, ?> poll = (Map<?, ?>) body.get("poll");
+            assertNotNull(poll);
+            List<?> options = (List<?>) poll.get("options");
+            assertEquals(2, options.size());
+        }
+
+        @Test
+        @DisplayName("Should create poll post with 4 options")
+        void shouldCreatePollWith4Options() {
+            HttpResponse<Map> response = client.toBlocking().exchange(
+                HttpRequest.POST(BASE_PATH, pollMultipart("Favorite season?", "campus", "Spring", "Summer", "Autumn", "Winter"))
+                    .contentType(MediaType.MULTIPART_FORM_DATA_TYPE)
+                    .header("Authorization", "Bearer " + jwtTokenCampus),
+                Map.class
+            );
+
+            assertEquals(HttpStatus.CREATED, response.getStatus());
+            Map<?, ?> poll = (Map<?, ?>) response.body().get("poll");
+            assertNotNull(poll);
+            assertEquals(4, ((List<?>) poll.get("options")).size());
+        }
+
+        @Test
+        @DisplayName("Poll post should have postType=poll in response")
+        void shouldReturnCorrectPostTypeInResponse() {
+            HttpResponse<Map> response = client.toBlocking().exchange(
+                HttpRequest.POST(BASE_PATH, pollMultipart("Poll?", "campus", "Yes", "No"))
+                    .contentType(MediaType.MULTIPART_FORM_DATA_TYPE)
+                    .header("Authorization", "Bearer " + jwtTokenCampus),
+                Map.class
+            );
+
+            assertEquals(HttpStatus.CREATED, response.getStatus());
+            assertEquals("poll", response.body().get("postType"));
+        }
+
+        @Test
+        @DisplayName("Standard post should have postType=standard in response")
+        void shouldReturnStandardPostType() {
+            HttpResponse<Map> response = client.toBlocking().exchange(
+                HttpRequest.POST(BASE_PATH, multipart("Normal Post", "Content here"))
+                    .contentType(MediaType.MULTIPART_FORM_DATA_TYPE)
+                    .header("Authorization", "Bearer " + jwtTokenCampus),
+                Map.class
+            );
+
+            assertEquals(HttpStatus.CREATED, response.getStatus());
+            // postType defaults to standard
+            Object postType = response.body().get("postType");
+            assertTrue(postType == null || "standard".equals(postType.toString().toLowerCase()));
+        }
+
+        @Test
+        @DisplayName("Poll post content is optional")
+        void shouldCreatePollWithoutContent() {
+            MultipartBody.Builder builder = MultipartBody.builder();
+            builder.addPart("title", "Poll without content");
+            builder.addPart("postType", "poll");
+            builder.addPart("wall", "campus");
+            builder.addPart("pollOptions", "Option A");
+            builder.addPart("pollOptions", "Option B");
+
+            HttpResponse<Map> response = client.toBlocking().exchange(
+                HttpRequest.POST(BASE_PATH, builder.build())
+                    .contentType(MediaType.MULTIPART_FORM_DATA_TYPE)
+                    .header("Authorization", "Bearer " + jwtTokenCampus),
+                Map.class
+            );
+
+            assertEquals(HttpStatus.CREATED, response.getStatus());
+            assertEquals("poll", response.body().get("postType"));
+        }
+
+        @Test
+        @DisplayName("Poll options should preserve display order")
+        void shouldPreserveOptionDisplayOrder() {
+            HttpResponse<Map> response = client.toBlocking().exchange(
+                HttpRequest.POST(BASE_PATH, pollMultipart("Order test?", "campus", "First", "Second", "Third"))
+                    .contentType(MediaType.MULTIPART_FORM_DATA_TYPE)
+                    .header("Authorization", "Bearer " + jwtTokenCampus),
+                Map.class
+            );
+
+            assertEquals(HttpStatus.CREATED, response.getStatus());
+            Map<?, ?> poll = (Map<?, ?>) response.body().get("poll");
+            List<?> options = (List<?>) poll.get("options");
+            assertEquals(3, options.size());
+            assertEquals(0, ((Number) ((Map<?, ?>) options.get(0)).get("displayOrder")).intValue());
+            assertEquals(1, ((Number) ((Map<?, ?>) options.get(1)).get("displayOrder")).intValue());
+            assertEquals(2, ((Number) ((Map<?, ?>) options.get(2)).get("displayOrder")).intValue());
+        }
+    }
+
+    @Nested
+    @DisplayName("Create Poll Post - Negative Cases")
+    class CreatePollPostNegativeTests {
+
+        @Test
+        @DisplayName("Should fail when poll has only 1 option")
+        void shouldFailWith1PollOption() {
+            MultipartBody body = MultipartBody.builder()
+                .addPart("title", "Bad Poll")
+                .addPart("postType", "poll")
+                .addPart("wall", "campus")
+                .addPart("pollOptions", "Only option")
+                .build();
+
+            HttpClientResponseException exception = assertThrows(
+                HttpClientResponseException.class,
+                () -> client.toBlocking().exchange(
+                    HttpRequest.POST(BASE_PATH, body)
+                        .contentType(MediaType.MULTIPART_FORM_DATA_TYPE)
+                        .header("Authorization", "Bearer " + jwtTokenCampus),
+                    Map.class
+                )
+            );
+            assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
+        }
+
+        @Test
+        @DisplayName("Should fail when poll has 5 options")
+        void shouldFailWith5PollOptions() {
+            MultipartBody body = MultipartBody.builder()
+                .addPart("title", "Bad Poll")
+                .addPart("postType", "poll")
+                .addPart("wall", "campus")
+                .addPart("pollOptions", "A")
+                .addPart("pollOptions", "B")
+                .addPart("pollOptions", "C")
+                .addPart("pollOptions", "D")
+                .addPart("pollOptions", "E")
+                .build();
+
+            HttpClientResponseException exception = assertThrows(
+                HttpClientResponseException.class,
+                () -> client.toBlocking().exchange(
+                    HttpRequest.POST(BASE_PATH, body)
+                        .contentType(MediaType.MULTIPART_FORM_DATA_TYPE)
+                        .header("Authorization", "Bearer " + jwtTokenCampus),
+                    Map.class
+                )
+            );
+            assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
+        }
+
+        @Test
+        @DisplayName("Should fail when a poll option text exceeds 100 characters")
+        void shouldFailWithPollOptionOver100Chars() {
+            String longOption = "X".repeat(101);
+            MultipartBody body = MultipartBody.builder()
+                .addPart("title", "Poll")
+                .addPart("postType", "poll")
+                .addPart("wall", "campus")
+                .addPart("pollOptions", "Short option")
+                .addPart("pollOptions", longOption)
+                .build();
+
+            HttpClientResponseException exception = assertThrows(
+                HttpClientResponseException.class,
+                () -> client.toBlocking().exchange(
+                    HttpRequest.POST(BASE_PATH, body)
+                        .contentType(MediaType.MULTIPART_FORM_DATA_TYPE)
+                        .header("Authorization", "Bearer " + jwtTokenCampus),
+                    Map.class
+                )
+            );
+            assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
+        }
+
+        @Test
+        @DisplayName("Should fail when poll has no options at all")
+        void shouldFailWithNoPollOptions() {
+            MultipartBody body = MultipartBody.builder()
+                .addPart("title", "Poll no options")
+                .addPart("postType", "poll")
+                .addPart("wall", "campus")
+                .build();
+
+            HttpClientResponseException exception = assertThrows(
+                HttpClientResponseException.class,
+                () -> client.toBlocking().exchange(
+                    HttpRequest.POST(BASE_PATH, body)
+                        .contentType(MediaType.MULTIPART_FORM_DATA_TYPE)
+                        .header("Authorization", "Bearer " + jwtTokenCampus),
+                    Map.class
+                )
+            );
+            assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
         }
     }
 }
