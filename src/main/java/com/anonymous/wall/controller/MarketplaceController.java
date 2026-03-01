@@ -4,9 +4,9 @@ import com.anonymous.wall.entity.Comment;
 import com.anonymous.wall.entity.MarketplaceItem;
 import com.anonymous.wall.entity.UserEntity;
 import com.anonymous.wall.model.*;
-import com.anonymous.wall.repository.UserRepository;
 import com.anonymous.wall.service.CommentsService;
 import com.anonymous.wall.service.MarketplaceService;
+import com.anonymous.wall.service.UserService;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
 import io.micronaut.http.HttpRequest;
@@ -48,7 +48,7 @@ public class MarketplaceController {
     private CommentsService commentsService;
 
     @Inject
-    private UserRepository userRepository;
+    private UserService userService;
 
     private UUID getUserIdFromRequest(HttpRequest<?> request) {
         Optional<Principal> principalOpt = request.getUserPrincipal();
@@ -509,7 +509,7 @@ public class MarketplaceController {
         ItemDTOAuthor author = new ItemDTOAuthor();
         author.setId(item.getUserId().toString());
 
-        Optional<UserEntity> userOpt = userRepository.findById(item.getUserId());
+        Optional<UserEntity> userOpt = userService.findById(item.getUserId());
         if (userOpt.isPresent()) {
             UserEntity user = userOpt.get();
             author.setProfileName(user.getProfileName());

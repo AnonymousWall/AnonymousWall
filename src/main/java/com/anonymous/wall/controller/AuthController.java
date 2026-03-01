@@ -3,9 +3,9 @@ package com.anonymous.wall.controller;
 import com.anonymous.wall.entity.UserEntity;
 import com.anonymous.wall.mapper.UserMapper;
 import com.anonymous.wall.model.*;
-import com.anonymous.wall.repository.UserRepository;
 import com.anonymous.wall.service.AuthService;
 import com.anonymous.wall.service.JwtTokenService;
+import com.anonymous.wall.service.UserService;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.annotation.Body;
 import io.micronaut.http.annotation.Controller;
@@ -29,7 +29,7 @@ public class AuthController {
     private AuthService authService;
 
     @Inject
-    private UserRepository userRepository;
+    private UserService userService;
 
     @Inject
     private UserMapper userMapper;
@@ -54,7 +54,7 @@ public class AuthController {
             }
 
             // Check email exists for login/reset
-            Optional<UserEntity> userOpt = userRepository.findByEmail(request.getEmail());
+            Optional<UserEntity> userOpt = userService.findByEmail(request.getEmail());
 
             if (request.getPurpose() == SendEmailCodeRequestPurpose.REGISTER) {
                 if (userOpt.isPresent()) {
@@ -181,7 +181,7 @@ public class AuthController {
             UUID userId = UUID.fromString(principalOpt.get().getName());
             log.info("POST /auth/password/set - Setting password for user: {}", userId);
 
-            Optional<UserEntity> userOpt = userRepository.findById(userId);
+            Optional<UserEntity> userOpt = userService.findById(userId);
 
             if (userOpt.isEmpty()) {
                 log.warn("POST /auth/password/set - User not found: {}", userId);
@@ -224,7 +224,7 @@ public class AuthController {
             UUID userId = UUID.fromString(principalOpt.get().getName());
             log.info("POST /auth/password/change - Changing password for user: {}", userId);
 
-            Optional<UserEntity> userOpt = userRepository.findById(userId);
+            Optional<UserEntity> userOpt = userService.findById(userId);
 
             if (userOpt.isEmpty()) {
                 log.warn("POST /auth/password/change - User not found: {}", userId);

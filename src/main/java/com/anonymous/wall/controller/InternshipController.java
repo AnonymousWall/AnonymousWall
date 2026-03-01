@@ -4,9 +4,9 @@ import com.anonymous.wall.entity.Comment;
 import com.anonymous.wall.entity.Internship;
 import com.anonymous.wall.entity.UserEntity;
 import com.anonymous.wall.model.*;
-import com.anonymous.wall.repository.UserRepository;
 import com.anonymous.wall.service.CommentsService;
 import com.anonymous.wall.service.InternshipService;
+import com.anonymous.wall.service.UserService;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
 import io.micronaut.http.HttpRequest;
@@ -38,7 +38,7 @@ public class InternshipController {
     private CommentsService commentsService;
 
     @Inject
-    private UserRepository userRepository;
+    private UserService userService;
 
     private UUID getUserIdFromRequest(HttpRequest<?> request) {
         Optional<Principal> principalOpt = request.getUserPrincipal();
@@ -369,7 +369,7 @@ public class InternshipController {
         InternshipDTOAuthor author = new InternshipDTOAuthor();
         author.setId(internship.getUserId().toString());
 
-        Optional<UserEntity> userOpt = userRepository.findById(internship.getUserId());
+        Optional<UserEntity> userOpt = userService.findById(internship.getUserId());
         if (userOpt.isPresent()) {
             UserEntity user = userOpt.get();
             author.setProfileName(user.getProfileName());
