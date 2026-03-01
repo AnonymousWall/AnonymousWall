@@ -7,6 +7,7 @@ import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -29,4 +30,6 @@ public interface AdminPostService {
     Page<Comment> getPostComments(UUID postId, Pageable pageable);
 
     List<String> getPostImages(UUID postId);
+
+    Map<String, Object> getPollData(UUID postId);
 }

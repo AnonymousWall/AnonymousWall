@@ -2713,6 +2713,9 @@ Response: 200 OK
             "likeCount": 42,
             "commentCount": 15,
             "hidden": false,
+            "imageUrls": [],
+            "postType": "standard",
+            "totalVotes": 0,
             "createdAt": "2026-01-28T...",
             "updatedAt": "2026-01-28T..."
         }
@@ -2769,6 +2772,9 @@ Response: 200 OK
     "likeCount": 42,
     "commentCount": 15,
     "hidden": false,
+    "imageUrls": [],
+    "postType": "standard",
+    "totalVotes": 0,
     "createdAt": "2026-01-28T...",
     "updatedAt": "2026-01-28T..."
 }
@@ -2842,6 +2848,9 @@ Response: 200 OK
             "likeCount": 42,
             "commentCount": 15,
             "hidden": false,
+            "imageUrls": [],
+            "postType": "standard",
+            "totalVotes": 0,
             "createdAt": "2026-01-28T...",
             "updatedAt": "2026-01-28T..."
         }
@@ -2910,6 +2919,44 @@ Response: 200 OK
 - Works for both hidden and non-hidden posts
 
 **Error Responses:**
+- `404 Not Found` - Post with specified ID does not exist
+
+**Access:** ADMIN or MODERATOR
+
+#### 6. Get Poll Data for a Post
+```http
+GET /api/v1/admin/posts/{postId}/poll
+Authorization: Bearer {admin-jwt-token}
+
+Response: 200 OK
+{
+    "options": [
+        {
+            "id": "uuid",
+            "optionText": "Option A",
+            "displayOrder": 0,
+            "voteCount": 7,
+            "percentage": 70.0
+        },
+        {
+            "id": "uuid",
+            "optionText": "Option B",
+            "displayOrder": 1,
+            "voteCount": 3,
+            "percentage": 30.0
+        }
+    ],
+    "totalVotes": 10
+}
+```
+
+**Effect:**
+- Returns full poll options with vote counts and percentages
+- Admins always see results regardless of whether the post is hidden
+- Works for both hidden and non-hidden poll posts
+
+**Error Responses:**
+- `400 Bad Request` - Post with specified ID is not a poll
 - `404 Not Found` - Post with specified ID does not exist
 
 **Access:** ADMIN or MODERATOR

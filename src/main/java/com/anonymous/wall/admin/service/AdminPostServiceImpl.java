@@ -5,6 +5,7 @@ import com.anonymous.wall.entity.Post;
 import com.anonymous.wall.model.SortBy;
 import com.anonymous.wall.repository.CommentRepository;
 import com.anonymous.wall.repository.PostRepository;
+import com.anonymous.wall.service.PollService;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
 import jakarta.inject.Inject;
@@ -13,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -28,6 +30,9 @@ public class AdminPostServiceImpl implements AdminPostService {
 
     @Inject
     private CommentRepository commentRepository;
+
+    @Inject
+    private PollService pollService;
     
     /**
      * Get all posts with pagination and optional filters/sorting.
@@ -191,5 +196,36 @@ public class AdminPostServiceImpl implements AdminPostService {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new IllegalArgumentException("Post not found with ID: " + postId));
         return post.getImageUrls();
+    }
+
+    @Override
+    public Map<String, Object> getPollData(UUID postId) {
+        log.info("Admin fetching poll data for post: {}", postId);
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new IllegalArgumentException("Post not found with ID: " + postId));
+        if (!"poll".equals(post.getPostType())) {
+            throw new IllegalArgumentException("Post is not a poll");
+        }
+        // Build poll response using raw options - admins always see full results
+        // and can view hidden posts, so we bypass PollService.getPollData() hidden check.
+        List<com.anonymous.wall.entity.PollOption> options = pollService.getPollOptions(postId);
+        int totalVotes = post.getTotalVotes();
+
+        List<Map<String, Object>> optionDtos = new java.util.ArrayList<>();
+        for (com.anonymous.wall.entity.PollOption option : options) {
+            Map<String, Object> optionDto = new java.util.LinkedHashMap<>();
+            optionDto.put("id", option.getId());
+            optionDto.put("optionText", option.getOptionText());
+            optionDto.put("displayOrder", option.getDisplayOrder());
+            optionDto.put("voteCount", option.getVoteCount());
+            double pct = totalVotes > 0 ? (option.getVoteCount() * 100.0 / totalVotes) : 0.0;
+            optionDto.put("percentage", Math.round(pct * 10.0) / 10.0);
+            optionDtos.add(optionDto);
+        }
+
+        Map<String, Object> result = new java.util.LinkedHashMap<>();
+        result.put("options", optionDtos);
+        result.put("totalVotes", totalVotes);
+        return result;
     }
 }
