@@ -388,6 +388,79 @@ paths:
         "404":
           description: Post not found
 
+  /posts/{postId}/vote:
+    post:
+      tags: [posts]
+      summary: Vote on a poll
+      description: Cast a vote on a poll post. Each user can only vote once per poll.
+      operationId: voteOnPoll
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: postId
+          required: true
+          schema:
+            type: string
+          description: ID of the poll post to vote on
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VoteRequest"
+      responses:
+        "200":
+          description: Vote cast successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PollVoteResultDTO"
+        "400":
+          description: Invalid request or post is not a poll
+        "401":
+          description: Unauthorized - authentication required
+        "404":
+          description: Post or option not found
+        "409":
+          description: User has already voted on this poll
+
+  /posts/{postId}/poll:
+    get:
+      tags: [posts]
+      summary: Get poll data for a post
+      description: Retrieve poll options and results for a poll post.
+      operationId: getPoll
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: postId
+          required: true
+          schema:
+            type: string
+          description: ID of the poll post
+        - in: query
+          name: viewResults
+          required: false
+          schema:
+            type: boolean
+            default: false
+          description: If true, returns vote counts and percentages even if the user hasn't voted
+      responses:
+        "200":
+          description: Poll data retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PollDTO"
+        "400":
+          description: Post is not a poll
+        "401":
+          description: Unauthorized - authentication required
+        "404":
+          description: Post not found
+
   /posts/{postId}/comments:
     post:
       tags: [posts]
@@ -3777,14 +3850,27 @@ components:
           description: Post title
         content:
           type: string
-          minLength: 1
+          minLength: 0
           maxLength: 5000
-          description: Post content text
+          description: Post content text (optional for poll posts)
         wall:
           type: string
           enum: [campus, national]
           default: campus
           description: Which wall to post to
+        postType:
+          type: string
+          enum: [standard, poll]
+          default: standard
+          description: Type of post
+        pollOptions:
+          type: array
+          items:
+            type: string
+            maxLength: 100
+          minItems: 2
+          maxItems: 4
+          description: Poll options (required when postType=poll, 2-4 items)
 
     PostDTO:
       type: object
@@ -3826,12 +3912,83 @@ components:
           items:
             type: string
           description: URLs of images attached to the post (up to 5)
+        postType:
+          type: string
+          enum: [standard, poll]
+          description: Type of post
+        totalVotes:
+          type: integer
+          nullable: true
+          description: Total votes for poll posts (null for standard posts)
+        poll:
+          $ref: "#/components/schemas/PollDTO"
+          nullable: true
+          description: Poll data (null for standard posts)
         createdAt:
           type: string
           format: date-time
         updatedAt:
           type: string
           format: date-time
+
+    PollDTO:
+      type: object
+      properties:
+        options:
+          type: array
+          items:
+            $ref: "#/components/schemas/PollOptionDTO"
+        totalVotes:
+          type: integer
+          description: Total number of votes cast
+        userVotedOptionId:
+          type: string
+          format: uuid
+          nullable: true
+          description: The option ID the current user voted for, or null if not voted
+        resultsVisible:
+          type: boolean
+          description: Whether vote counts and percentages are visible
+
+    PollOptionDTO:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        optionText:
+          type: string
+          description: The text of the poll option
+        displayOrder:
+          type: integer
+          description: Display order of the option (0-3)
+        voteCount:
+          type: integer
+          nullable: true
+          description: Number of votes for this option (null when results not visible)
+        percentage:
+          type: number
+          format: double
+          nullable: true
+          description: Percentage of total votes (null when results not visible)
+
+    VoteRequest:
+      type: object
+      required: [optionId]
+      properties:
+        optionId:
+          type: string
+          format: uuid
+          description: ID of the poll option to vote for
+
+    PollVoteResultDTO:
+      type: object
+      properties:
+        poll:
+          $ref: "#/components/schemas/PollDTO"
+        message:
+          type: string
+          description: Success message
 
     CreateCommentRequest:
       type: object

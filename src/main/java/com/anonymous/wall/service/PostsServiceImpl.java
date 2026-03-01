@@ -94,6 +94,12 @@ public class PostsServiceImpl implements PostsService {
         Post post = new Post(userId, request.getTitle(), request.getContent(), wall, schoolDomain);
         post.setProfileName(user.getProfileName());
         post.setImageUrls(imageUrls);
+
+        // Set post type if provided
+        if (request.getPostType() != null) {
+            post.setPostType(request.getPostType().getValue());
+        }
+
         Post savedPost = postRepository.save(post);
 
         log.info("Post created: id={}, wall={}, schoolDomain={}, user={}, imageCount={}", savedPost.getId(), wall, schoolDomain, userId, imageUrls.size());
@@ -112,11 +118,16 @@ public class PostsServiceImpl implements PostsService {
             throw new IllegalArgumentException("Post title exceeds maximum length of 255 characters");
         }
 
-        if (request.getContent() == null || request.getContent().trim().isEmpty()) {
-            throw new IllegalArgumentException("Post content cannot be empty");
+        // Content is required for standard posts; optional for poll posts
+        boolean isPoll = request.getPostType() != null &&
+                "poll".equals(request.getPostType().getValue());
+        if (!isPoll) {
+            if (request.getContent() == null || request.getContent().trim().isEmpty()) {
+                throw new IllegalArgumentException("Post content cannot be empty");
+            }
         }
 
-        if (request.getContent().length() > 5000) {
+        if (request.getContent() != null && request.getContent().length() > 5000) {
             throw new IllegalArgumentException("Post content exceeds maximum length of 5000 characters");
         }
 

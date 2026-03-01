@@ -5,6 +5,7 @@ import com.anonymous.wall.entity.Comment;
 import com.anonymous.wall.model.*;
 import com.anonymous.wall.service.PostsService;
 import com.anonymous.wall.service.CommentsService;
+import com.anonymous.wall.service.PollService;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
 import io.micronaut.http.HttpResponse;
@@ -42,6 +43,9 @@ public class PostsController {
 
     @Inject
     private CommentsService commentsService;
+
+    @Inject
+    private PollService pollService;
 
     // Helper to extract user ID from Principal
     private UUID getUserIdFromRequest(HttpRequest<?> request) {
@@ -97,6 +101,8 @@ public class PostsController {
             String title = null;
             String content = null;
             String wall = null;
+            String postType = null;
+            List<String> pollOptions = new ArrayList<>();
             List<CompletedFileUpload> images = new ArrayList<>();
 
             for (CompletedPart part : parts) {
@@ -107,24 +113,48 @@ public class PostsController {
                 } else {
                     String value = new String(part.getBytes(), StandardCharsets.UTF_8);
                     switch (part.getName()) {
-                        case "title"   -> title = value;
-                        case "content" -> content = value;
-                        case "wall"    -> wall = value;
+                        case "title"        -> title = value;
+                        case "content"      -> content = value;
+                        case "wall"         -> wall = value;
+                        case "postType"     -> postType = value;
+                        case "pollOptions"  -> pollOptions.add(value);
                     }
                 }
             }
 
-            log.info("POST /posts - user={}, content_length={}, imageCount={}",
-                    userId, content != null ? content.length() : 0, images.size());
+            log.info("POST /posts - user={}, content_length={}, imageCount={}, postType={}",
+                    userId, content != null ? content.length() : 0, images.size(), postType);
 
             if (title == null || title.isBlank()) {
                 return HttpResponse.badRequest(error("Title is required"));
             }
-            if (content == null || content.isBlank()) {
+
+            boolean isPoll = "poll".equalsIgnoreCase(postType);
+
+            // For standard posts, content is required
+            if (!isPoll && (content == null || content.isBlank())) {
                 return HttpResponse.badRequest(error("Content is required"));
             }
 
-            CreatePostRequest request = new CreatePostRequest(title, content);
+            // Validate poll options early
+            if (isPoll) {
+                if (pollOptions.size() < 2) {
+                    return HttpResponse.badRequest(error("Poll must have at least 2 options"));
+                }
+                if (pollOptions.size() > 4) {
+                    return HttpResponse.badRequest(error("Poll cannot have more than 4 options"));
+                }
+                for (String opt : pollOptions) {
+                    if (opt == null || opt.trim().isEmpty()) {
+                        return HttpResponse.badRequest(error("Poll option text cannot be empty"));
+                    }
+                    if (opt.trim().length() > 100) {
+                        return HttpResponse.badRequest(error("Poll option text exceeds maximum length of 100 characters"));
+                    }
+                }
+            }
+
+            CreatePostRequest request = new CreatePostRequest(title, content != null ? content : "");
             if (wall != null && !wall.isEmpty()) {
                 try {
                     request.setWall(CreatePostRequestWall.fromValue(wall.toLowerCase()));
@@ -132,9 +162,19 @@ public class PostsController {
                     return HttpResponse.badRequest(error("Wall must be 'campus' or 'national'"));
                 }
             }
+            if (isPoll) {
+                request.setPostType(CreatePostRequestPostType.POLL);
+                request.setPollOptions(pollOptions);
+            }
 
             Post post = postsService.createPost(request, images, userId);
-            PostDTO dto = mapPostToDTO(post);
+
+            // Create poll options if this is a poll post
+            if (isPoll) {
+                pollService.createPollOptions(post.getId(), pollOptions);
+            }
+
+            PostDTO dto = mapPostToDTO(post, userId);
 
             log.info("POST /posts - Post created successfully, postId={}", dto.getId());
             return HttpResponse.created(dto);
@@ -161,7 +201,7 @@ public class PostsController {
             log.info("GET /posts/{} - Getting post, user={}", postId, userId);
 
             Post post = postsService.getPost(postId, userId);
-            PostDTO dto = mapPostToDTO(post);
+            PostDTO dto = mapPostToDTO(post, userId);
 
             log.info("GET /posts/{} - Post retrieved successfully", postId);
             return HttpResponse.ok(dto);
@@ -210,7 +250,7 @@ public class PostsController {
             Page<Post> posts = postsService.getPostsByWall(wall, pageable, userId, schoolDomain, sortBy);
 
             List<PostDTO> dtos = posts.getContent().stream()
-                    .map(this::mapPostToDTO)
+                    .map(p -> mapPostToDTO(p, userId))
                     .collect(Collectors.toList());
 
             Map<String, Object> response = new HashMap<>();
@@ -567,7 +607,7 @@ public class PostsController {
 
     // ================= DTO Mapping Methods =================
 
-    private PostDTO mapPostToDTO(Post post) {
+    private PostDTO mapPostToDTO(Post post, UUID currentUserId) {
         PostDTO dto = new PostDTO();
         dto.setId(post.getId());
         dto.setTitle(post.getTitle());
@@ -580,6 +620,28 @@ public class PostsController {
         dto.setCreatedAt(post.getCreatedAt());
         dto.setUpdatedAt(post.getUpdatedAt());
 
+        // Set post type
+        String postTypeStr = post.getPostType() != null ? post.getPostType() : "standard";
+        dto.setPostType(PostDTOPostType.fromValue(postTypeStr));
+
+        // Set total votes for poll posts
+        if ("poll".equals(postTypeStr)) {
+            dto.setTotalVotes(post.getTotalVotes());
+            // Include poll data if userId is available
+            if (currentUserId != null) {
+                try {
+                    Map<String, Object> pollData = pollService.getPollData(post.getId(), currentUserId, false);
+                    PollDTO pollDTO = buildPollDTO(pollData);
+                    dto.setPoll(pollDTO);
+                } catch (Exception e) {
+                    log.warn("Failed to load poll data for post={}: {}", post.getId(), e.getMessage());
+                }
+            }
+        } else {
+            dto.setTotalVotes(null);
+            dto.setPoll(null);
+        }
+
         // Set author info (anonymous)
         PostDTOAuthor author = new PostDTOAuthor();
         author.setId(post.getUserId().toString());
@@ -588,6 +650,34 @@ public class PostsController {
         dto.setAuthor(author);
 
         return dto;
+    }
+
+    @SuppressWarnings("unchecked")
+    private PollDTO buildPollDTO(Map<String, Object> pollData) {
+        PollDTO pollDTO = new PollDTO();
+        pollDTO.setTotalVotes((Integer) pollData.get("totalVotes"));
+        Object uvoi = pollData.get("userVotedOptionId");
+        pollDTO.setUserVotedOptionId(uvoi instanceof UUID ? (UUID) uvoi : null);
+        pollDTO.setResultsVisible((Boolean) pollData.get("resultsVisible"));
+
+        List<Map<String, Object>> optionMaps = (List<Map<String, Object>>) pollData.get("options");
+        List<PollOptionDTO> optionDTOs = new ArrayList<>();
+        if (optionMaps != null) {
+            for (Map<String, Object> optMap : optionMaps) {
+                PollOptionDTO optDTO = new PollOptionDTO();
+                Object idObj = optMap.get("id");
+                optDTO.setId(idObj instanceof UUID ? (UUID) idObj : UUID.fromString(idObj.toString()));
+                optDTO.setOptionText((String) optMap.get("optionText"));
+                optDTO.setDisplayOrder((Integer) optMap.get("displayOrder"));
+                Object vc = optMap.get("voteCount");
+                optDTO.setVoteCount(vc instanceof Integer ? (Integer) vc : null);
+                Object pct = optMap.get("percentage");
+                optDTO.setPercentage(pct instanceof Number ? ((Number) pct).doubleValue() : null);
+                optionDTOs.add(optDTO);
+            }
+        }
+        pollDTO.setOptions(optionDTOs);
+        return pollDTO;
     }
 
     private CommentDTO mapCommentToDTO(Comment comment) {
