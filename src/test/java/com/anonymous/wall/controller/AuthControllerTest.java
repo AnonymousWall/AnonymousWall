@@ -1216,19 +1216,16 @@ class AuthControllerTest {
         }
 
         @Test
-        @DisplayName("Negative: Should fail reset request for non-existent email")
-        void shouldFailResetRequestForNonExistentEmail() {
+        @DisplayName("Security: Should silently succeed for non-existent email (prevent enumeration)")
+        void shouldSilentlySucceedResetRequestForNonExistentEmail() {
             // Arrange
             PasswordResetRequestRequest request = new PasswordResetRequestRequest("nonexistent@harvard.edu");
 
-            // Act & Assert
-            HttpClientResponseException exception = assertThrows(
-                HttpClientResponseException.class,
-                () -> client.toBlocking().exchange(
-                    HttpRequest.POST(BASE_PATH + "/password/reset-request", request)
-                )
+            // Act - should return 200 to avoid revealing whether the email is registered
+            HttpResponse<?> response = client.toBlocking().exchange(
+                HttpRequest.POST(BASE_PATH + "/password/reset-request", request)
             );
-            assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());
+            assertEquals(HttpStatus.OK, response.getStatus());
         }
 
         @Test
