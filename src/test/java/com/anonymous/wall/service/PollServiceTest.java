@@ -195,7 +195,7 @@ class PollServiceTest {
 
             pollService.vote(post.getId(), options.get(0).getId(), testUser.getId());
 
-            assertThrows(PollServiceImpl.DuplicateVoteException.class,
+            assertThrows(PollService.DuplicateVoteException.class,
                     () -> pollService.vote(post.getId(), options.get(0).getId(), testUser.getId()));
         }
     }

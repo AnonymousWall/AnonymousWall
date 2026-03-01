@@ -3,9 +3,9 @@ package com.anonymous.wall.controller;
 import com.anonymous.wall.entity.UserEntity;
 import com.anonymous.wall.mapper.UserMapper;
 import com.anonymous.wall.model.*;
-import com.anonymous.wall.repository.UserRepository;
 import com.anonymous.wall.service.AuthService;
 import com.anonymous.wall.service.JwtTokenService;
+import com.anonymous.wall.service.UserService;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.annotation.Body;
 import io.micronaut.http.annotation.Controller;
@@ -29,7 +29,7 @@ public class AuthController {
     private AuthService authService;
 
     @Inject
-    private UserRepository userRepository;
+    private UserService userService;
 
     @Inject
     private UserMapper userMapper;
@@ -54,7 +54,7 @@ public class AuthController {
             }
 
             // Check email exists for login/reset
-            Optional<UserEntity> userOpt = userRepository.findByEmail(request.getEmail());
+            Optional<UserEntity> userOpt = userService.findByEmail(request.getEmail());
 
             if (request.getPurpose() == SendEmailCodeRequestPurpose.REGISTER) {
                 if (userOpt.isPresent()) {
@@ -74,7 +74,7 @@ public class AuthController {
             return HttpResponse.ok(new MessageResponse("Verification code sent to email"));
         } catch (Exception e) {
             log.error("POST /auth/email/send-code - Error sending email code", e);
-            return HttpResponse.badRequest(error(e.getMessage()));
+            return HttpResponse.serverError(error("Failed to send verification code"));
         }
     }
 
@@ -104,7 +104,7 @@ public class AuthController {
             return HttpResponse.badRequest(error(e.getMessage()));
         } catch (Exception e) {
             log.error("POST /auth/register/email - Error registering user", e);
-            return HttpResponse.badRequest(error("Registration failed"));
+            return HttpResponse.serverError(error("Registration failed"));
         }
     }
 
@@ -131,7 +131,7 @@ public class AuthController {
             return HttpResponse.badRequest(error(e.getMessage()));
         } catch (Exception e) {
             log.error("POST /auth/login/email - Error logging in with email", e);
-            return HttpResponse.badRequest(error("Authentication failed"));
+            return HttpResponse.serverError(error("Authentication failed"));
         }
     }
 
@@ -158,7 +158,7 @@ public class AuthController {
             return HttpResponse.badRequest(error(e.getMessage()));
         } catch (Exception e) {
             log.error("POST /auth/login/password - Error logging in with password", e);
-            return HttpResponse.badRequest(error("Authentication failed"));
+            return HttpResponse.serverError(error("Authentication failed"));
         }
     }
 
@@ -181,7 +181,7 @@ public class AuthController {
             UUID userId = UUID.fromString(principalOpt.get().getName());
             log.info("POST /auth/password/set - Setting password for user: {}", userId);
 
-            Optional<UserEntity> userOpt = userRepository.findById(userId);
+            Optional<UserEntity> userOpt = userService.findById(userId);
 
             if (userOpt.isEmpty()) {
                 log.warn("POST /auth/password/set - User not found: {}", userId);
@@ -201,7 +201,7 @@ public class AuthController {
             return HttpResponse.badRequest(error("Invalid request: " + e.getMessage()));
         } catch (Exception e) {
             log.error("POST /auth/password/set - Error setting password", e);
-            return HttpResponse.badRequest(error(e.getMessage()));
+            return HttpResponse.serverError(error("Failed to set password"));
         }
     }
 
@@ -224,7 +224,7 @@ public class AuthController {
             UUID userId = UUID.fromString(principalOpt.get().getName());
             log.info("POST /auth/password/change - Changing password for user: {}", userId);
 
-            Optional<UserEntity> userOpt = userRepository.findById(userId);
+            Optional<UserEntity> userOpt = userService.findById(userId);
 
             if (userOpt.isEmpty()) {
                 log.warn("POST /auth/password/change - User not found: {}", userId);
@@ -244,7 +244,7 @@ public class AuthController {
             return HttpResponse.badRequest(error(e.getMessage()));
         } catch (Exception e) {
             log.error("POST /auth/password/change - Error changing password", e);
-            return HttpResponse.badRequest(error("Password change failed"));
+            return HttpResponse.serverError(error("Password change failed"));
         }
     }
 
@@ -267,7 +267,7 @@ public class AuthController {
             return HttpResponse.notFound(error(e.getMessage()));
         } catch (Exception e) {
             log.error("POST /auth/password/reset-request - Error requesting password reset", e);
-            return HttpResponse.badRequest(error("Failed to process request"));
+            return HttpResponse.serverError(error("Failed to process request"));
         }
     }
 
@@ -294,7 +294,7 @@ public class AuthController {
             return HttpResponse.badRequest(error(e.getMessage()));
         } catch (Exception e) {
             log.error("POST /auth/password/reset - Error resetting password", e);
-            return HttpResponse.badRequest(error("Password reset failed"));
+            return HttpResponse.serverError(error("Password reset failed"));
         }
     }
 

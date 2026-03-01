@@ -2,7 +2,6 @@ package com.anonymous.wall.controller;
 
 import com.anonymous.wall.entity.PollVote;
 import com.anonymous.wall.service.PollService;
-import com.anonymous.wall.service.PollServiceImpl;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.annotation.*;
@@ -77,7 +76,7 @@ public class PollController {
             log.info("POST /posts/{}/vote - Vote cast successfully, user={}", postId, userId);
             return HttpResponse.ok(result);
 
-        } catch (PollServiceImpl.DuplicateVoteException e) {
+        } catch (PollService.DuplicateVoteException e) {
             log.warn("POST /posts/{}/vote - Duplicate vote: {}", postId, e.getMessage());
             return HttpResponse.status(io.micronaut.http.HttpStatus.CONFLICT).body(error(e.getMessage()));
         } catch (IllegalArgumentException e) {
@@ -88,7 +87,7 @@ public class PollController {
             return HttpResponse.badRequest(error(e.getMessage()));
         } catch (Exception e) {
             log.error("POST /posts/{}/vote - Error voting", postId, e);
-            return HttpResponse.badRequest(error("Failed to cast vote"));
+            return HttpResponse.serverError(error("Failed to cast vote"));
         }
     }
 
@@ -119,7 +118,7 @@ public class PollController {
             return HttpResponse.badRequest(error(e.getMessage()));
         } catch (Exception e) {
             log.error("GET /posts/{}/poll - Error getting poll data", postId, e);
-            return HttpResponse.badRequest(error("Failed to get poll data"));
+            return HttpResponse.serverError(error("Failed to get poll data"));
         }
     }
 

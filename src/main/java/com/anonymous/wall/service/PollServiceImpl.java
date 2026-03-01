@@ -64,7 +64,7 @@ public class PollServiceImpl implements PollService {
         // Check for duplicate vote
         Optional<PollVote> existingVote = pollVoteRepository.findByPostIdAndUserId(postId, userId);
         if (existingVote.isPresent()) {
-            throw new DuplicateVoteException("User has already voted on this poll");
+            throw new PollService.DuplicateVoteException("User has already voted on this poll");
         }
 
         // Verify option belongs to this post
@@ -162,15 +162,6 @@ public class PollServiceImpl implements PollService {
             if (text.trim().length() > MAX_OPTION_TEXT_LENGTH) {
                 throw new IllegalArgumentException("Poll option text exceeds maximum length of " + MAX_OPTION_TEXT_LENGTH + " characters");
             }
-        }
-    }
-
-    /**
-     * Exception for duplicate vote attempts (maps to HTTP 409)
-     */
-    public static class DuplicateVoteException extends RuntimeException {
-        public DuplicateVoteException(String message) {
-            super(message);
         }
     }
 }
