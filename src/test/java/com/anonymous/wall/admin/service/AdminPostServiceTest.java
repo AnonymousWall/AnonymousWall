@@ -1,8 +1,10 @@
 package com.anonymous.wall.admin.service;
 
+import com.anonymous.wall.entity.PollOption;
 import com.anonymous.wall.entity.Post;
 import com.anonymous.wall.model.SortBy;
 import com.anonymous.wall.repository.PostRepository;
+import com.anonymous.wall.service.PollService;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
 import org.junit.jupiter.api.BeforeEach;
@@ -11,6 +13,8 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.time.OffsetDateTime;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -23,16 +27,22 @@ class AdminPostServiceTest {
 
     private AdminPostServiceImpl adminPostService;
     private PostRepository postRepository;
+    private PollService pollService;
 
     @BeforeEach
     void setUp() {
         postRepository = mock(PostRepository.class);
+        pollService = mock(PollService.class);
         adminPostService = new AdminPostServiceImpl();
         
         try {
             var repoField = AdminPostServiceImpl.class.getDeclaredField("postRepository");
             repoField.setAccessible(true);
             repoField.set(adminPostService, postRepository);
+
+            var pollServiceField = AdminPostServiceImpl.class.getDeclaredField("pollService");
+            pollServiceField.setAccessible(true);
+            pollServiceField.set(adminPostService, pollService);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -743,6 +753,132 @@ class AdminPostServiceTest {
             assertTrue(post.isHidden());
             assertEquals(999999, post.getLikeCount());
             assertEquals(999999, post.getCommentCount());
+        }
+    }
+
+    @Nested
+    @DisplayName("Get Poll Data Cases")
+    class GetPollDataCases {
+
+        @Test
+        @DisplayName("Should return poll data for a poll post")
+        void shouldReturnPollDataForPollPost() {
+            // Arrange
+            UUID postId = UUID.randomUUID();
+            Post post = createTestPost(postId);
+            post.setPostType("poll");
+            post.setTotalVotes(5);
+
+            PollOption option1 = new PollOption(postId, "Option A", 0);
+            option1.setId(UUID.randomUUID());
+            option1.setVoteCount(3);
+
+            PollOption option2 = new PollOption(postId, "Option B", 1);
+            option2.setId(UUID.randomUUID());
+            option2.setVoteCount(2);
+
+            when(postRepository.findById(postId)).thenReturn(Optional.of(post));
+            when(pollService.getPollOptions(postId)).thenReturn(List.of(option1, option2));
+
+            // Act
+            Map<String, Object> result = adminPostService.getPollData(postId);
+
+            // Assert
+            assertNotNull(result);
+            assertEquals(5, result.get("totalVotes"));
+            List<?> options = (List<?>) result.get("options");
+            assertNotNull(options);
+            assertEquals(2, options.size());
+
+            // Verify first option has voteCount and percentage
+            Map<?, ?> firstOption = (Map<?, ?>) options.get(0);
+            assertEquals(3, firstOption.get("voteCount"));
+            assertEquals("Option A", firstOption.get("optionText"));
+
+            verify(pollService, times(1)).getPollOptions(postId);
+        }
+
+        @Test
+        @DisplayName("Should return poll data for a hidden poll post")
+        void shouldReturnPollDataForHiddenPollPost() {
+            // Arrange
+            UUID postId = UUID.randomUUID();
+            Post post = createTestPost(postId);
+            post.setPostType("poll");
+            post.setHidden(true);
+            post.setTotalVotes(0);
+
+            when(postRepository.findById(postId)).thenReturn(Optional.of(post));
+            when(pollService.getPollOptions(postId)).thenReturn(List.of());
+
+            // Act
+            Map<String, Object> result = adminPostService.getPollData(postId);
+
+            // Assert
+            assertNotNull(result);
+            assertEquals(0, result.get("totalVotes"));
+            verify(pollService, times(1)).getPollOptions(postId);
+        }
+
+        @Test
+        @DisplayName("Should compute percentage correctly")
+        void shouldComputePercentageCorrectly() {
+            // Arrange
+            UUID postId = UUID.randomUUID();
+            Post post = createTestPost(postId);
+            post.setPostType("poll");
+            post.setTotalVotes(4);
+
+            PollOption option1 = new PollOption(postId, "Yes", 0);
+            option1.setId(UUID.randomUUID());
+            option1.setVoteCount(1);
+
+            PollOption option2 = new PollOption(postId, "No", 1);
+            option2.setId(UUID.randomUUID());
+            option2.setVoteCount(3);
+
+            when(postRepository.findById(postId)).thenReturn(Optional.of(post));
+            when(pollService.getPollOptions(postId)).thenReturn(List.of(option1, option2));
+
+            // Act
+            Map<String, Object> result = adminPostService.getPollData(postId);
+
+            // Assert
+            List<?> options = (List<?>) result.get("options");
+            Map<?, ?> first = (Map<?, ?>) options.get(0);
+            Map<?, ?> second = (Map<?, ?>) options.get(1);
+            assertEquals(25.0, first.get("percentage"));
+            assertEquals(75.0, second.get("percentage"));
+        }
+
+        @Test
+        @DisplayName("Should throw when post not found")
+        void shouldThrowWhenPostNotFound() {
+            // Arrange
+            UUID postId = UUID.randomUUID();
+            when(postRepository.findById(postId)).thenReturn(Optional.empty());
+
+            // Act & Assert
+            IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                    () -> adminPostService.getPollData(postId));
+            assertTrue(ex.getMessage().contains("Post not found"));
+            verify(pollService, never()).getPollOptions(any());
+        }
+
+        @Test
+        @DisplayName("Should throw when post is not a poll")
+        void shouldThrowWhenPostIsNotPoll() {
+            // Arrange
+            UUID postId = UUID.randomUUID();
+            Post post = createTestPost(postId);
+            post.setPostType("standard");
+            when(postRepository.findById(postId)).thenReturn(Optional.of(post));
+
+            // Act & Assert
+            IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                    () -> adminPostService.getPollData(postId));
+            assertTrue(ex.getMessage().contains("not a poll"));
+            verify(pollService, never()).getPollOptions(any());
         }
     }
 

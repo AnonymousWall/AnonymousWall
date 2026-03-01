@@ -818,4 +818,142 @@ class AdminPostControllerTest {
             assertEquals(1, imageUrls.size());
         }
     }
+
+    @Nested
+    @DisplayName("Poll Post Endpoint Tests")
+    class PollPostTests {
+
+        @Inject
+        com.anonymous.wall.repository.PollOptionRepository pollOptionRepository;
+
+        private Post pollPost;
+
+        @BeforeEach
+        void setUpPollPost() {
+            pollPost = new Post();
+            pollPost.setUserId(regularUser.getId());
+            pollPost.setTitle("Poll Post");
+            pollPost.setContent("Which do you prefer?");
+            pollPost.setWall("campus");
+            pollPost.setSchoolDomain("test.edu");
+            pollPost.setPostType("poll");
+            pollPost.setTotalVotes(0);
+            pollPost = postRepository.save(pollPost);
+
+            com.anonymous.wall.entity.PollOption opt1 =
+                    new com.anonymous.wall.entity.PollOption(pollPost.getId(), "Option A", 0);
+            com.anonymous.wall.entity.PollOption opt2 =
+                    new com.anonymous.wall.entity.PollOption(pollPost.getId(), "Option B", 1);
+            pollOptionRepository.save(opt1);
+            pollOptionRepository.save(opt2);
+        }
+
+        @AfterEach
+        void tearDownPollPost() {
+            pollOptionRepository.deleteAll();
+        }
+
+        @Test
+        @DisplayName("Positive: Admin can get poll data for a poll post")
+        void adminCanGetPollData() {
+            HttpResponse<Map> response = client.toBlocking().exchange(
+                    HttpRequest.GET(BASE_PATH + "/" + pollPost.getId() + "/poll")
+                            .bearerAuth(adminToken),
+                    Map.class
+            );
+
+            assertEquals(HttpStatus.OK, response.getStatus());
+            assertNotNull(response.body());
+            assertTrue(response.body().containsKey("options"));
+            assertTrue(response.body().containsKey("totalVotes"));
+            List<?> options = (List<?>) response.body().get("options");
+            assertEquals(2, options.size());
+        }
+
+        @Test
+        @DisplayName("Positive: Admin can get poll data for a hidden poll post")
+        void adminCanGetPollDataForHiddenPollPost() {
+            pollPost.setHidden(true);
+            postRepository.update(pollPost);
+
+            HttpResponse<Map> response = client.toBlocking().exchange(
+                    HttpRequest.GET(BASE_PATH + "/" + pollPost.getId() + "/poll")
+                            .bearerAuth(adminToken),
+                    Map.class
+            );
+
+            assertEquals(HttpStatus.OK, response.getStatus());
+            assertNotNull(response.body());
+            assertTrue(response.body().containsKey("options"));
+        }
+
+        @Test
+        @DisplayName("Negative: Regular user cannot get poll data via admin endpoint")
+        void regularUserCannotGetPollData() {
+            HttpClientResponseException exception = assertThrows(
+                    HttpClientResponseException.class,
+                    () -> client.toBlocking().exchange(
+                            HttpRequest.GET(BASE_PATH + "/" + pollPost.getId() + "/poll")
+                                    .bearerAuth(userToken),
+                            Map.class
+                    )
+            );
+            assertEquals(HttpStatus.FORBIDDEN, exception.getStatus());
+        }
+
+        @Test
+        @DisplayName("Negative: Unauthenticated user cannot get poll data")
+        void unauthenticatedUserCannotGetPollData() {
+            HttpClientResponseException exception = assertThrows(
+                    HttpClientResponseException.class,
+                    () -> client.toBlocking().exchange(
+                            HttpRequest.GET(BASE_PATH + "/" + pollPost.getId() + "/poll"),
+                            Map.class
+                    )
+            );
+            assertEquals(HttpStatus.UNAUTHORIZED, exception.getStatus());
+        }
+
+        @Test
+        @DisplayName("Negative: Returns error for non-poll post")
+        void returnsErrorForNonPollPost() {
+            assertThrows(
+                    HttpClientResponseException.class,
+                    () -> client.toBlocking().exchange(
+                            HttpRequest.GET(BASE_PATH + "/" + testPost.getId() + "/poll")
+                                    .bearerAuth(adminToken),
+                            Map.class
+                    )
+            );
+        }
+
+        @Test
+        @DisplayName("Positive: postType and totalVotes are included in post response")
+        void postTypeAndTotalVotesInPostResponse() {
+            HttpResponse<Map> response = client.toBlocking().exchange(
+                    HttpRequest.GET(BASE_PATH + "/" + pollPost.getId())
+                            .bearerAuth(adminToken),
+                    Map.class
+            );
+
+            assertEquals(HttpStatus.OK, response.getStatus());
+            Map body = response.body();
+            assertNotNull(body);
+            assertEquals("poll", body.get("postType"));
+            assertNotNull(body.get("totalVotes"));
+        }
+
+        @Test
+        @DisplayName("Positive: Standard post has postType=standard in response")
+        void standardPostHasPostTypeStandard() {
+            HttpResponse<Map> response = client.toBlocking().exchange(
+                    HttpRequest.GET(BASE_PATH + "/" + testPost.getId())
+                            .bearerAuth(adminToken),
+                    Map.class
+            );
+
+            assertEquals(HttpStatus.OK, response.getStatus());
+            assertEquals("standard", response.body().get("postType"));
+        }
+    }
 }

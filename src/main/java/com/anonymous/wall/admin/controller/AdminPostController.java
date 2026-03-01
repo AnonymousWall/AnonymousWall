@@ -6,6 +6,7 @@ import com.anonymous.wall.entity.Post;
 import com.anonymous.wall.model.AdminCommentDTO;
 import com.anonymous.wall.model.AdminPostDTO;
 import com.anonymous.wall.model.AdminPostDTOWall;
+import com.anonymous.wall.model.PostDTOPostType;
 import com.anonymous.wall.model.SortBy;
 import io.micronaut.core.annotation.Nullable;
 import io.micronaut.data.model.Page;
@@ -48,6 +49,8 @@ public class AdminPostController {
         dto.setCommentCount(post.getCommentCount());
         dto.setHidden(post.isHidden());
         dto.setImageUrls(post.getImageUrls());
+        dto.setPostType(PostDTOPostType.fromValue(post.getPostType() != null ? post.getPostType() : "standard"));
+        dto.setTotalVotes(post.getTotalVotes());
         dto.setCreatedAt(post.getCreatedAt());
         dto.setUpdatedAt(post.getUpdatedAt());
         return dto;
@@ -171,6 +174,14 @@ public class AdminPostController {
         response.put("postId", postId);
         response.put("imageUrls", imageUrls);
         return HttpResponse.ok(response);
+    }
+
+    @Get("/{id}/poll")
+    @Secured({"ADMIN", "MODERATOR"})
+    public HttpResponse<Object> getPostPoll(@PathVariable String id) {
+        UUID postId = UUID.fromString(id);
+        Map<String, Object> pollData = adminPostService.getPollData(postId);
+        return HttpResponse.ok(pollData);
     }
     
     @Get("/by-wall")

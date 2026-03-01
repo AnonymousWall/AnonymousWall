@@ -15,6 +15,7 @@ import com.anonymous.wall.model.AdminUserDTO;
 import com.anonymous.wall.model.AdminUserDTORole;
 import com.anonymous.wall.model.AdminPostDTO;
 import com.anonymous.wall.model.AdminPostDTOWall;
+import com.anonymous.wall.model.PostDTOPostType;
 import com.anonymous.wall.model.AdminCommentDTO;
 import com.anonymous.wall.model.AdminInternshipDTO;
 import com.anonymous.wall.model.AdminMarketplaceDTO;
@@ -90,6 +91,8 @@ public class AdminUserController {
         dto.setLikeCount(post.getLikeCount());
         dto.setCommentCount(post.getCommentCount());
         dto.setHidden(post.isHidden());
+        dto.setPostType(PostDTOPostType.fromValue(post.getPostType() != null ? post.getPostType() : "standard"));
+        dto.setTotalVotes(post.getTotalVotes());
         dto.setCreatedAt(post.getCreatedAt());
         dto.setUpdatedAt(post.getUpdatedAt());
         return dto;
