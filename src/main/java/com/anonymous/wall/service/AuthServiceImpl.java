@@ -151,6 +151,7 @@ public class AuthServiceImpl implements AuthService {
             log.debug("User not found, auto-creating account for email: {}", request.getEmail());
             user = new UserEntity();
             user.setEmail(request.getEmail());
+            user.setSchoolDomain(EmailValidator.extractSchoolDomain(request.getEmail()));
             user.setVerified(true);
             user.setPasswordSet(false);
             user.setCreatedAt(OffsetDateTime.now());
@@ -272,9 +273,9 @@ public class AuthServiceImpl implements AuthService {
         Optional<UserEntity> userOpt = userService.findByEmail(request.getEmail());
 
         if (userOpt.isEmpty()) {
-            // Don't reveal if email exists
-            log.warn("Password reset request - email not found: {}", request.getEmail());
-            throw new IllegalArgumentException("Email not found");
+            // Silently succeed to avoid email enumeration attacks
+            log.warn("Password reset request - email not found, silently ignoring: {}", request.getEmail());
+            return null;
         }
 
         UserEntity user = userOpt.get();
