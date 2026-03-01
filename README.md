@@ -203,13 +203,15 @@ CREATE TABLE posts (
     user_id UUID NOT NULL REFERENCES users(id),
     profile_name VARCHAR(255) DEFAULT 'Anonymous',
     title VARCHAR(255) NOT NULL,         -- Post title (max 255 characters)
-    content VARCHAR(5000) NOT NULL,      -- Post content (max 5000 characters)
+    content VARCHAR(5000),               -- Post content (max 5000 characters, optional for poll posts)
     wall VARCHAR(20) DEFAULT 'campus',   -- "campus" or "national"
     school_domain VARCHAR(255),          -- NULL for national, set for campus
     like_count INT DEFAULT 0,            -- Atomic counter for likes
     comment_count INT DEFAULT 0,         -- Atomic counter for comments
     is_hidden BOOLEAN DEFAULT false,     -- Soft-delete flag
     version BIGINT DEFAULT 0,            -- Optimistic locking
+    post_type VARCHAR(10) DEFAULT 'standard', -- "standard" or "poll"
+    total_votes INT DEFAULT 0,           -- Total votes cast on a poll post
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -567,6 +569,9 @@ Response: 201 Created
     "title": "My First Post Title",
     "content": "This is my first post!",
     "wall": "CAMPUS",
+    "postType": "standard",
+    "totalVotes": null,
+    "poll": null,
     "likes": 0,
     "comments": 0,
     "liked": false,
@@ -584,7 +589,7 @@ Response: 201 Created
 **Request Validation:**
 - `title` is **required** (cannot be null, empty, or whitespace-only)
 - `title` maximum length: **255 characters**
-- `content` is **required** (cannot be null, empty, or whitespace-only)
+- `content` is **required** for standard posts (cannot be null, empty, or whitespace-only); optional for poll posts
 - `content` maximum length: **5000 characters**
 - `wall` is optional (defaults to "campus"), must be "campus" or "national"
 - `images` is optional; up to **5 images** per post; each must be JPEG, PNG, or WEBP and max **5MB**
@@ -617,6 +622,9 @@ Response: 200 OK
             "title": "Post Title",        // NEW
             "content": "Post content",
             "wall": "CAMPUS",
+            "postType": "standard",
+            "totalVotes": null,
+            "poll": null,
             "likes": 5,
             "comments": 2,
             "liked": false,
@@ -655,6 +663,9 @@ Response: 200 OK
     "title": "Post Title",
     "content": "Post content",
     "wall": "CAMPUS",
+    "postType": "standard",
+    "totalVotes": null,
+    "poll": null,
     "likes": 5,
     "comments": 2,
     "liked": false,
