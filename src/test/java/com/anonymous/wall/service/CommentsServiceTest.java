@@ -6,9 +6,11 @@ import com.anonymous.wall.entity.Post;
 import com.anonymous.wall.entity.UserEntity;
 import com.anonymous.wall.model.CreateCommentRequest;
 import com.anonymous.wall.model.SortBy;
+import com.anonymous.wall.notification.event.CommentCreatedEvent;
 import com.anonymous.wall.repository.CommentRepository;
 import com.anonymous.wall.repository.PostRepository;
 import com.anonymous.wall.repository.UserRepository;
+import io.micronaut.context.event.ApplicationEventPublisher;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,6 +34,8 @@ class CommentsServiceTest {
     private CommentRepository commentRepository;
     private PostRepository postRepository;
     private UserRepository userRepository;
+    @SuppressWarnings("unchecked")
+    private ApplicationEventPublisher<CommentCreatedEvent> eventPublisher;
 
     private UUID testUserId;
     private UUID testPostId;
@@ -58,6 +62,11 @@ class CommentsServiceTest {
             var userRepoField = CommentsServiceImpl.class.getDeclaredField("userRepository");
             userRepoField.setAccessible(true);
             userRepoField.set(commentsService, userRepository);
+
+            eventPublisher = mock(ApplicationEventPublisher.class);
+            var publisherField = CommentsServiceImpl.class.getDeclaredField("eventPublisher");
+            publisherField.setAccessible(true);
+            publisherField.set(commentsService, eventPublisher);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

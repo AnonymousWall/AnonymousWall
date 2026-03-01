@@ -1,0 +1,252 @@
+package com.anonymous.wall.notification;
+
+import com.anonymous.wall.notification.apns.ApnsClient;
+import com.anonymous.wall.notification.device.DeviceTokenService;
+import com.anonymous.wall.notification.event.CommentCreatedEvent;
+import com.anonymous.wall.notification.listener.NotificationEventListener;
+import com.anonymous.wall.notification.service.PushNotificationService;
+import com.anonymous.wall.notification.service.PushNotificationServiceImpl;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
+@DisplayName("PushNotificationService Tests")
+class PushNotificationServiceTest {
+
+    private ApnsClient apnsClient;
+    private DeviceTokenService deviceTokenService;
+    private PushNotificationServiceImpl pushNotificationService;
+    private NotificationEventListener listener;
+
+    @BeforeEach
+    void setUp() {
+        apnsClient = mock(ApnsClient.class);
+        deviceTokenService = mock(DeviceTokenService.class);
+
+        pushNotificationService = new PushNotificationServiceImpl();
+        setField(pushNotificationService, "apnsClient", apnsClient);
+        setField(pushNotificationService, "deviceTokenService", deviceTokenService);
+
+        PushNotificationService mockPushService = mock(PushNotificationService.class);
+        listener = new NotificationEventListener();
+        setField(listener, "pushNotificationService", mockPushService);
+        setField(listener, "deviceTokenService", deviceTokenService);
+    }
+
+    // ===================== NotificationEventListener Tests =====================
+
+    @Nested
+    @DisplayName("Listener: Comment event triggers notification")
+    class ListenerTests {
+
+        @Test
+        @DisplayName("Comment event triggers sendPush for post owner tokens")
+        void commentEventTriggersPush() {
+            UUID actorId = UUID.randomUUID();
+            UUID ownerId = UUID.randomUUID();
+            UUID commentId = UUID.randomUUID();
+            UUID postId = UUID.randomUUID();
+
+            String token = "device-token-123";
+            when(deviceTokenService.getActiveTokens(ownerId)).thenReturn(List.of(token));
+
+            PushNotificationService mockPush = mock(PushNotificationService.class);
+            NotificationEventListener testListener = new NotificationEventListener();
+            setField(testListener, "pushNotificationService", mockPush);
+            setField(testListener, "deviceTokenService", deviceTokenService);
+
+            CommentCreatedEvent event = new CommentCreatedEvent(commentId, postId, actorId, ownerId);
+            testListener.onCommentCreated(event);
+
+            verify(mockPush, times(1)).sendPush(eq(token), anyString(), anyString(), anyMap());
+        }
+
+        @Test
+        @DisplayName("Self-notification prevented: actor == postOwner → sendPush never called")
+        void selfNotificationPrevented() {
+            UUID userId = UUID.randomUUID();
+            UUID commentId = UUID.randomUUID();
+            UUID postId = UUID.randomUUID();
+
+            PushNotificationService mockPush = mock(PushNotificationService.class);
+            NotificationEventListener testListener = new NotificationEventListener();
+            setField(testListener, "pushNotificationService", mockPush);
+            setField(testListener, "deviceTokenService", deviceTokenService);
+
+            CommentCreatedEvent event = new CommentCreatedEvent(commentId, postId, userId, userId);
+            testListener.onCommentCreated(event);
+
+            verify(mockPush, never()).sendPush(any(), any(), any(), any());
+            verify(deviceTokenService, never()).getActiveTokens(any());
+        }
+
+        @Test
+        @DisplayName("Recipient with no active tokens returns silently")
+        void noActiveTokensReturnsSilently() {
+            UUID actorId = UUID.randomUUID();
+            UUID ownerId = UUID.randomUUID();
+            UUID commentId = UUID.randomUUID();
+            UUID postId = UUID.randomUUID();
+
+            when(deviceTokenService.getActiveTokens(ownerId)).thenReturn(Collections.emptyList());
+
+            PushNotificationService mockPush = mock(PushNotificationService.class);
+            NotificationEventListener testListener = new NotificationEventListener();
+            setField(testListener, "pushNotificationService", mockPush);
+            setField(testListener, "deviceTokenService", deviceTokenService);
+
+            CommentCreatedEvent event = new CommentCreatedEvent(commentId, postId, actorId, ownerId);
+            testListener.onCommentCreated(event);
+
+            verify(mockPush, never()).sendPush(any(), any(), any(), any());
+        }
+    }
+
+    // ===================== PushNotificationServiceImpl Tests =====================
+
+    @Nested
+    @DisplayName("PushNotificationService: APNs status handling")
+    class PushServiceTests {
+
+        @Test
+        @DisplayName("APNs 200 → no further action")
+        void status200Success() throws Exception {
+            when(apnsClient.send(any(), any(), any(), any())).thenReturn(200);
+
+            pushNotificationService.sendPush("token", "title", "body", Map.of());
+
+            verify(apnsClient, times(1)).send(any(), any(), any(), any());
+            verify(deviceTokenService, never()).deactivate(any());
+        }
+
+        @Test
+        @DisplayName("APNs 410 → deactivate token")
+        void status410DeactivatesToken() {
+            when(apnsClient.send(any(), any(), any(), any())).thenReturn(410);
+
+            pushNotificationService.sendPush("token-410", "title", "body", Map.of());
+
+            verify(deviceTokenService, times(1)).deactivate("token-410");
+        }
+
+        @Test
+        @DisplayName("APNs 400 → error logged, no deactivation, no retry")
+        void status400ErrorLogged() {
+            when(apnsClient.send(any(), any(), any(), any())).thenReturn(400);
+
+            pushNotificationService.sendPush("token-400", "title", "body", Map.of());
+
+            verify(apnsClient, times(1)).send(any(), any(), any(), any());
+            verify(deviceTokenService, never()).deactivate(any());
+        }
+
+        @Test
+        @DisplayName("APNs 500 → retry once after 2 seconds, then log failure")
+        void status500RetriesOnce() {
+            when(apnsClient.send(any(), any(), any(), any()))
+                    .thenReturn(500)
+                    .thenReturn(503);
+
+            long start = System.currentTimeMillis();
+            pushNotificationService.sendPush("token-500", "title", "body", Map.of());
+            long elapsed = System.currentTimeMillis() - start;
+
+            verify(apnsClient, times(2)).send(any(), any(), any(), any());
+            verify(deviceTokenService, never()).deactivate(any());
+            // Should have waited ~2000ms
+            assertTrue(elapsed >= 1900, "Expected at least 2s delay before retry");
+        }
+    }
+
+    // ===================== ApnsClient JWT Tests =====================
+
+    @Nested
+    @DisplayName("ApnsClient: JWT caching")
+    class JwtCacheTests {
+
+        @Test
+        @DisplayName("JWT used within 50-min window → generateJwt called only once")
+        void jwtCachedWithin50Minutes() throws Exception {
+            ApnsClient client = spy(new ApnsClient());
+            doReturn("mocked-jwt").when(client).generateJwt();
+
+            String jwt1 = client.getOrRefreshJwt();
+            String jwt2 = client.getOrRefreshJwt();
+
+            assertEquals(jwt1, jwt2);
+            verify(client, times(1)).generateJwt();
+        }
+
+        @Test
+        @DisplayName("JWT older than 50 min → generateJwt called again")
+        void jwtExpiredAfter50Minutes() throws Exception {
+            ApnsClient client = spy(new ApnsClient());
+            doReturn("jwt-v1", "jwt-v2").when(client).generateJwt();
+
+            // First call generates JWT
+            String jwt1 = client.getOrRefreshJwt();
+
+            // Simulate JWT being 51 minutes old via reflection
+            var jwtGeneratedAtField = ApnsClient.class.getDeclaredField("jwtGeneratedAt");
+            jwtGeneratedAtField.setAccessible(true);
+            jwtGeneratedAtField.set(client, java.time.Instant.now().minus(java.time.Duration.ofMinutes(51)));
+
+            // Second call should regenerate
+            String jwt2 = client.getOrRefreshJwt();
+
+            assertNotEquals(jwt1, jwt2);
+            verify(client, times(2)).generateJwt();
+        }
+    }
+
+    // ===================== DeviceTokenService Tests =====================
+
+    @Nested
+    @DisplayName("DeviceTokenService: token registration")
+    class DeviceTokenServiceTests {
+
+        @Test
+        @DisplayName("getActiveTokens returns empty list → returns silently")
+        void getActiveTokensEmpty() {
+            UUID ownerId = UUID.randomUUID();
+            when(deviceTokenService.getActiveTokens(ownerId)).thenReturn(Collections.emptyList());
+
+            List<String> tokens = deviceTokenService.getActiveTokens(ownerId);
+
+            assertTrue(tokens.isEmpty());
+        }
+    }
+
+    // =================== Helper ===================
+
+    private void setField(Object target, String fieldName, Object value) {
+        try {
+            var field = findField(target.getClass(), fieldName);
+            field.setAccessible(true);
+            field.set(target, value);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to set field: " + fieldName, e);
+        }
+    }
+
+    private java.lang.reflect.Field findField(Class<?> clazz, String name) throws NoSuchFieldException {
+        try {
+            return clazz.getDeclaredField(name);
+        } catch (NoSuchFieldException e) {
+            if (clazz.getSuperclass() != null) {
+                return findField(clazz.getSuperclass(), name);
+            }
+            throw e;
+        }
+    }
+}

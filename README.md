@@ -48,6 +48,7 @@ A Micronaut-based REST API for anonymous campus social networking. Users registe
 ✅ **Marketplace listings** (campus and national walls, with comments)  
 ✅ **Polymorphic comment system** (single comment system shared by posts, internships, and marketplace)  
 ✅ **Image uploads** (optional multi-image upload, up to 5 images per post or marketplace item)  
+✅ **Push Notification System** (iOS APNs push notifications via HTTP/2, event-driven, decoupled)
 
 ---
 
@@ -349,6 +350,19 @@ CREATE TABLE marketplace_items (
     version BIGINT DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+### Device Tokens Table
+```sql
+CREATE TABLE device_tokens (
+    id UUID PRIMARY KEY,
+    user_id UUID NOT NULL REFERENCES users(id),
+    device_token VARCHAR(255) NOT NULL UNIQUE,
+    platform VARCHAR(10) NOT NULL,       -- "IOS"
+    active BOOLEAN DEFAULT true NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 ```
 
@@ -2009,7 +2023,42 @@ Response: 200 OK
 
 ---
 
-## Chat API Documentation
+## Push Notification API
+
+### Overview
+
+The Push Notification system provides **iOS APNs push notifications** for real-time alerts. Device tokens are registered per user, and notifications are sent event-driven when actions occur (e.g., someone comments on a post).
+
+### Architecture
+
+```
+User Action → Domain Event → NotificationEventListener → ApnsClient → Apple → iOS Device
+```
+
+### Register Device Token
+
+```http
+POST /devices/register
+Authorization: Bearer {jwt-token}
+Content-Type: application/json
+
+{
+    "deviceToken": "abc123...",
+    "platform": "IOS"
+}
+
+Response: 200 OK
+```
+
+**Upsert logic:**
+- If `deviceToken` exists for any user: reassigns ownership to authenticated user, sets `active = true`
+- If `deviceToken` is new: inserts a new record for the authenticated user
+
+**Error handling:**
+- `401 Unauthorized` — missing or invalid JWT
+- `400 Bad Request` — missing `deviceToken` field
+
+---
 
 ### Overview
 
@@ -3516,6 +3565,14 @@ export DATABASE_PASSWORD="prod_password"
 
 # Required - Redis connection
 export REDIS_URI="redis://redis-host:6379"
+
+# Optional - APNs push notifications (iOS)
+export APNS_TEAM_ID="XXXXXXXXXX"
+export APNS_KEY_ID="XXXXXXXXXX"
+export APNS_BUNDLE_ID="com.yourapp.bundle"
+export APNS_ENVIRONMENT="production"
+# Full .p8 key contents with newlines replaced by \n
+export APNS_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nMIGH...\n-----END PRIVATE KEY-----"
 
 # Optional - Logging directory (defaults to /var/log/anonymouswall)
 export LOG_DIR="/var/log/anonymouswall"

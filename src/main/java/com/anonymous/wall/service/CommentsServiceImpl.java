@@ -4,7 +4,9 @@ import com.anonymous.wall.entity.*;
 import com.anonymous.wall.model.CommentParentType;
 import com.anonymous.wall.model.CreateCommentRequest;
 import com.anonymous.wall.model.SortBy;
+import com.anonymous.wall.notification.event.CommentCreatedEvent;
 import com.anonymous.wall.repository.*;
+import io.micronaut.context.event.ApplicationEventPublisher;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
 import io.micronaut.transaction.annotation.Transactional;
@@ -45,6 +47,9 @@ public class CommentsServiceImpl implements CommentsService {
 
     @Inject
     private com.anonymous.wall.service.UserBlockService userBlockService;
+
+    @Inject
+    private ApplicationEventPublisher<CommentCreatedEvent> eventPublisher;
 
     /**
      * Resolve a Commentable entity by its parent type and ID.
@@ -140,6 +145,16 @@ public class CommentsServiceImpl implements CommentsService {
         // Atomically increment comment count on parent
         parent.incrementCommentCount();
         saveParent(parentType, parent);
+
+        // Publish event for push notifications (POST comments only)
+        if (parentType == CommentParentType.POST) {
+            eventPublisher.publishEvent(new CommentCreatedEvent(
+                    savedComment.getId(),
+                    savedComment.getParentId(),
+                    userId,
+                    ((Post) parent).getUserId()
+            ));
+        }
 
         log.info("Comment added: id={}, parentType={}, parentId={}, user={}, newCommentCount={}",
             savedComment.getId(), parentType, parentId, userId, parent.getCommentCount());
