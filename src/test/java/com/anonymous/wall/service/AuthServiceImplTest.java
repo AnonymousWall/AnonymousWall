@@ -644,19 +644,18 @@ class AuthServiceImplTest {
         }
 
         @Test
-        @DisplayName("Negative: Should fail when email not found")
-        void shouldFailWhenEmailNotFound() {
+        @DisplayName("Security: Should silently succeed when email not found (prevent enumeration)")
+        void shouldSilentlySucceedWhenEmailNotFound() {
             // Arrange
             PasswordResetRequestRequest request = new PasswordResetRequestRequest("nonexistent@harvard.edu");
 
             when(userService.findByEmail("nonexistent@harvard.edu")).thenReturn(Optional.empty());
 
-            // Act & Assert
-            IllegalArgumentException exception = assertThrows(
-                IllegalArgumentException.class,
-                () -> authService.requestPasswordReset(request)
-            );
-            assertEquals("Email not found", exception.getMessage());
+            // Act & Assert - should NOT throw; silently returns to avoid email enumeration
+            UserEntity result = authService.requestPasswordReset(request);
+            assertNull(result);
+            verify(emailCodeRepository, never()).save(any(EmailVerificationCode.class));
+            verify(emailUtil, never()).sendVerificationCodeEmail(anyString(), anyString(), anyString());
         }
     }
 
