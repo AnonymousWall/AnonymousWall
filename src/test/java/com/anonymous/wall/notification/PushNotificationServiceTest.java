@@ -7,6 +7,7 @@ import com.anonymous.wall.notification.event.CommentCreatedEvent;
 import com.anonymous.wall.notification.event.InternshipCommentCreatedEvent;
 import com.anonymous.wall.notification.event.MarketplaceCommentCreatedEvent;
 import com.anonymous.wall.notification.listener.NotificationEventListener;
+import com.anonymous.wall.notification.service.NotificationService;
 import com.anonymous.wall.notification.service.PushNotificationService;
 import com.anonymous.wall.notification.service.PushNotificationServiceImpl;
 import com.anonymous.wall.controller.ChatWebSocketHandler;
@@ -68,6 +69,7 @@ class PushNotificationServiceTest {
             NotificationEventListener testListener = new NotificationEventListener();
             setField(testListener, "pushNotificationService", mockPush);
             setField(testListener, "deviceTokenService", deviceTokenService);
+            setField(testListener, "notificationService", mock(NotificationService.class));
 
             CommentCreatedEvent event = new CommentCreatedEvent(commentId, postId, actorId, ownerId, "campus");
             testListener.onCommentCreated(event);
@@ -108,6 +110,7 @@ class PushNotificationServiceTest {
             NotificationEventListener testListener = new NotificationEventListener();
             setField(testListener, "pushNotificationService", mockPush);
             setField(testListener, "deviceTokenService", deviceTokenService);
+            setField(testListener, "notificationService", mock(NotificationService.class));
 
             CommentCreatedEvent event = new CommentCreatedEvent(commentId, postId, actorId, ownerId, "campus");
             testListener.onCommentCreated(event);
@@ -130,6 +133,7 @@ class PushNotificationServiceTest {
             NotificationEventListener testListener = new NotificationEventListener();
             setField(testListener, "pushNotificationService", mockPush);
             setField(testListener, "deviceTokenService", deviceTokenService);
+            setField(testListener, "notificationService", mock(NotificationService.class));
 
             InternshipCommentCreatedEvent event = new InternshipCommentCreatedEvent(commentId, internshipId, actorId, ownerId);
             testListener.onInternshipCommentCreated(event);
@@ -171,6 +175,7 @@ class PushNotificationServiceTest {
             NotificationEventListener testListener = new NotificationEventListener();
             setField(testListener, "pushNotificationService", mockPush);
             setField(testListener, "deviceTokenService", deviceTokenService);
+            setField(testListener, "notificationService", mock(NotificationService.class));
 
             MarketplaceCommentCreatedEvent event = new MarketplaceCommentCreatedEvent(commentId, itemId, actorId, ownerId);
             testListener.onMarketplaceCommentCreated(event);

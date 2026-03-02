@@ -757,4 +757,44 @@
         </createIndex>
     </changeSet>
 
+    <!-- ================= Notifications ================= -->
+    <changeSet id="22-create-notifications-table" author="copilot">
+        <comment>Create notifications table for TikTok-style notification inbox</comment>
+        <createTable tableName="notifications">
+            <column name="id" type="CHAR(36)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="recipient_user_id" type="CHAR(36)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="actor_user_id" type="CHAR(36)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="type" type="VARCHAR(30)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="entity_id" type="CHAR(36)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="entity_title" type="VARCHAR(255)"/>
+            <column name="actor_profile_name" type="VARCHAR(100)"/>
+            <column name="read" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="notifications" baseColumnNames="recipient_user_id"
+                                 constraintName="fk_notifications_recipient"
+                                 referencedTableName="users" referencedColumnNames="id"/>
+        <addForeignKeyConstraint baseTableName="notifications" baseColumnNames="actor_user_id"
+                                 constraintName="fk_notifications_actor"
+                                 referencedTableName="users" referencedColumnNames="id"/>
+        <createIndex tableName="notifications" indexName="idx_notifications_recipient">
+            <column name="recipient_user_id"/>
+            <column name="created_at" descending="true"/>
+        </createIndex>
+    </changeSet>
+
 </databaseChangeLog>
