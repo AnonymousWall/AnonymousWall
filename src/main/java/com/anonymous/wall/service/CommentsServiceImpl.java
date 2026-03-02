@@ -160,7 +160,8 @@ public class CommentsServiceImpl implements CommentsService {
                     savedComment.getId(),
                     savedComment.getParentId(),
                     userId,
-                    ((Post) parent).getUserId()
+                    ((Post) parent).getUserId(),
+                    ((Post) parent).getWall()
             ));
         } else if (parentType == CommentParentType.INTERNSHIP) {
             internshipCommentEventPublisher.publishEvent(new InternshipCommentCreatedEvent(

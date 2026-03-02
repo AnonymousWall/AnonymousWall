@@ -67,7 +67,7 @@ class PushNotificationServiceTest {
             setField(testListener, "pushNotificationService", mockPush);
             setField(testListener, "deviceTokenService", deviceTokenService);
 
-            CommentCreatedEvent event = new CommentCreatedEvent(commentId, postId, actorId, ownerId);
+            CommentCreatedEvent event = new CommentCreatedEvent(commentId, postId, actorId, ownerId, "campus");
             testListener.onCommentCreated(event);
 
             verify(mockPush, times(1)).sendPush(eq(token), anyString(), anyString(), anyMap());
@@ -85,7 +85,7 @@ class PushNotificationServiceTest {
             setField(testListener, "pushNotificationService", mockPush);
             setField(testListener, "deviceTokenService", deviceTokenService);
 
-            CommentCreatedEvent event = new CommentCreatedEvent(commentId, postId, userId, userId);
+            CommentCreatedEvent event = new CommentCreatedEvent(commentId, postId, userId, userId, "campus");
             testListener.onCommentCreated(event);
 
             verify(mockPush, never()).sendPush(any(), any(), any(), any());
@@ -107,7 +107,7 @@ class PushNotificationServiceTest {
             setField(testListener, "pushNotificationService", mockPush);
             setField(testListener, "deviceTokenService", deviceTokenService);
 
-            CommentCreatedEvent event = new CommentCreatedEvent(commentId, postId, actorId, ownerId);
+            CommentCreatedEvent event = new CommentCreatedEvent(commentId, postId, actorId, ownerId, "campus");
             testListener.onCommentCreated(event);
 
             verify(mockPush, never()).sendPush(any(), any(), any(), any());

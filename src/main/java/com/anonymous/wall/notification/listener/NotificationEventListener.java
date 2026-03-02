@@ -43,7 +43,8 @@ public class NotificationEventListener {
 
         Map<String, Object> data = Map.of(
                 "type", "COMMENT",
-                "postId", event.getPostId().toString()
+                "postId", event.getPostId().toString(),
+                "wall", event.getWall()
         );
 
         for (String token : tokens) {
