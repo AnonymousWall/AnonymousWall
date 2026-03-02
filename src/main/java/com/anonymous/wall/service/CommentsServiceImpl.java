@@ -5,6 +5,8 @@ import com.anonymous.wall.model.CommentParentType;
 import com.anonymous.wall.model.CreateCommentRequest;
 import com.anonymous.wall.model.SortBy;
 import com.anonymous.wall.notification.event.CommentCreatedEvent;
+import com.anonymous.wall.notification.event.InternshipCommentCreatedEvent;
+import com.anonymous.wall.notification.event.MarketplaceCommentCreatedEvent;
 import com.anonymous.wall.repository.*;
 import io.micronaut.context.event.ApplicationEventPublisher;
 import io.micronaut.data.model.Page;
@@ -50,6 +52,12 @@ public class CommentsServiceImpl implements CommentsService {
 
     @Inject
     private ApplicationEventPublisher<CommentCreatedEvent> eventPublisher;
+
+    @Inject
+    private ApplicationEventPublisher<InternshipCommentCreatedEvent> internshipCommentEventPublisher;
+
+    @Inject
+    private ApplicationEventPublisher<MarketplaceCommentCreatedEvent> marketplaceCommentEventPublisher;
 
     /**
      * Resolve a Commentable entity by its parent type and ID.
@@ -146,13 +154,28 @@ public class CommentsServiceImpl implements CommentsService {
         parent.incrementCommentCount();
         saveParent(parentType, parent);
 
-        // Publish event for push notifications (POST comments only)
+        // Publish event for push notifications
         if (parentType == CommentParentType.POST) {
             eventPublisher.publishEvent(new CommentCreatedEvent(
                     savedComment.getId(),
                     savedComment.getParentId(),
                     userId,
-                    ((Post) parent).getUserId()
+                    ((Post) parent).getUserId(),
+                    ((Post) parent).getWall()
+            ));
+        } else if (parentType == CommentParentType.INTERNSHIP) {
+            internshipCommentEventPublisher.publishEvent(new InternshipCommentCreatedEvent(
+                    savedComment.getId(),
+                    savedComment.getParentId(),
+                    userId,
+                    ((Internship) parent).getUserId()
+            ));
+        } else if (parentType == CommentParentType.MARKETPLACE) {
+            marketplaceCommentEventPublisher.publishEvent(new MarketplaceCommentCreatedEvent(
+                    savedComment.getId(),
+                    savedComment.getParentId(),
+                    userId,
+                    ((MarketplaceItem) parent).getUserId()
             ));
         }
 

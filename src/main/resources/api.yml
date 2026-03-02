@@ -2101,8 +2101,12 @@ paths:
   /devices/register:
     post:
       tags: [devices]
-      summary: Register device token
-      description: Register or update an iOS device token for push notifications. If the token already exists for any user, ownership is reassigned to the authenticated user and active is set to true.
+      summary: Register APNs device token
+      description: >
+        Registers or updates an APNs device token for the authenticated user.
+        Used to deliver push notifications to iOS devices.
+        If the token already exists for another user (e.g. after app reinstall),
+        ownership is reassigned to the current user and the token is reactivated.
       operationId: registerDevice
       security:
         - bearerAuth: []
@@ -2111,14 +2115,27 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/RegisterDeviceRequest"
+              type: object
+              required:
+                - deviceToken
+                - platform
+              properties:
+                deviceToken:
+                  type: string
+                  description: APNs hex device token from didRegisterForRemoteNotificationsWithDeviceToken
+                  example: "a69d0e24524116017d9342c4694a0e632a7c4a92fd2ef4ed70a906103b8a3743"
+                platform:
+                  type: string
+                  enum: [IOS]
+                  description: Platform identifier
+                  example: "IOS"
       responses:
         "200":
-          description: Device token registered successfully
+          description: Token registered or updated successfully
         "400":
-          description: Invalid request - missing deviceToken field
+          description: Invalid request body
         "401":
-          description: Unauthorized - authentication required
+          description: Unauthorized
 
   # =================== Admin APIs ===================
 
