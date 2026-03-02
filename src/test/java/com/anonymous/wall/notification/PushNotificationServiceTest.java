@@ -2,12 +2,14 @@ package com.anonymous.wall.notification;
 
 import com.anonymous.wall.notification.apns.ApnsClient;
 import com.anonymous.wall.notification.device.DeviceTokenService;
+import com.anonymous.wall.notification.event.ChatMessageSentEvent;
 import com.anonymous.wall.notification.event.CommentCreatedEvent;
 import com.anonymous.wall.notification.event.InternshipCommentCreatedEvent;
 import com.anonymous.wall.notification.event.MarketplaceCommentCreatedEvent;
 import com.anonymous.wall.notification.listener.NotificationEventListener;
 import com.anonymous.wall.notification.service.PushNotificationService;
 import com.anonymous.wall.notification.service.PushNotificationServiceImpl;
+import com.anonymous.wall.controller.ChatWebSocketHandler;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -193,6 +195,81 @@ class PushNotificationServiceTest {
 
             verify(mockPush, never()).sendPush(any(), any(), any(), any());
             verify(deviceTokenService, never()).getActiveTokens(any());
+        }
+
+        @Test
+        @DisplayName("Chat message event triggers sendPush for recipient tokens when not connected via WebSocket")
+        void chatMessageEventTriggersPush() {
+            UUID senderId = UUID.randomUUID();
+            UUID recipientId = UUID.randomUUID();
+            UUID messageId = UUID.randomUUID();
+            UUID conversationId = UUID.randomUUID();
+
+            String token = "device-token-chat";
+            when(deviceTokenService.getActiveTokens(recipientId)).thenReturn(List.of(token));
+
+            PushNotificationService mockPush = mock(PushNotificationService.class);
+            ChatWebSocketHandler mockWsHandler = mock(ChatWebSocketHandler.class);
+            when(mockWsHandler.isUserConnected(recipientId)).thenReturn(false);
+
+            NotificationEventListener testListener = new NotificationEventListener();
+            setField(testListener, "pushNotificationService", mockPush);
+            setField(testListener, "deviceTokenService", deviceTokenService);
+            setField(testListener, "chatWebSocketHandler", mockWsHandler);
+
+            ChatMessageSentEvent event = new ChatMessageSentEvent(
+                    messageId, conversationId, senderId, recipientId, "Hello!", "Alice");
+            testListener.onChatMessageSent(event);
+
+            verify(mockPush, times(1)).sendPush(eq(token), anyString(), anyString(), anyMap());
+        }
+
+        @Test
+        @DisplayName("Chat message push skipped when recipient is connected via WebSocket")
+        void chatMessagePushSkippedWhenRecipientConnected() {
+            UUID senderId = UUID.randomUUID();
+            UUID recipientId = UUID.randomUUID();
+            UUID messageId = UUID.randomUUID();
+            UUID conversationId = UUID.randomUUID();
+
+            PushNotificationService mockPush = mock(PushNotificationService.class);
+            ChatWebSocketHandler mockWsHandler = mock(ChatWebSocketHandler.class);
+            when(mockWsHandler.isUserConnected(recipientId)).thenReturn(true);
+
+            NotificationEventListener testListener = new NotificationEventListener();
+            setField(testListener, "pushNotificationService", mockPush);
+            setField(testListener, "deviceTokenService", deviceTokenService);
+            setField(testListener, "chatWebSocketHandler", mockWsHandler);
+
+            ChatMessageSentEvent event = new ChatMessageSentEvent(
+                    messageId, conversationId, senderId, recipientId, "Hello!", "Alice");
+            testListener.onChatMessageSent(event);
+
+            verify(mockPush, never()).sendPush(any(), any(), any(), any());
+            verify(deviceTokenService, never()).getActiveTokens(any());
+        }
+
+        @Test
+        @DisplayName("Chat self-message prevented: sender == recipient → sendPush never called")
+        void chatSelfMessagePrevented() {
+            UUID userId = UUID.randomUUID();
+            UUID messageId = UUID.randomUUID();
+            UUID conversationId = UUID.randomUUID();
+
+            PushNotificationService mockPush = mock(PushNotificationService.class);
+            ChatWebSocketHandler mockWsHandler = mock(ChatWebSocketHandler.class);
+
+            NotificationEventListener testListener = new NotificationEventListener();
+            setField(testListener, "pushNotificationService", mockPush);
+            setField(testListener, "deviceTokenService", deviceTokenService);
+            setField(testListener, "chatWebSocketHandler", mockWsHandler);
+
+            ChatMessageSentEvent event = new ChatMessageSentEvent(
+                    messageId, conversationId, userId, userId, "Hello!", "Alice");
+            testListener.onChatMessageSent(event);
+
+            verify(mockPush, never()).sendPush(any(), any(), any(), any());
+            verify(mockWsHandler, never()).isUserConnected(any());
         }
     }
 

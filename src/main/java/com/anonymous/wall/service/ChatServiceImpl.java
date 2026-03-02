@@ -4,9 +4,11 @@ import com.anonymous.wall.entity.ChatMessage;
 import com.anonymous.wall.entity.UserEntity;
 import com.anonymous.wall.model.ChatMessageDTO;
 import com.anonymous.wall.model.ConversationDTO;
+import com.anonymous.wall.notification.event.ChatMessageSentEvent;
 import com.anonymous.wall.repository.ChatMessageRepository;
 import com.anonymous.wall.repository.UserRepository;
 import com.anonymous.wall.util.ConversationIdGenerator;
+import io.micronaut.context.event.ApplicationEventPublisher;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
 import io.micronaut.retry.annotation.Retryable;
@@ -38,6 +40,9 @@ public class ChatServiceImpl implements ChatService {
 
     @Inject
     private UserBlockService userBlockService;
+
+    @Inject
+    private ApplicationEventPublisher<ChatMessageSentEvent> chatMessageEventPublisher;
 
     @Override
     @Transactional
@@ -116,6 +121,23 @@ public class ChatServiceImpl implements ChatService {
         ChatMessage savedMessage = chatMessageRepository.save(message);
         log.info("Message sent from {} to {}, message ID: {}, conversation ID: {}",
                 senderId, receiverId, savedMessage.getId(), conversationId);
+
+        String preview;
+        if (savedMessage.getContent() != null && !savedMessage.getContent().isBlank()) {
+            String messageContent = savedMessage.getContent();
+            preview = messageContent.length() > 50 ? messageContent.substring(0, 50) + "\u2026" : messageContent;
+        } else {
+            preview = "\uD83D\uDCF7 Photo";
+        }
+
+        chatMessageEventPublisher.publishEvent(new ChatMessageSentEvent(
+                savedMessage.getId(),
+                savedMessage.getConversationId(),
+                senderId,
+                receiverId,
+                preview,
+                sender.getProfileName()
+        ));
 
         return savedMessage;
     }

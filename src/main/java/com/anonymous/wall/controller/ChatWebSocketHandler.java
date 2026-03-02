@@ -300,6 +300,14 @@ public class ChatWebSocketHandler {
     }
 
     /**
+     * Check whether a user has at least one active local WebSocket session.
+     */
+    public boolean isUserConnected(UUID userId) {
+        Set<WebSocketSession> sessions = userSessions.get(userId);
+        return sessions != null && !sessions.isEmpty();
+    }
+
+    /**
      * Broadcast message to a specific user via Redis Pub/Sub.
      * Redis routes the message to whichever instance has the user's WebSocket session.
      */
