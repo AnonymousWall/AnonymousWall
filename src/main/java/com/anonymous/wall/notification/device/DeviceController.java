@@ -17,7 +17,7 @@ import java.security.Principal;
 import java.util.Optional;
 import java.util.UUID;
 
-@Controller("/devices")
+@Controller("/api/v1/devices")
 public class DeviceController {
 
     private static final Logger log = LoggerFactory.getLogger(DeviceController.class);

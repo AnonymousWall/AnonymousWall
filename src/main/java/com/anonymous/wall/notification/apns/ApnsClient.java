@@ -107,7 +107,8 @@ public class ApnsClient {
             String stripped = p8Contents
                     .replace("-----BEGIN PRIVATE KEY-----", "")
                     .replace("-----END PRIVATE KEY-----", "")
-                    .replaceAll("\\s+", "");
+                    .replace("\\n", "")      // ← strip literal \n from env var
+                    .replaceAll("\\s+", ""); // strip actual whitespace
             byte[] keyBytes = Base64.getDecoder().decode(stripped);
             PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(keyBytes);
             KeyFactory kf = KeyFactory.getInstance("EC");
