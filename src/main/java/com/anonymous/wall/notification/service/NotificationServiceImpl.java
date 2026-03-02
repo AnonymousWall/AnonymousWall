@@ -2,6 +2,7 @@ package com.anonymous.wall.notification.service;
 
 import com.anonymous.wall.entity.NotificationEntity;
 import com.anonymous.wall.model.NotificationDTO;
+import com.anonymous.wall.model.NotificationDTOType;
 import com.anonymous.wall.repository.NotificationRepository;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
@@ -12,7 +13,6 @@ import jakarta.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 
 @Singleton
@@ -66,16 +66,13 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     private NotificationDTO toDTO(NotificationEntity entity) {
-        return new NotificationDTO(
-                entity.getId(),
-                entity.getType(),
-                entity.getEntityId(),
-                entity.getEntityTitle(),
-                entity.getActorProfileName(),
-                entity.isRead(),
-                entity.getCreatedAt() != null
-                        ? entity.getCreatedAt().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)
-                        : null
-        );
+        return new NotificationDTO()
+                .id(entity.getId())
+                .type(entity.getType() != null ? NotificationDTOType.fromValue(entity.getType()) : null)
+                .entityId(entity.getEntityId())
+                .entityTitle(entity.getEntityTitle())
+                .actorProfileName(entity.getActorProfileName())
+                .read(entity.isRead())
+                .createdAt(entity.getCreatedAt());
     }
 }
