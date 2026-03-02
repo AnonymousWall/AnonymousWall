@@ -3,8 +3,10 @@ package com.anonymous.wall.service;
 import com.anonymous.wall.entity.ChatMessage;
 import com.anonymous.wall.entity.UserEntity;
 import com.anonymous.wall.model.ConversationDTO;
+import com.anonymous.wall.notification.event.ChatMessageSentEvent;
 import com.anonymous.wall.repository.ChatMessageRepository;
 import com.anonymous.wall.repository.UserRepository;
+import io.micronaut.context.event.ApplicationEventPublisher;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
 import org.junit.jupiter.api.BeforeEach;
@@ -30,6 +32,8 @@ class ChatServiceTest {
     private ChatMessageRepository chatMessageRepository;
     private UserRepository userRepository;
     private UserBlockService userBlockService;
+    @SuppressWarnings("unchecked")
+    private ApplicationEventPublisher<ChatMessageSentEvent> chatMessageEventPublisher;
 
     private UUID testUser1Id;
     private UUID testUser2Id;
@@ -43,6 +47,7 @@ class ChatServiceTest {
         chatMessageRepository = mock(ChatMessageRepository.class);
         userRepository = mock(UserRepository.class);
         userBlockService = mock(UserBlockService.class);
+        chatMessageEventPublisher = mock(ApplicationEventPublisher.class);
         
         chatService = new ChatServiceImpl();
         
@@ -58,6 +63,10 @@ class ChatServiceTest {
             var userBlockServiceField = ChatServiceImpl.class.getDeclaredField("userBlockService");
             userBlockServiceField.setAccessible(true);
             userBlockServiceField.set(chatService, userBlockService);
+
+            var publisherField = ChatServiceImpl.class.getDeclaredField("chatMessageEventPublisher");
+            publisherField.setAccessible(true);
+            publisherField.set(chatService, chatMessageEventPublisher);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

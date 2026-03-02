@@ -1,6 +1,8 @@
 package com.anonymous.wall.notification.listener;
 
+import com.anonymous.wall.controller.ChatWebSocketHandler;
 import com.anonymous.wall.notification.device.DeviceTokenService;
+import com.anonymous.wall.notification.event.ChatMessageSentEvent;
 import com.anonymous.wall.notification.event.CommentCreatedEvent;
 import com.anonymous.wall.notification.event.InternshipCommentCreatedEvent;
 import com.anonymous.wall.notification.event.MarketplaceCommentCreatedEvent;
@@ -27,6 +29,9 @@ public class NotificationEventListener {
 
     @Inject
     private DeviceTokenService deviceTokenService;
+
+    @Inject
+    private ChatWebSocketHandler chatWebSocketHandler;
 
     @EventListener
     @Async
@@ -96,5 +101,35 @@ public class NotificationEventListener {
 
         log.debug("Push notifications sent for marketplace commentId={}, itemId={}",
                 event.getCommentId(), event.getItemId());
+    }
+
+    @EventListener
+    @Async
+    @Transactional(propagation = TransactionDefinition.Propagation.REQUIRES_NEW)
+    public void onChatMessageSent(ChatMessageSentEvent event) {
+        if (event.getSenderUserId().equals(event.getRecipientUserId())) return;
+
+        if (chatWebSocketHandler.isUserConnected(event.getRecipientUserId())) {
+            log.debug("Skipping push — recipient {} is connected via WebSocket",
+                    event.getRecipientUserId());
+            return;
+        }
+
+        List<String> tokens = deviceTokenService.getActiveTokens(event.getRecipientUserId());
+        if (tokens.isEmpty()) return;
+
+        Map<String, Object> data = Map.of(
+                "type", "CHAT_MESSAGE",
+                "conversationId", event.getConversationId().toString(),
+                "senderUserId", event.getSenderUserId().toString()
+        );
+
+        for (String token : tokens) {
+            pushNotificationService.sendPush(token, event.getSenderProfileName(),
+                    event.getMessagePreview(), data);
+        }
+
+        log.debug("Push notifications sent for chat messageId={}, conversationId={}",
+                event.getMessageId(), event.getConversationId());
     }
 }
