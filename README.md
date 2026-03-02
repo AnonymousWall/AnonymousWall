@@ -2023,11 +2023,33 @@ Response: 200 OK
 
 ---
 
-## Push Notification API
+## Push Notifications
 
-### Overview
+The backend sends APNs push notifications to iOS devices for the following events:
 
-The Push Notification system provides **iOS APNs push notifications** for real-time alerts. Device tokens are registered per user, and notifications are sent event-driven when actions occur (e.g., someone comments on a post).
+| Event | Trigger | Payload `type` | Deep-link field |
+|-------|---------|----------------|-----------------|
+| Post comment | Another user comments on your post | `COMMENT` | `postId` |
+| Internship comment | Another user comments on your internship posting | `INTERNSHIP_COMMENT` | `internshipId` |
+| Marketplace comment | Another user comments on your marketplace listing | `MARKETPLACE_COMMENT` | `itemId` |
+
+### Device Token Registration
+
+iOS devices must register their APNs token after login:
+
+```
+POST /api/v1/devices/register
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  "deviceToken": "hex-string-from-apns",
+  "platform": "IOS"
+}
+```
+
+Tokens are automatically deactivated when APNs returns a 410 response (device uninstalled app).
+Self-notifications are suppressed — users do not receive notifications for their own actions.
 
 ### Architecture
 
@@ -2035,28 +2057,15 @@ The Push Notification system provides **iOS APNs push notifications** for real-t
 User Action → Domain Event → NotificationEventListener → ApnsClient → Apple → iOS Device
 ```
 
-### Register Device Token
+### Configuration
 
-```http
-POST /devices/register
-Authorization: Bearer {jwt-token}
-Content-Type: application/json
-
-{
-    "deviceToken": "abc123...",
-    "platform": "IOS"
-}
-
-Response: 200 OK
-```
-
-**Upsert logic:**
-- If `deviceToken` exists for any user: reassigns ownership to authenticated user, sets `active = true`
-- If `deviceToken` is new: inserts a new record for the authenticated user
-
-**Error handling:**
-- `401 Unauthorized` — missing or invalid JWT
-- `400 Bad Request` — missing `deviceToken` field
+| Environment Variable | Description |
+|----------------------|-------------|
+| `APNS_TEAM_ID` | Apple Developer Team ID |
+| `APNS_KEY_ID` | APNs Auth Key ID |
+| `APNS_BUNDLE_ID` | App bundle identifier |
+| `APNS_PRIVATE_KEY` | Contents of `.p8` key file (newlines as `\n`) |
+| `APNS_ENVIRONMENT` | `sandbox` (development/TestFlight) or `production` (App Store) |
 
 ---
 

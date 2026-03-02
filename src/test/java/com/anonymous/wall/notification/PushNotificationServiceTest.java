@@ -3,6 +3,8 @@ package com.anonymous.wall.notification;
 import com.anonymous.wall.notification.apns.ApnsClient;
 import com.anonymous.wall.notification.device.DeviceTokenService;
 import com.anonymous.wall.notification.event.CommentCreatedEvent;
+import com.anonymous.wall.notification.event.InternshipCommentCreatedEvent;
+import com.anonymous.wall.notification.event.MarketplaceCommentCreatedEvent;
 import com.anonymous.wall.notification.listener.NotificationEventListener;
 import com.anonymous.wall.notification.service.PushNotificationService;
 import com.anonymous.wall.notification.service.PushNotificationServiceImpl;
@@ -109,6 +111,88 @@ class PushNotificationServiceTest {
             testListener.onCommentCreated(event);
 
             verify(mockPush, never()).sendPush(any(), any(), any(), any());
+        }
+
+        @Test
+        @DisplayName("Internship comment event triggers sendPush for internship owner tokens")
+        void internshipCommentEventTriggersPush() {
+            UUID actorId = UUID.randomUUID();
+            UUID ownerId = UUID.randomUUID();
+            UUID commentId = UUID.randomUUID();
+            UUID internshipId = UUID.randomUUID();
+
+            String token = "device-token-internship";
+            when(deviceTokenService.getActiveTokens(ownerId)).thenReturn(List.of(token));
+
+            PushNotificationService mockPush = mock(PushNotificationService.class);
+            NotificationEventListener testListener = new NotificationEventListener();
+            setField(testListener, "pushNotificationService", mockPush);
+            setField(testListener, "deviceTokenService", deviceTokenService);
+
+            InternshipCommentCreatedEvent event = new InternshipCommentCreatedEvent(commentId, internshipId, actorId, ownerId);
+            testListener.onInternshipCommentCreated(event);
+
+            verify(mockPush, times(1)).sendPush(eq(token), anyString(), anyString(), anyMap());
+        }
+
+        @Test
+        @DisplayName("Internship self-notification prevented: actor == internshipOwner → sendPush never called")
+        void internshipSelfNotificationPrevented() {
+            UUID userId = UUID.randomUUID();
+            UUID commentId = UUID.randomUUID();
+            UUID internshipId = UUID.randomUUID();
+
+            PushNotificationService mockPush = mock(PushNotificationService.class);
+            NotificationEventListener testListener = new NotificationEventListener();
+            setField(testListener, "pushNotificationService", mockPush);
+            setField(testListener, "deviceTokenService", deviceTokenService);
+
+            InternshipCommentCreatedEvent event = new InternshipCommentCreatedEvent(commentId, internshipId, userId, userId);
+            testListener.onInternshipCommentCreated(event);
+
+            verify(mockPush, never()).sendPush(any(), any(), any(), any());
+            verify(deviceTokenService, never()).getActiveTokens(any());
+        }
+
+        @Test
+        @DisplayName("Marketplace comment event triggers sendPush for item owner tokens")
+        void marketplaceCommentEventTriggersPush() {
+            UUID actorId = UUID.randomUUID();
+            UUID ownerId = UUID.randomUUID();
+            UUID commentId = UUID.randomUUID();
+            UUID itemId = UUID.randomUUID();
+
+            String token = "device-token-marketplace";
+            when(deviceTokenService.getActiveTokens(ownerId)).thenReturn(List.of(token));
+
+            PushNotificationService mockPush = mock(PushNotificationService.class);
+            NotificationEventListener testListener = new NotificationEventListener();
+            setField(testListener, "pushNotificationService", mockPush);
+            setField(testListener, "deviceTokenService", deviceTokenService);
+
+            MarketplaceCommentCreatedEvent event = new MarketplaceCommentCreatedEvent(commentId, itemId, actorId, ownerId);
+            testListener.onMarketplaceCommentCreated(event);
+
+            verify(mockPush, times(1)).sendPush(eq(token), anyString(), anyString(), anyMap());
+        }
+
+        @Test
+        @DisplayName("Marketplace self-notification prevented: actor == itemOwner → sendPush never called")
+        void marketplaceSelfNotificationPrevented() {
+            UUID userId = UUID.randomUUID();
+            UUID commentId = UUID.randomUUID();
+            UUID itemId = UUID.randomUUID();
+
+            PushNotificationService mockPush = mock(PushNotificationService.class);
+            NotificationEventListener testListener = new NotificationEventListener();
+            setField(testListener, "pushNotificationService", mockPush);
+            setField(testListener, "deviceTokenService", deviceTokenService);
+
+            MarketplaceCommentCreatedEvent event = new MarketplaceCommentCreatedEvent(commentId, itemId, userId, userId);
+            testListener.onMarketplaceCommentCreated(event);
+
+            verify(mockPush, never()).sendPush(any(), any(), any(), any());
+            verify(deviceTokenService, never()).getActiveTokens(any());
         }
     }
 

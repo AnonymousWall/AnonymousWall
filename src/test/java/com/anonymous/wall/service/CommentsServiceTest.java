@@ -1,4 +1,6 @@
 package com.anonymous.wall.service;
+import com.anonymous.wall.entity.Internship;
+import com.anonymous.wall.entity.MarketplaceItem;
 import com.anonymous.wall.model.CommentParentType;
 
 import com.anonymous.wall.entity.Comment;
@@ -7,7 +9,11 @@ import com.anonymous.wall.entity.UserEntity;
 import com.anonymous.wall.model.CreateCommentRequest;
 import com.anonymous.wall.model.SortBy;
 import com.anonymous.wall.notification.event.CommentCreatedEvent;
+import com.anonymous.wall.notification.event.InternshipCommentCreatedEvent;
+import com.anonymous.wall.notification.event.MarketplaceCommentCreatedEvent;
 import com.anonymous.wall.repository.CommentRepository;
+import com.anonymous.wall.repository.InternshipRepository;
+import com.anonymous.wall.repository.MarketplaceItemRepository;
 import com.anonymous.wall.repository.PostRepository;
 import com.anonymous.wall.repository.UserRepository;
 import io.micronaut.context.event.ApplicationEventPublisher;
@@ -33,19 +39,31 @@ class CommentsServiceTest {
     private CommentsServiceImpl commentsService;
     private CommentRepository commentRepository;
     private PostRepository postRepository;
+    private InternshipRepository internshipRepository;
+    private MarketplaceItemRepository marketplaceItemRepository;
     private UserRepository userRepository;
     @SuppressWarnings("unchecked")
     private ApplicationEventPublisher<CommentCreatedEvent> eventPublisher;
+    @SuppressWarnings("unchecked")
+    private ApplicationEventPublisher<InternshipCommentCreatedEvent> internshipCommentEventPublisher;
+    @SuppressWarnings("unchecked")
+    private ApplicationEventPublisher<MarketplaceCommentCreatedEvent> marketplaceCommentEventPublisher;
 
     private UUID testUserId;
     private UUID testPostId;
     private Post testPost;
     private UserEntity testUser;
+    private UUID testInternshipId;
+    private Internship testInternship;
+    private UUID testItemId;
+    private MarketplaceItem testItem;
 
     @BeforeEach
     void setUp() {
         commentRepository = mock(CommentRepository.class);
         postRepository = mock(PostRepository.class);
+        internshipRepository = mock(InternshipRepository.class);
+        marketplaceItemRepository = mock(MarketplaceItemRepository.class);
         userRepository = mock(UserRepository.class);
         
         commentsService = new CommentsServiceImpl();
@@ -59,6 +77,14 @@ class CommentsServiceTest {
             postRepoField.setAccessible(true);
             postRepoField.set(commentsService, postRepository);
 
+            var internshipRepoField = CommentsServiceImpl.class.getDeclaredField("internshipRepository");
+            internshipRepoField.setAccessible(true);
+            internshipRepoField.set(commentsService, internshipRepository);
+
+            var marketplaceRepoField = CommentsServiceImpl.class.getDeclaredField("marketplaceItemRepository");
+            marketplaceRepoField.setAccessible(true);
+            marketplaceRepoField.set(commentsService, marketplaceItemRepository);
+
             var userRepoField = CommentsServiceImpl.class.getDeclaredField("userRepository");
             userRepoField.setAccessible(true);
             userRepoField.set(commentsService, userRepository);
@@ -67,6 +93,16 @@ class CommentsServiceTest {
             var publisherField = CommentsServiceImpl.class.getDeclaredField("eventPublisher");
             publisherField.setAccessible(true);
             publisherField.set(commentsService, eventPublisher);
+
+            internshipCommentEventPublisher = mock(ApplicationEventPublisher.class);
+            var internshipPublisherField = CommentsServiceImpl.class.getDeclaredField("internshipCommentEventPublisher");
+            internshipPublisherField.setAccessible(true);
+            internshipPublisherField.set(commentsService, internshipCommentEventPublisher);
+
+            marketplaceCommentEventPublisher = mock(ApplicationEventPublisher.class);
+            var marketplacePublisherField = CommentsServiceImpl.class.getDeclaredField("marketplaceCommentEventPublisher");
+            marketplacePublisherField.setAccessible(true);
+            marketplacePublisherField.set(commentsService, marketplaceCommentEventPublisher);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -86,6 +122,20 @@ class CommentsServiceTest {
         testPost.setWall("national");
         testPost.setUserId(testUserId);
         testPost.setHidden(false);
+
+        testInternshipId = UUID.randomUUID();
+        testInternship = new Internship();
+        testInternship.setId(testInternshipId);
+        testInternship.setWall("national");
+        testInternship.setUserId(UUID.randomUUID());
+        testInternship.setHidden(false);
+
+        testItemId = UUID.randomUUID();
+        testItem = new MarketplaceItem();
+        testItem.setId(testItemId);
+        testItem.setWall("national");
+        testItem.setUserId(UUID.randomUUID());
+        testItem.setHidden(false);
     }
 
     @Nested
@@ -162,6 +212,54 @@ class CommentsServiceTest {
             // Assert
             Comment savedComment = captor.getValue();
             assertEquals("TestUser", savedComment.getProfileName());
+        }
+
+        @Test
+        @DisplayName("Should publish InternshipCommentCreatedEvent when commenting on internship")
+        void shouldPublishInternshipCommentEvent() {
+            // Arrange
+            CreateCommentRequest request = new CreateCommentRequest("Internship comment");
+
+            when(internshipRepository.findById(testInternshipId)).thenReturn(Optional.of(testInternship));
+            when(userRepository.findById(testUserId)).thenReturn(Optional.of(testUser));
+            when(commentRepository.save(any(Comment.class))).thenAnswer(invocation -> {
+                Comment comment = invocation.getArgument(0);
+                comment.setId(UUID.randomUUID());
+                return comment;
+            });
+
+            // Act
+            Comment result = commentsService.addComment(CommentParentType.INTERNSHIP, testInternshipId, request, testUserId);
+
+            // Assert
+            assertNotNull(result);
+            verify(internshipCommentEventPublisher, times(1)).publishEvent(any(InternshipCommentCreatedEvent.class));
+            verify(eventPublisher, never()).publishEvent(any(CommentCreatedEvent.class));
+            verify(marketplaceCommentEventPublisher, never()).publishEvent(any(MarketplaceCommentCreatedEvent.class));
+        }
+
+        @Test
+        @DisplayName("Should publish MarketplaceCommentCreatedEvent when commenting on marketplace item")
+        void shouldPublishMarketplaceCommentEvent() {
+            // Arrange
+            CreateCommentRequest request = new CreateCommentRequest("Marketplace comment");
+
+            when(marketplaceItemRepository.findById(testItemId)).thenReturn(Optional.of(testItem));
+            when(userRepository.findById(testUserId)).thenReturn(Optional.of(testUser));
+            when(commentRepository.save(any(Comment.class))).thenAnswer(invocation -> {
+                Comment comment = invocation.getArgument(0);
+                comment.setId(UUID.randomUUID());
+                return comment;
+            });
+
+            // Act
+            Comment result = commentsService.addComment(CommentParentType.MARKETPLACE, testItemId, request, testUserId);
+
+            // Assert
+            assertNotNull(result);
+            verify(marketplaceCommentEventPublisher, times(1)).publishEvent(any(MarketplaceCommentCreatedEvent.class));
+            verify(eventPublisher, never()).publishEvent(any(CommentCreatedEvent.class));
+            verify(internshipCommentEventPublisher, never()).publishEvent(any(InternshipCommentCreatedEvent.class));
         }
     }
 
