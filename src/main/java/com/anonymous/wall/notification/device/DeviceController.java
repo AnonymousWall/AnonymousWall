@@ -1,5 +1,6 @@
 package com.anonymous.wall.notification.device;
 
+import com.anonymous.wall.model.RegisterDeviceRequest;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.annotation.Body;
@@ -30,7 +31,7 @@ public class DeviceController {
                                              HttpRequest<?> httpRequest) {
         UUID userId = getUserId(httpRequest);
         log.info("POST /devices/register - userId={}, platform={}", userId, request.getPlatform());
-        deviceTokenService.registerToken(userId, request.getDeviceToken(), request.getPlatform());
+        deviceTokenService.registerToken(userId, request.getDeviceToken(), request.getPlatform().getValue());
         return HttpResponse.ok();
     }
 

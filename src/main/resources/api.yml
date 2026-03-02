@@ -16,6 +16,7 @@ tags:
   - name: internships
   - name: marketplace
   - name: coins
+  - name: devices
   - name: admin
 
 paths:
@@ -2094,6 +2095,30 @@ paths:
           description: Unauthorized - authentication required
         "404":
           description: User not found
+
+  # =================== Device Token APIs ===================
+
+  /devices/register:
+    post:
+      tags: [devices]
+      summary: Register device token
+      description: Register or update an iOS device token for push notifications. If the token already exists for any user, ownership is reassigned to the authenticated user and active is set to true.
+      operationId: registerDevice
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterDeviceRequest"
+      responses:
+        "200":
+          description: Device token registered successfully
+        "400":
+          description: Invalid request - missing deviceToken field
+        "401":
+          description: Unauthorized - authentication required
 
   # =================== Admin APIs ===================
 
@@ -4641,6 +4666,22 @@ components:
         totalPages:
           type: integer
           description: Total number of pages
+
+    # ----- Device -----
+    RegisterDeviceRequest:
+      type: object
+      required:
+        - deviceToken
+        - platform
+      properties:
+        deviceToken:
+          type: string
+          description: The iOS device push token
+        platform:
+          type: string
+          enum:
+            - IOS
+          description: Device platform (currently only IOS is supported)
 
   securitySchemes:
     bearerAuth:
