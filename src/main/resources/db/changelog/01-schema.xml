@@ -787,10 +787,12 @@
         </createTable>
         <addForeignKeyConstraint baseTableName="notifications" baseColumnNames="recipient_user_id"
                                  constraintName="fk_notifications_recipient"
-                                 referencedTableName="users" referencedColumnNames="id"/>
+                                 referencedTableName="users" referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
         <addForeignKeyConstraint baseTableName="notifications" baseColumnNames="actor_user_id"
                                  constraintName="fk_notifications_actor"
-                                 referencedTableName="users" referencedColumnNames="id"/>
+                                 referencedTableName="users" referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
         <createIndex tableName="notifications" indexName="idx_notifications_recipient">
             <column name="recipient_user_id"/>
             <column name="created_at" descending="true"/>
