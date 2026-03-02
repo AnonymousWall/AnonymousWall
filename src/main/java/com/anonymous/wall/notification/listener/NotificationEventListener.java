@@ -5,6 +5,8 @@ import com.anonymous.wall.notification.event.CommentCreatedEvent;
 import com.anonymous.wall.notification.service.PushNotificationService;
 import io.micronaut.runtime.event.annotation.EventListener;
 import io.micronaut.scheduling.annotation.Async;
+import io.micronaut.transaction.TransactionDefinition;
+import io.micronaut.transaction.annotation.Transactional;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import org.slf4j.Logger;
@@ -26,6 +28,7 @@ public class NotificationEventListener {
 
     @EventListener
     @Async
+    @Transactional(propagation = TransactionDefinition.Propagation.REQUIRES_NEW)
     public void onCommentCreated(CommentCreatedEvent event) {
         if (event.getActorUserId().equals(event.getPostOwnerId())) {
             return;

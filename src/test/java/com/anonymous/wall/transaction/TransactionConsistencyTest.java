@@ -26,7 +26,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * Verifies that @Transactional operations maintain consistency
  * Tests that database state is always valid, never corrupted
  */
-@MicronautTest
+@MicronautTest(transactional = false)
 public class TransactionConsistencyTest {
 
     @Inject

@@ -1,5 +1,7 @@
 package com.anonymous.wall.notification.device;
 
+import io.micronaut.transaction.TransactionDefinition;
+import io.micronaut.transaction.annotation.Transactional;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import org.slf4j.Logger;

@@ -4,6 +4,7 @@ import com.anonymous.wall.event.InternshipHiddenEvent;
 import com.anonymous.wall.repository.CommentRepository;
 import io.micronaut.context.event.ApplicationEventListener;
 import io.micronaut.scheduling.annotation.Async;
+import io.micronaut.transaction.TransactionDefinition;
 import io.micronaut.transaction.annotation.Transactional;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
@@ -33,7 +34,7 @@ public class InternshipHideEventListener implements ApplicationEventListener<Int
      */
     @Override
     @Async
-    @Transactional
+    @Transactional(propagation = TransactionDefinition.Propagation.REQUIRES_NEW)
     public void onApplicationEvent(InternshipHiddenEvent event) {
         log.info("Processing internship hidden event: internshipId={}, userId={}",
                 event.getInternshipId(), event.getUserId());

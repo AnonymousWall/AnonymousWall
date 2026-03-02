@@ -45,6 +45,13 @@ services:
       - OCI_NAMESPACE=${OCI_NAMESPACE}
       - MEDIA_BUCKET_NAME=${MEDIA_BUCKET_NAME}
       - MEDIA_BUCKET_URL=${MEDIA_BUCKET_URL}
+
+      # APNs configuration
+      - APNS_TEAM_ID=${APNS_TEAM_ID}
+      - APNS_KEY_ID=${APNS_KEY_ID}
+      - APNS_BUNDLE_ID=${APNS_BUNDLE_ID}
+      - APNS_ENVIRONMENT=${APNS_ENVIRONMENT}
+      - APNS_PRIVATE_KEY=${APNS_PRIVATE_KEY}
       
     volumes:
       # Persist logs

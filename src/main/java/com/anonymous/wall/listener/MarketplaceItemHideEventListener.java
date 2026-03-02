@@ -4,6 +4,7 @@ import com.anonymous.wall.event.MarketplaceItemHiddenEvent;
 import com.anonymous.wall.repository.CommentRepository;
 import io.micronaut.context.event.ApplicationEventListener;
 import io.micronaut.scheduling.annotation.Async;
+import io.micronaut.transaction.TransactionDefinition;
 import io.micronaut.transaction.annotation.Transactional;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
@@ -33,7 +34,7 @@ public class MarketplaceItemHideEventListener implements ApplicationEventListene
      */
     @Override
     @Async
-    @Transactional
+    @Transactional(propagation = TransactionDefinition.Propagation.REQUIRES_NEW)
     public void onApplicationEvent(MarketplaceItemHiddenEvent event) {
         log.info("Processing marketplace item hidden event: itemId={}, userId={}",
                 event.getItemId(), event.getUserId());
