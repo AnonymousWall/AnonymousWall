@@ -103,6 +103,9 @@ tar czf anonymouswall-deploy.tar.gz \
   aot-native-image.properties \
   micronaut-cli.yml
 
+# If Mac restarted:
+ssh-add ~/.ssh/oci_key
+
 # Transfer to bastion
 scp -i ~/.ssh/oci_key anonymouswall-deploy.tar.gz opc@$BASTION_IP:/tmp/
 
