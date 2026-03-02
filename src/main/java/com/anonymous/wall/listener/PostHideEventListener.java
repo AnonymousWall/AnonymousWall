@@ -4,6 +4,7 @@ import com.anonymous.wall.event.PostHiddenEvent;
 import com.anonymous.wall.repository.CommentRepository;
 import io.micronaut.context.event.ApplicationEventListener;
 import io.micronaut.scheduling.annotation.Async;
+import io.micronaut.transaction.TransactionDefinition;
 import io.micronaut.transaction.annotation.Transactional;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
@@ -33,7 +34,7 @@ public class PostHideEventListener implements ApplicationEventListener<PostHidde
      */
     @Override
     @Async
-    @Transactional
+    @Transactional(propagation = TransactionDefinition.Propagation.REQUIRES_NEW)
     public void onApplicationEvent(PostHiddenEvent event) {
         log.info("Processing post hidden event: postId={}, userId={}", 
                 event.getPostId(), event.getUserId());

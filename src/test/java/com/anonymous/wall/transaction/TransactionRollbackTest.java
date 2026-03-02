@@ -27,7 +27,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * Verifies that @Transactional properly rolls back on errors
  * Tests that failed operations don't leave database in invalid state
  */
-@MicronautTest
+@MicronautTest(transactional = false)
 public class TransactionRollbackTest {
 
     @Inject

@@ -27,7 +27,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * Verifies that @Transactional operations are all-or-nothing (ACID compliance)
  * Tests that multi-step operations either complete fully or not at all
  */
-@MicronautTest
+@MicronautTest(transactional = false) // Disable automatic transaction management for manual control
 public class TransactionAtomicityTest {
 
     @Inject

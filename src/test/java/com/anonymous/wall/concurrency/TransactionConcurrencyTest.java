@@ -27,7 +27,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * Concurrency tests for transaction and rollback behavior
  * Tests that @Transactional works correctly under concurrent access
  */
-@MicronautTest
+@MicronautTest(transactional = false)
 public class TransactionConcurrencyTest {
 
     @Inject
