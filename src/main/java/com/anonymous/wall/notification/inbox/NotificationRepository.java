@@ -1,6 +1,5 @@
 package com.anonymous.wall.notification.inbox;
 
-import io.micronaut.data.annotation.Query;
 import io.micronaut.data.jdbc.annotation.JdbcRepository;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
@@ -17,11 +16,9 @@ public interface NotificationRepository extends CrudRepository<NotificationEntit
 
     long countByRecipientUserIdAndRead(UUID recipientUserId, boolean read);
 
-    @Query("UPDATE notifications SET is_read = TRUE WHERE recipient_user_id = :recipientUserId")
-    void markAllReadByRecipientUserId(UUID recipientUserId);
+    void updateReadByRecipientUserId(UUID recipientUserId, boolean read);
 
-    @Query("UPDATE notifications SET is_read = TRUE WHERE id = :id")
-    void markReadById(UUID id);
+    void updateReadById(UUID id, boolean read);
 
     Optional<NotificationEntity> findById(UUID id);
 }

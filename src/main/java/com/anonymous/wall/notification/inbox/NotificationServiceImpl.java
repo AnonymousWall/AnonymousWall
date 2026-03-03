@@ -47,7 +47,7 @@ public class NotificationServiceImpl implements NotificationService {
     @Override
     @Transactional
     public void markAllRead(UUID userId) {
-        notificationRepository.markAllReadByRecipientUserId(userId);
+        notificationRepository.updateReadByRecipientUserId(userId, true);
         log.debug("Marked all notifications as read for user={}", userId);
     }
 
@@ -62,7 +62,7 @@ public class NotificationServiceImpl implements NotificationService {
         if (!entity.getRecipientUserId().equals(userId)) {
             throw new HttpStatusException(HttpStatus.FORBIDDEN, "Notification does not belong to user");
         }
-        notificationRepository.markReadById(notificationId);
+        notificationRepository.updateReadById(notificationId, true);
         log.debug("Marked notification={} as read for user={}", notificationId, userId);
     }
 }
