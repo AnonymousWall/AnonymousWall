@@ -48,7 +48,8 @@ A Micronaut-based REST API for anonymous campus social networking. Users registe
 ✅ **Marketplace listings** (campus and national walls, with comments)  
 ✅ **Polymorphic comment system** (single comment system shared by posts, internships, and marketplace)  
 ✅ **Image uploads** (optional multi-image upload, up to 5 images per post or marketplace item)  
-✅ **Push Notification System** (iOS APNs push notifications via HTTP/2, event-driven, decoupled)
+✅ **Push Notification System** (iOS APNs push notifications via HTTP/2, event-driven, decoupled)  
+✅ **Notification Inbox** (TikTok-style in-app notification center with unread badge and mark-as-read)
 
 ---
 
@@ -63,7 +64,8 @@ src/main/java/com/anonymous/wall/
 │   ├── MarketplaceController.java    # Marketplace + comment endpoints
 │   ├── UserController.java           # User profile endpoints
 │   ├── ChatController.java           # Chat REST endpoints
-│   └── ChatWebSocketHandler.java     # WebSocket chat handler
+│   ├── ChatWebSocketHandler.java     # WebSocket chat handler
+│   └── NotificationController.java   # Notification inbox endpoints
 │
 ├── admin/                            # Admin API module
 │   ├── controller/
@@ -95,6 +97,20 @@ src/main/java/com/anonymous/wall/
 │   ├── SchoolDomainService/SchoolDomainServiceImpl.java  # School domain logic
 │   └── JwtTokenService.java                       # JWT token generation (with RBAC)
 │
+├── notification/
+│   ├── service/
+│   │   ├── NotificationService.java              # Notification service interface
+│   │   ├── NotificationServiceImpl.java          # Persist + retrieve notifications
+│   │   └── PushNotificationService.java          # APNs push delivery
+│   ├── listener/
+│   │   └── NotificationEventListener.java        # Handles comment events → persist + push
+│   ├── device/
+│   │   └── DeviceTokenService.java               # Device token management
+│   └── event/
+│       ├── CommentCreatedEvent.java
+│       ├── InternshipCommentCreatedEvent.java
+│       └── MarketplaceCommentCreatedEvent.java
+│
 ├── entity/
 │   ├── Commentable.java             # Interface for commentable entities
 │   ├── CommentParentType.java       # Enum: POST, INTERNSHIP, MARKETPLACE
@@ -109,7 +125,8 @@ src/main/java/com/anonymous/wall/
 │   ├── PostReport.java              # Post reports
 │   ├── CommentReport.java           # Comment reports
 │   ├── SchoolDomain.java            # School domain model
-│   └── PostList.java                # Post list model
+│   ├── PostList.java                # Post list model
+│   └── NotificationEntity.java      # Notification persistence model
 │
 ├── repository/
 │   ├── UserRepository.java
@@ -122,7 +139,8 @@ src/main/java/com/anonymous/wall/
 │   ├── PostReportRepository.java
 │   ├── CommentReportRepository.java
 │   ├── SchoolDomainRepository.java
-│   └── EmailVerificationCodeRepository.java
+│   ├── EmailVerificationCodeRepository.java
+│   └── NotificationRepository.java
 │
 ├── mapper/
 │   └── UserMapper.java              # DTO mapping utilities
@@ -364,6 +382,22 @@ CREATE TABLE device_tokens (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
+```
+
+### Notifications Table
+```sql
+CREATE TABLE notifications (
+    id UUID PRIMARY KEY,
+    recipient_user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    actor_user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    type VARCHAR(30) NOT NULL,            -- "COMMENT", "INTERNSHIP_COMMENT", "MARKETPLACE_COMMENT"
+    entity_id UUID NOT NULL,              -- postId / internshipId / itemId
+    entity_title VARCHAR(255),            -- snapshot of post/item title at time of notification
+    actor_profile_name VARCHAR(100),      -- snapshot of commenter's profile name
+    read BOOLEAN DEFAULT false NOT NULL,
+    created_at TIMESTAMP NOT NULL
+);
+CREATE INDEX idx_notifications_recipient ON notifications(recipient_user_id, created_at DESC);
 ```
 
 ---
