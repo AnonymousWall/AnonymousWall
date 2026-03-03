@@ -797,5 +797,18 @@
             <column name="created_at" descending="true"/>
         </createIndex>
     </changeSet>
+    <changeSet id="23-notifications-fk-cascade" author="copilot">
+        <comment>Add ON DELETE CASCADE to notifications foreign keys so user cleanup doesn't fail</comment>
+        <dropForeignKeyConstraint baseTableName="notifications" constraintName="fk_notifications_recipient"/>
+        <dropForeignKeyConstraint baseTableName="notifications" constraintName="fk_notifications_actor"/>
+        <addForeignKeyConstraint baseTableName="notifications" baseColumnNames="recipient_user_id"
+                                 constraintName="fk_notifications_recipient"
+                                 referencedTableName="users" referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+        <addForeignKeyConstraint baseTableName="notifications" baseColumnNames="actor_user_id"
+                                 constraintName="fk_notifications_actor"
+                                 referencedTableName="users" referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+    </changeSet>
 
 </databaseChangeLog>
