@@ -2154,9 +2154,9 @@ paths:
           required: false
           schema:
             type: integer
-            minimum: 0
-            default: 0
-          description: Page number (zero-based)
+            minimum: 1
+            default: 1
+          description: Page number (one-based)
         - in: query
           name: size
           required: false

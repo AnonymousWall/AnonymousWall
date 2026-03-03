@@ -45,26 +45,26 @@ public class NotificationController {
     }
 
     /**
-     * GET /api/v1/notifications?page=0&size=20
+     * GET /api/v1/notifications?page=1&size=20
      * Returns paginated list of notifications for the authenticated user.
      */
     @Get
     public HttpResponse<Object> getNotifications(
-            @QueryValue(defaultValue = "0") int page,
+            @QueryValue(defaultValue = "1") int page,
             @QueryValue(defaultValue = "20") int size,
             HttpRequest<?> request) {
         try {
             UUID userId = getUserIdFromRequest(request);
             log.info("GET /notifications - user={}, page={}, size={}", userId, page, size);
 
-            Pageable pageable = Pageable.from(page, size);
+            Pageable pageable = Pageable.from(page - 1, size);
             Page<NotificationEntity> notificationsPage = notificationService.getNotifications(userId, pageable);
 
             Map<String, Object> result = new HashMap<>();
             result.put("content", notificationsPage.getContent().stream()
                     .map(this::mapToDTO)
                     .toList());
-            result.put("page", notificationsPage.getPageNumber());
+            result.put("page", notificationsPage.getPageNumber() + 1);
             result.put("size", notificationsPage.getSize());
             result.put("totalElements", notificationsPage.getTotalSize());
             result.put("totalPages", notificationsPage.getTotalPages());
