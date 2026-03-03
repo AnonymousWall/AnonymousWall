@@ -4808,6 +4808,12 @@ components:
       properties:
         deviceToken:
           type: string
+          description: The iOS device push token
+        platform:
+          type: string
+          enum:
+            - IOS
+          description: Device platform (currently only IOS is supported)
 
     # ----- Notifications -----
     NotificationDTO:
@@ -4840,12 +4846,6 @@ components:
           type: string
           format: date-time
           description: When the notification was created
-          description: The iOS device push token
-        platform:
-          type: string
-          enum:
-            - IOS
-          description: Device platform (currently only IOS is supported)
 
   securitySchemes:
     bearerAuth:

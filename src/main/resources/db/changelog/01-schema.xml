@@ -725,6 +725,39 @@
             <column name="user_id"/>
         </createIndex>
     </changeSet>
+
+    <changeSet id="21-create-device-tokens-table" author="copilot">
+        <createTable tableName="device_tokens">
+            <column name="id" type="CHAR(36)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="user_id" type="CHAR(36)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="device_token" type="VARCHAR(255)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="platform" type="VARCHAR(10)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="active" type="BOOLEAN" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="device_tokens" baseColumnNames="user_id"
+                                 constraintName="fk_device_tokens_user"
+                                 referencedTableName="users" referencedColumnNames="id"/>
+        <createIndex tableName="device_tokens" indexName="idx_device_tokens_user_id">
+            <column name="user_id"/>
+        </createIndex>
+    </changeSet>
+
     <!-- ================= Notifications Inbox ================= -->
     <changeSet id="22-create-notifications-table" author="copilot">
         <comment>Create notifications table for in-app notification inbox</comment>
@@ -762,38 +795,6 @@
         <createIndex tableName="notifications" indexName="idx_notifications_recipient">
             <column name="recipient_user_id"/>
             <column name="created_at" descending="true"/>
-        </createIndex>
-    </changeSet>
-
-    <changeSet id="21-create-device-tokens-table" author="copilot">
-        <createTable tableName="device_tokens">
-            <column name="id" type="CHAR(36)">
-                <constraints primaryKey="true" nullable="false"/>
-            </column>
-            <column name="user_id" type="CHAR(36)">
-                <constraints nullable="false"/>
-            </column>
-            <column name="device_token" type="VARCHAR(255)">
-                <constraints nullable="false" unique="true"/>
-            </column>
-            <column name="platform" type="VARCHAR(10)">
-                <constraints nullable="false"/>
-            </column>
-            <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
-                <constraints nullable="false"/>
-            </column>
-            <column name="updated_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
-                <constraints nullable="false"/>
-            </column>
-            <column name="active" type="BOOLEAN" defaultValueBoolean="true">
-                <constraints nullable="false"/>
-            </column>
-        </createTable>
-        <addForeignKeyConstraint baseTableName="device_tokens" baseColumnNames="user_id"
-                                 constraintName="fk_device_tokens_user"
-                                 referencedTableName="users" referencedColumnNames="id"/>
-        <createIndex tableName="device_tokens" indexName="idx_device_tokens_user_id">
-            <column name="user_id"/>
         </createIndex>
     </changeSet>
 
