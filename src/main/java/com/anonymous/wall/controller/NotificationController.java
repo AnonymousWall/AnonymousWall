@@ -2,8 +2,8 @@ package com.anonymous.wall.controller;
 
 import com.anonymous.wall.model.NotificationDTO;
 import com.anonymous.wall.model.NotificationDTOType;
-import com.anonymous.wall.notification.inbox.NotificationEntity;
-import com.anonymous.wall.notification.inbox.NotificationService;
+import com.anonymous.wall.entity.NotificationEntity;
+import com.anonymous.wall.service.NotificationService;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
 import io.micronaut.http.HttpRequest;

@@ -1,4 +1,4 @@
-package com.anonymous.wall.notification.inbox;
+package com.anonymous.wall.entity;
 
 import io.micronaut.data.annotation.AutoPopulated;
 import io.micronaut.data.annotation.Id;

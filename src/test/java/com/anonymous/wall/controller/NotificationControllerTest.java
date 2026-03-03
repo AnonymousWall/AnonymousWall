@@ -1,8 +1,8 @@
 package com.anonymous.wall.controller;
 
 import com.anonymous.wall.entity.UserEntity;
-import com.anonymous.wall.notification.inbox.NotificationEntity;
-import com.anonymous.wall.notification.inbox.NotificationRepository;
+import com.anonymous.wall.entity.NotificationEntity;
+import com.anonymous.wall.repository.NotificationRepository;
 import com.anonymous.wall.repository.UserRepository;
 import com.anonymous.wall.service.JwtTokenService;
 import io.micronaut.http.HttpRequest;

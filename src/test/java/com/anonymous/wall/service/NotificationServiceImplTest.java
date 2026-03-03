@@ -1,8 +1,8 @@
 package com.anonymous.wall.service;
 
-import com.anonymous.wall.notification.inbox.NotificationEntity;
-import com.anonymous.wall.notification.inbox.NotificationRepository;
-import com.anonymous.wall.notification.inbox.NotificationServiceImpl;
+import com.anonymous.wall.entity.NotificationEntity;
+import com.anonymous.wall.repository.NotificationRepository;
+import com.anonymous.wall.service.NotificationServiceImpl;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
 import io.micronaut.http.HttpStatus;

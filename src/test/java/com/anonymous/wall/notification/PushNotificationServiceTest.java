@@ -6,7 +6,7 @@ import com.anonymous.wall.notification.event.ChatMessageSentEvent;
 import com.anonymous.wall.notification.event.CommentCreatedEvent;
 import com.anonymous.wall.notification.event.InternshipCommentCreatedEvent;
 import com.anonymous.wall.notification.event.MarketplaceCommentCreatedEvent;
-import com.anonymous.wall.notification.inbox.NotificationService;
+import com.anonymous.wall.service.NotificationService;
 import com.anonymous.wall.notification.listener.NotificationEventListener;
 import com.anonymous.wall.notification.service.PushNotificationService;
 import com.anonymous.wall.notification.service.PushNotificationServiceImpl;

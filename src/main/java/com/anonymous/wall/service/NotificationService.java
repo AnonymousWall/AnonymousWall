@@ -1,5 +1,6 @@
-package com.anonymous.wall.notification.inbox;
+package com.anonymous.wall.service;
 
+import com.anonymous.wall.entity.NotificationEntity;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
 
