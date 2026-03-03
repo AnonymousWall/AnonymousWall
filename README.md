@@ -2054,8 +2054,10 @@ Self-notifications are suppressed — users do not receive notifications for the
 ### Architecture
 
 ```
-User Action → Domain Event → NotificationEventListener → ApnsClient → Apple → iOS Device
+User Action → Domain Event → NotificationEventListener → persists to DB + ApnsClient → Apple → iOS Device
 ```
+
+Tapping a push notification opens the Notifications tab → user sees the notification inbox → taps a row → navigates to content.
 
 ### Configuration
 
@@ -2066,6 +2068,88 @@ User Action → Domain Event → NotificationEventListener → ApnsClient → Ap
 | `APNS_BUNDLE_ID` | App bundle identifier |
 | `APNS_PRIVATE_KEY` | Contents of `.p8` key file (newlines as `\n`) |
 | `APNS_ENVIRONMENT` | `sandbox` (development/TestFlight) or `production` (App Store) |
+
+---
+
+## Notification Inbox
+
+The notification inbox stores all received notifications in the database, allowing users to view a TikTok-style summary list of activity.
+
+### Overview
+
+- All comment events (post, internship, marketplace) are persisted to the `notifications` table.
+- Self-notifications are never saved.
+- Notifications are paginated, ordered newest first.
+- Unread badge count is available via a dedicated endpoint.
+- Users can mark individual notifications or all notifications as read.
+
+### REST Endpoints
+
+#### 1. Get Notifications
+```http
+GET /api/v1/notifications?page=0&size=20
+Authorization: Bearer {jwt-token}
+
+Response: 200 OK
+{
+    "content": [
+        {
+            "id": "uuid",
+            "type": "COMMENT",
+            "entityId": "uuid",
+            "entityTitle": "Post title snapshot",
+            "actorProfileName": "Anonymous",
+            "read": false,
+            "createdAt": "2026-01-28T..."
+        }
+    ],
+    "page": 0,
+    "size": 20,
+    "totalElements": 42,
+    "totalPages": 3
+}
+```
+
+**Query Parameters:**
+- `page` (default: 0) — Zero-based page number
+- `size` (default: 20, max: 100) — Items per page
+
+#### 2. Get Unread Count
+```http
+GET /api/v1/notifications/unread-count
+Authorization: Bearer {jwt-token}
+
+Response: 200 OK
+{
+    "count": 5
+}
+```
+
+#### 3. Mark All Notifications as Read
+```http
+POST /api/v1/notifications/mark-all-read
+Authorization: Bearer {jwt-token}
+
+Response: 200 OK
+```
+
+#### 4. Mark Single Notification as Read
+```http
+POST /api/v1/notifications/{id}/read
+Authorization: Bearer {jwt-token}
+
+Response: 200 OK
+Response: 403 Forbidden  (if notification does not belong to the authenticated user)
+Response: 404 Not Found  (if notification does not exist)
+```
+
+### Notification Types
+
+| `type` | Description | `entityId` refers to |
+|--------|-------------|----------------------|
+| `COMMENT` | Someone commented on your post | `postId` |
+| `INTERNSHIP_COMMENT` | Someone commented on your internship | `internshipId` |
+| `MARKETPLACE_COMMENT` | Someone commented on your marketplace listing | `itemId` |
 
 ---
 

@@ -6,6 +6,7 @@ import com.anonymous.wall.notification.event.ChatMessageSentEvent;
 import com.anonymous.wall.notification.event.CommentCreatedEvent;
 import com.anonymous.wall.notification.event.InternshipCommentCreatedEvent;
 import com.anonymous.wall.notification.event.MarketplaceCommentCreatedEvent;
+import com.anonymous.wall.notification.inbox.NotificationService;
 import com.anonymous.wall.notification.service.PushNotificationService;
 import io.micronaut.runtime.event.annotation.EventListener;
 import io.micronaut.scheduling.annotation.Async;
@@ -33,6 +34,9 @@ public class NotificationEventListener {
     @Inject
     private ChatWebSocketHandler chatWebSocketHandler;
 
+    @Inject
+    private NotificationService notificationService;
+
     @EventListener
     @Async
     @Transactional(propagation = TransactionDefinition.Propagation.REQUIRES_NEW)
@@ -40,6 +44,15 @@ public class NotificationEventListener {
         if (event.getActorUserId().equals(event.getPostOwnerId())) {
             return;
         }
+
+        notificationService.createNotification(
+                event.getPostOwnerId(),
+                event.getActorUserId(),
+                "COMMENT",
+                event.getPostId(),
+                null,
+                null
+        );
 
         List<String> tokens = deviceTokenService.getActiveTokens(event.getPostOwnerId());
         if (tokens.isEmpty()) {
@@ -65,6 +78,15 @@ public class NotificationEventListener {
     public void onInternshipCommentCreated(InternshipCommentCreatedEvent event) {
         if (event.getActorUserId().equals(event.getInternshipOwnerId())) return;
 
+        notificationService.createNotification(
+                event.getInternshipOwnerId(),
+                event.getActorUserId(),
+                "INTERNSHIP_COMMENT",
+                event.getInternshipId(),
+                null,
+                null
+        );
+
         List<String> tokens = deviceTokenService.getActiveTokens(event.getInternshipOwnerId());
         if (tokens.isEmpty()) return;
 
@@ -86,6 +108,15 @@ public class NotificationEventListener {
     @Transactional(propagation = TransactionDefinition.Propagation.REQUIRES_NEW)
     public void onMarketplaceCommentCreated(MarketplaceCommentCreatedEvent event) {
         if (event.getActorUserId().equals(event.getItemOwnerId())) return;
+
+        notificationService.createNotification(
+                event.getItemOwnerId(),
+                event.getActorUserId(),
+                "MARKETPLACE_COMMENT",
+                event.getItemId(),
+                null,
+                null
+        );
 
         List<String> tokens = deviceTokenService.getActiveTokens(event.getItemOwnerId());
         if (tokens.isEmpty()) return;
