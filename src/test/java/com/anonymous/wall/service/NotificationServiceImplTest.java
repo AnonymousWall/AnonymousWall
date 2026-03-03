@@ -186,7 +186,7 @@ class NotificationServiceImplTest {
         @DisplayName("Should throw 403 when notification belongs to different user")
         void shouldThrow403WhenNotOwner() {
             UUID ownerId = UUID.randomUUID();
-            UUID attackerId = UUID.randomUUID();
+            UUID otherUserId = UUID.randomUUID();
             UUID notificationId = UUID.randomUUID();
 
             NotificationEntity entity = new NotificationEntity(
@@ -196,7 +196,7 @@ class NotificationServiceImplTest {
             when(notificationRepository.findById(notificationId)).thenReturn(Optional.of(entity));
 
             HttpStatusException ex = assertThrows(HttpStatusException.class,
-                    () -> service.markRead(notificationId, attackerId));
+                    () -> service.markRead(notificationId, otherUserId));
             assertEquals(HttpStatus.FORBIDDEN, ex.getStatus());
             verify(notificationRepository, never()).updateReadById(any(), anyBoolean());
         }
