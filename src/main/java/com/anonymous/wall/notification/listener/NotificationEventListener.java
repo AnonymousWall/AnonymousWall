@@ -9,6 +9,7 @@ import com.anonymous.wall.notification.event.MarketplaceCommentCreatedEvent;
 import com.anonymous.wall.notification.inbox.NotificationService;
 import com.anonymous.wall.notification.service.PushNotificationService;
 import io.micronaut.runtime.event.annotation.EventListener;
+import io.micronaut.scheduling.TaskExecutors;
 import io.micronaut.scheduling.annotation.Async;
 import io.micronaut.transaction.TransactionDefinition;
 import io.micronaut.transaction.annotation.Transactional;
@@ -38,7 +39,7 @@ public class NotificationEventListener {
     private NotificationService notificationService;
 
     @EventListener
-    @Async
+    @Async(TaskExecutors.IO)
     @Transactional(propagation = TransactionDefinition.Propagation.REQUIRES_NEW)
     public void onCommentCreated(CommentCreatedEvent event) {
         if (event.getActorUserId().equals(event.getPostOwnerId())) {
@@ -73,7 +74,7 @@ public class NotificationEventListener {
     }
 
     @EventListener
-    @Async
+    @Async(TaskExecutors.IO)
     @Transactional(propagation = TransactionDefinition.Propagation.REQUIRES_NEW)
     public void onInternshipCommentCreated(InternshipCommentCreatedEvent event) {
         if (event.getActorUserId().equals(event.getInternshipOwnerId())) return;
@@ -104,7 +105,7 @@ public class NotificationEventListener {
     }
 
     @EventListener
-    @Async
+    @Async(TaskExecutors.IO)
     @Transactional(propagation = TransactionDefinition.Propagation.REQUIRES_NEW)
     public void onMarketplaceCommentCreated(MarketplaceCommentCreatedEvent event) {
         if (event.getActorUserId().equals(event.getItemOwnerId())) return;
