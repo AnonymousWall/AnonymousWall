@@ -366,6 +366,22 @@ CREATE TABLE device_tokens (
 );
 ```
 
+### Notifications Table
+```sql
+CREATE TABLE notifications (
+    id UUID PRIMARY KEY,
+    recipient_user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    actor_user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    type VARCHAR(30) NOT NULL,           -- "COMMENT", "INTERNSHIP_COMMENT", "MARKETPLACE_COMMENT"
+    entity_id UUID NOT NULL,             -- postId / internshipId / itemId
+    entity_title VARCHAR(255),           -- snapshot of post/item title at time of notification
+    actor_profile_name VARCHAR(100),     -- snapshot of commenter's profile name
+    is_read BOOLEAN DEFAULT false NOT NULL,
+    created_at TIMESTAMP NOT NULL
+);
+CREATE INDEX idx_notifications_recipient ON notifications(recipient_user_id, created_at DESC);
+```
+
 ---
 
 ## API Documentation
@@ -2021,6 +2037,80 @@ Response: 200 OK
 **Notes:**
 - Returns all users blocked by the authenticated user
 
+### Notification Inbox Endpoints
+
+All notification endpoints require authentication (`Authorization: Bearer {jwt-token}`).
+
+- All comment events (post, internship, marketplace) are persisted to the `notifications` table.
+- Self-notifications are never saved.
+- Notifications are paginated (1-based), ordered newest first.
+
+#### 1. Get Notifications
+```http
+GET /api/v1/notifications?page=1&size=20
+Authorization: Bearer {jwt-token}
+
+Response: 200 OK
+{
+    "content": [
+        {
+            "id": "uuid",
+            "type": "COMMENT",
+            "entityId": "uuid",
+            "entityTitle": "Post title snapshot",
+            "actorProfileName": "Anonymous",
+            "read": false,
+            "createdAt": "2026-01-28T..."
+        }
+    ],
+    "page": 1,
+    "size": 20,
+    "totalElements": 42,
+    "totalPages": 3
+}
+```
+
+**Query Parameters:**
+- `page` (default: 1) — 1-based page number
+- `size` (default: 20) — Items per page
+
+#### 2. Get Unread Count
+```http
+GET /api/v1/notifications/unread-count
+Authorization: Bearer {jwt-token}
+
+Response: 200 OK
+{
+    "count": 5
+}
+```
+
+#### 3. Mark All Notifications as Read
+```http
+POST /api/v1/notifications/mark-all-read
+Authorization: Bearer {jwt-token}
+
+Response: 200 OK
+```
+
+#### 4. Mark Single Notification as Read
+```http
+POST /api/v1/notifications/{id}/read
+Authorization: Bearer {jwt-token}
+
+Response: 200 OK
+Response: 403 Forbidden  (if notification does not belong to the authenticated user)
+Response: 404 Not Found  (if notification does not exist)
+```
+
+**Notification Types:**
+
+| `type` | Description | `entityId` refers to |
+|--------|-------------|----------------------|
+| `COMMENT` | Someone commented on your post | `postId` |
+| `INTERNSHIP_COMMENT` | Someone commented on your internship | `internshipId` |
+| `MARKETPLACE_COMMENT` | Someone commented on your marketplace listing | `itemId` |
+
 ---
 
 ## Push Notifications
@@ -2054,8 +2144,10 @@ Self-notifications are suppressed — users do not receive notifications for the
 ### Architecture
 
 ```
-User Action → Domain Event → NotificationEventListener → ApnsClient → Apple → iOS Device
+User Action → Domain Event → NotificationEventListener → persists to DB + ApnsClient → Apple → iOS Device
 ```
+
+Tapping a push notification opens the Notifications tab → user sees the notification inbox → taps a row → navigates to content.
 
 ### Configuration
 
