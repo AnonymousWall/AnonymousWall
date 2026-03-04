@@ -3,6 +3,7 @@ package com.anonymous.wall.listener;
 import com.anonymous.wall.event.MarketplaceItemHiddenEvent;
 import com.anonymous.wall.repository.CommentRepository;
 import io.micronaut.context.event.ApplicationEventListener;
+import io.micronaut.scheduling.TaskExecutors;
 import io.micronaut.scheduling.annotation.Async;
 import io.micronaut.transaction.TransactionDefinition;
 import io.micronaut.transaction.annotation.Transactional;
@@ -33,7 +34,7 @@ public class MarketplaceItemHideEventListener implements ApplicationEventListene
      * Runs in its own transaction to avoid closed connection issues.
      */
     @Override
-    @Async
+    @Async(TaskExecutors.IO)
     @Transactional(propagation = TransactionDefinition.Propagation.REQUIRES_NEW)
     public void onApplicationEvent(MarketplaceItemHiddenEvent event) {
         log.info("Processing marketplace item hidden event: itemId={}, userId={}",
