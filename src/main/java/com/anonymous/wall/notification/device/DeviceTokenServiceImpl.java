@@ -22,6 +22,7 @@ public class DeviceTokenServiceImpl implements DeviceTokenService {
     private DeviceTokenRepository deviceTokenRepository;
 
     @Override
+    @Transactional
     public void registerToken(UUID userId, String deviceToken, String platform) {
         Optional<DeviceToken> existing = deviceTokenRepository.findByDeviceToken(deviceToken);
         if (existing.isPresent()) {

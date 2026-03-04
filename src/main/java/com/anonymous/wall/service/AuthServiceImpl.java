@@ -37,6 +37,7 @@ public class AuthServiceImpl implements AuthService {
      * Send verification code to email
      */
     @Override
+    @Transactional
     @Retryable(attempts = "3", delay = "1000ms")
     public void sendEmailCode(SendEmailCodeRequest request) {
         log.debug("Generating verification code for email: {}, purpose: {}", request.getEmail(), request.getPurpose());
