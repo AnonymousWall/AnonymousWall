@@ -88,12 +88,15 @@ class PollServiceTest {
 
     // ================= Helper =================
 
+    /**
+     * Creates a poll post using the new atomic API: poll options are passed on the
+     * CreatePostRequest and saved in the same transaction as the post row.
+     */
     private Post createPollPost(List<String> options) {
         CreatePostRequest req = new CreatePostRequest("Poll Title", "");
         req.setPostType(CreatePostRequestPostType.POLL);
-        Post post = postsService.createPost(req, null, testUser.getId());
-        pollService.createPollOptions(post.getId(), options);
-        return post;
+        req.setPollOptions(options);
+        return postsService.createPost(req, null, testUser.getId());
     }
 
     // ================= Create Poll =================
@@ -287,6 +290,115 @@ class PollServiceTest {
             Map<String, Object> data = pollService.getPollData(post.getId(), testUser.getId(), false);
 
             assertEquals(votedOptionId, data.get("userVotedOptionId"));
+        }
+    }
+
+    // ================= Poll Post Creation Atomicity =================
+
+    @Nested
+    @DisplayName("Poll Post Creation Atomicity")
+    class PollPostAtomicityTests {
+
+        @Test
+        @DisplayName("createPost with pollOptions saves post and options in one call")
+        void shouldCreatePostAndOptionsAtomically() {
+            CreatePostRequest req = new CreatePostRequest("Atomic Poll", "");
+            req.setPostType(CreatePostRequestPostType.POLL);
+            req.setPollOptions(Arrays.asList("Alpha", "Beta", "Gamma"));
+
+            Post post = postsService.createPost(req, null, testUser.getId());
+
+            assertNotNull(post.getId());
+            assertEquals("poll", post.getPostType());
+
+            List<PollOption> saved = pollOptionRepository.findByPostIdOrderByDisplayOrder(post.getId());
+            assertEquals(3, saved.size());
+            assertEquals("Alpha", saved.get(0).getOptionText());
+            assertEquals("Beta",  saved.get(1).getOptionText());
+            assertEquals("Gamma", saved.get(2).getOptionText());
+        }
+
+        @Test
+        @DisplayName("createPost with invalid pollOptions does not save the post")
+        void shouldNotSavePostWhenOptionsAreInvalid() {
+            long postsBefore = postRepository.count();
+
+            CreatePostRequest req = new CreatePostRequest("Bad Poll", "");
+            req.setPostType(CreatePostRequestPostType.POLL);
+            // Only 1 option — validation requires at least 2
+            req.setPollOptions(List.of("Only"));
+
+            assertThrows(IllegalArgumentException.class,
+                    () -> postsService.createPost(req, null, testUser.getId()));
+
+            // The post must have been rolled back together with the option attempt
+            assertEquals(postsBefore, postRepository.count(),
+                    "A post with invalid poll options must not be persisted");
+        }
+    }
+
+    // ================= Vote Atomicity =================
+
+    @Nested
+    @DisplayName("Vote Atomicity")
+    class VoteAtomicityTests {
+
+        @Test
+        @DisplayName("Successful vote persists option vote_count, post total_votes, and vote row together")
+        void shouldCommitAllThreeWritesOnSuccessfulVote() {
+            Post post = createPollPost(Arrays.asList("Yes", "No"));
+            List<PollOption> opts = pollOptionRepository.findByPostIdOrderByDisplayOrder(post.getId());
+            UUID optionId = opts.get(0).getId();
+
+            pollService.vote(post.getId(), optionId, testUser.getId());
+
+            // All three writes must be visible after the transaction commits
+            PollOption option = pollOptionRepository.findById(optionId).orElseThrow();
+            assertEquals(1, option.getVoteCount(), "option vote_count must be incremented");
+
+            Post updatedPost = postRepository.findById(post.getId()).orElseThrow();
+            assertEquals(1, updatedPost.getTotalVotes(), "post total_votes must be incremented");
+
+            long voteRowCount = pollVoteRepository.findByPostIdAndUserId(post.getId(), testUser.getId())
+                    .map(v -> 1L).orElse(0L);
+            assertEquals(1L, voteRowCount, "a PollVote row must be persisted");
+        }
+
+        @Test
+        @DisplayName("Duplicate vote does not change any counts")
+        void shouldNotChangeCountsOnDuplicateVote() {
+            Post post = createPollPost(Arrays.asList("Yes", "No"));
+            List<PollOption> opts = pollOptionRepository.findByPostIdOrderByDisplayOrder(post.getId());
+            UUID optionId = opts.get(0).getId();
+
+            pollService.vote(post.getId(), optionId, testUser.getId());
+
+            // Try to vote again — must throw and leave counts unchanged
+            assertThrows(PollServiceImpl.DuplicateVoteException.class,
+                    () -> pollService.vote(post.getId(), optionId, testUser.getId()));
+
+            PollOption option = pollOptionRepository.findById(optionId).orElseThrow();
+            assertEquals(1, option.getVoteCount(), "vote_count must remain 1 after duplicate attempt");
+
+            Post updatedPost = postRepository.findById(post.getId()).orElseThrow();
+            assertEquals(1, updatedPost.getTotalVotes(), "total_votes must remain 1 after duplicate attempt");
+        }
+
+        @Test
+        @DisplayName("Multiple users voting increments counts correctly")
+        void shouldIncrementCountsForEachDistinctUser() {
+            Post post = createPollPost(Arrays.asList("Yes", "No"));
+            List<PollOption> opts = pollOptionRepository.findByPostIdOrderByDisplayOrder(post.getId());
+            UUID optionId = opts.get(0).getId();
+
+            pollService.vote(post.getId(), optionId, testUser.getId());
+            pollService.vote(post.getId(), optionId, testUser2.getId());
+
+            PollOption option = pollOptionRepository.findById(optionId).orElseThrow();
+            assertEquals(2, option.getVoteCount(), "vote_count must be 2 after two users voted");
+
+            Post updatedPost = postRepository.findById(post.getId()).orElseThrow();
+            assertEquals(2, updatedPost.getTotalVotes(), "total_votes must be 2");
         }
     }
 }
