@@ -66,10 +66,17 @@ public class PostsServiceImpl implements PostsService {
     @Inject
     private UserBlockService userBlockService;
 
+    @Inject
+    private PollService pollService;
+
     /**
-     * Create a new post with optional image uploads (up to 5 images)
+     * Create a new post with optional image uploads (up to 5 images).
+     * Images are uploaded before the transaction begins; the post and any
+     * poll options are then saved atomically so a poll post is never left
+     * without its options.
      */
     @Override
+    @Transactional
     @Retryable(attempts = "3", delay = "500ms")
     public Post createPost(CreatePostRequest request, List<CompletedFileUpload> images, UUID userId) {
         // Validate image count before any DB access
@@ -101,6 +108,14 @@ public class PostsServiceImpl implements PostsService {
         }
 
         Post savedPost = postRepository.save(post);
+
+        // Create poll options in the same transaction so that the post and its
+        // options are committed atomically.  A poll post with no options is an
+        // invalid state that must never be persisted.
+        boolean isPoll = "poll".equals(savedPost.getPostType());
+        if (isPoll && request.getPollOptions() != null && !request.getPollOptions().isEmpty()) {
+            pollService.createPollOptions(savedPost.getId(), request.getPollOptions());
+        }
 
         log.info("Post created: id={}, wall={}, schoolDomain={}, user={}, imageCount={}", savedPost.getId(), wall, schoolDomain, userId, imageUrls.size());
         return savedPost;

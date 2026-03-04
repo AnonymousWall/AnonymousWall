@@ -6,6 +6,7 @@ import com.anonymous.wall.entity.Post;
 import com.anonymous.wall.repository.PollOptionRepository;
 import com.anonymous.wall.repository.PollVoteRepository;
 import com.anonymous.wall.repository.PostRepository;
+import io.micronaut.transaction.annotation.Transactional;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import org.slf4j.Logger;
@@ -31,6 +32,7 @@ public class PollServiceImpl implements PollService {
     private PostRepository postRepository;
 
     @Override
+    @Transactional
     public List<PollOption> createPollOptions(UUID postId, List<String> optionTexts) {
         validatePollOptions(optionTexts);
 
@@ -45,6 +47,7 @@ public class PollServiceImpl implements PollService {
     }
 
     @Override
+    @Transactional
     public PollVote vote(UUID postId, UUID optionId, UUID userId) {
         // Verify post exists and is a poll
         Optional<Post> postOpt = postRepository.findById(postId);
