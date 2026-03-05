@@ -26,15 +26,12 @@ public class OciMediaUtil implements MediaUtilInterface {
     private final ObjectStorageClient objectStorageClient;
     private final String namespace;
     private final String bucketName;
-    private final String bucketUrl;
 
     public OciMediaUtil(
             @Property(name = "oci.media.namespace") String namespace,
-            @Property(name = "oci.media.bucket-name") String bucketName,
-            @Property(name = "oci.media.bucket-url") String bucketUrl) {
+            @Property(name = "oci.media.bucket-name") String bucketName) {
         this.namespace = namespace;
         this.bucketName = bucketName;
-        this.bucketUrl = bucketUrl;
         this.objectStorageClient = ObjectStorageClient.builder()
                 .build(InstancePrincipalsAuthenticationDetailsProvider.builder().build());
     }
@@ -71,9 +68,8 @@ public class OciMediaUtil implements MediaUtilInterface {
 
             objectStorageClient.putObject(putRequest);
 
-            String url = bucketUrl + "/" + objectName;
-            log.info("Uploaded to OCI: {}", url);
-            return url;
+            log.info("Uploaded to OCI: {}", objectName);
+            return objectName;
         } catch (IOException e) {
             throw new RuntimeException("Failed to upload image to OCI", e);
         }
