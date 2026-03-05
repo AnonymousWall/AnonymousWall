@@ -279,7 +279,7 @@ class PostsServiceHidePostTests {
 
         @Test
         @DisplayName("Should restore all comments when unhiding post")
-        void shouldRestoreAllCommentsWhenUnhidingPost() {
+        void shouldRestoreAllCommentsWhenUnhidingPost() throws InterruptedException {
             // Arrange - Create comments and hide post
             Comment comment1 = commentsService.addComment(CommentParentType.POST, testPost.getId(),
                     new CreateCommentRequest("Comment 1"), testUser.getId());
@@ -288,7 +288,7 @@ class PostsServiceHidePostTests {
 
             // Hide post (cascades to comments)
             postsService.hidePost(testPost.getId(), testUser.getId());
-
+            Thread.sleep(500);
             // Verify comments are hidden
             List<Comment> hiddenComments = commentRepository.findByParentTypeAndParentIdAndHiddenFalse("POST", testPost.getId());
             assertEquals(0, hiddenComments.size());

@@ -6,6 +6,7 @@ import com.anonymous.wall.repository.InternshipRepository;
 import com.anonymous.wall.repository.MarketplaceItemRepository;
 import com.anonymous.wall.repository.PostRepository;
 import io.micronaut.context.event.ApplicationEventListener;
+import io.micronaut.scheduling.TaskExecutors;
 import io.micronaut.scheduling.annotation.Async;
 import io.micronaut.transaction.TransactionDefinition;
 import io.micronaut.transaction.annotation.Transactional;
@@ -32,7 +33,7 @@ public class ProfileNameUpdateEventListener implements ApplicationEventListener<
     private MarketplaceItemRepository marketplaceItemRepository;
     
     @Override
-    @Async
+    @Async(TaskExecutors.IO)
     @Transactional(propagation = TransactionDefinition.Propagation.REQUIRES_NEW)
     public void onApplicationEvent(ProfileNameChangedEvent event) {
         log.info("Processing profile name change event: userId={}, oldName={}, newName={}", 

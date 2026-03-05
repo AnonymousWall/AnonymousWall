@@ -341,7 +341,7 @@ class PostsControllerHidePostTests {
 
         @Test
         @DisplayName("Unhide post restores all hidden comments")
-        void shouldRestoreAllCommentsWhenUnhiding() {
+        void shouldRestoreAllCommentsWhenUnhiding() throws InterruptedException {
             // Arrange - Create comments and hide post
             Comment comment1 = commentsService.addComment(CommentParentType.POST, testPost.getId(),
                     new com.anonymous.wall.model.CreateCommentRequest("Comment 1"),
@@ -356,6 +356,9 @@ class PostsControllerHidePostTests {
                             .bearerAuth(authorToken),
                     Map.class
             );
+
+            // Wait for async cascade hide to complete
+            Thread.sleep(500);
 
             // Verify comments are hidden
             List<Comment> hiddenComments = commentRepository.findByParentTypeAndParentIdAndHiddenFalse("POST", testPost.getId());

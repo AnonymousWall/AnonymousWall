@@ -53,7 +53,7 @@ public class EmailUtil implements EmailUtilInterface {
 
         // FOR LOCAL TESTING: Print to console and logs
         printToConsole(email, subject, code);
-        log.info("[FAKE EMAIL] To: {} | Subject: {} | Code: {}", email, subject, code);
+        log.debug("[FAKE EMAIL] To: {} | Subject: {} | Code: {}", email, subject, code);
     }
 
     /**

@@ -169,11 +169,6 @@ public class PostsController {
 
             Post post = postsService.createPost(request, images, userId);
 
-            // Create poll options if this is a poll post
-            if (isPoll) {
-                pollService.createPollOptions(post.getId(), pollOptions);
-            }
-
             PostDTO dto = mapPostToDTO(post, userId);
 
             log.info("POST /posts - Post created successfully, postId={}", dto.getId());

@@ -8,7 +8,7 @@ import io.micronaut.http.HttpStatus;
 import io.micronaut.http.exceptions.HttpStatusException;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
-import jakarta.transaction.Transactional;
+import io.micronaut.transaction.annotation.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,11 +37,13 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Page<NotificationEntity> getNotifications(UUID userId, Pageable pageable) {
         return notificationRepository.findByRecipientUserIdOrderByCreatedAtDesc(userId, pageable);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public long getUnreadCount(UUID userId) {
         return notificationRepository.countByRecipientUserIdAndRead(userId, false);
     }

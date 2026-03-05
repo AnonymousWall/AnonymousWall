@@ -6,6 +6,7 @@ import com.anonymous.wall.repository.UserRepository;
 import io.micronaut.cache.annotation.CacheConfig;
 import io.micronaut.cache.annotation.CacheInvalidate;
 import io.micronaut.cache.annotation.Cacheable;
+import io.micronaut.transaction.annotation.Transactional;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import org.slf4j.Logger;
@@ -63,6 +64,7 @@ public class UserBlockServiceImpl implements UserBlockService {
      * Invalidates cache for both blocker and target.
      */
     @Override
+    @Transactional
     @CacheInvalidate(parameters = {"blockerId"})
     @CacheInvalidate(parameters = {"targetUserId"})
     public void unblockUser(UUID blockerId, UUID targetUserId) {

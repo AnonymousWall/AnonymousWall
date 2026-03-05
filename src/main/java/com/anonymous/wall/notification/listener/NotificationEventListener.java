@@ -136,7 +136,7 @@ public class NotificationEventListener {
     }
 
     @EventListener
-    @Async
+    @Async(TaskExecutors.IO)
     @Transactional(propagation = TransactionDefinition.Propagation.REQUIRES_NEW)
     public void onChatMessageSent(ChatMessageSentEvent event) {
         if (event.getSenderUserId().equals(event.getRecipientUserId())) return;
