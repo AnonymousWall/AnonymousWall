@@ -40,6 +40,7 @@ A Micronaut-based REST API for anonymous campus social networking. Users registe
 ✅ Anonymous posting and commenting  
 ✅ Like/unlike functionality  
 ✅ JWT-based authentication with role-based access control (RBAC)  
+✅ **Refresh token system** (30-day refresh tokens, token rotation, secure SHA-256 hashing)  
 ✅ **Admin/Moderator system for content moderation**  
 ✅ **User management (block/unblock users)**  
 ✅ **Content moderation (soft-delete posts/comments)**  
@@ -383,6 +384,20 @@ CREATE TABLE notifications (
 CREATE INDEX idx_notifications_recipient ON notifications(recipient_user_id, created_at DESC);
 ```
 
+### Refresh Tokens Table
+```sql
+CREATE TABLE refresh_tokens (
+    id CHAR(36) PRIMARY KEY,
+    user_id CHAR(36) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    token_hash VARCHAR(255) NOT NULL UNIQUE,  -- SHA-256 hash of the raw refresh token
+    expires_at TIMESTAMP NOT NULL,
+    revoked BOOLEAN DEFAULT false NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+CREATE INDEX idx_refresh_token_hash ON refresh_tokens(token_hash);
+CREATE INDEX idx_refresh_token_user_id ON refresh_tokens(user_id);
+```
+
 ---
 
 ## API Documentation
@@ -446,7 +461,8 @@ Response: 201 Created
         "passwordSet": false,
         "createdAt": "2026-01-28T..."
     },
-    "accessToken": "jwt-token-here"
+    "accessToken": "jwt-token-here",
+    "refreshToken": "refresh-token-here"
 }
 ```
 
@@ -463,7 +479,8 @@ Content-Type: application/json
 Response: 200 OK
 {
     "user": {...},
-    "accessToken": "jwt-token-here"
+    "accessToken": "jwt-token-here",
+    "refreshToken": "refresh-token-here"
 }
 ```
 
@@ -480,7 +497,8 @@ Content-Type: application/json
 Response: 200 OK
 {
     "user": {...},
-    "accessToken": "jwt-token-here"
+    "accessToken": "jwt-token-here",
+    "refreshToken": "refresh-token-here"
 }
 ```
 
@@ -569,7 +587,8 @@ Response: 200 OK
         "passwordSet": true,
         "createdAt": "2026-01-28T..."
     },
-    "accessToken": "jwt-token-here"
+    "accessToken": "jwt-token-here",
+    "refreshToken": "refresh-token-here"
 }
 ```
 
@@ -577,6 +596,43 @@ Response: 200 OK
 - Requires valid email verification code
 - Code must not be expired (15 minute expiration)
 - Returns JWT token upon successful password reset
+
+#### 9. Refresh Token
+```http
+POST /api/v1/auth/refresh
+Content-Type: application/json
+
+{
+    "refreshToken": "refresh-token-here"
+}
+
+Response: 200 OK
+{
+    "accessToken": "new-jwt-token-here",
+    "refreshToken": "new-refresh-token-here"
+}
+```
+
+**Notes:**
+- Refresh tokens are valid for 30 days
+- Each call rotates the token: the old refresh token is immediately revoked
+- Returns `401` if the token is expired, revoked, or invalid
+- Returns `403` if the user account is blocked
+
+#### 10. Logout
+```http
+POST /api/v1/auth/logout
+Authorization: Bearer {jwt-token}
+
+Response: 200 OK
+{
+    "message": "Logged out successfully"
+}
+```
+
+**Notes:**
+- Revokes all refresh tokens for the authenticated user
+- The access token is short-lived (24h) and will expire naturally
 
 ---
 

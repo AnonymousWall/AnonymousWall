@@ -1,8 +1,10 @@
 package com.anonymous.wall.controller;
 
+import com.anonymous.wall.entity.RefreshToken;
 import com.anonymous.wall.entity.UserEntity;
 import com.anonymous.wall.mapper.UserMapper;
 import com.anonymous.wall.model.*;
+import com.anonymous.wall.repository.RefreshTokenRepository;
 import com.anonymous.wall.service.AuthService;
 import com.anonymous.wall.service.JwtTokenService;
 import com.anonymous.wall.service.UserService;
@@ -17,6 +19,8 @@ import jakarta.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -36,6 +40,9 @@ public class AuthController {
 
     @Inject
     private JwtTokenService jwtTokenService;
+
+    @Inject
+    private RefreshTokenRepository refreshTokenRepository;
 
     /**
      * POST /auth/email/send-code
@@ -89,12 +96,21 @@ public class AuthController {
             log.info("POST /auth/register/email - Registering new user with email: {}", request.getEmail());
 
             UserEntity user = authService.registerWithEmail(request);
-            String token = jwtTokenService.generateToken(user);
+            String accessToken = jwtTokenService.generateToken(user);
+            String rawRefreshToken = jwtTokenService.generateRefreshToken();
+
+            RefreshToken refreshTokenEntity = new RefreshToken();
+            refreshTokenEntity.setId(UUID.randomUUID());
+            refreshTokenEntity.setUserId(user.getId());
+            refreshTokenEntity.setTokenHash(jwtTokenService.hashToken(rawRefreshToken));
+            refreshTokenEntity.setExpiresAt(Instant.now().plus(30, ChronoUnit.DAYS));
+            refreshTokenRepository.save(refreshTokenEntity);
 
             log.info("POST /auth/register/email - User registered successfully, userId={}", user.getId());
             return HttpResponse.created(success(
                 userMapper.toDTO(user),
-                token
+                accessToken,
+                rawRefreshToken
             ));
         } catch (IllegalArgumentException e) {
             log.warn("POST /auth/register/email - Registration failed: {}", e.getMessage());
@@ -119,12 +135,21 @@ public class AuthController {
             log.info("POST /auth/login/email - Login attempt with email: {}", request.getEmail());
 
             UserEntity user = authService.loginWithEmail(request);
-            String token = jwtTokenService.generateToken(user);
+            String accessToken = jwtTokenService.generateToken(user);
+            String rawRefreshToken = jwtTokenService.generateRefreshToken();
+
+            RefreshToken refreshTokenEntity = new RefreshToken();
+            refreshTokenEntity.setId(UUID.randomUUID());
+            refreshTokenEntity.setUserId(user.getId());
+            refreshTokenEntity.setTokenHash(jwtTokenService.hashToken(rawRefreshToken));
+            refreshTokenEntity.setExpiresAt(Instant.now().plus(30, ChronoUnit.DAYS));
+            refreshTokenRepository.save(refreshTokenEntity);
 
             log.info("POST /auth/login/email - User logged in successfully, userId={}", user.getId());
             return HttpResponse.ok(success(
                 userMapper.toDTO(user),
-                token
+                accessToken,
+                rawRefreshToken
             ));
         } catch (IllegalArgumentException e) {
             log.warn("POST /auth/login/email - Login failed: {}", e.getMessage());
@@ -146,12 +171,21 @@ public class AuthController {
             log.info("POST /auth/login/password - Login attempt with email: {}", request.getEmail());
 
             UserEntity user = authService.loginWithPassword(request);
-            String token = jwtTokenService.generateToken(user);
+            String accessToken = jwtTokenService.generateToken(user);
+            String rawRefreshToken = jwtTokenService.generateRefreshToken();
+
+            RefreshToken refreshTokenEntity = new RefreshToken();
+            refreshTokenEntity.setId(UUID.randomUUID());
+            refreshTokenEntity.setUserId(user.getId());
+            refreshTokenEntity.setTokenHash(jwtTokenService.hashToken(rawRefreshToken));
+            refreshTokenEntity.setExpiresAt(Instant.now().plus(30, ChronoUnit.DAYS));
+            refreshTokenRepository.save(refreshTokenEntity);
 
             log.info("POST /auth/login/password - User logged in successfully, userId={}", user.getId());
             return HttpResponse.ok(success(
                 userMapper.toDTO(user),
-                token
+                accessToken,
+                rawRefreshToken
             ));
         } catch (IllegalArgumentException e) {
             log.warn("POST /auth/login/password - Login failed: {}", e.getMessage());
@@ -282,12 +316,21 @@ public class AuthController {
             log.info("POST /auth/password/reset - Resetting password");
 
             UserEntity user = authService.resetPassword(request);
-            String token = jwtTokenService.generateToken(user);
+            String accessToken = jwtTokenService.generateToken(user);
+            String rawRefreshToken = jwtTokenService.generateRefreshToken();
+
+            RefreshToken refreshTokenEntity = new RefreshToken();
+            refreshTokenEntity.setId(UUID.randomUUID());
+            refreshTokenEntity.setUserId(user.getId());
+            refreshTokenEntity.setTokenHash(jwtTokenService.hashToken(rawRefreshToken));
+            refreshTokenEntity.setExpiresAt(Instant.now().plus(30, ChronoUnit.DAYS));
+            refreshTokenRepository.save(refreshTokenEntity);
 
             log.info("POST /auth/password/reset - Password reset successfully, userId={}", user.getId());
             return HttpResponse.ok(success(
                 userMapper.toDTO(user),
-                token
+                accessToken,
+                rawRefreshToken
             ));
         } catch (IllegalArgumentException e) {
             log.warn("POST /auth/password/reset - Invalid request: {}", e.getMessage());
@@ -304,8 +347,76 @@ public class AuthController {
         return new ErrorResponse(message);
     }
 
-    private AuthSuccessResponse success(UserDTO user, String token) {
-        return new AuthSuccessResponse(token, user);
+    private AuthSuccessResponse success(UserDTO user, String accessToken, String refreshToken) {
+        return new AuthSuccessResponse(accessToken, refreshToken, user);
+    }
+
+    /**
+     * POST /auth/refresh
+     * Exchange a refresh token for a new token pair (token rotation)
+     */
+    @Post("/refresh")
+    @Secured(SecurityRule.IS_ANONYMOUS)
+    public HttpResponse<?> refresh(@Body RefreshRequest request) {
+        if (request.getRefreshToken() == null || request.getRefreshToken().isBlank()) {
+            return HttpResponse.badRequest(error("Refresh token is required"));
+        }
+
+        String tokenHash = jwtTokenService.hashToken(request.getRefreshToken());
+        Optional<RefreshToken> stored = refreshTokenRepository.findByTokenHashAndRevokedFalse(tokenHash);
+
+        if (stored.isEmpty() || stored.get().getExpiresAt().isBefore(Instant.now())) {
+            return HttpResponse.unauthorized();
+        }
+
+        RefreshToken existing = stored.get();
+        Optional<UserEntity> userOpt = userService.findById(existing.getUserId());
+        if (userOpt.isEmpty()) {
+            return HttpResponse.unauthorized();
+        }
+
+        UserEntity user = userOpt.get();
+        if (user.isBlocked()) {
+            return HttpResponse.status(io.micronaut.http.HttpStatus.FORBIDDEN)
+                    .body(error("Access denied. Your account has been blocked."));
+        }
+
+        // Rotate — revoke old token, issue new pair
+        existing.setRevoked(true);
+        refreshTokenRepository.update(existing);
+
+        String newAccessToken = jwtTokenService.generateToken(user);
+        String newRawRefreshToken = jwtTokenService.generateRefreshToken();
+
+        RefreshToken newRefreshToken = new RefreshToken();
+        newRefreshToken.setId(UUID.randomUUID());
+        newRefreshToken.setUserId(user.getId());
+        newRefreshToken.setTokenHash(jwtTokenService.hashToken(newRawRefreshToken));
+        newRefreshToken.setExpiresAt(Instant.now().plus(30, ChronoUnit.DAYS));
+        refreshTokenRepository.save(newRefreshToken);
+
+        log.info("POST /auth/refresh - Refresh token rotated for userId={}", user.getId());
+
+        return HttpResponse.ok(new AuthSuccessResponse(newAccessToken, newRawRefreshToken, null));
+    }
+
+    /**
+     * POST /auth/logout
+     * Revoke all refresh tokens for the authenticated user
+     */
+    @Post("/logout")
+    @Secured(SecurityRule.IS_AUTHENTICATED)
+    public HttpResponse<?> logout(io.micronaut.http.HttpRequest<?> httpRequest) {
+        Optional<java.security.Principal> principalOpt = httpRequest.getUserPrincipal();
+        if (principalOpt.isEmpty()) {
+            return HttpResponse.unauthorized();
+        }
+
+        UUID userId = UUID.fromString(principalOpt.get().getName());
+        refreshTokenRepository.updateRevokedByUserId(true, userId);
+
+        log.info("POST /auth/logout - Refresh tokens revoked for userId={}", userId);
+        return HttpResponse.ok(new MessageResponse("Logged out successfully"));
     }
 
     // -------- Response DTOs --------
@@ -349,11 +460,13 @@ public class AuthController {
     @Serdeable
     public static class AuthSuccessResponse {
         private String accessToken;
+        private String refreshToken;
         private UserDTO user;
 
         public AuthSuccessResponse() {}
-        public AuthSuccessResponse(String accessToken, UserDTO user) {
+        public AuthSuccessResponse(String accessToken, String refreshToken, UserDTO user) {
             this.accessToken = accessToken;
+            this.refreshToken = refreshToken;
             this.user = user;
         }
 
@@ -363,6 +476,14 @@ public class AuthController {
 
         public void setAccessToken(String accessToken) {
             this.accessToken = accessToken;
+        }
+
+        public String getRefreshToken() {
+            return refreshToken;
+        }
+
+        public void setRefreshToken(String refreshToken) {
+            this.refreshToken = refreshToken;
         }
 
         public UserDTO getUser() {
