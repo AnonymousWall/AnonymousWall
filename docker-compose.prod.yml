@@ -44,7 +44,6 @@ services:
       # OCI bucket configuration for file storage (optional)
       - OCI_NAMESPACE=${OCI_NAMESPACE}
       - MEDIA_BUCKET_NAME=${MEDIA_BUCKET_NAME}
-      - MEDIA_BUCKET_URL=${MEDIA_BUCKET_URL}
 
       # APNs configuration
       - APNS_TEAM_ID=${APNS_TEAM_ID}
