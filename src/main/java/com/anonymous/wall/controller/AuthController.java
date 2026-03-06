@@ -97,14 +97,7 @@ public class AuthController {
 
             UserEntity user = authService.registerWithEmail(request);
             String accessToken = jwtTokenService.generateToken(user);
-            String rawRefreshToken = jwtTokenService.generateRefreshToken();
-
-            RefreshToken refreshTokenEntity = new RefreshToken();
-            refreshTokenEntity.setId(UUID.randomUUID());
-            refreshTokenEntity.setUserId(user.getId());
-            refreshTokenEntity.setTokenHash(jwtTokenService.hashToken(rawRefreshToken));
-            refreshTokenEntity.setExpiresAt(Instant.now().plus(30, ChronoUnit.DAYS));
-            refreshTokenRepository.save(refreshTokenEntity);
+            String rawRefreshToken = issueRefreshToken(user.getId());
 
             log.info("POST /auth/register/email - User registered successfully, userId={}", user.getId());
             return HttpResponse.created(success(
@@ -136,14 +129,7 @@ public class AuthController {
 
             UserEntity user = authService.loginWithEmail(request);
             String accessToken = jwtTokenService.generateToken(user);
-            String rawRefreshToken = jwtTokenService.generateRefreshToken();
-
-            RefreshToken refreshTokenEntity = new RefreshToken();
-            refreshTokenEntity.setId(UUID.randomUUID());
-            refreshTokenEntity.setUserId(user.getId());
-            refreshTokenEntity.setTokenHash(jwtTokenService.hashToken(rawRefreshToken));
-            refreshTokenEntity.setExpiresAt(Instant.now().plus(30, ChronoUnit.DAYS));
-            refreshTokenRepository.save(refreshTokenEntity);
+            String rawRefreshToken = issueRefreshToken(user.getId());
 
             log.info("POST /auth/login/email - User logged in successfully, userId={}", user.getId());
             return HttpResponse.ok(success(
@@ -172,14 +158,7 @@ public class AuthController {
 
             UserEntity user = authService.loginWithPassword(request);
             String accessToken = jwtTokenService.generateToken(user);
-            String rawRefreshToken = jwtTokenService.generateRefreshToken();
-
-            RefreshToken refreshTokenEntity = new RefreshToken();
-            refreshTokenEntity.setId(UUID.randomUUID());
-            refreshTokenEntity.setUserId(user.getId());
-            refreshTokenEntity.setTokenHash(jwtTokenService.hashToken(rawRefreshToken));
-            refreshTokenEntity.setExpiresAt(Instant.now().plus(30, ChronoUnit.DAYS));
-            refreshTokenRepository.save(refreshTokenEntity);
+            String rawRefreshToken = issueRefreshToken(user.getId());
 
             log.info("POST /auth/login/password - User logged in successfully, userId={}", user.getId());
             return HttpResponse.ok(success(
@@ -317,14 +296,7 @@ public class AuthController {
 
             UserEntity user = authService.resetPassword(request);
             String accessToken = jwtTokenService.generateToken(user);
-            String rawRefreshToken = jwtTokenService.generateRefreshToken();
-
-            RefreshToken refreshTokenEntity = new RefreshToken();
-            refreshTokenEntity.setId(UUID.randomUUID());
-            refreshTokenEntity.setUserId(user.getId());
-            refreshTokenEntity.setTokenHash(jwtTokenService.hashToken(rawRefreshToken));
-            refreshTokenEntity.setExpiresAt(Instant.now().plus(30, ChronoUnit.DAYS));
-            refreshTokenRepository.save(refreshTokenEntity);
+            String rawRefreshToken = issueRefreshToken(user.getId());
 
             log.info("POST /auth/password/reset - Password reset successfully, userId={}", user.getId());
             return HttpResponse.ok(success(
@@ -349,6 +321,17 @@ public class AuthController {
 
     private AuthSuccessResponse success(UserDTO user, String accessToken, String refreshToken) {
         return new AuthSuccessResponse(accessToken, refreshToken, user);
+    }
+
+    private String issueRefreshToken(UUID userId) {
+        String rawRefreshToken = jwtTokenService.generateRefreshToken();
+        RefreshToken refreshTokenEntity = new RefreshToken();
+        refreshTokenEntity.setId(UUID.randomUUID());
+        refreshTokenEntity.setUserId(userId);
+        refreshTokenEntity.setTokenHash(jwtTokenService.hashToken(rawRefreshToken));
+        refreshTokenEntity.setExpiresAt(Instant.now().plus(30, ChronoUnit.DAYS));
+        refreshTokenRepository.save(refreshTokenEntity);
+        return rawRefreshToken;
     }
 
     /**
@@ -386,14 +369,7 @@ public class AuthController {
         refreshTokenRepository.update(existing);
 
         String newAccessToken = jwtTokenService.generateToken(user);
-        String newRawRefreshToken = jwtTokenService.generateRefreshToken();
-
-        RefreshToken newRefreshToken = new RefreshToken();
-        newRefreshToken.setId(UUID.randomUUID());
-        newRefreshToken.setUserId(user.getId());
-        newRefreshToken.setTokenHash(jwtTokenService.hashToken(newRawRefreshToken));
-        newRefreshToken.setExpiresAt(Instant.now().plus(30, ChronoUnit.DAYS));
-        refreshTokenRepository.save(newRefreshToken);
+        String newRawRefreshToken = issueRefreshToken(user.getId());
 
         log.info("POST /auth/refresh - Refresh token rotated for userId={}", user.getId());
 

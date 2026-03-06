@@ -261,19 +261,6 @@ paths:
                   accessToken:
                     type: string
                     description: JWT access token for authenticated requests
-                  user:
-                    $ref: "#/components/schemas/UserDTO"
-      responses:
-        "200":
-          description: Password reset successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  accessToken:
-                    type: string
-                    description: JWT access token for authenticated requests
                   refreshToken:
                     type: string
                     description: Refresh token for obtaining new access tokens
