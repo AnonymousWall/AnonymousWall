@@ -12,10 +12,11 @@ A Micronaut-based REST API for anonymous campus social networking. Users registe
 4. [Technology Stack](#technology-stack)
 5. [Database Schema](#database-schema)
 6. [API Documentation](#api-documentation)
-7. [Admin API Documentation](#admin-api-documentation)
-8. [Authentication & Authorization](#authentication--authorization)
-9. [Setup & Running](#setup--running)
-10. [Known Flaws & Limitations](#known-flaws--limitations)
+7. [Media Endpoints](#media-endpoints)
+8. [Admin API Documentation](#admin-api-documentation)
+9. [Authentication & Authorization](#authentication--authorization)
+10. [Setup & Running](#setup--running)
+11. [Known Flaws & Limitations](#known-flaws--limitations)
 
 ---
 
@@ -605,7 +606,7 @@ Response: 201 Created
     "likes": 0,
     "comments": 0,
     "liked": false,
-    "imageUrls": ["http://localhost:8080/media/posts/uuid1.jpg", "http://localhost:8080/media/posts/uuid2.jpg"],
+    "imageUrls": ["posts/uuid1.jpg", "posts/uuid2.jpg"],
     "author": {
         "id": "uuid",
         "profileName": "Anonymous",
@@ -1376,7 +1377,7 @@ Response: 201 Created
     "condition": "like-new",
     "wall": "CAMPUS",
     "comments": 0,
-    "imageUrls": ["http://localhost:8080/media/marketplace/uuid1.jpg"],
+    "imageUrls": ["marketplace/uuid1.jpg"],
     "author": {
         "id": "uuid",
         "profileName": "John Doe",
@@ -2113,6 +2114,54 @@ Response: 404 Not Found  (if notification does not exist)
 
 ---
 
+## Media Endpoints
+
+The OCI Object Storage bucket is **private**. All stored image values (e.g. `posts/uuid.jpg`,
+`chat/uuid.png`, `marketplace/uuid.webp`) are **object names**, not public URLs. Use the media
+proxy below to fetch them. Active only in the `prod` environment.
+
+All media endpoints require authentication (`Authorization: Bearer {jwt-token}`).
+
+#### 1. Fetch Media Object
+```http
+GET /api/v1/media/{objectName}
+Authorization: Bearer {jwt-token}
+
+Response: 200 OK
+Content-Type: image/jpeg  (or image/png / image/webp depending on the object)
+<binary image data>
+
+Response: 401 Unauthorized  (missing or invalid token)
+Response: 404 Not Found     (object does not exist in the bucket)
+```
+
+**Path parameter:**
+- `objectName` — full object path stored in the database, including the prefix and extension, e.g.:
+  - `posts/550e8400-e29b-41d4-a716-446655440000.jpg`
+  - `chat/550e8400-e29b-41d4-a716-446655440001.png`
+  - `marketplace/550e8400-e29b-41d4-a716-446655440002.webp`
+
+**How to use `imageUrls` from API responses:**
+
+API endpoints that return images (posts, marketplace, chat) now store the object name.
+To display an image, append the object name to the media endpoint base path:
+
+```
+GET /api/v1/media/<value from imageUrls or imageUrl field>
+```
+
+For example, if a post response contains:
+```json
+{ "imageUrls": ["posts/uuid.jpg"] }
+```
+Fetch the image with:
+```http
+GET /api/v1/media/posts/uuid.jpg
+Authorization: Bearer {jwt-token}
+```
+
+---
+
 ## Push Notifications
 
 The backend sends APNs push notifications to iOS devices for the following events:
@@ -2188,7 +2237,7 @@ Form field: image (JPEG, PNG, or WEBP, max 5MB)
 
 Response: 201 Created
 {
-  "url": "https://storage.example.com/chat/image.jpg"
+  "url": "chat/uuid.jpg"
 }
 ```
 
@@ -2205,7 +2254,7 @@ Content-Type: application/json
 {
   "receiverId": "uuid-of-receiver",
   "content": "Hello! This is a test message.",
-  "imageUrl": "https://storage.example.com/chat/image.jpg"
+  "imageUrl": "chat/uuid.jpg"
 }
 
 Response: 201 Created
@@ -2214,7 +2263,7 @@ Response: 201 Created
   "senderId": "sender-uuid",
   "receiverId": "receiver-uuid",
   "content": "Hello! This is a test message.",
-  "imageUrl": "https://storage.example.com/chat/image.jpg",
+  "imageUrl": "chat/uuid.jpg",
   "readStatus": false,
   "createdAt": "2026-02-14T08:00:00Z"
 }
@@ -3057,8 +3106,8 @@ Response: 200 OK
 {
     "postId": "uuid",
     "imageUrls": [
-        "http://example.com/media/posts/uuid1.jpg",
-        "http://example.com/media/posts/uuid2.png"
+        "posts/uuid1.jpg",
+        "posts/uuid2.png"
     ]
 }
 ```
@@ -3407,8 +3456,8 @@ Response: 200 OK
 {
     "marketplaceItemId": "uuid",
     "imageUrls": [
-        "http://example.com/media/marketplace/uuid1.jpg",
-        "http://example.com/media/marketplace/uuid2.png"
+        "marketplace/uuid1.jpg",
+        "marketplace/uuid2.png"
     ]
 }
 ```
@@ -3666,6 +3715,10 @@ export DATABASE_PASSWORD="prod_password"
 
 # Required - Redis connection
 export REDIS_URI="redis://redis-host:6379"
+
+# Required - OCI Object Storage (private bucket for media uploads)
+export OCI_NAMESPACE="your-oci-namespace"
+export MEDIA_BUCKET_NAME="your-media-bucket-name"
 
 # Optional - APNs push notifications (iOS)
 export APNS_TEAM_ID="XXXXXXXXXX"
