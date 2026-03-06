@@ -62,7 +62,7 @@ public class MediaController {
                     .bucketName(bucketName)
                     .objectName(objectName)
                     .build();
-
+            log.info("Fetching media object: {}", objectName);
             GetObjectResponse response = objectStorageClient.getObject(request);
 
             String contentType = response.getContentType() != null
@@ -71,7 +71,7 @@ public class MediaController {
 
             return HttpResponse.ok(
                     new StreamedFile(response.getInputStream(), MediaType.of(contentType))
-            );
+            ).header("Cache-Control", "private, max-age=86400"); // cache for 24 hours
 
         } catch (Exception e) {
             log.warn("Failed to fetch media object '{}': {}", objectName, e.getMessage());
