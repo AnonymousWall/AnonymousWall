@@ -813,11 +813,6 @@
 
     <!-- ================= Refresh Tokens ================= -->
     <changeSet id="24-create-refresh-tokens-table" author="copilot">
-        <preConditions onFail="MARK_RAN">
-            <not>
-                <tableExists tableName="refresh_tokens"/>
-            </not>
-        </preConditions>
         <createTable tableName="refresh_tokens">
             <column name="id" type="CHAR(36)">
                 <constraints primaryKey="true" nullable="false"/>
