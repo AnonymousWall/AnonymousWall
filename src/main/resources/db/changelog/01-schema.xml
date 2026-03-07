@@ -842,10 +842,6 @@
             constraintName="fk_refresh_tokens_user_id"
             onDelete="CASCADE"/>
 
-        <createIndex tableName="refresh_tokens" indexName="idx_refresh_token_hash">
-            <column name="token_hash"/>
-        </createIndex>
-
         <createIndex tableName="refresh_tokens" indexName="idx_refresh_token_user_id">
             <column name="user_id"/>
         </createIndex>
