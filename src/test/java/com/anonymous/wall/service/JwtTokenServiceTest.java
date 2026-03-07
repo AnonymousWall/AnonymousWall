@@ -323,4 +323,79 @@ class JwtTokenServiceTest {
             assertFalse(token.isEmpty());
         }
     }
+
+    @Nested
+    @DisplayName("Refresh Token Method Tests")
+    class RefreshTokenMethodTests {
+
+        @Test
+        @DisplayName("Should generate a non-null and non-empty refresh token")
+        void shouldGenerateNonEmptyRefreshToken() {
+            String token = jwtTokenService.generateRefreshToken();
+            assertNotNull(token, "Refresh token should not be null");
+            assertFalse(token.isEmpty(), "Refresh token should not be empty");
+        }
+
+        @Test
+        @DisplayName("Should generate unique refresh tokens each time")
+        void shouldGenerateUniqueRefreshTokens() {
+            String token1 = jwtTokenService.generateRefreshToken();
+            String token2 = jwtTokenService.generateRefreshToken();
+            assertNotEquals(token1, token2, "Each call should produce a unique refresh token");
+        }
+
+        @Test
+        @DisplayName("Should generate URL-safe base64 refresh token of expected length")
+        void shouldGenerateRefreshTokenOfExpectedLength() {
+            String token = jwtTokenService.generateRefreshToken();
+            // 32 bytes base64url-encoded without padding = 43 characters
+            assertEquals(43, token.length(), "Refresh token should be 43 characters (32 bytes base64url without padding)");
+            // URL-safe base64 characters only (no +, /, or =)
+            assertTrue(token.matches("[A-Za-z0-9_-]+"), "Refresh token should be URL-safe base64");
+        }
+
+        @Test
+        @DisplayName("Should hash token consistently — same input produces same output")
+        void shouldHashTokenConsistently() {
+            String rawToken = "test-raw-refresh-token-value";
+            String hash1 = jwtTokenService.hashToken(rawToken);
+            String hash2 = jwtTokenService.hashToken(rawToken);
+            assertEquals(hash1, hash2, "Same input should always produce the same hash");
+        }
+
+        @Test
+        @DisplayName("Should produce different hashes for different inputs")
+        void shouldProduceDifferentHashesForDifferentInputs() {
+            String hash1 = jwtTokenService.hashToken("token-alpha");
+            String hash2 = jwtTokenService.hashToken("token-beta");
+            assertNotEquals(hash1, hash2, "Different inputs must produce different hashes");
+        }
+
+        @Test
+        @DisplayName("Should produce non-null and non-empty hash")
+        void shouldProduceNonEmptyHash() {
+            String hash = jwtTokenService.hashToken("some-refresh-token");
+            assertNotNull(hash, "Hash should not be null");
+            assertFalse(hash.isEmpty(), "Hash should not be empty");
+        }
+
+        @Test
+        @DisplayName("Hash should differ from the raw token")
+        void hashShouldDifferFromRawToken() {
+            String rawToken = jwtTokenService.generateRefreshToken();
+            String hash = jwtTokenService.hashToken(rawToken);
+            assertNotEquals(rawToken, hash, "Hash must not equal the raw token");
+        }
+
+        @Test
+        @DisplayName("Should hash a generated refresh token without error")
+        void shouldHashGeneratedRefreshToken() {
+            String rawToken = jwtTokenService.generateRefreshToken();
+            String hash = jwtTokenService.hashToken(rawToken);
+            assertNotNull(hash);
+            assertFalse(hash.isEmpty());
+            // SHA-256 base64url without padding is always 43 characters
+            assertEquals(43, hash.length(), "SHA-256 base64url hash should be 43 characters");
+        }
+    }
 }
