@@ -19,8 +19,7 @@ import jakarta.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
+import java.time.OffsetDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -326,10 +325,9 @@ public class AuthController {
     private String issueRefreshToken(UUID userId) {
         String rawRefreshToken = jwtTokenService.generateRefreshToken();
         RefreshToken refreshTokenEntity = new RefreshToken();
-        refreshTokenEntity.setId(UUID.randomUUID());
         refreshTokenEntity.setUserId(userId);
         refreshTokenEntity.setTokenHash(jwtTokenService.hashToken(rawRefreshToken));
-        refreshTokenEntity.setExpiresAt(Instant.now().plus(30, ChronoUnit.DAYS));
+        refreshTokenEntity.setExpiresAt(OffsetDateTime.now().plusDays(30));
         refreshTokenRepository.save(refreshTokenEntity);
         return rawRefreshToken;
     }
@@ -348,7 +346,7 @@ public class AuthController {
         String tokenHash = jwtTokenService.hashToken(request.getRefreshToken());
         Optional<RefreshToken> stored = refreshTokenRepository.findByTokenHashAndRevokedFalse(tokenHash);
 
-        if (stored.isEmpty() || stored.get().getExpiresAt().isBefore(Instant.now())) {
+        if (stored.isEmpty() || stored.get().getExpiresAt().isBefore(OffsetDateTime.now())) {
             return HttpResponse.unauthorized();
         }
 
