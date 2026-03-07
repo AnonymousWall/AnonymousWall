@@ -34,7 +34,7 @@ public class JwtTokenService {
 
     /**
      * Generate JWT token for a user
-     * Token expires in 24 hours
+     * Token expires in 15 minutes
      */
     public String generateToken(UserEntity user) {
         if (user == null || user.getId() == null) {
@@ -61,8 +61,8 @@ public class JwtTokenService {
             // Create roles list from user role
             List<String> roles = Collections.singletonList(user.getRole());
 
-            // Convert 24 hours to seconds (86400 seconds)
-            Integer expirationSeconds = 86400;
+            // Convert 15 minutes to seconds (900 seconds)
+            Integer expirationSeconds = 900;
 
             Optional<String> token = tokenGenerator.generateToken(
                 Authentication.build(user.getId().toString(), roles, claims),
@@ -83,7 +83,7 @@ public class JwtTokenService {
 
     /**
      * Generate JWT token for a user with custom claims
-     * Token expires in 24 hours
+     * Token expires in 15 minutes
      */
     public String generateToken(UserEntity user, Map<String, Object> customClaims) {
         if (user == null || user.getId() == null) {
@@ -115,8 +115,8 @@ public class JwtTokenService {
             // Create roles list from user role
             List<String> roles = Collections.singletonList(user.getRole());
 
-            // Convert 24 hours to seconds (86400 seconds)
-            Integer expirationSeconds = 86400;
+            // Convert 15 minutes to seconds (900 seconds)
+            Integer expirationSeconds = 900;
 
             Optional<String> token = tokenGenerator.generateToken(
                 Authentication.build(user.getId().toString(), roles, claims),

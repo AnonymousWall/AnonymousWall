@@ -323,6 +323,7 @@ public class AuthController {
     }
 
     private String issueRefreshToken(UUID userId) {
+        refreshTokenRepository.updateRevokedByUserId(userId, true);
         String rawRefreshToken = jwtTokenService.generateRefreshToken();
         RefreshToken refreshTokenEntity = new RefreshToken();
         refreshTokenEntity.setUserId(userId);

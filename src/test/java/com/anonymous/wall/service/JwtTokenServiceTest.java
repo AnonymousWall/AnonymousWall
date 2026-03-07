@@ -220,8 +220,8 @@ class JwtTokenServiceTest {
     class TokenExpirationTests {
 
         @Test
-        @DisplayName("Should set token expiration to 24 hours")
-        void shouldSetTokenExpirationTo24Hours() throws Exception {
+        @DisplayName("Should set token expiration to 15 minutes")
+        void shouldSetTokenExpirationTo15Minutes() throws Exception {
             String token = jwtTokenService.generateToken(testUser);
 
             JWT jwt = JWTParser.parse(token);
@@ -229,8 +229,8 @@ class JwtTokenServiceTest {
             long expiresAt = jwt.getJWTClaimsSet().getExpirationTime().getTime() / 1000;
             long expirationDuration = expiresAt - issuedAt;
 
-            // 24 hours = 86400 seconds
-            assertEquals(86400, expirationDuration, "Token should expire in 24 hours (86400 seconds)");
+            // 15 minutes = 900 seconds
+            assertEquals(900, expirationDuration, "Token should expire in 15 minutes (900 seconds)");
         }
     }
 
