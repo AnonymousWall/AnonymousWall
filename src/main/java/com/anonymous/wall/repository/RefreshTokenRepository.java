@@ -13,5 +13,5 @@ public interface RefreshTokenRepository extends CrudRepository<RefreshToken, UUI
 
     Optional<RefreshToken> findByTokenHashAndRevokedFalse(String tokenHash);
 
-    void updateRevokedByUserId(boolean revoked, UUID userId);
+    void updateRevokedByUserId(UUID userId, boolean revoked);
 }

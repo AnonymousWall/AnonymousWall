@@ -389,7 +389,7 @@ public class AuthController {
         }
 
         UUID userId = UUID.fromString(principalOpt.get().getName());
-        refreshTokenRepository.updateRevokedByUserId(true, userId);
+        refreshTokenRepository.updateRevokedByUserId(userId, true);
 
         log.info("POST /auth/logout - Refresh tokens revoked for userId={}", userId);
         return HttpResponse.ok(new MessageResponse("Logged out successfully"));
