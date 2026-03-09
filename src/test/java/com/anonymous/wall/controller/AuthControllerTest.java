@@ -4,6 +4,7 @@ import com.anonymous.wall.entity.EmailVerificationCode;
 import com.anonymous.wall.entity.UserEntity;
 import com.anonymous.wall.model.*;
 import com.anonymous.wall.repository.EmailVerificationCodeRepository;
+import com.anonymous.wall.repository.RefreshTokenRepository;
 import com.anonymous.wall.repository.UserRepository;
 import com.anonymous.wall.service.JwtTokenService;
 import com.anonymous.wall.util.PasswordUtil;
@@ -18,6 +19,7 @@ import jakarta.inject.Inject;
 import org.junit.jupiter.api.*;
 
 import java.time.OffsetDateTime;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -41,6 +43,9 @@ class AuthControllerTest {
 
     @Inject
     private JwtTokenService jwtTokenService;
+
+    @Inject
+    private RefreshTokenRepository refreshTokenRepository;
 
     private static final String BASE_PATH = "/api/v1/auth";
 
@@ -288,6 +293,9 @@ class AuthControllerTest {
             Map<String, Object> body = response.body();
             assertNotNull(body);
             assertTrue(body.containsKey("accessToken"));
+            assertTrue(body.containsKey("refreshToken"), "Response should include refreshToken");
+            assertNotNull(body.get("refreshToken"), "refreshToken should not be null");
+            assertFalse(((String) body.get("refreshToken")).isEmpty(), "refreshToken should not be empty");
             assertTrue(body.containsKey("user"));
 
             // Verify user was created
@@ -510,6 +518,9 @@ class AuthControllerTest {
             Map<String, Object> body = response.body();
             assertNotNull(body);
             assertTrue(body.containsKey("accessToken"));
+            assertTrue(body.containsKey("refreshToken"), "Response should include refreshToken");
+            assertNotNull(body.get("refreshToken"), "refreshToken should not be null");
+            assertFalse(((String) body.get("refreshToken")).isEmpty(), "refreshToken should not be empty");
             assertTrue(body.containsKey("user"));
         }
 
@@ -703,6 +714,9 @@ class AuthControllerTest {
             Map<String, Object> body = response.body();
             assertNotNull(body);
             assertTrue(body.containsKey("accessToken"));
+            assertTrue(body.containsKey("refreshToken"), "Response should include refreshToken");
+            assertNotNull(body.get("refreshToken"), "refreshToken should not be null");
+            assertFalse(((String) body.get("refreshToken")).isEmpty(), "refreshToken should not be empty");
         }
 
         @Test
@@ -1213,6 +1227,9 @@ class AuthControllerTest {
             Map<String, Object> body = resetResponse.body();
             assertNotNull(body);
             assertTrue(body.containsKey("accessToken"));
+            assertTrue(body.containsKey("refreshToken"), "Password reset response should include refreshToken");
+            assertNotNull(body.get("refreshToken"), "refreshToken should not be null");
+            assertFalse(((String) body.get("refreshToken")).isEmpty(), "refreshToken should not be empty");
         }
 
         @Test
@@ -1277,6 +1294,242 @@ class AuthControllerTest {
         }
     }
 
+    @Nested
+    @DisplayName("Refresh Token Endpoint Tests")
+    class RefreshTokenEndpointTests {
+
+        @Test
+        @DisplayName("Positive: Should return new accessToken and refreshToken for valid refresh token")
+        void shouldReturnNewTokenPairWithValidRefreshToken() {
+            // Arrange: register user to get an initial refresh token
+            String email = "rf-valid" + System.currentTimeMillis() + "@harvard.edu";
+            Map<String, Object> registerBody = registerUserAndGetTokens(email, "123456");
+            String rawRefreshToken = (String) registerBody.get("refreshToken");
+            assertNotNull(rawRefreshToken);
+
+            Map<String, String> body = new HashMap<>();
+            body.put("refreshToken", rawRefreshToken);
+
+            // Act
+            HttpResponse<Map> response = client.toBlocking().exchange(
+                HttpRequest.POST(BASE_PATH + "/refresh", body),
+                Map.class
+            );
+
+            // Assert
+            assertEquals(HttpStatus.OK, response.getStatus());
+            @SuppressWarnings("unchecked")
+            Map<String, Object> responseBody = response.body();
+            assertNotNull(responseBody.get("accessToken"), "New accessToken should be present");
+            assertFalse(((String) responseBody.get("accessToken")).isEmpty());
+            assertNotNull(responseBody.get("refreshToken"), "New refreshToken should be present");
+            assertFalse(((String) responseBody.get("refreshToken")).isEmpty());
+        }
+
+        @Test
+        @DisplayName("Positive: New refresh token differs from original")
+        void newRefreshTokenShouldDifferFromOriginal() {
+            // Arrange
+            String email = "rf-diff" + System.currentTimeMillis() + "@harvard.edu";
+            Map<String, Object> registerBody = registerUserAndGetTokens(email, "234567");
+            String originalRefreshToken = (String) registerBody.get("refreshToken");
+
+            Map<String, String> body = new HashMap<>();
+            body.put("refreshToken", originalRefreshToken);
+
+            // Act
+            @SuppressWarnings("unchecked")
+            Map<String, Object> refreshBody = client.toBlocking().exchange(
+                HttpRequest.POST(BASE_PATH + "/refresh", body),
+                Map.class
+            ).body();
+
+            // Assert
+            String newRefreshToken = (String) refreshBody.get("refreshToken");
+            assertNotEquals(originalRefreshToken, newRefreshToken,
+                "Rotated refresh token must be different from the original");
+        }
+
+        @Test
+        @DisplayName("Positive: Token rotation — old token is revoked and returns 401 on reuse")
+        void oldRefreshTokenShouldBeRevokedAfterRotation() {
+            // Arrange: register to get refresh token
+            String email = "rf-rotate" + System.currentTimeMillis() + "@harvard.edu";
+            Map<String, Object> registerBody = registerUserAndGetTokens(email, "345678");
+            String oldRefreshToken = (String) registerBody.get("refreshToken");
+
+            // Act: use the refresh token once (rotation)
+            Map<String, String> body = new HashMap<>();
+            body.put("refreshToken", oldRefreshToken);
+            client.toBlocking().exchange(
+                HttpRequest.POST(BASE_PATH + "/refresh", body),
+                Map.class
+            );
+
+            // Assert: reusing the old token must now return 401
+            HttpClientResponseException exception = assertThrows(
+                HttpClientResponseException.class,
+                () -> client.toBlocking().exchange(
+                    HttpRequest.POST(BASE_PATH + "/refresh", body),
+                    Map.class
+                )
+            );
+            assertEquals(HttpStatus.UNAUTHORIZED, exception.getStatus(),
+                "Revoked refresh token should be rejected with 401");
+        }
+
+        @Test
+        @DisplayName("Negative: Should return 400 when refreshToken field is missing")
+        void shouldReturn400WhenRefreshTokenMissing() {
+            Map<String, String> body = new HashMap<>();
+            // intentionally omit "refreshToken" key
+
+            HttpClientResponseException exception = assertThrows(
+                HttpClientResponseException.class,
+                () -> client.toBlocking().exchange(
+                    HttpRequest.POST(BASE_PATH + "/refresh", body),
+                    Map.class
+                )
+            );
+            assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
+        }
+
+        @Test
+        @DisplayName("Negative: Should return 400 when refreshToken is empty string")
+        void shouldReturn400ForEmptyRefreshToken() {
+            Map<String, String> body = new HashMap<>();
+            body.put("refreshToken", "");
+
+            HttpClientResponseException exception = assertThrows(
+                HttpClientResponseException.class,
+                () -> client.toBlocking().exchange(
+                    HttpRequest.POST(BASE_PATH + "/refresh", body),
+                    Map.class
+                )
+            );
+            assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
+        }
+
+        @Test
+        @DisplayName("Negative: Should return 401 for an unknown/invalid refresh token")
+        void shouldReturn401ForInvalidRefreshToken() {
+            Map<String, String> body = new HashMap<>();
+            body.put("refreshToken", "completely-invalid-token-that-was-never-issued");
+
+            HttpClientResponseException exception = assertThrows(
+                HttpClientResponseException.class,
+                () -> client.toBlocking().exchange(
+                    HttpRequest.POST(BASE_PATH + "/refresh", body),
+                    Map.class
+                )
+            );
+            assertEquals(HttpStatus.UNAUTHORIZED, exception.getStatus());
+        }
+
+        @Test
+        @DisplayName("Negative: Should return 403 when user is blocked")
+        void shouldReturn403ForBlockedUser() {
+            // Arrange: register user to get a refresh token
+            String email = "rf-blocked" + System.currentTimeMillis() + "@harvard.edu";
+            Map<String, Object> registerBody = registerUserAndGetTokens(email, "456789");
+            String rawRefreshToken = (String) registerBody.get("refreshToken");
+
+            // Block the user in the database
+            UserEntity user = userRepository.findByEmail(email).orElseThrow();
+            user.setBlocked(true);
+            userRepository.update(user);
+
+            Map<String, String> body = new HashMap<>();
+            body.put("refreshToken", rawRefreshToken);
+
+            // Act & Assert
+            HttpClientResponseException exception = assertThrows(
+                HttpClientResponseException.class,
+                () -> client.toBlocking().exchange(
+                    HttpRequest.POST(BASE_PATH + "/refresh", body),
+                    Map.class
+                )
+            );
+            assertEquals(HttpStatus.FORBIDDEN, exception.getStatus(),
+                "Blocked user should receive 403 on refresh attempt");
+        }
+    }
+
+    @Nested
+    @DisplayName("Logout Endpoint Tests")
+    class LogoutEndpointTests {
+
+        @Test
+        @DisplayName("Positive: Should logout and revoke all refresh tokens for the user")
+        void shouldLogoutAndRevokeAllRefreshTokens() {
+            // Arrange: register to get both tokens
+            String email = "logout-ok" + System.currentTimeMillis() + "@harvard.edu";
+            Map<String, Object> registerBody = registerUserAndGetTokens(email, "567890");
+
+            String accessToken = (String) registerBody.get("accessToken");
+            String rawRefreshToken = (String) registerBody.get("refreshToken");
+            assertNotNull(accessToken);
+            assertNotNull(rawRefreshToken);
+
+            // Act: logout
+            HttpResponse<?> logoutResponse = client.toBlocking().exchange(
+                HttpRequest.POST(BASE_PATH + "/logout", "")
+                    .header("Authorization", "Bearer " + accessToken)
+            );
+            assertEquals(HttpStatus.OK, logoutResponse.getStatus());
+
+            // Assert: the refresh token should now be revoked → 401
+            Map<String, String> refreshBody = new HashMap<>();
+            refreshBody.put("refreshToken", rawRefreshToken);
+
+            HttpClientResponseException exception = assertThrows(
+                HttpClientResponseException.class,
+                () -> client.toBlocking().exchange(
+                    HttpRequest.POST(BASE_PATH + "/refresh", refreshBody),
+                    Map.class
+                )
+            );
+            assertEquals(HttpStatus.UNAUTHORIZED, exception.getStatus(),
+                "Refresh token should be revoked after logout");
+        }
+
+        @Test
+        @DisplayName("Negative: Should return 401 when calling logout without authentication")
+        void shouldReturn401WithoutAuthenticationForLogout() {
+            HttpClientResponseException exception = assertThrows(
+                HttpClientResponseException.class,
+                () -> client.toBlocking().exchange(
+                    HttpRequest.POST(BASE_PATH + "/logout", ""),
+                    Map.class
+                )
+            );
+            assertEquals(HttpStatus.UNAUTHORIZED, exception.getStatus());
+        }
+
+        @Test
+        @DisplayName("Positive: Logout response body should contain success message")
+        void logoutResponseShouldContainSuccessMessage() {
+            // Arrange: register to get access token
+            String email = "logout-msg" + System.currentTimeMillis() + "@harvard.edu";
+            Map<String, Object> registerBody = registerUserAndGetTokens(email, "678901");
+            String accessToken = (String) registerBody.get("accessToken");
+
+            // Act
+            @SuppressWarnings("unchecked")
+            Map<String, Object> logoutBody = client.toBlocking().exchange(
+                HttpRequest.POST(BASE_PATH + "/logout", "")
+                    .header("Authorization", "Bearer " + accessToken),
+                Map.class
+            ).body();
+
+            // Assert
+            assertNotNull(logoutBody);
+            assertTrue(logoutBody.containsKey("message"), "Logout response should contain 'message' key");
+            assertEquals("Logged out successfully", logoutBody.get("message").toString(),
+                "Message should be 'Logged out successfully'");
+        }
+    }
+
     // Helper methods
     @SuppressWarnings("unused")
     private String getAnyCodeForEmail(String email) {
@@ -1293,5 +1546,22 @@ class AuthControllerTest {
             }
         }
         return null;
+    }
+
+    /**
+     * Registers a new user via the /register/email endpoint and returns the response body
+     * containing {@code accessToken}, {@code refreshToken}, and {@code user}.
+     */
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> registerUserAndGetTokens(String email, String code) {
+        EmailVerificationCode verificationCode = new EmailVerificationCode(
+            email, code, "register", OffsetDateTime.now().plusMinutes(15)
+        );
+        emailCodeRepository.save(verificationCode);
+
+        return client.toBlocking().exchange(
+            HttpRequest.POST(BASE_PATH + "/register/email", new RegisterEmailRequest(email, code)),
+            Map.class
+        ).body();
     }
 }
