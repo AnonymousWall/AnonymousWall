@@ -1,10 +1,11 @@
 package com.anonymous.wall.service;
 
 import com.anonymous.wall.entity.EmailVerificationCode;
+import com.anonymous.wall.entity.RefreshToken;
 import com.anonymous.wall.entity.UserEntity;
 import com.anonymous.wall.model.*;
 import com.anonymous.wall.repository.EmailVerificationCodeRepository;
-import com.anonymous.wall.util.EmailUtil;
+import com.anonymous.wall.repository.RefreshTokenRepository;
 import com.anonymous.wall.util.EmailUtilInterface;
 import com.anonymous.wall.util.PasswordUtil;
 import com.anonymous.wall.util.SchoolDomainWhitelist;
@@ -28,15 +29,19 @@ class AuthServiceImplTest {
     private AuthServiceImpl authService;
     private UserService userService;
     private EmailVerificationCodeRepository emailCodeRepository;
+    private RefreshTokenRepository refreshTokenRepository;
     private SchoolDomainService schoolDomainService;
     private EmailUtilInterface emailUtil;
+    private JwtTokenService jwtTokenService;
 
     @BeforeEach
     void setUp() {
         userService = mock(UserService.class);
         emailCodeRepository = mock(EmailVerificationCodeRepository.class);
+        refreshTokenRepository = mock(RefreshTokenRepository.class);
         schoolDomainService = mock(SchoolDomainService.class);
         emailUtil = mock(EmailUtilInterface.class); // mock it, don't instantiate EmailUtil directly
+        jwtTokenService = mock(JwtTokenService.class);
         
         // Setup school domain service mock to accept harvard.edu emails
         when(schoolDomainService.isDomainApproved(anyString())).thenReturn(false);
@@ -59,6 +64,14 @@ class AuthServiceImplTest {
             var emailUtilField = AuthServiceImpl.class.getDeclaredField("emailUtil"); // add this
             emailUtilField.setAccessible(true);
             emailUtilField.set(authService, emailUtil);
+
+            var jwtTokenServiceField = AuthServiceImpl.class.getDeclaredField("jwtTokenService");
+            jwtTokenServiceField.setAccessible(true);
+            jwtTokenServiceField.set(authService, jwtTokenService);
+
+            var refreshTokenRepositoryField = AuthServiceImpl.class.getDeclaredField("refreshTokenRepository");
+            refreshTokenRepositoryField.setAccessible(true);
+            refreshTokenRepositoryField.set(authService, refreshTokenRepository);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -839,6 +852,93 @@ class AuthServiceImplTest {
 
             assertTrue(savedCode.getExpiresAt().isBefore(afterTime));
             assertTrue(savedCode.getExpiresAt().isAfter(beforeTime.plusMinutes(14)));
+        }
+    }
+
+    @Nested
+    @DisplayName("Refresh Token Tests")
+    class RefreshTokenTests {
+
+        @Test
+        @DisplayName("Positive: Should issue refresh token and persist hashed token")
+        void shouldIssueRefreshToken() {
+            UUID userId = UUID.randomUUID();
+            String rawRefreshToken = "raw-refresh-token";
+            String tokenHash = "hashed-refresh-token";
+            OffsetDateTime before = OffsetDateTime.now();
+            ArgumentCaptor<RefreshToken> captor = ArgumentCaptor.forClass(RefreshToken.class);
+
+            when(jwtTokenService.generateRefreshToken()).thenReturn(rawRefreshToken);
+            when(jwtTokenService.hashToken(rawRefreshToken)).thenReturn(tokenHash);
+
+            String result = authService.issueRefreshToken(userId);
+
+            assertEquals(rawRefreshToken, result);
+            verify(refreshTokenRepository).updateRevokedByUserId(userId, true);
+            verify(refreshTokenRepository).save(captor.capture());
+
+            RefreshToken savedToken = captor.getValue();
+            assertEquals(userId, savedToken.getUserId());
+            assertEquals(tokenHash, savedToken.getTokenHash());
+            assertTrue(savedToken.getExpiresAt().isAfter(before.plusDays(29)));
+            assertTrue(savedToken.getExpiresAt().isBefore(before.plusDays(31)));
+        }
+
+        @Test
+        @DisplayName("Positive: Should return stored token when refresh token is valid")
+        void shouldFindValidRefreshToken() {
+            String rawRefreshToken = "raw-refresh-token";
+            String tokenHash = "hashed-refresh-token";
+            RefreshToken storedToken = new RefreshToken();
+            storedToken.setExpiresAt(OffsetDateTime.now().plusDays(1));
+
+            when(jwtTokenService.hashToken(rawRefreshToken)).thenReturn(tokenHash);
+            when(refreshTokenRepository.findByTokenHashAndRevokedFalse(tokenHash))
+                .thenReturn(Optional.of(storedToken));
+
+            Optional<RefreshToken> result = authService.findValidRefreshToken(rawRefreshToken);
+
+            assertTrue(result.isPresent());
+            assertSame(storedToken, result.get());
+        }
+
+        @Test
+        @DisplayName("Negative: Should return empty when refresh token is expired")
+        void shouldReturnEmptyForExpiredRefreshToken() {
+            String rawRefreshToken = "raw-refresh-token";
+            String tokenHash = "hashed-refresh-token";
+            RefreshToken storedToken = new RefreshToken();
+            storedToken.setExpiresAt(OffsetDateTime.now().minusMinutes(1));
+
+            when(jwtTokenService.hashToken(rawRefreshToken)).thenReturn(tokenHash);
+            when(refreshTokenRepository.findByTokenHashAndRevokedFalse(tokenHash))
+                .thenReturn(Optional.of(storedToken));
+
+            Optional<RefreshToken> result = authService.findValidRefreshToken(rawRefreshToken);
+
+            assertTrue(result.isEmpty());
+        }
+
+        @Test
+        @DisplayName("Positive: Should revoke a single refresh token")
+        void shouldRevokeRefreshToken() {
+            RefreshToken refreshToken = new RefreshToken();
+            refreshToken.setRevoked(false);
+
+            authService.revokeRefreshToken(refreshToken);
+
+            assertTrue(refreshToken.isRevoked());
+            verify(refreshTokenRepository).update(refreshToken);
+        }
+
+        @Test
+        @DisplayName("Positive: Should revoke all refresh tokens for user")
+        void shouldRevokeRefreshTokensForUser() {
+            UUID userId = UUID.randomUUID();
+
+            authService.revokeRefreshTokensForUser(userId);
+
+            verify(refreshTokenRepository).updateRevokedByUserId(userId, true);
         }
     }
 

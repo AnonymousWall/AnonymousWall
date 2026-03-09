@@ -4,7 +4,6 @@ import com.anonymous.wall.entity.RefreshToken;
 import com.anonymous.wall.entity.UserEntity;
 import com.anonymous.wall.mapper.UserMapper;
 import com.anonymous.wall.model.*;
-import com.anonymous.wall.repository.RefreshTokenRepository;
 import com.anonymous.wall.service.AuthService;
 import com.anonymous.wall.service.JwtTokenService;
 import com.anonymous.wall.service.UserService;
@@ -19,7 +18,6 @@ import jakarta.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.time.OffsetDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -39,9 +37,6 @@ public class AuthController {
 
     @Inject
     private JwtTokenService jwtTokenService;
-
-    @Inject
-    private RefreshTokenRepository refreshTokenRepository;
 
     /**
      * POST /auth/email/send-code
@@ -323,14 +318,7 @@ public class AuthController {
     }
 
     private String issueRefreshToken(UUID userId) {
-        refreshTokenRepository.updateRevokedByUserId(userId, true);
-        String rawRefreshToken = jwtTokenService.generateRefreshToken();
-        RefreshToken refreshTokenEntity = new RefreshToken();
-        refreshTokenEntity.setUserId(userId);
-        refreshTokenEntity.setTokenHash(jwtTokenService.hashToken(rawRefreshToken));
-        refreshTokenEntity.setExpiresAt(OffsetDateTime.now().plusDays(30));
-        refreshTokenRepository.save(refreshTokenEntity);
-        return rawRefreshToken;
+        return authService.issueRefreshToken(userId);
     }
 
     /**
@@ -344,10 +332,8 @@ public class AuthController {
             return HttpResponse.badRequest(error("Refresh token is required"));
         }
 
-        String tokenHash = jwtTokenService.hashToken(request.getRefreshToken());
-        Optional<RefreshToken> stored = refreshTokenRepository.findByTokenHashAndRevokedFalse(tokenHash);
-
-        if (stored.isEmpty() || stored.get().getExpiresAt().isBefore(OffsetDateTime.now())) {
+        Optional<RefreshToken> stored = authService.findValidRefreshToken(request.getRefreshToken());
+        if (stored.isEmpty()) {
             return HttpResponse.unauthorized();
         }
 
@@ -364,8 +350,7 @@ public class AuthController {
         }
 
         // Rotate — revoke old token, issue new pair
-        existing.setRevoked(true);
-        refreshTokenRepository.update(existing);
+        authService.revokeRefreshToken(existing);
 
         String newAccessToken = jwtTokenService.generateToken(user);
         String newRawRefreshToken = issueRefreshToken(user.getId());
@@ -388,7 +373,7 @@ public class AuthController {
         }
 
         UUID userId = UUID.fromString(principalOpt.get().getName());
-        refreshTokenRepository.updateRevokedByUserId(userId, true);
+        authService.revokeRefreshTokensForUser(userId);
 
         log.info("POST /auth/logout - Refresh tokens revoked for userId={}", userId);
         return HttpResponse.ok(new MessageResponse("Logged out successfully"));

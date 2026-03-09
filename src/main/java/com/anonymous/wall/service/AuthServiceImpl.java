@@ -1,9 +1,11 @@
 package com.anonymous.wall.service;
 
 import com.anonymous.wall.model.*;
+import com.anonymous.wall.entity.RefreshToken;
 import com.anonymous.wall.entity.UserEntity;
 import com.anonymous.wall.entity.EmailVerificationCode;
 import com.anonymous.wall.repository.EmailVerificationCodeRepository;
+import com.anonymous.wall.repository.RefreshTokenRepository;
 import com.anonymous.wall.util.PasswordUtil;
 import com.anonymous.wall.util.CodeGenerator;
 import com.anonymous.wall.util.EmailUtilInterface;
@@ -18,6 +20,7 @@ import org.slf4j.LoggerFactory;
 
 import java.time.OffsetDateTime;
 import java.util.Optional;
+import java.util.UUID;
 
 @Singleton
 public class AuthServiceImpl implements AuthService {
@@ -32,6 +35,12 @@ public class AuthServiceImpl implements AuthService {
 
     @Inject
     private EmailVerificationCodeRepository emailCodeRepository;
+
+    @Inject
+    private JwtTokenService jwtTokenService;
+
+    @Inject
+    private RefreshTokenRepository refreshTokenRepository;
 
     /**
      * Send verification code to email
@@ -360,5 +369,45 @@ public class AuthServiceImpl implements AuthService {
 
         log.info("Password reset successfully for user: email={}, userId={}", request.getEmail(), updated.getId());
         return updated;
+    }
+
+    @Override
+    @Transactional
+    public String issueRefreshToken(UUID userId) {
+        refreshTokenRepository.updateRevokedByUserId(userId, true);
+
+        String rawRefreshToken = jwtTokenService.generateRefreshToken();
+        RefreshToken refreshTokenEntity = new RefreshToken();
+        refreshTokenEntity.setUserId(userId);
+        refreshTokenEntity.setTokenHash(jwtTokenService.hashToken(rawRefreshToken));
+        refreshTokenEntity.setExpiresAt(OffsetDateTime.now().plusDays(30));
+        refreshTokenRepository.save(refreshTokenEntity);
+
+        return rawRefreshToken;
+    }
+
+    @Override
+    public Optional<RefreshToken> findValidRefreshToken(String rawRefreshToken) {
+        String tokenHash = jwtTokenService.hashToken(rawRefreshToken);
+        Optional<RefreshToken> stored = refreshTokenRepository.findByTokenHashAndRevokedFalse(tokenHash);
+
+        if (stored.isEmpty() || stored.get().getExpiresAt().isBefore(OffsetDateTime.now())) {
+            return Optional.empty();
+        }
+
+        return stored;
+    }
+
+    @Override
+    @Transactional
+    public void revokeRefreshToken(RefreshToken refreshToken) {
+        refreshToken.setRevoked(true);
+        refreshTokenRepository.update(refreshToken);
+    }
+
+    @Override
+    @Transactional
+    public void revokeRefreshTokensForUser(UUID userId) {
+        refreshTokenRepository.updateRevokedByUserId(userId, true);
     }
 }
