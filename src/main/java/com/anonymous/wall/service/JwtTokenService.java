@@ -1,6 +1,7 @@
 package com.anonymous.wall.service;
 
 import com.anonymous.wall.entity.UserEntity;
+import io.micronaut.context.annotation.Value;
 import io.micronaut.security.authentication.Authentication;
 import io.micronaut.security.token.jwt.generator.JwtTokenGenerator;
 import jakarta.inject.Inject;
@@ -28,6 +29,9 @@ import java.util.Optional;
 public class JwtTokenService {
     private static final Logger log = LoggerFactory.getLogger(JwtTokenService.class);
     private static final int REFRESH_TOKEN_BYTES = 32;
+
+    @Value("${micronaut.security.token.jwt.generator.access-token.expiration:900}")
+    private Integer accessTokenExpiration;
 
     @Inject
     private JwtTokenGenerator tokenGenerator;
@@ -62,7 +66,7 @@ public class JwtTokenService {
             List<String> roles = Collections.singletonList(user.getRole());
 
             // Convert 15 minutes to seconds (900 seconds)
-            Integer expirationSeconds = 900;
+            Integer expirationSeconds = accessTokenExpiration;
 
             Optional<String> token = tokenGenerator.generateToken(
                 Authentication.build(user.getId().toString(), roles, claims),
