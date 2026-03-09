@@ -4,6 +4,7 @@ import com.anonymous.wall.entity.UserBlock;
 import com.anonymous.wall.entity.UserEntity;
 import com.anonymous.wall.repository.UserBlockRepository;
 import com.anonymous.wall.repository.UserRepository;
+import com.anonymous.wall.service.impl.UserBlockServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;

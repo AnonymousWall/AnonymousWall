@@ -1,4 +1,4 @@
-package com.anonymous.wall.service;
+package com.anonymous.wall.service.impl;
 
 import com.anonymous.wall.entity.Internship;
 import com.anonymous.wall.entity.UserEntity;
@@ -7,6 +7,8 @@ import com.anonymous.wall.model.CreateInternshipRequest;
 import com.anonymous.wall.repository.CommentRepository;
 import com.anonymous.wall.repository.InternshipRepository;
 import com.anonymous.wall.repository.UserRepository;
+import com.anonymous.wall.service.base.InternshipService;
+import com.anonymous.wall.service.base.UserBlockService;
 import io.micronaut.context.event.ApplicationEventPublisher;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;

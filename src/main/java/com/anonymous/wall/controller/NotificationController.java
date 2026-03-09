@@ -3,7 +3,7 @@ package com.anonymous.wall.controller;
 import com.anonymous.wall.model.NotificationDTO;
 import com.anonymous.wall.model.NotificationDTOType;
 import com.anonymous.wall.entity.NotificationEntity;
-import com.anonymous.wall.service.NotificationService;
+import com.anonymous.wall.service.retry.NotificationRetryService;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
 import io.micronaut.http.HttpRequest;
@@ -29,7 +29,7 @@ public class NotificationController {
     private static final Logger log = LoggerFactory.getLogger(NotificationController.class);
 
     @Inject
-    private NotificationService notificationService;
+    private NotificationRetryService notificationRetryService;
 
     private UUID getUserIdFromRequest(HttpRequest<?> request) {
         Optional<Principal> principalOpt = request.getUserPrincipal();
@@ -58,7 +58,7 @@ public class NotificationController {
             log.info("GET /notifications - user={}, page={}, size={}", userId, page, size);
 
             Pageable pageable = Pageable.from(page - 1, size);
-            Page<NotificationEntity> notificationsPage = notificationService.getNotifications(userId, pageable);
+            Page<NotificationEntity> notificationsPage = notificationRetryService.getNotifications(userId, pageable);
 
             Map<String, Object> result = new HashMap<>();
             result.put("content", notificationsPage.getContent().stream()
@@ -86,7 +86,7 @@ public class NotificationController {
             UUID userId = getUserIdFromRequest(request);
             log.info("GET /notifications/unread-count - user={}", userId);
 
-            long count = notificationService.getUnreadCount(userId);
+            long count = notificationRetryService.getUnreadCount(userId);
 
             Map<String, Long> result = new HashMap<>();
             result.put("count", count);
@@ -108,7 +108,7 @@ public class NotificationController {
             UUID userId = getUserIdFromRequest(request);
             log.info("POST /notifications/mark-all-read - user={}", userId);
 
-            notificationService.markAllRead(userId);
+            notificationRetryService.markAllRead(userId);
 
             return HttpResponse.ok();
         } catch (Exception e) {
@@ -127,7 +127,7 @@ public class NotificationController {
             UUID userId = getUserIdFromRequest(request);
             log.info("POST /notifications/{}/read - user={}", id, userId);
 
-            notificationService.markRead(id, userId);
+            notificationRetryService.markRead(id, userId);
 
             return HttpResponse.ok();
         } catch (HttpStatusException e) {

@@ -1,24 +1,24 @@
-package com.anonymous.wall.service;
+package com.anonymous.wall.service.impl;
 
 import com.anonymous.wall.entity.Post;
-import com.anonymous.wall.entity.Comment;
 import com.anonymous.wall.entity.PostLike;
 import com.anonymous.wall.entity.UserEntity;
 import com.anonymous.wall.event.PostHiddenEvent;
 import com.anonymous.wall.model.CreatePostRequest;
-import com.anonymous.wall.model.CreateCommentRequest;
 import com.anonymous.wall.model.SortBy;
 import com.anonymous.wall.repository.PostRepository;
-import com.anonymous.wall.repository.CommentRepository;
 import com.anonymous.wall.repository.PostLikeRepository;
 import com.anonymous.wall.repository.UserRepository;
+import com.anonymous.wall.repository.CommentRepository;
+import com.anonymous.wall.service.base.PollService;
+import com.anonymous.wall.service.base.PostsService;
+import com.anonymous.wall.service.base.UserBlockService;
 import com.anonymous.wall.util.MediaUtilInterface;
 import io.micronaut.context.event.ApplicationEventPublisher;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
 import io.micronaut.http.multipart.CompletedFileUpload;
 import io.micronaut.transaction.annotation.Transactional;
-import io.micronaut.retry.annotation.Retryable;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import org.slf4j.Logger;
@@ -52,9 +52,6 @@ public class PostsServiceImpl implements PostsService {
     private UserRepository userRepository;
 
     @Inject
-    private CommentsService commentsService;
-
-    @Inject
     private com.anonymous.wall.repository.PostReportRepository postReportRepository;
 
     @Inject
@@ -77,7 +74,6 @@ public class PostsServiceImpl implements PostsService {
      */
     @Override
     @Transactional
-    @Retryable(attempts = "3", delay = "500ms")
     public Post createPost(CreatePostRequest request, List<CompletedFileUpload> images, UUID userId) {
         // Validate image count before any DB access
         if (images != null && images.size() > MAX_IMAGES_PER_POST) {
@@ -282,7 +278,6 @@ public class PostsServiceImpl implements PostsService {
      */
     @Override
     @Transactional
-    @Retryable(attempts = "5", delay = "100ms")
     public Map<String, Object> toggleLikeWithDetails(UUID postId, UUID userId) {
         // Verify post exists
         Optional<Post> postOpt = postRepository.findById(postId);
@@ -427,7 +422,6 @@ public class PostsServiceImpl implements PostsService {
      */
     @Override
     @Transactional
-    @Retryable(attempts = "3", delay = "500ms")
     public Post hidePost(UUID postId, UUID userId) {
         // Verify post exists
         Optional<Post> postOpt = postRepository.findById(postId);
@@ -466,7 +460,6 @@ public class PostsServiceImpl implements PostsService {
      */
     @Override
     @Transactional
-    @Retryable(attempts = "3", delay = "500ms")
     public Post unhidePost(UUID postId, UUID userId) {
         // Verify post exists
         Optional<Post> postOpt = postRepository.findById(postId);

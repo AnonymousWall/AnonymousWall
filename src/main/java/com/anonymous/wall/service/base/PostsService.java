@@ -1,9 +1,7 @@
-package com.anonymous.wall.service;
+package com.anonymous.wall.service.base;
 
 import com.anonymous.wall.entity.Post;
-import com.anonymous.wall.entity.Comment;
 import com.anonymous.wall.model.CreatePostRequest;
-import com.anonymous.wall.model.CreateCommentRequest;
 import com.anonymous.wall.model.SortBy;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;

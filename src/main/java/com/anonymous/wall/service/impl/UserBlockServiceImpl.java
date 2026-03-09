@@ -1,8 +1,9 @@
-package com.anonymous.wall.service;
+package com.anonymous.wall.service.impl;
 
 import com.anonymous.wall.entity.UserBlock;
 import com.anonymous.wall.repository.UserBlockRepository;
 import com.anonymous.wall.repository.UserRepository;
+import com.anonymous.wall.service.base.UserBlockService;
 import io.micronaut.cache.annotation.CacheConfig;
 import io.micronaut.cache.annotation.CacheInvalidate;
 import io.micronaut.cache.annotation.Cacheable;

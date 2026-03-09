@@ -1,4 +1,4 @@
-package com.anonymous.wall.service;
+package com.anonymous.wall.service.impl;
 
 import com.anonymous.wall.entity.MarketplaceItem;
 import com.anonymous.wall.entity.UserEntity;
@@ -8,6 +8,8 @@ import com.anonymous.wall.model.UpdateItemRequest;
 import com.anonymous.wall.repository.CommentRepository;
 import com.anonymous.wall.repository.MarketplaceItemRepository;
 import com.anonymous.wall.repository.UserRepository;
+import com.anonymous.wall.service.base.MarketplaceService;
+import com.anonymous.wall.service.base.UserBlockService;
 import com.anonymous.wall.util.MediaUtilInterface;
 import io.micronaut.context.event.ApplicationEventPublisher;
 import io.micronaut.data.model.Page;

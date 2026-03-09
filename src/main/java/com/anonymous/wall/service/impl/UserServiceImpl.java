@@ -1,10 +1,10 @@
-package com.anonymous.wall.service;
+package com.anonymous.wall.service.impl;
 
 import com.anonymous.wall.entity.UserEntity;
 import com.anonymous.wall.event.ProfileNameChangedEvent;
 import com.anonymous.wall.repository.UserRepository;
+import com.anonymous.wall.service.base.UserService;
 import io.micronaut.cache.annotation.CacheConfig;
-import io.micronaut.cache.annotation.CacheInvalidate;
 import io.micronaut.cache.annotation.Cacheable;
 import io.micronaut.context.event.ApplicationEventPublisher;
 import jakarta.inject.Inject;

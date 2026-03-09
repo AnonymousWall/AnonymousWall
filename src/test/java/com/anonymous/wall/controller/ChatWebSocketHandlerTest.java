@@ -1,8 +1,7 @@
 package com.anonymous.wall.controller;
 
 import com.anonymous.wall.entity.ChatMessage;
-import com.anonymous.wall.model.ChatMessageDTO;
-import com.anonymous.wall.service.ChatService;
+import com.anonymous.wall.service.base.ChatService;
 import com.anonymous.wall.service.RedisPubSubService;
 import io.micronaut.security.authentication.Authentication;
 import io.micronaut.serde.ObjectMapper;
@@ -16,7 +15,6 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;

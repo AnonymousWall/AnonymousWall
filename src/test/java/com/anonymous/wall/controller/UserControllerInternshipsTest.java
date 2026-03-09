@@ -5,7 +5,7 @@ import com.anonymous.wall.model.CreateInternshipRequest;
 import com.anonymous.wall.repository.CommentRepository;
 import com.anonymous.wall.repository.InternshipRepository;
 import com.anonymous.wall.repository.UserRepository;
-import com.anonymous.wall.service.InternshipService;
+import com.anonymous.wall.service.base.InternshipService;
 import com.anonymous.wall.service.JwtTokenService;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpResponse;

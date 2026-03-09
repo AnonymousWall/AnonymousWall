@@ -7,7 +7,6 @@ import com.anonymous.wall.entity.Comment;
 import com.anonymous.wall.entity.Post;
 import com.anonymous.wall.entity.UserEntity;
 import com.anonymous.wall.model.CreateCommentRequest;
-import com.anonymous.wall.model.SortBy;
 import com.anonymous.wall.notification.event.CommentCreatedEvent;
 import com.anonymous.wall.notification.event.InternshipCommentCreatedEvent;
 import com.anonymous.wall.notification.event.MarketplaceCommentCreatedEvent;
@@ -16,16 +15,14 @@ import com.anonymous.wall.repository.InternshipRepository;
 import com.anonymous.wall.repository.MarketplaceItemRepository;
 import com.anonymous.wall.repository.PostRepository;
 import com.anonymous.wall.repository.UserRepository;
+import com.anonymous.wall.service.impl.CommentsServiceImpl;
 import io.micronaut.context.event.ApplicationEventPublisher;
-import io.micronaut.data.model.Page;
-import io.micronaut.data.model.Pageable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-import java.time.OffsetDateTime;
 import java.util.Optional;
 import java.util.UUID;
 

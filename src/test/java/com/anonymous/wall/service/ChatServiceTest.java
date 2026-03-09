@@ -6,6 +6,8 @@ import com.anonymous.wall.model.ConversationDTO;
 import com.anonymous.wall.notification.event.ChatMessageSentEvent;
 import com.anonymous.wall.repository.ChatMessageRepository;
 import com.anonymous.wall.repository.UserRepository;
+import com.anonymous.wall.service.base.UserBlockService;
+import com.anonymous.wall.service.impl.ChatServiceImpl;
 import io.micronaut.context.event.ApplicationEventPublisher;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;

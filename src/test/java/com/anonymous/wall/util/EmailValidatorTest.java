@@ -1,6 +1,6 @@
 package com.anonymous.wall.util;
 
-import com.anonymous.wall.service.SchoolDomainService;
+import com.anonymous.wall.service.base.SchoolDomainService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;

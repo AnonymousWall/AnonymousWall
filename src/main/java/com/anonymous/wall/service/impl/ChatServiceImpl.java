@@ -1,4 +1,4 @@
-package com.anonymous.wall.service;
+package com.anonymous.wall.service.impl;
 
 import com.anonymous.wall.entity.ChatMessage;
 import com.anonymous.wall.entity.UserEntity;
@@ -7,11 +7,12 @@ import com.anonymous.wall.model.ConversationDTO;
 import com.anonymous.wall.notification.event.ChatMessageSentEvent;
 import com.anonymous.wall.repository.ChatMessageRepository;
 import com.anonymous.wall.repository.UserRepository;
+import com.anonymous.wall.service.base.ChatService;
+import com.anonymous.wall.service.base.UserBlockService;
 import com.anonymous.wall.util.ConversationIdGenerator;
 import io.micronaut.context.event.ApplicationEventPublisher;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
-import io.micronaut.retry.annotation.Retryable;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import org.slf4j.Logger;
@@ -20,7 +21,6 @@ import org.slf4j.LoggerFactory;
 import jakarta.transaction.Transactional;
 import java.time.OffsetDateTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * Implementation of ChatService.
@@ -46,14 +46,12 @@ public class ChatServiceImpl implements ChatService {
 
     @Override
     @Transactional
-    @Retryable
     public ChatMessage sendMessage(UUID senderId, UUID receiverId, String content) {
         return sendMessage(senderId, receiverId, content, null);
     }
 
     @Override
     @Transactional
-    @Retryable
     public ChatMessage sendMessage(UUID senderId, UUID receiverId, String content, String imageUrl) {
         log.debug("Sending message from {} to {}", senderId, receiverId);
 
@@ -125,7 +123,7 @@ public class ChatServiceImpl implements ChatService {
         String preview;
         if (savedMessage.getContent() != null && !savedMessage.getContent().isBlank()) {
             String messageContent = savedMessage.getContent();
-            preview = messageContent.length() > 50 ? messageContent.substring(0, 50) + "\u2026" : messageContent;
+            preview = messageContent.length() > 50 ? messageContent.substring(0, 50) + "…" : messageContent;
         } else {
             preview = "\uD83D\uDCF7 Photo";
         }
@@ -143,6 +141,7 @@ public class ChatServiceImpl implements ChatService {
     }
 
     @Override
+    @Transactional
     public Page<ChatMessage> getMessageHistory(UUID userId1, UUID userId2, Pageable pageable) {
         log.debug("Getting message history between {} and {}", userId1, userId2);
 
@@ -164,6 +163,7 @@ public class ChatServiceImpl implements ChatService {
     }
 
     @Override
+    @Transactional
     public List<ConversationDTO> getConversations(UUID userId) {
         log.debug("Getting conversations for user {}", userId);
 
@@ -287,6 +287,7 @@ public class ChatServiceImpl implements ChatService {
     }
 
     @Override
+    @Transactional
     public long countUnreadMessages(UUID receiverId, UUID senderId) {
         if (receiverId == null || senderId == null) {
             throw new IllegalArgumentException("Receiver ID and sender ID must not be null");
@@ -299,6 +300,7 @@ public class ChatServiceImpl implements ChatService {
     }
 
     @Override
+    @Transactional
     public long countTotalUnreadMessages(UUID receiverId) {
         if (receiverId == null) {
             throw new IllegalArgumentException("Receiver ID must not be null");
@@ -308,6 +310,7 @@ public class ChatServiceImpl implements ChatService {
     }
 
     @Override
+    @Transactional
     public List<ChatMessage> getUnreadMessages(UUID receiverId, UUID senderId) {
         if (receiverId == null || senderId == null) {
             throw new IllegalArgumentException("Receiver ID and sender ID must not be null");

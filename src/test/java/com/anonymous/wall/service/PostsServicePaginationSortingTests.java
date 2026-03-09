@@ -2,11 +2,11 @@ package com.anonymous.wall.service;
 
 import com.anonymous.wall.entity.Post;
 import com.anonymous.wall.entity.UserEntity;
-import com.anonymous.wall.model.CreatePostRequest;
 import com.anonymous.wall.model.SortBy;
 import com.anonymous.wall.repository.PostLikeRepository;
 import com.anonymous.wall.repository.PostRepository;
 import com.anonymous.wall.repository.UserRepository;
+import com.anonymous.wall.service.base.PostsService;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
 import io.micronaut.test.extensions.junit5.annotation.MicronautTest;
@@ -14,7 +14,6 @@ import jakarta.inject.Inject;
 import org.junit.jupiter.api.*;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;

@@ -1,6 +1,6 @@
 package com.anonymous.wall.security;
 
-import com.anonymous.wall.service.UserService;
+import com.anonymous.wall.service.base.UserService;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpStatus;
 import io.micronaut.http.MutableHttpResponse;

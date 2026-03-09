@@ -6,7 +6,7 @@ import com.anonymous.wall.repository.CommentRepository;
 import com.anonymous.wall.repository.PostRepository;
 import com.anonymous.wall.repository.UserRepository;
 import com.anonymous.wall.service.JwtTokenService;
-import com.anonymous.wall.service.PostsService;
+import com.anonymous.wall.service.base.PostsService;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.HttpStatus;

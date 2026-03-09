@@ -9,8 +9,8 @@ import com.anonymous.wall.repository.PostRepository;
 import com.anonymous.wall.repository.CommentRepository;
 import com.anonymous.wall.repository.PostLikeRepository;
 import com.anonymous.wall.repository.UserRepository;
-import com.anonymous.wall.service.PostsService;
-import com.anonymous.wall.service.CommentsService;
+import com.anonymous.wall.service.base.PostsService;
+import com.anonymous.wall.service.base.CommentsService;
 import io.micronaut.test.extensions.junit5.annotation.MicronautTest;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.AfterEach;
@@ -19,7 +19,6 @@ import org.junit.jupiter.api.Test;
 
 import java.time.OffsetDateTime;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.*;
 

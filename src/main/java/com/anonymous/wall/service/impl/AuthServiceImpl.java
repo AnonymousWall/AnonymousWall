@@ -1,4 +1,4 @@
-package com.anonymous.wall.service;
+package com.anonymous.wall.service.impl;
 
 import com.anonymous.wall.model.*;
 import com.anonymous.wall.entity.RefreshToken;
@@ -6,13 +6,15 @@ import com.anonymous.wall.entity.UserEntity;
 import com.anonymous.wall.entity.EmailVerificationCode;
 import com.anonymous.wall.repository.EmailVerificationCodeRepository;
 import com.anonymous.wall.repository.RefreshTokenRepository;
+import com.anonymous.wall.service.JwtTokenService;
+import com.anonymous.wall.service.base.AuthService;
+import com.anonymous.wall.service.base.UserService;
 import com.anonymous.wall.util.PasswordUtil;
 import com.anonymous.wall.util.CodeGenerator;
 import com.anonymous.wall.util.EmailUtilInterface;
 import com.anonymous.wall.util.EmailValidator;
 
 import io.micronaut.transaction.annotation.Transactional;
-import io.micronaut.retry.annotation.Retryable;
 import jakarta.inject.Singleton;
 import jakarta.inject.Inject;
 import org.slf4j.Logger;
@@ -47,7 +49,6 @@ public class AuthServiceImpl implements AuthService {
      */
     @Override
     @Transactional
-    @Retryable(attempts = "3", delay = "1000ms")
     public void sendEmailCode(SendEmailCodeRequest request) {
         log.debug("Generating verification code for email: {}, purpose: {}", request.getEmail(), request.getPurpose());
 
@@ -74,7 +75,6 @@ public class AuthServiceImpl implements AuthService {
      */
     @Override
     @Transactional
-    @Retryable(attempts = "3", delay = "500ms")
     public UserEntity registerWithEmail(RegisterEmailRequest request) {
         log.debug("Attempting to register user with email: {}", request.getEmail());
 
@@ -131,7 +131,6 @@ public class AuthServiceImpl implements AuthService {
      */
     @Override
     @Transactional
-    @Retryable(attempts = "3", delay = "500ms")
     public UserEntity loginWithEmail(LoginEmailRequest request) {
         log.debug("Attempting email-based login for: {}", request.getEmail());
 
@@ -319,7 +318,6 @@ public class AuthServiceImpl implements AuthService {
      */
     @Override
     @Transactional
-    @Retryable(attempts = "3", delay = "500ms")
     public UserEntity resetPassword(ResetPasswordRequest request) {
         log.debug("Processing password reset for email: {}", request.getEmail());
 

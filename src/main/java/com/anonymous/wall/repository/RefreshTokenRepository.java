@@ -9,7 +9,7 @@ import java.time.OffsetDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
-@JdbcRepository(dialect = Dialect.ORACLE)
+@JdbcRepository(dialect = Dialect.MYSQL)
 public interface RefreshTokenRepository extends CrudRepository<RefreshToken, UUID> {
 
     Optional<RefreshToken> findByTokenHashAndRevokedFalse(String tokenHash);

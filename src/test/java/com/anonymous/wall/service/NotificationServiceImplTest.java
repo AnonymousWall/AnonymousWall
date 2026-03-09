@@ -2,7 +2,7 @@ package com.anonymous.wall.service;
 
 import com.anonymous.wall.entity.NotificationEntity;
 import com.anonymous.wall.repository.NotificationRepository;
-import com.anonymous.wall.service.NotificationServiceImpl;
+import com.anonymous.wall.service.impl.NotificationServiceImpl;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
 import io.micronaut.http.HttpStatus;
@@ -12,7 +12,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 

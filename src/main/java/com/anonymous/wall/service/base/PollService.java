@@ -1,7 +1,8 @@
-package com.anonymous.wall.service;
+package com.anonymous.wall.service.base;
 
 import com.anonymous.wall.entity.PollOption;
 import com.anonymous.wall.entity.PollVote;
+import com.anonymous.wall.service.impl.PollServiceImpl;
 
 import java.util.List;
 import java.util.Map;

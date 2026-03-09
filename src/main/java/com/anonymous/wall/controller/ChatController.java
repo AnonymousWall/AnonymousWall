@@ -4,7 +4,7 @@ import com.anonymous.wall.entity.ChatMessage;
 import com.anonymous.wall.model.ChatMessageDTO;
 import com.anonymous.wall.model.ConversationDTO;
 import com.anonymous.wall.model.SendMessageRequest;
-import com.anonymous.wall.service.ChatService;
+import com.anonymous.wall.service.retry.ChatRetryService;
 import com.anonymous.wall.util.MediaUtilInterface;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
@@ -36,7 +36,7 @@ public class ChatController {
     private static final Logger log = LoggerFactory.getLogger(ChatController.class);
 
     @Inject
-    private ChatService chatService;
+    private ChatRetryService chatRetryService;
 
     @Inject
     private ChatWebSocketHandler chatWebSocketHandler;
@@ -72,7 +72,7 @@ public class ChatController {
             UUID userId = getUserIdFromRequest(request);
             log.debug("Getting conversations for user {}", userId);
 
-            List<ConversationDTO> conversations = chatService.getConversations(userId);
+            List<ConversationDTO> conversations = chatRetryService.getConversations(userId);
 
             Map<String, Object> response = new HashMap<>();
             response.put("conversations", conversations);
@@ -107,7 +107,7 @@ public class ChatController {
             Pageable pageable = Pageable.from(page - 1, limit);
 
             // Get messages
-            Page<ChatMessage> messagesPage = chatService.getMessageHistory(userId, otherUserUUID, pageable);
+            Page<ChatMessage> messagesPage = chatRetryService.getMessageHistory(userId, otherUserUUID, pageable);
 
             // Convert to DTOs
             List<ChatMessageDTO> messageDTOs = messagesPage.getContent().stream()
@@ -173,7 +173,7 @@ public class ChatController {
             log.debug("Sending message from {} to {}", senderId, receiverId);
 
             // Send message
-            ChatMessage message = chatService.sendMessage(
+            ChatMessage message = chatRetryService.sendMessage(
                     senderId, receiverId, request.getContent(), request.getImageUrl());
 
             // Convert to DTO
@@ -211,7 +211,7 @@ public class ChatController {
 
             log.debug("Marking message {} as read by user {}", messageUUID, userId);
 
-            chatService.markMessageAsRead(messageUUID, userId);
+            chatRetryService.markMessageAsRead(messageUUID, userId);
 
             return HttpResponse.ok(Map.of("message", "Message marked as read"));
         } catch (IllegalArgumentException e) {
@@ -241,9 +241,9 @@ public class ChatController {
 
             log.debug("Marking all messages from {} to {} as read", otherUserUUID, userId);
 
-            List<ChatMessage> unreadMessages = chatService.getUnreadMessages(userId, otherUserUUID);
+            List<ChatMessage> unreadMessages = chatRetryService.getUnreadMessages(userId, otherUserUUID);
 
-            chatService.markConversationAsRead(userId, otherUserUUID);
+            chatRetryService.markConversationAsRead(userId, otherUserUUID);
 
             for (ChatMessage message : unreadMessages) {
                 UUID senderId = message.getSenderId();
@@ -260,7 +260,7 @@ public class ChatController {
             }
 
             // ✅ NEW: Send updated unread count to reader
-            long unreadCount = chatService.countTotalUnreadMessages(userId);
+            long unreadCount = chatRetryService.countTotalUnreadMessages(userId);
             Map<String, Object> unreadUpdate = new HashMap<>();
             unreadUpdate.put("type", "unreadCount");
             unreadUpdate.put("count", unreadCount);

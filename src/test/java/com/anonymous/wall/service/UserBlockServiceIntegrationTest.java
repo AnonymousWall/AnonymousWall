@@ -4,6 +4,7 @@ import com.anonymous.wall.entity.UserBlock;
 import com.anonymous.wall.entity.UserEntity;
 import com.anonymous.wall.repository.UserBlockRepository;
 import com.anonymous.wall.repository.UserRepository;
+import com.anonymous.wall.service.base.UserBlockService;
 import io.micronaut.test.extensions.junit5.annotation.MicronautTest;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.*;

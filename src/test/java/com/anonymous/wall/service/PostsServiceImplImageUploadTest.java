@@ -5,6 +5,8 @@ import com.anonymous.wall.entity.UserEntity;
 import com.anonymous.wall.model.CreatePostRequest;
 import com.anonymous.wall.repository.PostRepository;
 import com.anonymous.wall.repository.UserRepository;
+import com.anonymous.wall.service.base.CommentsService;
+import com.anonymous.wall.service.impl.PostsServiceImpl;
 import com.anonymous.wall.util.MediaUtilInterface;
 import io.micronaut.context.event.ApplicationEventPublisher;
 import io.micronaut.http.MediaType;

@@ -3,6 +3,7 @@ package com.anonymous.wall.service;
 import com.anonymous.wall.entity.UserEntity;
 import com.anonymous.wall.event.ProfileNameChangedEvent;
 import com.anonymous.wall.repository.UserRepository;
+import com.anonymous.wall.service.impl.UserServiceImpl;
 import io.micronaut.context.event.ApplicationEventPublisher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

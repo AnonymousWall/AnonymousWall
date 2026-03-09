@@ -5,6 +5,7 @@ import com.anonymous.wall.entity.UserEntity;
 import com.anonymous.wall.model.CreateInternshipRequest;
 import com.anonymous.wall.repository.InternshipRepository;
 import com.anonymous.wall.repository.UserRepository;
+import com.anonymous.wall.service.base.InternshipService;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
 import io.micronaut.test.extensions.junit5.annotation.MicronautTest;

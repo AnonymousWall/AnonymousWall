@@ -7,7 +7,7 @@ import com.anonymous.wall.repository.CommentRepository;
 import com.anonymous.wall.repository.MarketplaceItemRepository;
 import com.anonymous.wall.repository.UserRepository;
 import com.anonymous.wall.service.JwtTokenService;
-import com.anonymous.wall.service.MarketplaceService;
+import com.anonymous.wall.service.base.MarketplaceService;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.HttpStatus;

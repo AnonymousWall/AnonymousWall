@@ -1,4 +1,4 @@
-package com.anonymous.wall.service;
+package com.anonymous.wall.service.base;
 
 import com.anonymous.wall.entity.NotificationEntity;
 import io.micronaut.data.model.Page;

@@ -1,7 +1,8 @@
-package com.anonymous.wall.service;
+package com.anonymous.wall.service.impl;
 
 import com.anonymous.wall.entity.SchoolDomain;
 import com.anonymous.wall.repository.SchoolDomainRepository;
+import com.anonymous.wall.service.base.SchoolDomainService;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import jakarta.transaction.Transactional;

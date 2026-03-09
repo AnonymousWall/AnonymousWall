@@ -5,6 +5,7 @@ import com.anonymous.wall.entity.UserEntity;
 import com.anonymous.wall.model.CreateItemRequest;
 import com.anonymous.wall.repository.MarketplaceItemRepository;
 import com.anonymous.wall.repository.UserRepository;
+import com.anonymous.wall.service.impl.MarketplaceServiceImpl;
 import com.anonymous.wall.util.MediaUtilInterface;
 import io.micronaut.context.event.ApplicationEventPublisher;
 import io.micronaut.http.MediaType;

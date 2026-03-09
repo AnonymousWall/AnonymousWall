@@ -8,7 +8,7 @@ import io.micronaut.data.repository.CrudRepository;
 import java.util.List;
 import java.util.UUID;
 
-@JdbcRepository(dialect = Dialect.ORACLE)
+@JdbcRepository(dialect = Dialect.MYSQL)
 public interface PollOptionRepository extends CrudRepository<PollOption, UUID> {
 
     /**

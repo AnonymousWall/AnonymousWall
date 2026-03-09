@@ -10,7 +10,7 @@ import com.anonymous.wall.repository.CommentRepository;
 import com.anonymous.wall.repository.PostReportRepository;
 import com.anonymous.wall.repository.PostRepository;
 import com.anonymous.wall.repository.UserRepository;
-import com.anonymous.wall.service.CommentsService;
+import com.anonymous.wall.service.base.CommentsService;
 import com.anonymous.wall.service.JwtTokenService;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpResponse;

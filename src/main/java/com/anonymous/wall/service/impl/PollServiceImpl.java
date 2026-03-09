@@ -1,4 +1,4 @@
-package com.anonymous.wall.service;
+package com.anonymous.wall.service.impl;
 
 import com.anonymous.wall.entity.PollOption;
 import com.anonymous.wall.entity.PollVote;
@@ -6,6 +6,7 @@ import com.anonymous.wall.entity.Post;
 import com.anonymous.wall.repository.PollOptionRepository;
 import com.anonymous.wall.repository.PollVoteRepository;
 import com.anonymous.wall.repository.PostRepository;
+import com.anonymous.wall.service.base.PollService;
 import io.micronaut.transaction.annotation.Transactional;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;

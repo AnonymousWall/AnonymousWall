@@ -2,14 +2,12 @@ package com.anonymous.wall.controller;
 
 import com.anonymous.wall.entity.ChatMessage;
 import com.anonymous.wall.model.ChatMessageDTO;
-import com.anonymous.wall.service.ChatService;
+import com.anonymous.wall.service.retry.ChatRetryService;
 import com.anonymous.wall.service.RedisPubSubService;
-import io.micronaut.core.annotation.Nullable;
 import io.micronaut.security.annotation.Secured;
 import io.micronaut.security.authentication.Authentication;
 import io.micronaut.security.rules.SecurityRule;
 import io.micronaut.serde.ObjectMapper;
-import io.micronaut.websocket.WebSocketBroadcaster;
 import io.micronaut.websocket.WebSocketSession;
 import io.micronaut.websocket.annotation.*;
 import jakarta.inject.Inject;
@@ -34,10 +32,7 @@ public class ChatWebSocketHandler {
     private static final Logger log = LoggerFactory.getLogger(ChatWebSocketHandler.class);
 
     @Inject
-    private ChatService chatService;
-
-    @Inject
-    private WebSocketBroadcaster broadcaster;
+    private ChatRetryService chatRetryService;
 
     @Inject
     private ObjectMapper objectMapper;
@@ -84,7 +79,7 @@ public class ChatWebSocketHandler {
             session.sendSync(serializeToJson(response));
             
             // Notify about unread messages count
-            long unreadCount = chatService.countTotalUnreadMessages(userId);
+            long unreadCount = chatRetryService.countTotalUnreadMessages(userId);
             if (unreadCount > 0) {
                 Map<String, Object> unreadNotification = new HashMap<>();
                 unreadNotification.put("type", "unreadCount");
@@ -137,8 +132,8 @@ public class ChatWebSocketHandler {
 
                 UUID receiverId = UUID.fromString(receiverIdStr);
 
-                // Save message via service
-                ChatMessage chatMessage = chatService.sendMessage(senderId, receiverId, content, imageUrl);
+                // Save message via service (retry wrapper)
+                ChatMessage chatMessage = chatRetryService.sendMessage(senderId, receiverId, content, imageUrl);
 
                 // Convert to DTO
                 ChatMessageDTO messageDTO = convertToDTO(chatMessage);
@@ -196,7 +191,7 @@ public class ChatWebSocketHandler {
                 UUID messageId = UUID.fromString(messageIdStr);
 
                 // mark as read and get message
-                ChatMessage message = chatService.markMessageAsRead(messageId, readerId);
+                ChatMessage message = chatRetryService.markMessageAsRead(messageId, readerId);
 
                 // 1. send read receipt to reader (confirmation)
                 Map<String, Object> readerReceipt = new HashMap<>();
@@ -222,7 +217,7 @@ public class ChatWebSocketHandler {
                 }
 
                 // 3. ✅ NEW: Send updated unread count to reader
-                long unreadCount = chatService.countTotalUnreadMessages(readerId);
+                long unreadCount = chatRetryService.countTotalUnreadMessages(readerId);
                 Map<String, Object> unreadUpdate = new HashMap<>();
                 unreadUpdate.put("type", "unreadCount");
                 unreadUpdate.put("count", unreadCount);

@@ -1,4 +1,4 @@
-package com.anonymous.wall.service;
+package com.anonymous.wall.service.impl;
 
 import com.anonymous.wall.entity.*;
 import com.anonymous.wall.model.CommentParentType;
@@ -8,11 +8,12 @@ import com.anonymous.wall.notification.event.CommentCreatedEvent;
 import com.anonymous.wall.notification.event.InternshipCommentCreatedEvent;
 import com.anonymous.wall.notification.event.MarketplaceCommentCreatedEvent;
 import com.anonymous.wall.repository.*;
+import com.anonymous.wall.service.base.CommentsService;
+import com.anonymous.wall.service.base.UserBlockService;
 import io.micronaut.context.event.ApplicationEventPublisher;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
 import io.micronaut.transaction.annotation.Transactional;
-import io.micronaut.retry.annotation.Retryable;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import org.slf4j.Logger;
@@ -48,7 +49,7 @@ public class CommentsServiceImpl implements CommentsService {
     private CommentReportRepository commentReportRepository;
 
     @Inject
-    private com.anonymous.wall.service.UserBlockService userBlockService;
+    private UserBlockService userBlockService;
 
     @Inject
     private ApplicationEventPublisher<CommentCreatedEvent> eventPublisher;
@@ -125,7 +126,6 @@ public class CommentsServiceImpl implements CommentsService {
      */
     @Override
     @Transactional
-    @Retryable(attempts = "3", delay = "500ms")
     public Comment addComment(CommentParentType parentType, UUID parentId, CreateCommentRequest request, UUID userId) {
         Commentable parent = resolveParent(parentType, parentId);
 
@@ -156,26 +156,29 @@ public class CommentsServiceImpl implements CommentsService {
 
         // Publish event for push notifications
         if (parentType == CommentParentType.POST) {
+            Post postParent = (Post) parent;
             eventPublisher.publishEvent(new CommentCreatedEvent(
                     savedComment.getId(),
                     savedComment.getParentId(),
                     userId,
-                    ((Post) parent).getUserId(),
-                    ((Post) parent).getWall()
+                    postParent.getUserId(),
+                    postParent.getWall()
             ));
         } else if (parentType == CommentParentType.INTERNSHIP) {
+            Internship internshipParent = (Internship) parent;
             internshipCommentEventPublisher.publishEvent(new InternshipCommentCreatedEvent(
                     savedComment.getId(),
                     savedComment.getParentId(),
                     userId,
-                    ((Internship) parent).getUserId()
+                    internshipParent.getUserId()
             ));
         } else if (parentType == CommentParentType.MARKETPLACE) {
+            MarketplaceItem marketplaceParent = (MarketplaceItem) parent;
             marketplaceCommentEventPublisher.publishEvent(new MarketplaceCommentCreatedEvent(
                     savedComment.getId(),
                     savedComment.getParentId(),
                     userId,
-                    ((MarketplaceItem) parent).getUserId()
+                    marketplaceParent.getUserId()
             ));
         }
 
@@ -188,6 +191,7 @@ public class CommentsServiceImpl implements CommentsService {
      * Get comments for a parent entity with pagination and sorting.
      */
     @Override
+    @Transactional
     public Page<Comment> getCommentsWithPagination(CommentParentType parentType, UUID parentId, Pageable pageable, SortBy sortBy) {
         if (sortBy == null) {
             sortBy = SortBy.NEWEST;
@@ -209,6 +213,7 @@ public class CommentsServiceImpl implements CommentsService {
      * Get comments for a parent entity with pagination, sorting, and block filtering.
      */
     @Override
+    @Transactional
     public Page<Comment> getCommentsWithPagination(CommentParentType parentType, UUID parentId, Pageable pageable, SortBy sortBy, UUID currentUserId) {
         Page<Comment> comments = getCommentsWithPagination(parentType, parentId, pageable, sortBy);
         if (currentUserId == null) {
@@ -231,7 +236,6 @@ public class CommentsServiceImpl implements CommentsService {
      */
     @Override
     @Transactional
-    @Retryable(attempts = "3", delay = "500ms")
     public Comment hideComment(CommentParentType parentType, UUID parentId, UUID commentId, UUID userId) {
         Commentable parent = resolveParent(parentType, parentId);
 
@@ -278,7 +282,6 @@ public class CommentsServiceImpl implements CommentsService {
      */
     @Override
     @Transactional
-    @Retryable(attempts = "3", delay = "500ms")
     public Comment unhideComment(CommentParentType parentType, UUID parentId, UUID commentId, UUID userId) {
         Commentable parent = resolveParent(parentType, parentId);
 
@@ -323,6 +326,7 @@ public class CommentsServiceImpl implements CommentsService {
      * Get user's own comments with pagination and sorting.
      */
     @Override
+    @Transactional
     public Page<Comment> getUserOwnComments(UUID userId, Pageable pageable, SortBy sortBy) {
         if (sortBy == null) {
             sortBy = SortBy.NEWEST;

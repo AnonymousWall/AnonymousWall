@@ -1,6 +1,6 @@
 package com.anonymous.wall.util;
 
-import com.anonymous.wall.service.SchoolDomainService;
+import com.anonymous.wall.service.base.SchoolDomainService;
 
 /**
  * Whitelist of approved school/university domains

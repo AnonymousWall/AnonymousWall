@@ -9,12 +9,13 @@ import com.anonymous.wall.repository.CommentRepository;
 import com.anonymous.wall.repository.PostLikeRepository;
 import com.anonymous.wall.repository.PostRepository;
 import com.anonymous.wall.repository.UserRepository;
+import com.anonymous.wall.service.base.CommentsService;
+import com.anonymous.wall.service.base.PostsService;
 import io.micronaut.test.extensions.junit5.annotation.MicronautTest;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.*;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;

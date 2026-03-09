@@ -1,4 +1,4 @@
-package com.anonymous.wall.service;
+package com.anonymous.wall.service.base;
 
 import com.anonymous.wall.entity.MarketplaceItem;
 import com.anonymous.wall.model.CreateItemRequest;

@@ -8,6 +8,8 @@ import com.anonymous.wall.model.SortBy;
 import com.anonymous.wall.repository.CommentRepository;
 import com.anonymous.wall.repository.PostRepository;
 import com.anonymous.wall.repository.UserRepository;
+import com.anonymous.wall.service.base.CommentsService;
+import com.anonymous.wall.service.base.PostsService;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
 import io.micronaut.test.extensions.junit5.annotation.MicronautTest;

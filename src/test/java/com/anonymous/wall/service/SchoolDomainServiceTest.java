@@ -2,6 +2,7 @@ package com.anonymous.wall.service;
 
 import com.anonymous.wall.entity.SchoolDomain;
 import com.anonymous.wall.repository.SchoolDomainRepository;
+import com.anonymous.wall.service.impl.SchoolDomainServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
