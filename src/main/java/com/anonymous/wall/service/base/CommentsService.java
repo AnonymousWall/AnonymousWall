@@ -50,4 +50,17 @@ public interface CommentsService {
      * Increments the report count for the comment author
      */
     void reportComment(UUID commentId, UUID reporterUserId, String reason);
+
+    /**
+     * Update profile name for all comments by a user
+     * Used for profile name propagation when user changes their profile name
+     * Micronaut Data automatically generates: UPDATE comments SET profile_name = ? WHERE user_id = ?
+     */
+    void updateProfileNameByUserId(UUID userId, String profileName);
+
+    /**
+     * Update hidden status for all comments by a parent entity
+     * Used for hiding/unhiding comments when the parent entity is hidden/unhidden
+     */
+    void updateByParentTypeAndParentId(String parentType, UUID parentId, boolean hidden);
 }

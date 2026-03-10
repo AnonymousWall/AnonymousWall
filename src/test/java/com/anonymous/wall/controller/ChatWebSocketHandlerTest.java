@@ -1,11 +1,10 @@
 package com.anonymous.wall.controller;
 
 import com.anonymous.wall.entity.ChatMessage;
-import com.anonymous.wall.service.base.ChatService;
+import com.anonymous.wall.service.retry.ChatRetryService;
 import com.anonymous.wall.service.RedisPubSubService;
 import io.micronaut.security.authentication.Authentication;
 import io.micronaut.serde.ObjectMapper;
-import io.micronaut.websocket.WebSocketBroadcaster;
 import io.micronaut.websocket.WebSocketSession;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -28,8 +27,7 @@ import static org.mockito.Mockito.*;
 class ChatWebSocketHandlerTest {
 
     private ChatWebSocketHandler handler;
-    private ChatService chatService;
-    private WebSocketBroadcaster broadcaster;
+    private ChatRetryService chatRetryService;
     private ObjectMapper objectMapper;
     private RedisPubSubService redisPubSubService;
     private WebSocketSession mockSession;
@@ -40,21 +38,16 @@ class ChatWebSocketHandlerTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        chatService = mock(ChatService.class);
-        broadcaster = mock(WebSocketBroadcaster.class);
+        chatRetryService = mock(ChatRetryService.class);
         objectMapper = mock(ObjectMapper.class);
         redisPubSubService = mock(RedisPubSubService.class);
 
         handler = new ChatWebSocketHandler();
 
         // Inject mocked dependencies using reflection
-        var chatServiceField = ChatWebSocketHandler.class.getDeclaredField("chatService");
-        chatServiceField.setAccessible(true);
-        chatServiceField.set(handler, chatService);
-
-        var broadcasterField = ChatWebSocketHandler.class.getDeclaredField("broadcaster");
-        broadcasterField.setAccessible(true);
-        broadcasterField.set(handler, broadcaster);
+        var chatRetryServiceField = ChatWebSocketHandler.class.getDeclaredField("chatRetryService");
+        chatRetryServiceField.setAccessible(true);
+        chatRetryServiceField.set(handler, chatRetryService);
 
         var objectMapperField = ChatWebSocketHandler.class.getDeclaredField("objectMapper");
         objectMapperField.setAccessible(true);
@@ -85,7 +78,7 @@ class ChatWebSocketHandlerTest {
         @DisplayName("Should handle new WebSocket connection successfully")
         void shouldHandleNewConnectionSuccessfully() throws IOException {
             // Arrange
-            when(chatService.countTotalUnreadMessages(testUser1Id)).thenReturn(5L);
+            when(chatRetryService.countTotalUnreadMessages(testUser1Id)).thenReturn(5L);
             when(objectMapper.writeValueAsString(any())).thenReturn("{\"type\":\"connected\"}");
 
             // Act
@@ -93,14 +86,14 @@ class ChatWebSocketHandlerTest {
 
             // Assert
             verify(mockSession, times(2)).sendSync(anyString()); // connected + unread_count
-            verify(chatService, times(1)).countTotalUnreadMessages(testUser1Id);
+            verify(chatRetryService, times(1)).countTotalUnreadMessages(testUser1Id);
         }
 
         @Test
         @DisplayName("Should send connection confirmation message")
         void shouldSendConnectionConfirmation() throws IOException {
             // Arrange
-            when(chatService.countTotalUnreadMessages(testUser1Id)).thenReturn(0L);
+            when(chatRetryService.countTotalUnreadMessages(testUser1Id)).thenReturn(0L);
             when(objectMapper.writeValueAsString(argThat(map -> {
                 Map<String, Object> m = (Map<String, Object>) map;
                 return "connected".equals(m.get("type")) && 
@@ -118,7 +111,7 @@ class ChatWebSocketHandlerTest {
         @DisplayName("Should send unread count when user has unread messages")
         void shouldSendUnreadCountWhenPresent() throws IOException {
             // Arrange
-            when(chatService.countTotalUnreadMessages(testUser1Id)).thenReturn(10L);
+            when(chatRetryService.countTotalUnreadMessages(testUser1Id)).thenReturn(10L);
             when(objectMapper.writeValueAsString(any())).thenReturn("{}");
 
             // Act
@@ -126,14 +119,14 @@ class ChatWebSocketHandlerTest {
 
             // Assert
             verify(mockSession, times(2)).sendSync(anyString());
-            verify(chatService, times(1)).countTotalUnreadMessages(testUser1Id);
+            verify(chatRetryService, times(1)).countTotalUnreadMessages(testUser1Id);
         }
 
         @Test
         @DisplayName("Should not send unread count when user has no unread messages")
         void shouldNotSendUnreadCountWhenZero() throws IOException {
             // Arrange
-            when(chatService.countTotalUnreadMessages(testUser1Id)).thenReturn(0L);
+            when(chatRetryService.countTotalUnreadMessages(testUser1Id)).thenReturn(0L);
             when(objectMapper.writeValueAsString(any())).thenReturn("{}");
 
             // Act
@@ -176,14 +169,14 @@ class ChatWebSocketHandlerTest {
             savedMessage.setCreatedAt(OffsetDateTime.now());
 
             when(objectMapper.readValue(any(byte[].class), eq(Map.class))).thenReturn(messageData);
-            when(chatService.sendMessage(testUser1Id, testUser2Id, "Hello", null)).thenReturn(savedMessage);
+            when(chatRetryService.sendMessage(testUser1Id, testUser2Id, "Hello", null)).thenReturn(savedMessage);
             when(objectMapper.writeValueAsString(any())).thenReturn("{\"type\":\"message\"}");
 
             // Act
             handler.onMessage(messageJson, mockSession);
 
             // Assert
-            verify(chatService, times(1)).sendMessage(testUser1Id, testUser2Id, "Hello", null);
+            verify(chatRetryService, times(1)).sendMessage(testUser1Id, testUser2Id, "Hello", null);
             verify(mockSession, times(1)).sendAsync(anyString());
         }
 
@@ -203,7 +196,7 @@ class ChatWebSocketHandlerTest {
             handler.onMessage(messageJson, mockSession);
 
             // Assert
-            verify(chatService, never()).sendMessage(any(), any(), anyString());
+            verify(chatRetryService, never()).sendMessage(any(), any(), anyString());
             verify(mockSession, times(1)).sendSync(anyString()); // Error message
         }
 
@@ -223,7 +216,7 @@ class ChatWebSocketHandlerTest {
             handler.onMessage(messageJson, mockSession);
 
             // Assert
-            verify(chatService, never()).sendMessage(any(), any(), anyString());
+            verify(chatRetryService, never()).sendMessage(any(), any(), anyString());
             verify(mockSession, times(1)).sendSync(anyString());
         }
 
@@ -243,7 +236,7 @@ class ChatWebSocketHandlerTest {
             handler.onMessage(messageJson, mockSession);
 
             // Assert
-            verify(chatService, never()).sendMessage(any(), any(), anyString());
+            verify(chatRetryService, never()).sendMessage(any(), any(), anyString());
             // Verify that typing notification would be broadcasted (can't fully test without receiver session)
         }
 
@@ -259,13 +252,13 @@ class ChatWebSocketHandlerTest {
 
             when(objectMapper.readValue(any(byte[].class), eq(Map.class))).thenReturn(messageData);
             when(objectMapper.writeValueAsString(any())).thenReturn("{\"type\":\"readReceipt\"}");
-            doReturn(new ChatMessage()).when(chatService).markMessageAsRead(messageId, testUser1Id);
+            doReturn(new ChatMessage()).when(chatRetryService).markMessageAsRead(messageId, testUser1Id);
 
             // Act
             handler.onMessage(messageJson, mockSession);
 
             // Assert
-            verify(chatService, times(1)).markMessageAsRead(messageId, testUser1Id);
+            verify(chatRetryService, times(1)).markMessageAsRead(messageId, testUser1Id);
             verify(mockSession, times(1)).sendAsync(anyString());
         }
 
@@ -314,7 +307,7 @@ class ChatWebSocketHandlerTest {
             messageData.put("content", "Hello");
 
             when(objectMapper.readValue(any(byte[].class), eq(Map.class))).thenReturn(messageData);
-            when(chatService.sendMessage(testUser1Id, testUser2Id, "Hello"))
+            when(chatRetryService.sendMessage(testUser1Id, testUser2Id, "Hello"))
                 .thenThrow(new IllegalArgumentException("Receiver not found"));
             when(objectMapper.writeValueAsString(any())).thenReturn("{\"type\":\"error\"}");
 
@@ -334,7 +327,7 @@ class ChatWebSocketHandlerTest {
         @DisplayName("Should handle connection close successfully")
         void shouldHandleConnectionClose() throws Exception {
             // Arrange - First open the connection
-            when(chatService.countTotalUnreadMessages(testUser1Id)).thenReturn(0L);
+            when(chatRetryService.countTotalUnreadMessages(testUser1Id)).thenReturn(0L);
             when(objectMapper.writeValueAsString(any())).thenReturn("{}");
             handler.onOpen(mockSession);
 
@@ -393,7 +386,7 @@ class ChatWebSocketHandlerTest {
             when(session2.getId()).thenReturn("test-session-id-2");
             when(session2.isOpen()).thenReturn(true);
 
-            when(chatService.countTotalUnreadMessages(testUser1Id)).thenReturn(0L);
+            when(chatRetryService.countTotalUnreadMessages(testUser1Id)).thenReturn(0L);
             when(objectMapper.writeValueAsString(any())).thenReturn("{}");
 
             // Act - Open two sessions for the same user
@@ -409,7 +402,7 @@ class ChatWebSocketHandlerTest {
         @DisplayName("Should remove session on close")
         void shouldRemoveSessionOnClose() throws IOException {
             // Arrange
-            when(chatService.countTotalUnreadMessages(testUser1Id)).thenReturn(0L);
+            when(chatRetryService.countTotalUnreadMessages(testUser1Id)).thenReturn(0L);
             when(objectMapper.writeValueAsString(any())).thenReturn("{}");
 
             // Act
@@ -436,7 +429,7 @@ class ChatWebSocketHandlerTest {
 
             // Assert
             verify(mockSession, times(1)).close();
-            verify(chatService, never()).countTotalUnreadMessages(any());
+            verify(chatRetryService, never()).countTotalUnreadMessages(any());
         }
 
         @Test
@@ -473,14 +466,14 @@ class ChatWebSocketHandlerTest {
             savedMessage.setCreatedAt(OffsetDateTime.now());
 
             when(objectMapper.readValue(any(byte[].class), eq(Map.class))).thenReturn(messageData);
-            when(chatService.sendMessage(testUser1Id, testUser2Id, "Test message", null)).thenReturn(savedMessage);
+            when(chatRetryService.sendMessage(testUser1Id, testUser2Id, "Test message", null)).thenReturn(savedMessage);
             when(objectMapper.writeValueAsString(any())).thenReturn("{\"type\":\"message\"}");
 
             // Act
             handler.onMessage(messageJson, mockSession);
 
             // Assert
-            verify(chatService, times(1)).sendMessage(testUser1Id, testUser2Id, "Test message", null);
+            verify(chatRetryService, times(1)).sendMessage(testUser1Id, testUser2Id, "Test message", null);
             assertNotNull(savedMessage.getConversationId(), "ConversationId should be set on saved message");
         }
 
@@ -496,13 +489,13 @@ class ChatWebSocketHandlerTest {
 
             when(objectMapper.readValue(any(byte[].class), eq(Map.class))).thenReturn(messageData);
             when(objectMapper.writeValueAsString(any())).thenReturn("{\"type\":\"readReceipt\"}");
-            doReturn(new ChatMessage()).when(chatService).markMessageAsRead(messageId, testUser1Id);
+            doReturn(new ChatMessage()).when(chatRetryService).markMessageAsRead(messageId, testUser1Id);
 
             // Act
             handler.onMessage(messageJson, mockSession);
 
             // Assert
-            verify(chatService, times(1)).markMessageAsRead(messageId, testUser1Id);
+            verify(chatRetryService, times(1)).markMessageAsRead(messageId, testUser1Id);
             // The service layer should handle conversationId internally
         }
     }

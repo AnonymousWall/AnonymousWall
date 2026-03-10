@@ -5,11 +5,11 @@ import com.anonymous.wall.entity.UserEntity;
 import com.anonymous.wall.event.MarketplaceItemHiddenEvent;
 import com.anonymous.wall.model.CreateItemRequest;
 import com.anonymous.wall.model.UpdateItemRequest;
-import com.anonymous.wall.repository.CommentRepository;
 import com.anonymous.wall.repository.MarketplaceItemRepository;
-import com.anonymous.wall.repository.UserRepository;
+import com.anonymous.wall.service.base.CommentsService;
 import com.anonymous.wall.service.base.MarketplaceService;
 import com.anonymous.wall.service.base.UserBlockService;
+import com.anonymous.wall.service.base.UserService;
 import com.anonymous.wall.util.MediaUtilInterface;
 import io.micronaut.context.event.ApplicationEventPublisher;
 import io.micronaut.data.model.Page;
@@ -40,10 +40,10 @@ public class MarketplaceServiceImpl implements MarketplaceService {
     private MarketplaceItemRepository marketplaceItemRepository;
 
     @Inject
-    private UserRepository userRepository;
+    private UserService userService;
 
     @Inject
-    private CommentRepository commentRepository;
+    private CommentsService commentsService;
 
     @Inject
     private ApplicationEventPublisher<MarketplaceItemHiddenEvent> marketplaceItemHiddenEventPublisher;
@@ -64,7 +64,7 @@ public class MarketplaceServiceImpl implements MarketplaceService {
             throw new IllegalArgumentException("Maximum " + MAX_IMAGES_PER_ITEM + " images per item allowed");
         }
 
-        Optional<UserEntity> userOpt = userRepository.findById(userId);
+        Optional<UserEntity> userOpt = userService.findById(userId);
         if (userOpt.isEmpty()) {
             throw new IllegalArgumentException("User not found");
         }
@@ -349,7 +349,7 @@ public class MarketplaceServiceImpl implements MarketplaceService {
         }
 
         if ("campus".equals(item.getWall())) {
-            Optional<UserEntity> userOpt = userRepository.findById(userId);
+            Optional<UserEntity> userOpt = userService.findById(userId);
             if (userOpt.isEmpty()) {
                 throw new IllegalArgumentException("User not found");
             }
@@ -419,7 +419,32 @@ public class MarketplaceServiceImpl implements MarketplaceService {
         item.setUpdatedAt(java.time.OffsetDateTime.now());
         marketplaceItemRepository.update(item);
         // Unhide all comments associated with this item (within same transaction)
-        commentRepository.updateByParentTypeAndParentId("MARKETPLACE", itemId, false);
+        commentsService.updateByParentTypeAndParentId("MARKETPLACE", itemId, false);
         log.info("Unhid marketplace item {}", itemId);
+    }
+
+    @Override
+    @Transactional
+    public void updateProfileNameByUserId(UUID userId, String profileName) {
+        try {
+            log.info("Updating profile name for user: userId={}, newName={}", userId, profileName);
+            marketplaceItemRepository.updateProfileNameByUserId(userId, profileName);
+        } catch (Exception e) {
+            log.warn("Attempt failed updating profile name: userId={}, error={}",
+                    userId, e.getMessage());
+            throw e;
+        }
+    }
+
+    @Override
+    @Transactional
+    public Optional<MarketplaceItem> findById(UUID itemId) {
+        return marketplaceItemRepository.findById(itemId);
+    }
+
+    @Override
+    @Transactional
+    public void update(MarketplaceItem item) {
+        marketplaceItemRepository.update(item);
     }
 }

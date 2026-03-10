@@ -6,9 +6,9 @@ import com.anonymous.wall.model.ChatMessageDTO;
 import com.anonymous.wall.model.ConversationDTO;
 import com.anonymous.wall.notification.event.ChatMessageSentEvent;
 import com.anonymous.wall.repository.ChatMessageRepository;
-import com.anonymous.wall.repository.UserRepository;
 import com.anonymous.wall.service.base.ChatService;
 import com.anonymous.wall.service.base.UserBlockService;
+import com.anonymous.wall.service.base.UserService;
 import com.anonymous.wall.util.ConversationIdGenerator;
 import io.micronaut.context.event.ApplicationEventPublisher;
 import io.micronaut.data.model.Page;
@@ -36,7 +36,7 @@ public class ChatServiceImpl implements ChatService {
     private ChatMessageRepository chatMessageRepository;
 
     @Inject
-    private UserRepository userRepository;
+    private UserService userService;
 
     @Inject
     private UserBlockService userBlockService;
@@ -71,14 +71,14 @@ public class ChatServiceImpl implements ChatService {
         }
 
         // Check if sender exists
-        Optional<UserEntity> senderOpt = userRepository.findById(senderId);
+        Optional<UserEntity> senderOpt = userService.findById(senderId);
         if (senderOpt.isEmpty()) {
             log.warn("Sender not found: {}", senderId);
             throw new IllegalArgumentException("Sender not found");
         }
 
         // Check if receiver exists
-        Optional<UserEntity> receiverOpt = userRepository.findById(receiverId);
+        Optional<UserEntity> receiverOpt = userService.findById(receiverId);
         if (receiverOpt.isEmpty()) {
             log.warn("Receiver not found: {}", receiverId);
             throw new IllegalArgumentException("Receiver not found");
@@ -150,10 +150,10 @@ public class ChatServiceImpl implements ChatService {
         }
 
         // Validate users exist
-        if (!userRepository.existsById(userId1)) {
+        if (!userService.existsById(userId1)) {
             throw new IllegalArgumentException("User not found: " + userId1);
         }
-        if (!userRepository.existsById(userId2)) {
+        if (!userService.existsById(userId2)) {
             throw new IllegalArgumentException("User not found: " + userId2);
         }
 
@@ -191,7 +191,7 @@ public class ChatServiceImpl implements ChatService {
                     : lastMessage.getSenderId();
 
             // Get the other participant user info
-            Optional<UserEntity> partnerOpt = userRepository.findById(partnerId);
+            Optional<UserEntity> partnerOpt = userService.findById(partnerId);
             if (partnerOpt.isEmpty()) {
                 log.warn("Partner user not found: {}, skipping", partnerId);
                 continue;

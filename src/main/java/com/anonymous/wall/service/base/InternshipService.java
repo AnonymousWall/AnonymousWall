@@ -5,6 +5,7 @@ import com.anonymous.wall.model.CreateInternshipRequest;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
 
+import java.util.Optional;
 import java.util.UUID;
 
 public interface InternshipService {
@@ -24,4 +25,10 @@ public interface InternshipService {
     void unhideInternship(UUID internshipId, UUID userId);
 
     Page<Internship> getUserOwnInternships(UUID userId, Pageable pageable, String sortBy);
+
+    void updateProfileNameByUserId(UUID userId, String profileName);
+
+    Optional<Internship> findById(UUID internshipId);
+
+    void update(Internship internship);
 }

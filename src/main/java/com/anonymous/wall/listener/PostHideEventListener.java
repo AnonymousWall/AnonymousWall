@@ -1,7 +1,7 @@
 package com.anonymous.wall.listener;
 
 import com.anonymous.wall.event.PostHiddenEvent;
-import com.anonymous.wall.repository.CommentRepository;
+import com.anonymous.wall.service.base.CommentsService;
 import io.micronaut.context.event.ApplicationEventListener;
 import io.micronaut.scheduling.TaskExecutors;
 import io.micronaut.scheduling.annotation.Async;
@@ -25,7 +25,7 @@ public class PostHideEventListener implements ApplicationEventListener<PostHidde
     private static final Logger log = LoggerFactory.getLogger(PostHideEventListener.class);
     
     @Inject
-    private CommentRepository commentRepository;
+    private CommentsService commentService;
     
     /**
      * Handles post hide events asynchronously.
@@ -41,7 +41,7 @@ public class PostHideEventListener implements ApplicationEventListener<PostHidde
                 event.getPostId(), event.getUserId());
         
         try {
-            commentRepository.updateByParentTypeAndParentId("POST", event.getPostId(), true);
+            commentService.updateByParentTypeAndParentId("POST", event.getPostId(), true);
             log.debug("Hidden all comments for postId={}", event.getPostId());
         } catch (Exception e) {
             log.error("Failed to hide comments for postId={}: {}", 

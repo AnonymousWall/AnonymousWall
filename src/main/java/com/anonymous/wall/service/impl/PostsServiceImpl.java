@@ -7,12 +7,7 @@ import com.anonymous.wall.event.PostHiddenEvent;
 import com.anonymous.wall.model.CreatePostRequest;
 import com.anonymous.wall.model.SortBy;
 import com.anonymous.wall.repository.PostRepository;
-import com.anonymous.wall.repository.PostLikeRepository;
-import com.anonymous.wall.repository.UserRepository;
-import com.anonymous.wall.repository.CommentRepository;
-import com.anonymous.wall.service.base.PollService;
-import com.anonymous.wall.service.base.PostsService;
-import com.anonymous.wall.service.base.UserBlockService;
+import com.anonymous.wall.service.base.*;
 import com.anonymous.wall.util.MediaUtilInterface;
 import io.micronaut.context.event.ApplicationEventPublisher;
 import io.micronaut.data.model.Page;
@@ -43,16 +38,16 @@ public class PostsServiceImpl implements PostsService {
     private PostRepository postRepository;
 
     @Inject
-    private CommentRepository commentRepository;
+    private CommentsService commentsService;
 
     @Inject
-    private PostLikeRepository postLikeRepository;
+    private PostLikeService postLikeService;
 
     @Inject
-    private UserRepository userRepository;
+    private UserService userService;
 
     @Inject
-    private com.anonymous.wall.repository.PostReportRepository postReportRepository;
+    private PostReportService postReportService;
 
     @Inject
     private ApplicationEventPublisher<PostHiddenEvent> postHiddenEventPublisher;
@@ -158,7 +153,7 @@ public class PostsServiceImpl implements PostsService {
      * Fetch user by ID, throwing if not found
      */
     private UserEntity fetchUser(UUID userId) {
-        Optional<UserEntity> userOpt = userRepository.findById(userId);
+        Optional<UserEntity> userOpt = userService.findById(userId);
         if (userOpt.isEmpty()) {
             throw new IllegalArgumentException("User not found");
         }
@@ -191,7 +186,7 @@ public class PostsServiceImpl implements PostsService {
         }
 
         // Fetch user
-        Optional<UserEntity> userOpt = userRepository.findById(currentUserId);
+        Optional<UserEntity> userOpt = userService.findById(currentUserId);
         if (userOpt.isEmpty()) {
             throw new IllegalArgumentException("User not found");
         }
@@ -290,12 +285,12 @@ public class PostsServiceImpl implements PostsService {
         // Validate visibility and permission
         validatePostVisibility(post, userId);
 
-        Optional<PostLike> existingLike = postLikeRepository.findByPostIdAndUserId(postId, userId);
+        Optional<PostLike> existingLike = postLikeService.findByPostIdAndUserId(postId, userId);
         boolean isNowLiked;
 
         if (existingLike.isPresent()) {
             // Unlike - decrement like count atomically
-            postLikeRepository.deleteByPostIdAndUserId(postId, userId);
+            postLikeService.deleteByPostIdAndUserId(postId, userId);
             post.decrementLikeCount();
             postRepository.update(post);
             isNowLiked = false;
@@ -303,7 +298,7 @@ public class PostsServiceImpl implements PostsService {
         } else {
             // Like - increment like count atomically
             PostLike like = new PostLike(postId, userId);
-            postLikeRepository.save(like);
+            postLikeService.save(like);
             post.incrementLikeCount();
             postRepository.update(post);
             isNowLiked = true;
@@ -352,7 +347,7 @@ public class PostsServiceImpl implements PostsService {
         }
         if (post.getWall().equals("campus")) {
             log.debug("Validating campus post access for user: {}, postSchoolDomain: {}", userId, post.getSchoolDomain());
-            Optional<UserEntity> userOpt = userRepository.findById(userId);
+            Optional<UserEntity> userOpt = userService.findById(userId);
             if (userOpt.isEmpty()) {
                 log.warn("User not found during visibility check: {}", userId);
                 throw new IllegalArgumentException("User not found");
@@ -381,7 +376,7 @@ public class PostsServiceImpl implements PostsService {
 
         // Check if current user liked this post
         if (currentUserId != null) {
-            Optional<PostLike> userLike = postLikeRepository.findByPostIdAndUserId(post.getId(), currentUserId);
+            Optional<PostLike> userLike = postLikeService.findByPostIdAndUserId(post.getId(), currentUserId);
             post.setLiked(userLike.isPresent());
         }
     }
@@ -403,7 +398,7 @@ public class PostsServiceImpl implements PostsService {
                 .collect(Collectors.toList());
 
             // Fetch all likes for these posts in a single query
-            List<PostLike> userLikes = postLikeRepository.findByUserIdAndPostIdIn(currentUserId, postIds);
+            List<PostLike> userLikes = postLikeService.findByUserIdAndPostIdIn(currentUserId, postIds);
             
             // Create a set of liked post IDs for O(1) lookup
             Set<UUID> likedPostIds = userLikes.stream()
@@ -484,7 +479,7 @@ public class PostsServiceImpl implements PostsService {
         Post updatedPost = postRepository.update(post);
 
         // Unhide all comments associated with this post (within same transaction)
-        commentRepository.updateByParentTypeAndParentId("POST", postId, false);
+        commentsService.updateByParentTypeAndParentId("POST", postId, false);
 
         log.info("Post unhidden: id={}, user={}", postId, userId);
         return updatedPost;
@@ -528,23 +523,49 @@ public class PostsServiceImpl implements PostsService {
         Post post = postOpt.get();
 
         // Check if user has already reported this post
-        if (postReportRepository.existsByPostIdAndReporterUserId(postId, reporterUserId)) {
+        if (postReportService.existsByPostIdAndReporterUserId(postId, reporterUserId)) {
             throw new IllegalArgumentException("You have already reported this post");
         }
 
         // Create the report
         com.anonymous.wall.entity.PostReport report = new com.anonymous.wall.entity.PostReport(postId, reporterUserId, post.getUserId(), reason);
-        postReportRepository.save(report);
+        postReportService.save(report);
 
         // Increment report count for the post author
-        Optional<UserEntity> authorOpt = userRepository.findById(post.getUserId());
+        Optional<UserEntity> authorOpt = userService.findById(post.getUserId());
         if (authorOpt.isPresent()) {
             UserEntity author = authorOpt.get();
             author.setReportCount(author.getReportCount() + 1);
-            userRepository.update(author);
+            userService.update(author);
             log.info("Incremented report count for user: userId={}, newCount={}", author.getId(), author.getReportCount());
         }
 
         log.info("Post reported successfully: postId={}, reporterUserId={}", postId, reporterUserId);
     }
+
+    @Override
+    @Transactional
+    public void updateProfileNameByUserId(UUID userId, String profileName) {
+        try {
+            log.info("Updating profile name for user: userId={}, newName={}", userId, profileName);
+            postRepository.updateProfileNameByUserId(userId, profileName);
+        } catch (Exception e) {
+            log.warn("Attempt failed updating profile name: userId={}, error={}",
+                    userId, e.getMessage());
+            throw e;
+        }
+    }
+
+    @Override
+    @Transactional
+    public Optional<Post> findById(UUID postId) {
+        return postRepository.findById(postId);
+    }
+
+    @Override
+    @Transactional
+    public void update(Post post) {
+        postRepository.update(post);
+    }
+
 }

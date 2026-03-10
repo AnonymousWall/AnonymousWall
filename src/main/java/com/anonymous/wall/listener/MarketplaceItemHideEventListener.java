@@ -1,7 +1,7 @@
 package com.anonymous.wall.listener;
 
 import com.anonymous.wall.event.MarketplaceItemHiddenEvent;
-import com.anonymous.wall.repository.CommentRepository;
+import com.anonymous.wall.service.base.CommentsService;
 import io.micronaut.context.event.ApplicationEventListener;
 import io.micronaut.scheduling.TaskExecutors;
 import io.micronaut.scheduling.annotation.Async;
@@ -25,7 +25,7 @@ public class MarketplaceItemHideEventListener implements ApplicationEventListene
     private static final Logger log = LoggerFactory.getLogger(MarketplaceItemHideEventListener.class);
 
     @Inject
-    private CommentRepository commentRepository;
+    private CommentsService commentService;
 
     /**
      * Handles marketplace item hide events asynchronously.
@@ -41,7 +41,7 @@ public class MarketplaceItemHideEventListener implements ApplicationEventListene
                 event.getItemId(), event.getUserId());
 
         try {
-            commentRepository.updateByParentTypeAndParentId("MARKETPLACE", event.getItemId(), true);
+            commentService.updateByParentTypeAndParentId("MARKETPLACE", event.getItemId(), true);
             log.debug("Hidden all comments for marketplace itemId={}", event.getItemId());
         } catch (Exception e) {
             log.error("Failed to hide comments for marketplace itemId={}: {}",

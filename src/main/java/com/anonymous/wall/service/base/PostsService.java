@@ -9,6 +9,7 @@ import io.micronaut.http.multipart.CompletedFileUpload;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface PostsService {
@@ -62,4 +63,20 @@ public interface PostsService {
      * Increments the report count for the post author
      */
     void reportPost(UUID postId, UUID reporterUserId, String reason);
+
+    /**
+     * Update profile name for all posts by a user
+     * Used for profile name propagation when user changes their profile name
+     * Micronaut Data automatically generates: UPDATE posts SET profile_name = ? WHERE user_id = ?
+     */
+    void updateProfileNameByUserId(UUID userId, String profileName);
+
+    /**
+     * Find a post by ID, including hidden posts (used for internal operations like hiding/unhiding)
+     * @param postId
+     * @return Optional<Post>
+     */
+    Optional<Post> findById(UUID postId);
+
+    void update(Post post);
 }

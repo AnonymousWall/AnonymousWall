@@ -8,8 +8,7 @@ import com.anonymous.wall.notification.event.CommentCreatedEvent;
 import com.anonymous.wall.notification.event.InternshipCommentCreatedEvent;
 import com.anonymous.wall.notification.event.MarketplaceCommentCreatedEvent;
 import com.anonymous.wall.repository.*;
-import com.anonymous.wall.service.base.CommentsService;
-import com.anonymous.wall.service.base.UserBlockService;
+import com.anonymous.wall.service.base.*;
 import io.micronaut.context.event.ApplicationEventPublisher;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
@@ -34,19 +33,19 @@ public class CommentsServiceImpl implements CommentsService {
     private CommentRepository commentRepository;
 
     @Inject
-    private PostRepository postRepository;
+    private PostsService postsService;
 
     @Inject
-    private InternshipRepository internshipRepository;
+    private InternshipService internshipService;
 
     @Inject
-    private MarketplaceItemRepository marketplaceItemRepository;
+    private MarketplaceService marketplaceService;
 
     @Inject
-    private UserRepository userRepository;
+    private UserService userService;
 
     @Inject
-    private CommentReportRepository commentReportRepository;
+    private CommentReportService commentReportService;
 
     @Inject
     private UserBlockService userBlockService;
@@ -65,11 +64,11 @@ public class CommentsServiceImpl implements CommentsService {
      */
     private Commentable resolveParent(CommentParentType parentType, UUID parentId) {
         return switch (parentType) {
-            case POST -> postRepository.findById(parentId)
+            case POST -> postsService.findById(parentId)
                     .orElseThrow(() -> new IllegalArgumentException("Post not found"));
-            case INTERNSHIP -> internshipRepository.findById(parentId)
+            case INTERNSHIP -> internshipService.findById(parentId)
                     .orElseThrow(() -> new IllegalArgumentException("Internship not found"));
-            case MARKETPLACE -> marketplaceItemRepository.findById(parentId)
+            case MARKETPLACE -> marketplaceService.findById(parentId)
                     .orElseThrow(() -> new IllegalArgumentException("Marketplace item not found"));
         };
     }
@@ -79,9 +78,9 @@ public class CommentsServiceImpl implements CommentsService {
      */
     private void saveParent(CommentParentType parentType, Commentable parent) {
         switch (parentType) {
-            case POST -> postRepository.update((Post) parent);
-            case INTERNSHIP -> internshipRepository.update((Internship) parent);
-            case MARKETPLACE -> marketplaceItemRepository.update((MarketplaceItem) parent);
+            case POST -> postsService.update((Post) parent);
+            case INTERNSHIP -> internshipService.update((Internship) parent);
+            case MARKETPLACE -> marketplaceService.update((MarketplaceItem) parent);
         }
     }
 
@@ -100,7 +99,7 @@ public class CommentsServiceImpl implements CommentsService {
         }
         if ("campus".equals(parent.getWall())) {
             log.debug("Validating campus entity access for user: {}, entitySchoolDomain: {}", userId, parent.getSchoolDomain());
-            Optional<UserEntity> userOpt = userRepository.findById(userId);
+            Optional<UserEntity> userOpt = userService.findById(userId);
             if (userOpt.isEmpty()) {
                 log.warn("User not found during visibility check: {}", userId);
                 throw new IllegalArgumentException("User not found");
@@ -141,7 +140,7 @@ public class CommentsServiceImpl implements CommentsService {
         }
 
         // Fetch user to get profile name
-        Optional<UserEntity> userOpt = userRepository.findById(userId);
+        Optional<UserEntity> userOpt = userService.findById(userId);
         if (userOpt.isEmpty()) {
             throw new IllegalArgumentException("User not found");
         }
@@ -359,23 +358,43 @@ public class CommentsServiceImpl implements CommentsService {
         Comment comment = commentOpt.get();
 
         // Check if user has already reported this comment
-        if (commentReportRepository.existsByCommentIdAndReporterUserId(commentId, reporterUserId)) {
+        if (commentReportService.existsByCommentIdAndReporterUserId(commentId, reporterUserId)) {
             throw new IllegalArgumentException("You have already reported this comment");
         }
 
         // Create the report
         CommentReport report = new CommentReport(commentId, reporterUserId, comment.getUserId(), reason);
-        commentReportRepository.save(report);
+        commentReportService.save(report);
 
         // Increment report count for the comment author
-        Optional<UserEntity> authorOpt = userRepository.findById(comment.getUserId());
+        Optional<UserEntity> authorOpt = userService.findById(comment.getUserId());
         if (authorOpt.isPresent()) {
             UserEntity author = authorOpt.get();
             author.setReportCount(author.getReportCount() + 1);
-            userRepository.update(author);
+            userService.update(author);
             log.info("Incremented report count for user: userId={}, newCount={}", author.getId(), author.getReportCount());
         }
 
         log.info("Comment reported successfully: commentId={}, reporterUserId={}", commentId, reporterUserId);
     }
+
+    @Override
+    @Transactional
+    public void updateProfileNameByUserId(UUID userId, String profileName) {
+        try {
+            log.info("Updating profile name for user: userId={}, newName={}", userId, profileName);
+            commentRepository.updateProfileNameByUserId(userId, profileName);
+        } catch (Exception e) {
+            log.warn("Attempt failed updating profile name: userId={}, error={}",
+                    userId, e.getMessage());
+            throw e;
+        }
+    }
+
+    @Override
+    @Transactional
+    public void updateByParentTypeAndParentId(String parentType, UUID parentId, boolean hidden) {
+        commentRepository.updateByParentTypeAndParentId(parentType, parentId, hidden);
+    }
+
 }

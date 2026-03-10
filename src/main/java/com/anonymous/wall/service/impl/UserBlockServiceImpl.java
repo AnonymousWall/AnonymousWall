@@ -2,8 +2,8 @@ package com.anonymous.wall.service.impl;
 
 import com.anonymous.wall.entity.UserBlock;
 import com.anonymous.wall.repository.UserBlockRepository;
-import com.anonymous.wall.repository.UserRepository;
 import com.anonymous.wall.service.base.UserBlockService;
+import com.anonymous.wall.service.base.UserService;
 import io.micronaut.cache.annotation.CacheConfig;
 import io.micronaut.cache.annotation.CacheInvalidate;
 import io.micronaut.cache.annotation.Cacheable;
@@ -29,7 +29,7 @@ public class UserBlockServiceImpl implements UserBlockService {
     private UserBlockRepository userBlockRepository;
 
     @Inject
-    private UserRepository userRepository;
+    private UserService userService;
 
     @Inject
     @jakarta.inject.Named("user-block-sets")
@@ -48,7 +48,7 @@ public class UserBlockServiceImpl implements UserBlockService {
         if (blockerId.equals(targetUserId)) {
             throw new IllegalArgumentException("You cannot block yourself");
         }
-        if (userRepository.findById(targetUserId).isEmpty()) {
+        if (userService.findById(targetUserId).isEmpty()) {
             throw new IllegalArgumentException("Target user not found");
         }
         if (userBlockRepository.existsByBlockerIdAndBlockedId(blockerId, targetUserId)) {
@@ -69,7 +69,7 @@ public class UserBlockServiceImpl implements UserBlockService {
     @CacheInvalidate(parameters = {"blockerId"})
     @CacheInvalidate(parameters = {"targetUserId"})
     public void unblockUser(UUID blockerId, UUID targetUserId) {
-        if (userRepository.findById(targetUserId).isEmpty()) {
+        if (userService.findById(targetUserId).isEmpty()) {
             throw new IllegalArgumentException("Target user not found");
         }
         if (!userBlockRepository.existsByBlockerIdAndBlockedId(blockerId, targetUserId)) {

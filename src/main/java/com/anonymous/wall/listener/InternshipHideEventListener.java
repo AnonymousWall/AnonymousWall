@@ -1,7 +1,7 @@
 package com.anonymous.wall.listener;
 
 import com.anonymous.wall.event.InternshipHiddenEvent;
-import com.anonymous.wall.repository.CommentRepository;
+import com.anonymous.wall.service.base.CommentsService;
 import io.micronaut.context.event.ApplicationEventListener;
 import io.micronaut.scheduling.TaskExecutors;
 import io.micronaut.scheduling.annotation.Async;
@@ -25,7 +25,7 @@ public class InternshipHideEventListener implements ApplicationEventListener<Int
     private static final Logger log = LoggerFactory.getLogger(InternshipHideEventListener.class);
 
     @Inject
-    private CommentRepository commentRepository;
+    private CommentsService commentService;
 
     /**
      * Handles internship hide events asynchronously.
@@ -41,7 +41,7 @@ public class InternshipHideEventListener implements ApplicationEventListener<Int
                 event.getInternshipId(), event.getUserId());
 
         try {
-            commentRepository.updateByParentTypeAndParentId("INTERNSHIP", event.getInternshipId(), true);
+            commentService.updateByParentTypeAndParentId("INTERNSHIP", event.getInternshipId(), true);
             log.debug("Hidden all comments for internshipId={}", event.getInternshipId());
         } catch (Exception e) {
             log.error("Failed to hide comments for internshipId={}: {}",

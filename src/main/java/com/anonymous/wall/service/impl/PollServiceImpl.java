@@ -5,8 +5,8 @@ import com.anonymous.wall.entity.PollVote;
 import com.anonymous.wall.entity.Post;
 import com.anonymous.wall.repository.PollOptionRepository;
 import com.anonymous.wall.repository.PollVoteRepository;
-import com.anonymous.wall.repository.PostRepository;
 import com.anonymous.wall.service.base.PollService;
+import com.anonymous.wall.service.base.PostsService;
 import io.micronaut.transaction.annotation.Transactional;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
@@ -30,7 +30,7 @@ public class PollServiceImpl implements PollService {
     private PollVoteRepository pollVoteRepository;
 
     @Inject
-    private PostRepository postRepository;
+    private PostsService postService;
 
     @Override
     @Transactional
@@ -51,7 +51,7 @@ public class PollServiceImpl implements PollService {
     @Transactional
     public PollVote vote(UUID postId, UUID optionId, UUID userId) {
         // Verify post exists and is a poll
-        Optional<Post> postOpt = postRepository.findById(postId);
+        Optional<Post> postOpt = postService.findById(postId);
         if (postOpt.isEmpty()) {
             throw new IllegalArgumentException("Post not found: " + postId);
         }
@@ -84,7 +84,7 @@ public class PollServiceImpl implements PollService {
 
         // Increment post total_votes
         post.setTotalVotes(post.getTotalVotes() + 1);
-        postRepository.update(post);
+        postService.update(post);
 
         // Save vote
         PollVote vote = new PollVote(postId, optionId, userId);
@@ -96,7 +96,7 @@ public class PollServiceImpl implements PollService {
 
     @Override
     public Map<String, Object> getPollData(UUID postId, UUID userId, boolean viewResults) {
-        Optional<Post> postOpt = postRepository.findById(postId);
+        Optional<Post> postOpt = postService.findById(postId);
         if (postOpt.isEmpty()) {
             throw new IllegalArgumentException("Post not found: " + postId);
         }

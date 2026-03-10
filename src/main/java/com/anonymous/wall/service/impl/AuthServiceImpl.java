@@ -4,10 +4,10 @@ import com.anonymous.wall.model.*;
 import com.anonymous.wall.entity.RefreshToken;
 import com.anonymous.wall.entity.UserEntity;
 import com.anonymous.wall.entity.EmailVerificationCode;
-import com.anonymous.wall.repository.EmailVerificationCodeRepository;
-import com.anonymous.wall.repository.RefreshTokenRepository;
 import com.anonymous.wall.service.JwtTokenService;
 import com.anonymous.wall.service.base.AuthService;
+import com.anonymous.wall.service.base.EmailVerificationCodeService;
+import com.anonymous.wall.service.base.RefreshTokenService;
 import com.anonymous.wall.service.base.UserService;
 import com.anonymous.wall.util.PasswordUtil;
 import com.anonymous.wall.util.CodeGenerator;
@@ -36,13 +36,13 @@ public class AuthServiceImpl implements AuthService {
     private EmailUtilInterface emailUtil;
 
     @Inject
-    private EmailVerificationCodeRepository emailCodeRepository;
+    private EmailVerificationCodeService emailCodeService;
 
     @Inject
     private JwtTokenService jwtTokenService;
 
     @Inject
-    private RefreshTokenRepository refreshTokenRepository;
+    private RefreshTokenService refreshTokenService;
 
     /**
      * Send verification code to email
@@ -62,7 +62,7 @@ public class AuthServiceImpl implements AuthService {
             purpose,
             OffsetDateTime.now().plusMinutes(CODE_EXPIRATION_MINUTES)
         );
-        emailCodeRepository.save(emailCode);
+        emailCodeService.save(emailCode);
         log.debug("Verification code stored in database, email: {}, purpose: {}", request.getEmail(), purpose);
 
         // Send email (fake for local testing)
@@ -92,7 +92,7 @@ public class AuthServiceImpl implements AuthService {
 
         // Verify the code
         log.debug("Verifying registration code for email: {}", request.getEmail());
-        Optional<EmailVerificationCode> codeRecord = emailCodeRepository
+        Optional<EmailVerificationCode> codeRecord = emailCodeService
             .findByEmailAndCodeAndPurpose(request.getEmail(), request.getCode(), "register");
 
         if (codeRecord.isEmpty()) {
@@ -119,7 +119,7 @@ public class AuthServiceImpl implements AuthService {
         log.debug("User account created, userId: {}, schoolDomain: {}", savedUser.getId(), savedUser.getSchoolDomain());
 
         // Clean up used code
-        emailCodeRepository.deleteByEmail(request.getEmail());
+        emailCodeService.deleteByEmail(request.getEmail());
         log.debug("Verification code cleaned up for email: {}", request.getEmail());
 
         log.info("User registered successfully: email={}, userId={}", request.getEmail(), savedUser.getId());
@@ -136,7 +136,7 @@ public class AuthServiceImpl implements AuthService {
 
         // Verify the code
         log.debug("Verifying login code for email: {}", request.getEmail());
-        Optional<EmailVerificationCode> codeRecord = emailCodeRepository
+        Optional<EmailVerificationCode> codeRecord = emailCodeService
             .findByEmailAndCodeAndPurpose(request.getEmail(), request.getCode(), "login");
 
         if (codeRecord.isEmpty()) {
@@ -178,7 +178,7 @@ public class AuthServiceImpl implements AuthService {
         }
 
         // Clean up used code
-        emailCodeRepository.deleteByEmail(request.getEmail());
+        emailCodeService.deleteByEmail(request.getEmail());
         log.debug("Verification code cleaned up for email: {}", request.getEmail());
 
         log.info("User logged in with email code successfully: email={}, userId={}", request.getEmail(), user.getId());
@@ -304,7 +304,7 @@ public class AuthServiceImpl implements AuthService {
             "reset_password",
             OffsetDateTime.now().plusMinutes(CODE_EXPIRATION_MINUTES)
         );
-        emailCodeRepository.save(resetCode);
+        emailCodeService.save(resetCode);
         log.debug("Password reset code saved in database for email: {}", request.getEmail());
 
         emailUtil.sendVerificationCodeEmail(request.getEmail(), code, "reset_password");
@@ -338,7 +338,7 @@ public class AuthServiceImpl implements AuthService {
 
         // Verify the code
         log.debug("Verifying password reset code for email: {}", request.getEmail());
-        Optional<EmailVerificationCode> codeRecord = emailCodeRepository
+        Optional<EmailVerificationCode> codeRecord = emailCodeService
             .findByEmailAndCodeAndPurpose(request.getEmail(), request.getCode(), "reset_password");
 
         if (codeRecord.isEmpty()) {
@@ -362,7 +362,7 @@ public class AuthServiceImpl implements AuthService {
         log.debug("Password updated in database for email: {}", request.getEmail());
 
         // Clean up used code
-        emailCodeRepository.deleteByEmail(request.getEmail());
+        emailCodeService.deleteByEmail(request.getEmail());
         log.debug("Reset code cleaned up for email: {}", request.getEmail());
 
         log.info("Password reset successfully for user: email={}, userId={}", request.getEmail(), updated.getId());
@@ -372,14 +372,14 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public String issueRefreshToken(UUID userId) {
-        refreshTokenRepository.updateRevokedByUserId(userId, true);
+        refreshTokenService.updateRevokedByUserId(userId, true);
 
         String rawRefreshToken = jwtTokenService.generateRefreshToken();
         RefreshToken refreshTokenEntity = new RefreshToken();
         refreshTokenEntity.setUserId(userId);
         refreshTokenEntity.setTokenHash(jwtTokenService.hashToken(rawRefreshToken));
         refreshTokenEntity.setExpiresAt(OffsetDateTime.now().plusDays(30));
-        refreshTokenRepository.save(refreshTokenEntity);
+        refreshTokenService.save(refreshTokenEntity);
 
         return rawRefreshToken;
     }
@@ -387,7 +387,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public Optional<RefreshToken> findValidRefreshToken(String rawRefreshToken) {
         String tokenHash = jwtTokenService.hashToken(rawRefreshToken);
-        Optional<RefreshToken> stored = refreshTokenRepository.findByTokenHashAndRevokedFalse(tokenHash);
+        Optional<RefreshToken> stored = refreshTokenService.findByTokenHashAndRevokedFalse(tokenHash);
 
         if (stored.isEmpty() || stored.get().getExpiresAt().isBefore(OffsetDateTime.now())) {
             return Optional.empty();
@@ -400,12 +400,12 @@ public class AuthServiceImpl implements AuthService {
     @Transactional
     public void revokeRefreshToken(RefreshToken refreshToken) {
         refreshToken.setRevoked(true);
-        refreshTokenRepository.update(refreshToken);
+        refreshTokenService.update(refreshToken);
     }
 
     @Override
     @Transactional
     public void revokeRefreshTokensForUser(UUID userId) {
-        refreshTokenRepository.updateRevokedByUserId(userId, true);
+        refreshTokenService.updateRevokedByUserId(userId, true);
     }
 }

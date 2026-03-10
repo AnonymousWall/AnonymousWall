@@ -37,4 +37,11 @@ public interface UserService {
      * @return true if user is blocked, false otherwise
      */
     boolean isUserBlocked(UUID userId);
+
+    /**
+     * Check if user exists
+     * @param userId The user ID to check
+     * @return true if user exists, false otherwise
+     */
+    boolean existsById(UUID userId);
 }

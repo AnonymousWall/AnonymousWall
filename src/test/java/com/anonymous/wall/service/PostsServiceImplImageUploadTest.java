@@ -6,6 +6,8 @@ import com.anonymous.wall.model.CreatePostRequest;
 import com.anonymous.wall.repository.PostRepository;
 import com.anonymous.wall.repository.UserRepository;
 import com.anonymous.wall.service.base.CommentsService;
+import com.anonymous.wall.service.base.UserBlockService;
+import com.anonymous.wall.service.base.PollService;
 import com.anonymous.wall.service.impl.PostsServiceImpl;
 import com.anonymous.wall.util.MediaUtilInterface;
 import io.micronaut.context.event.ApplicationEventPublisher;
@@ -44,11 +46,12 @@ class PostsServiceImplImageUploadTest {
             setField("postRepository", postRepository);
             setField("userRepository", userRepository);
             setField("mediaUtil", mediaUtil);
-            setField("commentsService", mock(CommentsService.class));
             setField("postLikeRepository", mock(com.anonymous.wall.repository.PostLikeRepository.class));
             setField("commentRepository", mock(com.anonymous.wall.repository.CommentRepository.class));
             setField("postReportRepository", mock(com.anonymous.wall.repository.PostReportRepository.class));
             setField("postHiddenEventPublisher", mock(ApplicationEventPublisher.class));
+            setField("userBlockService", mock(UserBlockService.class));
+            setField("pollService", mock(PollService.class));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

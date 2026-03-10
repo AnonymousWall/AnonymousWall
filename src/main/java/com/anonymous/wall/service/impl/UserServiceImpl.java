@@ -7,6 +7,7 @@ import com.anonymous.wall.service.base.UserService;
 import io.micronaut.cache.annotation.CacheConfig;
 import io.micronaut.cache.annotation.Cacheable;
 import io.micronaut.context.event.ApplicationEventPublisher;
+import io.micronaut.transaction.annotation.Transactional;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import org.slf4j.Logger;
@@ -30,6 +31,7 @@ public class UserServiceImpl implements UserService {
      * Find user by ID
      */
     @Override
+    @Transactional
     public Optional<UserEntity> findById(UUID userId) {
         log.debug("Finding user by ID: {}", userId);
         return userRepository.findById(userId);
@@ -39,6 +41,7 @@ public class UserServiceImpl implements UserService {
      * Find user by email
      */
     @Override
+    @Transactional
     public Optional<UserEntity> findByEmail(String email) {
         log.debug("Finding user by email: {}", email);
         return userRepository.findByEmail(email);
@@ -48,6 +51,7 @@ public class UserServiceImpl implements UserService {
      * Update user profile name
      */
     @Override
+    @Transactional
     public UserEntity updateProfileName(UUID userId, String profileName) {
         log.debug("Updating profile name for user: {}", userId);
         
@@ -87,6 +91,7 @@ public class UserServiceImpl implements UserService {
      * Update user entity
      */
     @Override
+    @Transactional
     public UserEntity update(UserEntity user) {
         log.debug("Updating user: {}", user.getId());
         return userRepository.update(user);
@@ -96,9 +101,22 @@ public class UserServiceImpl implements UserService {
      * Save user entity
      */
     @Override
+    @Transactional
     public UserEntity save(UserEntity user) {
         log.debug("Saving user");
         return userRepository.save(user);
+    }
+
+    /**
+     * Check if user exists
+     * @param userId The user ID to check
+     * @return true if user exists, false otherwise
+     */
+    @Override
+    @Transactional
+    public boolean existsById(UUID userId) {
+        log.debug("Checking existence of user: {}", userId);
+        return userRepository.existsById(userId);
     }
 
     /**

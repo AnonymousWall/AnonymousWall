@@ -8,6 +8,7 @@ import io.micronaut.data.model.Pageable;
 import io.micronaut.http.multipart.CompletedFileUpload;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface MarketplaceService {
@@ -29,4 +30,10 @@ public interface MarketplaceService {
     void hideItem(UUID itemId, UUID userId);
 
     void unhideItem(UUID itemId, UUID userId);
+
+    void updateProfileNameByUserId(UUID userId, String profileName);
+
+    Optional<MarketplaceItem> findById(UUID itemId);
+
+    void update(MarketplaceItem item);
 }

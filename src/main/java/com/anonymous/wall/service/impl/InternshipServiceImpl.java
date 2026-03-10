@@ -4,11 +4,11 @@ import com.anonymous.wall.entity.Internship;
 import com.anonymous.wall.entity.UserEntity;
 import com.anonymous.wall.event.InternshipHiddenEvent;
 import com.anonymous.wall.model.CreateInternshipRequest;
-import com.anonymous.wall.repository.CommentRepository;
 import com.anonymous.wall.repository.InternshipRepository;
-import com.anonymous.wall.repository.UserRepository;
+import com.anonymous.wall.service.base.CommentsService;
 import com.anonymous.wall.service.base.InternshipService;
 import com.anonymous.wall.service.base.UserBlockService;
+import com.anonymous.wall.service.base.UserService;
 import io.micronaut.context.event.ApplicationEventPublisher;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
@@ -35,10 +35,10 @@ public class InternshipServiceImpl implements InternshipService {
     private InternshipRepository internshipRepository;
 
     @Inject
-    private UserRepository userRepository;
+    private UserService userService;
 
     @Inject
-    private CommentRepository commentRepository;
+    private CommentsService commentsService;
 
     @Inject
     private ApplicationEventPublisher<InternshipHiddenEvent> internshipHiddenEventPublisher;
@@ -51,7 +51,7 @@ public class InternshipServiceImpl implements InternshipService {
     public Internship createInternship(CreateInternshipRequest request, UUID userId) {
         log.info("Creating internship for user {}", userId);
 
-        Optional<UserEntity> userOpt = userRepository.findById(userId);
+        Optional<UserEntity> userOpt = userService.findById(userId);
         if (userOpt.isEmpty()) {
             throw new IllegalArgumentException("User not found");
         }
@@ -201,7 +201,7 @@ public class InternshipServiceImpl implements InternshipService {
 
         // Validate campus access
         if ("campus".equals(internship.getWall())) {
-            Optional<UserEntity> userOpt = userRepository.findById(userId);
+            Optional<UserEntity> userOpt = userService.findById(userId);
             if (userOpt.isEmpty()) {
                 throw new IllegalArgumentException("User not found");
             }
@@ -260,7 +260,7 @@ public class InternshipServiceImpl implements InternshipService {
         internship.setUpdatedAt(OffsetDateTime.now());
         internshipRepository.update(internship);
         // Unhide all comments associated with this internship (within same transaction)
-        commentRepository.updateByParentTypeAndParentId("INTERNSHIP", internshipId, false);
+        commentsService.updateByParentTypeAndParentId("INTERNSHIP", internshipId, false);
         log.info("Unhid internship {}", internshipId);
     }
 
@@ -279,5 +279,30 @@ public class InternshipServiceImpl implements InternshipService {
             default:
                 return internshipRepository.findByUserIdAndHiddenFalseOrderByCreatedAtDesc(userId, pageable);
         }
+    }
+
+    @Override
+    @Transactional
+    public void updateProfileNameByUserId(UUID userId, String profileName) {
+        try {
+            log.info("Updating profile name for user: userId={}, newName={}", userId, profileName);
+            internshipRepository.updateProfileNameByUserId(userId, profileName);
+        } catch (Exception e) {
+            log.warn("Attempt failed updating profile name: userId={}, error={}",
+                    userId, e.getMessage());
+            throw e;
+        }
+    }
+
+    @Override
+    @Transactional
+    public Optional<Internship> findById(UUID internshipId) {
+        return internshipRepository.findById(internshipId);
+    }
+
+    @Override
+    @Transactional
+    public void update(Internship internship) {
+        internshipRepository.update(internship);
     }
 }
