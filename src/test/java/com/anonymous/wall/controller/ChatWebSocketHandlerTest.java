@@ -85,7 +85,7 @@ class ChatWebSocketHandlerTest {
             handler.onOpen(mockSession);
 
             // Assert
-            verify(mockSession, times(2)).sendSync(anyString()); // connected + unread_count
+            verify(mockSession, times(2)).sendAsync(anyString()); // connected + unread_count
             verify(chatRetryService, times(1)).countTotalUnreadMessages(testUser1Id);
         }
 
@@ -104,7 +104,7 @@ class ChatWebSocketHandlerTest {
             handler.onOpen(mockSession);
 
             // Assert
-            verify(mockSession, times(1)).sendSync(anyString());
+            verify(mockSession, times(1)).sendAsync(anyString());
         }
 
         @Test
@@ -118,7 +118,7 @@ class ChatWebSocketHandlerTest {
             handler.onOpen(mockSession);
 
             // Assert
-            verify(mockSession, times(2)).sendSync(anyString());
+            verify(mockSession, times(2)).sendAsync(anyString());
             verify(chatRetryService, times(1)).countTotalUnreadMessages(testUser1Id);
         }
 
@@ -133,7 +133,7 @@ class ChatWebSocketHandlerTest {
             handler.onOpen(mockSession);
 
             // Assert
-            verify(mockSession, times(1)).sendSync(anyString()); // Only connection confirmation
+            verify(mockSession, times(1)).sendAsync(anyString()); // Only connection confirmation
         }
 
         @Test
@@ -394,8 +394,8 @@ class ChatWebSocketHandlerTest {
             handler.onOpen(session2);
 
             // Assert
-            verify(mockSession, times(1)).sendSync(anyString());
-            verify(session2, times(1)).sendSync(anyString());
+            verify(mockSession, times(1)).sendAsync(anyString());
+            verify(session2, times(1)).sendAsync(anyString());
         }
 
         @Test

@@ -67,6 +67,7 @@ public class ChatController {
      * Get list of conversations for the authenticated user
      */
     @Get("/conversations")
+    @ExecuteOn(TaskExecutors.BLOCKING)
     public HttpResponse<?> getConversations(HttpRequest<?> request) {
         try {
             UUID userId = getUserIdFromRequest(request);
@@ -92,6 +93,7 @@ public class ChatController {
      * Get message history with another user
      */
     @Get("/messages/{otherUserId}")
+    @ExecuteOn(TaskExecutors.BLOCKING)
     public HttpResponse<?> getMessageHistory(
             @PathVariable String otherUserId,
             @QueryValue(defaultValue = "1") int page,
@@ -165,6 +167,7 @@ public class ChatController {
      * Send a chat message
      */
     @Post("/messages")
+    @ExecuteOn(TaskExecutors.BLOCKING)
     public HttpResponse<?> sendMessage(@Body SendMessageRequest request, HttpRequest<?> httpRequest) {
         try {
             UUID senderId = getUserIdFromRequest(httpRequest);
@@ -187,6 +190,14 @@ public class ChatController {
                     receiverId,
                     chatWebSocketHandler.serializeToJson(wsMessage));
 
+            long receiverUnreadCount = chatRetryService.countTotalUnreadMessages(receiverId);
+            Map<String, Object> unreadUpdate = new HashMap<>();
+            unreadUpdate.put("type", "unreadCount");
+            unreadUpdate.put("count", receiverUnreadCount);
+            chatWebSocketHandler.broadcastToUser(receiverId, chatWebSocketHandler.serializeToJson(unreadUpdate));
+
+            log.info("WebSocket message delivered from {} to {}", senderId, receiverId);
+
             return HttpResponse.created(messageDTO);
         } catch (IllegalArgumentException e) {
             log.warn("Error sending message: {}", e.getMessage());
@@ -202,6 +213,7 @@ public class ChatController {
      * Mark a specific message as read
      */
     @Put("/messages/{messageId}/read")
+    @ExecuteOn(TaskExecutors.BLOCKING)
     public HttpResponse<?> markMessageAsRead(
             @PathVariable String messageId,
             HttpRequest<?> request) {
@@ -232,6 +244,7 @@ public class ChatController {
      * Mark all messages from a user as read
      */
     @Put("/conversations/{otherUserId}/read")
+    @ExecuteOn(TaskExecutors.BLOCKING)
     public HttpResponse<?> markConversationAsRead(
             @PathVariable String otherUserId,
             HttpRequest<?> request) {

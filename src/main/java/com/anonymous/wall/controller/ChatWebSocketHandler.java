@@ -4,6 +4,8 @@ import com.anonymous.wall.entity.ChatMessage;
 import com.anonymous.wall.model.ChatMessageDTO;
 import com.anonymous.wall.service.retry.ChatRetryService;
 import com.anonymous.wall.service.RedisPubSubService;
+import io.micronaut.scheduling.TaskExecutors;
+import io.micronaut.scheduling.annotation.ExecuteOn;
 import io.micronaut.security.annotation.Secured;
 import io.micronaut.security.authentication.Authentication;
 import io.micronaut.security.rules.SecurityRule;
@@ -48,6 +50,7 @@ public class ChatWebSocketHandler {
      * Only authenticated users can connect.
      */
     @OnOpen
+    @ExecuteOn(TaskExecutors.BLOCKING)
     public void onOpen(WebSocketSession session) {
         try {
             UUID userId = getUserIdFromSession(session);
@@ -76,7 +79,7 @@ public class ChatWebSocketHandler {
             response.put("userId", userId.toString());
             response.put("timestamp", System.currentTimeMillis());
             
-            session.sendSync(serializeToJson(response));
+            session.sendAsync(serializeToJson(response));
             
             // Notify about unread messages count
             long unreadCount = chatRetryService.countTotalUnreadMessages(userId);
@@ -84,7 +87,7 @@ public class ChatWebSocketHandler {
                 Map<String, Object> unreadNotification = new HashMap<>();
                 unreadNotification.put("type", "unreadCount");
                 unreadNotification.put("count", unreadCount);
-                session.sendSync(serializeToJson(unreadNotification));
+                session.sendAsync(serializeToJson(unreadNotification));
             }
         } catch (Exception e) {
             log.error("Error handling WebSocket connection", e);
@@ -102,6 +105,7 @@ public class ChatWebSocketHandler {
      * }
      */
     @OnMessage
+    @ExecuteOn(TaskExecutors.BLOCKING)
     public void onMessage(String message, WebSocketSession session) {
         try {
             UUID senderId = getUserIdFromSession(session);
@@ -150,6 +154,12 @@ public class ChatWebSocketHandler {
 
                 // Send to receiver if online
                 broadcastToUser(receiverId, responseJson);
+
+                long receiverUnreadCount = chatRetryService.countTotalUnreadMessages(receiverId);
+                Map<String, Object> unreadUpdate = new HashMap<>();
+                unreadUpdate.put("type", "unreadCount");
+                unreadUpdate.put("count", receiverUnreadCount);
+                broadcastToUser(receiverId, serializeToJson(unreadUpdate));
 
                 log.info("WebSocket message delivered from {} to {}", senderId, receiverId);
 
@@ -239,15 +249,19 @@ public class ChatWebSocketHandler {
     public void onClose(WebSocketSession session) {
         try {
             UUID userId = getUserIdFromSession(session);
-            
-            // Remove session from user's session set
-            Set<WebSocketSession> sessions = userSessions.get(userId);
-            if (sessions != null) {
+
+            boolean[] shouldUnsubscribe = {false};
+            userSessions.compute(userId, (k, sessions) -> {
+                if (sessions == null) return null;
                 sessions.remove(session);
                 if (sessions.isEmpty()) {
-                    userSessions.remove(userId);
-                    redisPubSubService.unsubscribe(userId);
+                    shouldUnsubscribe[0] = true;
+                    return null;
                 }
+                return sessions;
+            });
+            if (shouldUnsubscribe[0]) {
+                redisPubSubService.unsubscribe(userId);
             }
             
             log.info("WebSocket connection closed for user: {}, session: {}", userId, session.getId());

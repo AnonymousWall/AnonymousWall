@@ -3,9 +3,8 @@ package com.anonymous.wall.controller;
 import com.anonymous.wall.entity.MarketplaceItem;
 import com.anonymous.wall.entity.UserEntity;
 import com.anonymous.wall.model.CreateItemRequest;
-import com.anonymous.wall.repository.CommentRepository;
-import com.anonymous.wall.repository.MarketplaceItemRepository;
-import com.anonymous.wall.repository.UserRepository;
+import com.anonymous.wall.notification.device.DeviceTokenRepository;
+import com.anonymous.wall.repository.*;
 import com.anonymous.wall.service.JwtTokenService;
 import com.anonymous.wall.service.base.MarketplaceService;
 import io.micronaut.http.HttpRequest;
@@ -48,6 +47,36 @@ class UserControllerMarketplacesTest {
     @Inject
     private MarketplaceService marketplaceService;
 
+    @Inject
+    private PostRepository postRepository;
+
+    @Inject
+    private PostLikeRepository postLikeRepository;
+
+    @Inject
+    private PostReportRepository postReportRepository;
+
+    @Inject
+    private CommentReportRepository commentReportRepository;
+
+    @Inject
+    private InternshipRepository internshipRepository;
+
+    @Inject
+    private UserBlockRepository userBlockRepository;
+
+    @Inject
+    private ChatMessageRepository chatMessageRepository;
+
+    @Inject
+    private DeviceTokenRepository deviceTokenRepository;
+
+    @Inject
+    private PollVoteRepository pollVoteRepository;
+
+    @Inject
+    private PollOptionRepository pollOptionRepository;
+
     private UserEntity testUser1;
     private UserEntity testUser2;
     private String jwtToken1;
@@ -55,8 +84,23 @@ class UserControllerMarketplacesTest {
 
     @BeforeEach
     void setUp() {
+        // Level 3: deepest children first (leaf tables)
+        pollVoteRepository.deleteAll();
+        pollOptionRepository.deleteAll();
+        postLikeRepository.deleteAll();
+        postReportRepository.deleteAll();
+        commentReportRepository.deleteAll();
+        userBlockRepository.deleteAll();
+        deviceTokenRepository.deleteAll();
+        chatMessageRepository.deleteAll();
+
+        // Level 2: children of posts and users
         commentRepository.deleteAll();
+        postRepository.deleteAll();
         marketplaceItemRepository.deleteAll();
+        internshipRepository.deleteAll();
+
+        // Level 1: root
         userRepository.deleteAll();
 
         testUser1 = new UserEntity();
@@ -84,8 +128,20 @@ class UserControllerMarketplacesTest {
 
     @AfterEach
     void tearDown() {
+        pollVoteRepository.deleteAll();
+        pollOptionRepository.deleteAll();
+        postLikeRepository.deleteAll();
+        postReportRepository.deleteAll();
+        commentReportRepository.deleteAll();
+        userBlockRepository.deleteAll();
+        deviceTokenRepository.deleteAll();
+        chatMessageRepository.deleteAll();
+
         commentRepository.deleteAll();
+        postRepository.deleteAll();
         marketplaceItemRepository.deleteAll();
+        internshipRepository.deleteAll();
+
         userRepository.deleteAll();
     }
 
