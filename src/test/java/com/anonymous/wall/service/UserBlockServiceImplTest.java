@@ -3,8 +3,9 @@ package com.anonymous.wall.service;
 import com.anonymous.wall.entity.UserBlock;
 import com.anonymous.wall.entity.UserEntity;
 import com.anonymous.wall.repository.UserBlockRepository;
-import com.anonymous.wall.repository.UserRepository;
+import com.anonymous.wall.service.base.UserService;
 import com.anonymous.wall.service.impl.UserBlockServiceImpl;
+import io.micronaut.cache.SyncCache;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -25,24 +26,24 @@ class UserBlockServiceImplTest {
 
     private UserBlockServiceImpl userBlockService;
     private UserBlockRepository userBlockRepository;
-    private UserRepository userRepository;
+    private UserService userService;
 
     @BeforeEach
     void setUp() {
         userBlockRepository = mock(UserBlockRepository.class);
-        userRepository = mock(UserRepository.class);
+        userService = mock(UserService.class);
         userBlockService = new UserBlockServiceImpl();
         try {
             var blockRepoField = UserBlockServiceImpl.class.getDeclaredField("userBlockRepository");
             blockRepoField.setAccessible(true);
             blockRepoField.set(userBlockService, userBlockRepository);
 
-            var userRepoField = UserBlockServiceImpl.class.getDeclaredField("userRepository");
-            userRepoField.setAccessible(true);
-            userRepoField.set(userBlockService, userRepository);
+            var userServiceField = UserBlockServiceImpl.class.getDeclaredField("userService");
+            userServiceField.setAccessible(true);
+            userServiceField.set(userBlockService, userService);
 
             @SuppressWarnings("unchecked")
-            io.micronaut.cache.SyncCache<Object> mockCache = mock(io.micronaut.cache.SyncCache.class);
+            SyncCache<Object> mockCache = mock(SyncCache.class);
             var cacheField = UserBlockServiceImpl.class.getDeclaredField("blockSetsCache");
             cacheField.setAccessible(true);
             cacheField.set(userBlockService, mockCache);
@@ -64,7 +65,7 @@ class UserBlockServiceImplTest {
             UUID targetId = UUID.randomUUID();
             UserEntity target = createTestUser(targetId);
 
-            when(userRepository.findById(targetId)).thenReturn(Optional.of(target));
+            when(userService.findById(targetId)).thenReturn(Optional.of(target));
             when(userBlockRepository.existsByBlockerIdAndBlockedId(blockerId, targetId)).thenReturn(false);
             when(userBlockRepository.save(any(UserBlock.class))).thenAnswer(i -> i.getArgument(0));
 
@@ -87,7 +88,7 @@ class UserBlockServiceImplTest {
         void shouldThrowWhenTargetNotFound() {
             UUID blockerId = UUID.randomUUID();
             UUID targetId = UUID.randomUUID();
-            when(userRepository.findById(targetId)).thenReturn(Optional.empty());
+            when(userService.findById(targetId)).thenReturn(Optional.empty());
 
             IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                     () -> userBlockService.blockUser(blockerId, targetId));
@@ -99,7 +100,7 @@ class UserBlockServiceImplTest {
         void shouldThrowWhenAlreadyBlocked() {
             UUID blockerId = UUID.randomUUID();
             UUID targetId = UUID.randomUUID();
-            when(userRepository.findById(targetId)).thenReturn(Optional.of(createTestUser(targetId)));
+            when(userService.findById(targetId)).thenReturn(Optional.of(createTestUser(targetId)));
             when(userBlockRepository.existsByBlockerIdAndBlockedId(blockerId, targetId)).thenReturn(true);
 
             IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
@@ -119,7 +120,7 @@ class UserBlockServiceImplTest {
         void shouldUnblockUserSuccessfully() {
             UUID blockerId = UUID.randomUUID();
             UUID targetId = UUID.randomUUID();
-            when(userRepository.findById(targetId)).thenReturn(Optional.of(createTestUser(targetId)));
+            when(userService.findById(targetId)).thenReturn(Optional.of(createTestUser(targetId)));
             when(userBlockRepository.existsByBlockerIdAndBlockedId(blockerId, targetId)).thenReturn(true);
 
             assertDoesNotThrow(() -> userBlockService.unblockUser(blockerId, targetId));
@@ -131,7 +132,7 @@ class UserBlockServiceImplTest {
         void shouldThrowWhenTargetNotFound() {
             UUID blockerId = UUID.randomUUID();
             UUID targetId = UUID.randomUUID();
-            when(userRepository.findById(targetId)).thenReturn(Optional.empty());
+            when(userService.findById(targetId)).thenReturn(Optional.empty());
 
             IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                     () -> userBlockService.unblockUser(blockerId, targetId));
@@ -143,7 +144,7 @@ class UserBlockServiceImplTest {
         void shouldThrowWhenNotBlocked() {
             UUID blockerId = UUID.randomUUID();
             UUID targetId = UUID.randomUUID();
-            when(userRepository.findById(targetId)).thenReturn(Optional.of(createTestUser(targetId)));
+            when(userService.findById(targetId)).thenReturn(Optional.of(createTestUser(targetId)));
             when(userBlockRepository.existsByBlockerIdAndBlockedId(blockerId, targetId)).thenReturn(false);
 
             IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,

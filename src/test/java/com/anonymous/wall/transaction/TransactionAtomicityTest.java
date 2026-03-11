@@ -81,7 +81,7 @@ public class TransactionAtomicityTest {
     @Test
     void testCommentSaveAndCountUpdateAtomic() {
         int initialCommentCount = 0;
-        Post beforeComment = postRepository.findById(testPost.getId()).orElseThrow();
+        Post beforeComment = postsService.findById(testPost.getId()).orElseThrow();
         assertEquals(initialCommentCount, beforeComment.getCommentCount(), "Initial count should be 0");
 
         // Add comment - this is a 2-step operation:
@@ -98,7 +98,7 @@ public class TransactionAtomicityTest {
         assertEquals("Test comment for atomicity", retrievedComment.getText());
 
         // Verify count was incremented
-        Post afterComment = postRepository.findById(testPost.getId()).orElseThrow();
+        Post afterComment = postsService.findById(testPost.getId()).orElseThrow();
         assertEquals(1, afterComment.getCommentCount(),
             "Comment count MUST be incremented when comment is saved (atomicity)");
 
@@ -124,7 +124,7 @@ public class TransactionAtomicityTest {
         }
 
         // After all additions, verify exact consistency
-        Post finalPost = postRepository.findById(testPost.getId()).orElseThrow();
+        Post finalPost = postsService.findById(testPost.getId()).orElseThrow();
         long actualCommentCount = commentRepository.findByParentTypeAndParentIdAndHiddenFalse("POST", testPost.getId()).size();
 
         assertEquals(numComments, actualCommentCount,
@@ -144,14 +144,14 @@ public class TransactionAtomicityTest {
     @Test
     void testLikeToggleAtomicity() {
         // Initial state: no likes
-        Post beforeLike = postRepository.findById(testPost.getId()).orElseThrow();
+        Post beforeLike = postsService.findById(testPost.getId()).orElseThrow();
         assertEquals(0, beforeLike.getLikeCount(), "Initial like count should be 0");
 
         // First toggle - should add like
         Map<String, Object> result1 = postsService.toggleLikeWithDetails(testPost.getId(), testUser.getId());
         assertTrue((boolean) result1.get("liked"), "First toggle should return true (liked)");
 
-        Post afterFirstToggle = postRepository.findById(testPost.getId()).orElseThrow();
+        Post afterFirstToggle = postsService.findById(testPost.getId()).orElseThrow();
         long actualLikes1 = postLikeRepository.countByPostId(testPost.getId());
 
         assertEquals(1, afterFirstToggle.getLikeCount(), "Count should be 1");
@@ -163,7 +163,7 @@ public class TransactionAtomicityTest {
         Map<String, Object> result2 = postsService.toggleLikeWithDetails(testPost.getId(), testUser.getId());
         assertFalse((boolean) result2.get("liked"), "Second toggle should return false (unliked)");
 
-        Post afterSecondToggle = postRepository.findById(testPost.getId()).orElseThrow();
+        Post afterSecondToggle = postsService.findById(testPost.getId()).orElseThrow();
         long actualLikes2 = postLikeRepository.countByPostId(testPost.getId());
 
         assertEquals(0, afterSecondToggle.getLikeCount(), "Count should be 0");
@@ -182,7 +182,7 @@ public class TransactionAtomicityTest {
         CreateCommentRequest request = new CreateCommentRequest("Comment to hide");
         Comment savedComment = commentsService.addComment(CommentParentType.POST, testPost.getId(), request, testUser.getId());
 
-        Post beforeHide = postRepository.findById(testPost.getId()).orElseThrow();
+        Post beforeHide = postsService.findById(testPost.getId()).orElseThrow();
         assertEquals(1, beforeHide.getCommentCount(), "Initial count should be 1");
 
         // Hide the comment
@@ -192,7 +192,7 @@ public class TransactionAtomicityTest {
         assertTrue(hiddenComment.isHidden(), "Comment should be marked as hidden");
 
         // Verify count is updated
-        Post afterHide = postRepository.findById(testPost.getId()).orElseThrow();
+        Post afterHide = postsService.findById(testPost.getId()).orElseThrow();
         long visibleComments = commentRepository.findByParentTypeAndParentIdAndHiddenFalse("POST", testPost.getId()).size();
 
         assertEquals(0, visibleComments, "Should have 0 visible comments after hide");
@@ -214,7 +214,7 @@ public class TransactionAtomicityTest {
             commentsService.addComment(CommentParentType.POST, testPost.getId(), request, testUser.getId());
         }
 
-        Post beforeHide = postRepository.findById(testPost.getId()).orElseThrow();
+        Post beforeHide = postsService.findById(testPost.getId()).orElseThrow();
         assertEquals(3, beforeHide.getCommentCount(), "Should have 3 comments");
 
         // Hide the post
@@ -234,7 +234,7 @@ public class TransactionAtomicityTest {
         assertEquals(3, totalComments, "All 3 comments should still exist (soft delete)");
 
         // Verify consistency: count still shows 3 (total count, not visible count)
-        Post finalPost = postRepository.findById(testPost.getId()).orElseThrow();
+        Post finalPost = postsService.findById(testPost.getId()).orElseThrow();
         assertEquals(3, finalPost.getCommentCount(),
             "Comment count is total count, stays 3 even after cascade hide");
     }
@@ -250,7 +250,7 @@ public class TransactionAtomicityTest {
         // Hide it
         commentsService.hideComment(CommentParentType.POST, testPost.getId(), savedComment.getId(), testUser.getId());
 
-        Post afterHide = postRepository.findById(testPost.getId()).orElseThrow();
+        Post afterHide = postsService.findById(testPost.getId()).orElseThrow();
         assertEquals(0, afterHide.getCommentCount(), "Count should be 0 after hide");
 
         // Unhide it
@@ -260,7 +260,7 @@ public class TransactionAtomicityTest {
         assertFalse(unhiddenComment.isHidden(), "Comment should be unhidden");
 
         // Verify count is updated
-        Post afterUnhide = postRepository.findById(testPost.getId()).orElseThrow();
+        Post afterUnhide = postsService.findById(testPost.getId()).orElseThrow();
         long visibleComments = commentRepository.findByParentTypeAndParentIdAndHiddenFalse("POST", testPost.getId()).size();
 
         assertEquals(1, visibleComments, "Should have 1 visible comment after unhide");
@@ -280,13 +280,13 @@ public class TransactionAtomicityTest {
         Comment c1 = commentsService.addComment(CommentParentType.POST, testPost.getId(), req1, testUser.getId());
         Comment c2 = commentsService.addComment(CommentParentType.POST, testPost.getId(), req2, testUser.getId());
 
-        Post after2 = postRepository.findById(testPost.getId()).orElseThrow();
+        Post after2 = postsService.findById(testPost.getId()).orElseThrow();
         assertEquals(2, after2.getCommentCount());
 
         // Hide first comment
         commentsService.hideComment(CommentParentType.POST, testPost.getId(), c1.getId(), testUser.getId());
 
-        Post after1Hide = postRepository.findById(testPost.getId()).orElseThrow();
+        Post after1Hide = postsService.findById(testPost.getId()).orElseThrow();
         long visible1 = commentRepository.findByParentTypeAndParentIdAndHiddenFalse("POST", testPost.getId()).size();
         assertEquals(1, visible1);
         assertEquals(visible1, after1Hide.getCommentCount());
@@ -294,7 +294,7 @@ public class TransactionAtomicityTest {
         // Unhide first comment
         commentsService.unhideComment(CommentParentType.POST, testPost.getId(), c1.getId(), testUser.getId());
 
-        Post afterUnhide = postRepository.findById(testPost.getId()).orElseThrow();
+        Post afterUnhide = postsService.findById(testPost.getId()).orElseThrow();
         long visible2 = commentRepository.findByParentTypeAndParentIdAndHiddenFalse("POST", testPost.getId()).size();
         assertEquals(2, visible2);
         assertEquals(visible2, afterUnhide.getCommentCount());

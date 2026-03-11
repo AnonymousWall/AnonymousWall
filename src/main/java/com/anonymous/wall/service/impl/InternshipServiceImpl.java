@@ -13,8 +13,10 @@ import io.micronaut.context.event.ApplicationEventPublisher;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
 import jakarta.inject.Inject;
+import jakarta.inject.Provider;
 import jakarta.inject.Singleton;
-import jakarta.transaction.Transactional;
+import io.micronaut.transaction.TransactionDefinition;
+import io.micronaut.transaction.annotation.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,7 +40,7 @@ public class InternshipServiceImpl implements InternshipService {
     private UserService userService;
 
     @Inject
-    private CommentsService commentsService;
+    private Provider<CommentsService> commentsServiceProvider;
 
     @Inject
     private ApplicationEventPublisher<InternshipHiddenEvent> internshipHiddenEventPublisher;
@@ -260,7 +262,7 @@ public class InternshipServiceImpl implements InternshipService {
         internship.setUpdatedAt(OffsetDateTime.now());
         internshipRepository.update(internship);
         // Unhide all comments associated with this internship (within same transaction)
-        commentsService.updateByParentTypeAndParentId("INTERNSHIP", internshipId, false);
+        commentsServiceProvider.get().updateByParentTypeAndParentId("INTERNSHIP", internshipId, false);
         log.info("Unhid internship {}", internshipId);
     }
 
@@ -282,7 +284,7 @@ public class InternshipServiceImpl implements InternshipService {
     }
 
     @Override
-    @Transactional
+    @Transactional(propagation = TransactionDefinition.Propagation.REQUIRES_NEW)
     public void updateProfileNameByUserId(UUID userId, String profileName) {
         try {
             log.info("Updating profile name for user: userId={}, newName={}", userId, profileName);

@@ -13,8 +13,10 @@ import io.micronaut.context.event.ApplicationEventPublisher;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
 import io.micronaut.http.multipart.CompletedFileUpload;
+import io.micronaut.transaction.TransactionDefinition;
 import io.micronaut.transaction.annotation.Transactional;
 import jakarta.inject.Inject;
+import jakarta.inject.Provider;
 import jakarta.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,7 +40,7 @@ public class PostsServiceImpl implements PostsService {
     private PostRepository postRepository;
 
     @Inject
-    private CommentsService commentsService;
+    private Provider<CommentsService> commentsServiceProvider;
 
     @Inject
     private PostLikeService postLikeService;
@@ -59,7 +61,7 @@ public class PostsServiceImpl implements PostsService {
     private UserBlockService userBlockService;
 
     @Inject
-    private PollService pollService;
+    private Provider<PollService> pollServiceProvider;
 
     /**
      * Create a new post with optional image uploads (up to 5 images).
@@ -105,7 +107,7 @@ public class PostsServiceImpl implements PostsService {
         // invalid state that must never be persisted.
         boolean isPoll = "poll".equals(savedPost.getPostType());
         if (isPoll && request.getPollOptions() != null && !request.getPollOptions().isEmpty()) {
-            pollService.createPollOptions(savedPost.getId(), request.getPollOptions());
+            pollServiceProvider.get().createPollOptions(savedPost.getId(), request.getPollOptions());
         }
 
         log.info("Post created: id={}, wall={}, schoolDomain={}, user={}, imageCount={}", savedPost.getId(), wall, schoolDomain, userId, imageUrls.size());
@@ -341,6 +343,10 @@ public class PostsServiceImpl implements PostsService {
      * National posts: visible/actionable by all users
      */
     private void validatePostVisibility(Post post, UUID userId) {
+        if (post.isHidden()) {
+            throw new IllegalArgumentException("Post not found");
+        }
+
         if (post.getWall().equals("national")) {
             log.debug("Validating national post access for user: {}", userId);
             return;
@@ -479,7 +485,7 @@ public class PostsServiceImpl implements PostsService {
         Post updatedPost = postRepository.update(post);
 
         // Unhide all comments associated with this post (within same transaction)
-        commentsService.updateByParentTypeAndParentId("POST", postId, false);
+        commentsServiceProvider.get().updateByParentTypeAndParentId("POST", postId, false);
 
         log.info("Post unhidden: id={}, user={}", postId, userId);
         return updatedPost;
@@ -544,7 +550,7 @@ public class PostsServiceImpl implements PostsService {
     }
 
     @Override
-    @Transactional
+    @Transactional(propagation = TransactionDefinition.Propagation.REQUIRES_NEW)
     public void updateProfileNameByUserId(UUID userId, String profileName) {
         try {
             log.info("Updating profile name for user: userId={}, newName={}", userId, profileName);

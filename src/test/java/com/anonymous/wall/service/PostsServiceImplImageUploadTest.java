@@ -4,15 +4,13 @@ import com.anonymous.wall.entity.Post;
 import com.anonymous.wall.entity.UserEntity;
 import com.anonymous.wall.model.CreatePostRequest;
 import com.anonymous.wall.repository.PostRepository;
-import com.anonymous.wall.repository.UserRepository;
-import com.anonymous.wall.service.base.CommentsService;
-import com.anonymous.wall.service.base.UserBlockService;
-import com.anonymous.wall.service.base.PollService;
+import com.anonymous.wall.service.base.*;
 import com.anonymous.wall.service.impl.PostsServiceImpl;
 import com.anonymous.wall.util.MediaUtilInterface;
 import io.micronaut.context.event.ApplicationEventPublisher;
 import io.micronaut.http.MediaType;
 import io.micronaut.http.multipart.CompletedFileUpload;
+import jakarta.inject.Provider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -31,27 +29,29 @@ class PostsServiceImplImageUploadTest {
 
     private PostsServiceImpl postsService;
     private PostRepository postRepository;
-    private UserRepository userRepository;
+    private UserService userService;
+    private CommentsService commentsService;
     private MediaUtilInterface mediaUtil;
 
     @BeforeEach
     void setUp() {
         postRepository = mock(PostRepository.class);
-        userRepository = mock(UserRepository.class);
+        userService = mock(UserService.class);
+        commentsService = mock(CommentsService.class);
         mediaUtil = mock(MediaUtilInterface.class);
 
         postsService = new PostsServiceImpl();
 
         try {
             setField("postRepository", postRepository);
-            setField("userRepository", userRepository);
+            setField("userService", userService);
+            setProviderField("commentsServiceProvider", commentsService);
             setField("mediaUtil", mediaUtil);
-            setField("postLikeRepository", mock(com.anonymous.wall.repository.PostLikeRepository.class));
-            setField("commentRepository", mock(com.anonymous.wall.repository.CommentRepository.class));
-            setField("postReportRepository", mock(com.anonymous.wall.repository.PostReportRepository.class));
+            setField("postLikeService", mock(PostLikeService.class));
+            setField("postReportService", mock(PostReportService.class));
             setField("postHiddenEventPublisher", mock(ApplicationEventPublisher.class));
             setField("userBlockService", mock(UserBlockService.class));
-            setField("pollService", mock(PollService.class));
+            setProviderField("pollServiceProvider", mock(PollService.class));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -61,6 +61,15 @@ class PostsServiceImplImageUploadTest {
         var field = PostsServiceImpl.class.getDeclaredField(name);
         field.setAccessible(true);
         field.set(postsService, value);
+    }
+
+    private void setProviderField(String name, Object serviceValue) throws Exception {
+        @SuppressWarnings("unchecked")
+        Provider<Object> provider = mock(Provider.class);
+        when(provider.get()).thenReturn(serviceValue);
+        var field = PostsServiceImpl.class.getDeclaredField(name);
+        field.setAccessible(true);
+        field.set(postsService, provider);
     }
 
     private UserEntity createUser(String schoolDomain) {
@@ -86,7 +95,7 @@ class PostsServiceImplImageUploadTest {
         @DisplayName("Should create post with single image when provided")
         void shouldCreatePostWithSingleImage() {
             UserEntity user = createUser("harvard.edu");
-            when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+            when(userService.findById(user.getId())).thenReturn(Optional.of(user));
 
             String imageUrl = "http://localhost:8080/media/posts/test.jpg";
             when(mediaUtil.uploadPostImage(any(), any())).thenReturn(imageUrl);
@@ -111,7 +120,7 @@ class PostsServiceImplImageUploadTest {
         @DisplayName("Should create post with multiple images")
         void shouldCreatePostWithMultipleImages() {
             UserEntity user = createUser("harvard.edu");
-            when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+            when(userService.findById(user.getId())).thenReturn(Optional.of(user));
 
             String url1 = "http://localhost:8080/media/posts/img1.jpg";
             String url2 = "http://localhost:8080/media/posts/img2.png";
@@ -155,7 +164,7 @@ class PostsServiceImplImageUploadTest {
         @DisplayName("Should create post without images when list is null")
         void shouldCreatePostWithoutImagesWhenNull() {
             UserEntity user = createUser("harvard.edu");
-            when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+            when(userService.findById(user.getId())).thenReturn(Optional.of(user));
 
             Post savedPost = createSavedPost(user.getId(), "Test", "Content", "campus", "harvard.edu");
             when(postRepository.save(any())).thenReturn(savedPost);
@@ -172,7 +181,7 @@ class PostsServiceImplImageUploadTest {
         @DisplayName("Should create post without images when list is empty")
         void shouldCreatePostWithoutImagesWhenEmpty() {
             UserEntity user = createUser("harvard.edu");
-            when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+            when(userService.findById(user.getId())).thenReturn(Optional.of(user));
 
             Post savedPost = createSavedPost(user.getId(), "Test", "Content", "campus", "harvard.edu");
             when(postRepository.save(any())).thenReturn(savedPost);
@@ -189,7 +198,7 @@ class PostsServiceImplImageUploadTest {
         @DisplayName("Should skip images with zero size")
         void shouldSkipZeroSizeImages() {
             UserEntity user = createUser("harvard.edu");
-            when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+            when(userService.findById(user.getId())).thenReturn(Optional.of(user));
 
             Post savedPost = createSavedPost(user.getId(), "Test", "Content", "campus", "harvard.edu");
             when(postRepository.save(any())).thenReturn(savedPost);
@@ -217,7 +226,7 @@ class PostsServiceImplImageUploadTest {
         @Test
         @DisplayName("Should fail when user not found")
         void shouldFailWhenUserNotFound() {
-            when(userRepository.findById(any())).thenReturn(Optional.empty());
+            when(userService.findById(any())).thenReturn(Optional.empty());
             CreatePostRequest request = new CreatePostRequest("Title", "Content");
 
             assertThrows(IllegalArgumentException.class,
@@ -228,7 +237,7 @@ class PostsServiceImplImageUploadTest {
         @DisplayName("Should propagate exception from media upload")
         void shouldPropagateMediaUploadException() {
             UserEntity user = createUser("harvard.edu");
-            when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+            when(userService.findById(user.getId())).thenReturn(Optional.of(user));
             when(mediaUtil.uploadPostImage(any(), any())).thenThrow(new IllegalArgumentException("Image exceeds 5MB limit"));
 
             CompletedFileUpload image = mock(CompletedFileUpload.class);

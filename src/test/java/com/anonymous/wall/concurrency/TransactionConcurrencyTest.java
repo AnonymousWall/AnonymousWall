@@ -89,7 +89,7 @@ public class TransactionConcurrencyTest {
         Thread.sleep(500);
 
         long actualComments = commentRepository.findByParentTypeAndParentIdAndHiddenFalse("POST", testPost.getId()).size();
-        Post refreshedPost = postRepository.findById(testPost.getId()).orElseThrow();
+        Post refreshedPost = postsService.findById(testPost.getId()).orElseThrow();
 
         // Most important: count matches actual
         assertEquals(actualComments, refreshedPost.getCommentCount(),
@@ -123,7 +123,7 @@ public class TransactionConcurrencyTest {
 
         Thread.sleep(500);
 
-        Post refreshedPost = postRepository.findById(testPost.getId()).orElseThrow();
+        Post refreshedPost = postsService.findById(testPost.getId()).orElseThrow();
         long actualLikes = postLikeRepository.countByPostId(testPost.getId());
 
         // Verify count matches actual likes
@@ -153,7 +153,7 @@ public class TransactionConcurrencyTest {
 
         Thread.sleep(500);
 
-        Post afterHide = postRepository.findById(testPost.getId()).orElseThrow();
+        Post afterHide = postsService.findById(testPost.getId()).orElseThrow();
         long visibleAfterHide = commentRepository.findByParentTypeAndParentIdAndHiddenFalse("POST", testPost.getId()).size();
 
         // Verify count matches visible comments
@@ -198,7 +198,7 @@ public class TransactionConcurrencyTest {
             assertTrue(endLatch.await(15, TimeUnit.SECONDS));
 
             Comment finalComment = commentRepository.findById(comment.getId()).orElseThrow();
-            Post finalPost = postRepository.findById(testPost.getId()).orElseThrow();
+            Post finalPost = postsService.findById(testPost.getId()).orElseThrow();
 
             assertFalse(finalComment.isHidden(), "Comment should be visible after cycles");
             assertEquals(1, finalPost.getCommentCount(), "Post count should be 1");
@@ -229,7 +229,7 @@ public class TransactionConcurrencyTest {
 
         Thread.sleep(500);
 
-        Post finalPost = postRepository.findById(testPost.getId()).orElseThrow();
+        Post finalPost = postsService.findById(testPost.getId()).orElseThrow();
         long visibleComments = commentRepository.findByParentTypeAndParentIdAndHiddenFalse("POST", testPost.getId()).size();
 
         // Verify post is hidden

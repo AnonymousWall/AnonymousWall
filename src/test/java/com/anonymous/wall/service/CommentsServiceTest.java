@@ -1,44 +1,43 @@
 package com.anonymous.wall.service;
-import com.anonymous.wall.entity.Internship;
-import com.anonymous.wall.entity.MarketplaceItem;
-import com.anonymous.wall.model.CommentParentType;
 
-import com.anonymous.wall.entity.Comment;
-import com.anonymous.wall.entity.Post;
-import com.anonymous.wall.entity.UserEntity;
+import com.anonymous.wall.entity.*;
+import com.anonymous.wall.model.CommentParentType;
 import com.anonymous.wall.model.CreateCommentRequest;
+import com.anonymous.wall.model.SortBy;
 import com.anonymous.wall.notification.event.CommentCreatedEvent;
 import com.anonymous.wall.notification.event.InternshipCommentCreatedEvent;
 import com.anonymous.wall.notification.event.MarketplaceCommentCreatedEvent;
 import com.anonymous.wall.repository.CommentRepository;
-import com.anonymous.wall.repository.InternshipRepository;
-import com.anonymous.wall.repository.MarketplaceItemRepository;
-import com.anonymous.wall.repository.PostRepository;
-import com.anonymous.wall.repository.UserRepository;
+import com.anonymous.wall.service.base.*;
 import com.anonymous.wall.service.impl.CommentsServiceImpl;
 import io.micronaut.context.event.ApplicationEventPublisher;
+import io.micronaut.data.model.Page;
+import io.micronaut.data.model.Pageable;
+import jakarta.inject.Provider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
-@DisplayName("CommentsService Complete Tests")
+@DisplayName("CommentsService Unit Tests")
 class CommentsServiceTest {
 
     private CommentsServiceImpl commentsService;
     private CommentRepository commentRepository;
-    private PostRepository postRepository;
-    private InternshipRepository internshipRepository;
-    private MarketplaceItemRepository marketplaceItemRepository;
-    private UserRepository userRepository;
+    private PostsService postsService;
+    private InternshipService internshipService;
+    private MarketplaceService marketplaceService;
+    private UserService userService;
+    private CommentReportService commentReportService;
+    private UserBlockService userBlockService;
     @SuppressWarnings("unchecked")
     private ApplicationEventPublisher<CommentCreatedEvent> eventPublisher;
     @SuppressWarnings("unchecked")
@@ -48,66 +47,53 @@ class CommentsServiceTest {
 
     private UUID testUserId;
     private UUID testPostId;
-    private Post testPost;
-    private UserEntity testUser;
     private UUID testInternshipId;
-    private Internship testInternship;
     private UUID testItemId;
+    private Post testPost;
+    private Internship testInternship;
     private MarketplaceItem testItem;
+    private UserEntity testUser;
 
     @BeforeEach
     void setUp() {
         commentRepository = mock(CommentRepository.class);
-        postRepository = mock(PostRepository.class);
-        internshipRepository = mock(InternshipRepository.class);
-        marketplaceItemRepository = mock(MarketplaceItemRepository.class);
-        userRepository = mock(UserRepository.class);
-        
+        postsService = mock(PostsService.class);
+        internshipService = mock(InternshipService.class);
+        marketplaceService = mock(MarketplaceService.class);
+        userService = mock(UserService.class);
+        commentReportService = mock(CommentReportService.class);
+        userBlockService = mock(UserBlockService.class);
+        eventPublisher = mock(ApplicationEventPublisher.class);
+        internshipCommentEventPublisher = mock(ApplicationEventPublisher.class);
+        marketplaceCommentEventPublisher = mock(ApplicationEventPublisher.class);
+
         commentsService = new CommentsServiceImpl();
-        
+
         try {
-            var commentRepoField = CommentsServiceImpl.class.getDeclaredField("commentRepository");
-            commentRepoField.setAccessible(true);
-            commentRepoField.set(commentsService, commentRepository);
+            setField("commentRepository", commentRepository);
 
-            var postRepoField = CommentsServiceImpl.class.getDeclaredField("postRepository");
-            postRepoField.setAccessible(true);
-            postRepoField.set(commentsService, postRepository);
+            @SuppressWarnings("unchecked")
+            Provider<PostsService> postsServiceProvider = mock(Provider.class);
+            when(postsServiceProvider.get()).thenReturn(postsService);
+            setField("postsServiceProvider", postsServiceProvider);
 
-            var internshipRepoField = CommentsServiceImpl.class.getDeclaredField("internshipRepository");
-            internshipRepoField.setAccessible(true);
-            internshipRepoField.set(commentsService, internshipRepository);
-
-            var marketplaceRepoField = CommentsServiceImpl.class.getDeclaredField("marketplaceItemRepository");
-            marketplaceRepoField.setAccessible(true);
-            marketplaceRepoField.set(commentsService, marketplaceItemRepository);
-
-            var userRepoField = CommentsServiceImpl.class.getDeclaredField("userRepository");
-            userRepoField.setAccessible(true);
-            userRepoField.set(commentsService, userRepository);
-
-            eventPublisher = mock(ApplicationEventPublisher.class);
-            var publisherField = CommentsServiceImpl.class.getDeclaredField("eventPublisher");
-            publisherField.setAccessible(true);
-            publisherField.set(commentsService, eventPublisher);
-
-            internshipCommentEventPublisher = mock(ApplicationEventPublisher.class);
-            var internshipPublisherField = CommentsServiceImpl.class.getDeclaredField("internshipCommentEventPublisher");
-            internshipPublisherField.setAccessible(true);
-            internshipPublisherField.set(commentsService, internshipCommentEventPublisher);
-
-            marketplaceCommentEventPublisher = mock(ApplicationEventPublisher.class);
-            var marketplacePublisherField = CommentsServiceImpl.class.getDeclaredField("marketplaceCommentEventPublisher");
-            marketplacePublisherField.setAccessible(true);
-            marketplacePublisherField.set(commentsService, marketplaceCommentEventPublisher);
+            setField("internshipService", internshipService);
+            setField("marketplaceService", marketplaceService);
+            setField("userService", userService);
+            setField("commentReportService", commentReportService);
+            setField("userBlockService", userBlockService);
+            setField("eventPublisher", eventPublisher);
+            setField("internshipCommentEventPublisher", internshipCommentEventPublisher);
+            setField("marketplaceCommentEventPublisher", marketplaceCommentEventPublisher);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
 
-        // Setup test data
         testUserId = UUID.randomUUID();
         testPostId = UUID.randomUUID();
-        
+        testInternshipId = UUID.randomUUID();
+        testItemId = UUID.randomUUID();
+
         testUser = new UserEntity();
         testUser.setId(testUserId);
         testUser.setEmail("test@harvard.edu");
@@ -117,17 +103,15 @@ class CommentsServiceTest {
         testPost = new Post();
         testPost.setId(testPostId);
         testPost.setWall("national");
-        testPost.setUserId(testUserId);
+        testPost.setUserId(UUID.randomUUID());
         testPost.setHidden(false);
 
-        testInternshipId = UUID.randomUUID();
         testInternship = new Internship();
         testInternship.setId(testInternshipId);
         testInternship.setWall("national");
         testInternship.setUserId(UUID.randomUUID());
         testInternship.setHidden(false);
 
-        testItemId = UUID.randomUUID();
         testItem = new MarketplaceItem();
         testItem.setId(testItemId);
         testItem.setWall("national");
@@ -135,523 +119,884 @@ class CommentsServiceTest {
         testItem.setHidden(false);
     }
 
+    private void setField(String name, Object value) throws Exception {
+        var field = CommentsServiceImpl.class.getDeclaredField(name);
+        field.setAccessible(true);
+        field.set(commentsService, value);
+    }
+
+    // ─── Helpers ───────────────────────────────────────────────────────────────
+
+    private void stubSaveReturnsWithId() {
+        when(commentRepository.save(any(Comment.class))).thenAnswer(invocation -> {
+            Comment c = invocation.getArgument(0);
+            c.setId(UUID.randomUUID());
+            return c;
+        });
+    }
+
+    private Comment buildComment(UUID parentId, UUID userId) {
+        Comment c = new Comment(parentId, "POST", userId, "Test comment");
+        c.setId(UUID.randomUUID());
+        c.setHidden(false);
+        return c;
+    }
+
+    // ─── Add Comment — Positive ────────────────────────────────────────────────
+
     @Nested
-    @DisplayName("Add Comment - Positive Cases")
+    @DisplayName("Add Comment — Positive Cases")
     class AddCommentPositiveCases {
 
         @Test
         @DisplayName("Should add comment to national post successfully")
         void shouldAddCommentToNationalPost() {
-            // Arrange
-            CreateCommentRequest request = new CreateCommentRequest("This is a test comment");
+            when(postsService.findById(testPostId)).thenReturn(Optional.of(testPost));
+            when(userService.findById(testUserId)).thenReturn(Optional.of(testUser));
+            stubSaveReturnsWithId();
 
-            when(postRepository.findById(testPostId)).thenReturn(Optional.of(testPost));
-            when(userRepository.findById(testUserId)).thenReturn(Optional.of(testUser));
-            when(commentRepository.save(any(Comment.class))).thenAnswer(invocation -> {
-                Comment comment = invocation.getArgument(0);
-                comment.setId(UUID.randomUUID());
-                return comment;
-            });
+            Comment result = commentsService.addComment(CommentParentType.POST, testPostId,
+                    new CreateCommentRequest("Test comment"), testUserId);
 
-            // Act
-            Comment result = commentsService.addComment(CommentParentType.POST, testPostId, request, testUserId);
-
-            // Assert
             assertNotNull(result);
-            verify(commentRepository, times(1)).save(any(Comment.class));
-            verify(postRepository, times(1)).update(any(Post.class));
+            assertEquals(testPostId, result.getParentId());
+            assertEquals(testUserId, result.getUserId());
+            verify(commentRepository).save(any(Comment.class));
+            verify(postsService).update(any(Post.class));
         }
 
         @Test
-        @DisplayName("Should add comment to campus post from same school")
+        @DisplayName("Should add comment to campus post when user is from same school")
         void shouldAddCommentToCampusPostSameSchool() {
-            // Arrange
             testPost.setWall("campus");
             testPost.setSchoolDomain("harvard.edu");
-            
-            CreateCommentRequest request = new CreateCommentRequest("Campus comment");
 
-            when(postRepository.findById(testPostId)).thenReturn(Optional.of(testPost));
-            when(userRepository.findById(testUserId)).thenReturn(Optional.of(testUser));
-            when(commentRepository.save(any(Comment.class))).thenAnswer(invocation -> {
-                Comment comment = invocation.getArgument(0);
-                comment.setId(UUID.randomUUID());
-                return comment;
-            });
+            // Impl calls userService.findById TWICE for campus wall:
+            // once in validateParentVisibility, once to get profileName.
+            when(postsService.findById(testPostId)).thenReturn(Optional.of(testPost));
+            when(userService.findById(testUserId)).thenReturn(Optional.of(testUser));
+            stubSaveReturnsWithId();
 
-            // Act
-            Comment result = commentsService.addComment(CommentParentType.POST, testPostId, request, testUserId);
+            Comment result = commentsService.addComment(CommentParentType.POST, testPostId,
+                    new CreateCommentRequest("Campus comment"), testUserId);
 
-            // Assert
             assertNotNull(result);
-            verify(commentRepository, times(1)).save(any(Comment.class));
+            verify(userService, times(2)).findById(testUserId);
         }
 
         @Test
-        @DisplayName("Should set profile name on comment")
+        @DisplayName("Should add comment to internship successfully")
+        void shouldAddCommentToInternship() {
+            when(internshipService.findById(testInternshipId)).thenReturn(Optional.of(testInternship));
+            when(userService.findById(testUserId)).thenReturn(Optional.of(testUser));
+            stubSaveReturnsWithId();
+
+            Comment result = commentsService.addComment(CommentParentType.INTERNSHIP, testInternshipId,
+                    new CreateCommentRequest("Internship comment"), testUserId);
+
+            assertNotNull(result);
+            verify(commentRepository).save(any(Comment.class));
+            verify(internshipService).update(any(Internship.class));
+        }
+
+        @Test
+        @DisplayName("Should add comment to marketplace item successfully")
+        void shouldAddCommentToMarketplaceItem() {
+            when(marketplaceService.findById(testItemId)).thenReturn(Optional.of(testItem));
+            when(userService.findById(testUserId)).thenReturn(Optional.of(testUser));
+            stubSaveReturnsWithId();
+
+            Comment result = commentsService.addComment(CommentParentType.MARKETPLACE, testItemId,
+                    new CreateCommentRequest("Marketplace comment"), testUserId);
+
+            assertNotNull(result);
+            verify(commentRepository).save(any(Comment.class));
+            verify(marketplaceService).update(any(MarketplaceItem.class));
+        }
+
+        @Test
+        @DisplayName("Should set profile name on saved comment from user entity")
         void shouldSetProfileNameOnComment() {
-            // Arrange
-            CreateCommentRequest request = new CreateCommentRequest("Test");
-
-            when(postRepository.findById(testPostId)).thenReturn(Optional.of(testPost));
-            when(userRepository.findById(testUserId)).thenReturn(Optional.of(testUser));
-            
+            when(postsService.findById(testPostId)).thenReturn(Optional.of(testPost));
+            when(userService.findById(testUserId)).thenReturn(Optional.of(testUser));
             ArgumentCaptor<Comment> captor = ArgumentCaptor.forClass(Comment.class);
-            when(commentRepository.save(captor.capture())).thenAnswer(invocation -> {
-                Comment comment = invocation.getArgument(0);
-                comment.setId(UUID.randomUUID());
-                return comment;
+            when(commentRepository.save(captor.capture())).thenAnswer(inv -> {
+                Comment c = inv.getArgument(0);
+                c.setId(UUID.randomUUID());
+                return c;
             });
 
-            // Act
-            commentsService.addComment(CommentParentType.POST, testPostId, request, testUserId);
+            commentsService.addComment(CommentParentType.POST, testPostId,
+                    new CreateCommentRequest("Test"), testUserId);
 
-            // Assert
-            Comment savedComment = captor.getValue();
-            assertEquals("TestUser", savedComment.getProfileName());
+            assertEquals("TestUser", captor.getValue().getProfileName());
         }
 
         @Test
-        @DisplayName("Should publish InternshipCommentCreatedEvent when commenting on internship")
+        @DisplayName("Should increment comment count on parent after saving")
+        void shouldIncrementCommentCountOnParent() {
+            int initialCount = testPost.getCommentCount();
+            when(postsService.findById(testPostId)).thenReturn(Optional.of(testPost));
+            when(userService.findById(testUserId)).thenReturn(Optional.of(testUser));
+            stubSaveReturnsWithId();
+
+            commentsService.addComment(CommentParentType.POST, testPostId,
+                    new CreateCommentRequest("Test"), testUserId);
+
+            assertEquals(initialCount + 1, testPost.getCommentCount(),
+                    "Comment count on parent must be incremented after save");
+            verify(postsService).update(testPost);
+        }
+
+        @Test
+        @DisplayName("Should publish CommentCreatedEvent for POST parent")
+        void shouldPublishCommentCreatedEventForPost() {
+            when(postsService.findById(testPostId)).thenReturn(Optional.of(testPost));
+            when(userService.findById(testUserId)).thenReturn(Optional.of(testUser));
+            stubSaveReturnsWithId();
+
+            commentsService.addComment(CommentParentType.POST, testPostId,
+                    new CreateCommentRequest("Test"), testUserId);
+
+            verify(eventPublisher).publishEvent(any(CommentCreatedEvent.class));
+            verify(internshipCommentEventPublisher, never()).publishEvent(any());
+            verify(marketplaceCommentEventPublisher, never()).publishEvent(any());
+        }
+
+        @Test
+        @DisplayName("Should publish InternshipCommentCreatedEvent for INTERNSHIP parent")
         void shouldPublishInternshipCommentEvent() {
-            // Arrange
-            CreateCommentRequest request = new CreateCommentRequest("Internship comment");
+            when(internshipService.findById(testInternshipId)).thenReturn(Optional.of(testInternship));
+            when(userService.findById(testUserId)).thenReturn(Optional.of(testUser));
+            stubSaveReturnsWithId();
 
-            when(internshipRepository.findById(testInternshipId)).thenReturn(Optional.of(testInternship));
-            when(userRepository.findById(testUserId)).thenReturn(Optional.of(testUser));
-            when(commentRepository.save(any(Comment.class))).thenAnswer(invocation -> {
-                Comment comment = invocation.getArgument(0);
-                comment.setId(UUID.randomUUID());
-                return comment;
-            });
+            commentsService.addComment(CommentParentType.INTERNSHIP, testInternshipId,
+                    new CreateCommentRequest("Test"), testUserId);
 
-            // Act
-            Comment result = commentsService.addComment(CommentParentType.INTERNSHIP, testInternshipId, request, testUserId);
-
-            // Assert
-            assertNotNull(result);
-            verify(internshipCommentEventPublisher, times(1)).publishEvent(any(InternshipCommentCreatedEvent.class));
-            verify(eventPublisher, never()).publishEvent(any(CommentCreatedEvent.class));
-            verify(marketplaceCommentEventPublisher, never()).publishEvent(any(MarketplaceCommentCreatedEvent.class));
+            verify(internshipCommentEventPublisher).publishEvent(any(InternshipCommentCreatedEvent.class));
+            verify(eventPublisher, never()).publishEvent(any());
+            verify(marketplaceCommentEventPublisher, never()).publishEvent(any());
         }
 
         @Test
-        @DisplayName("Should publish MarketplaceCommentCreatedEvent when commenting on marketplace item")
+        @DisplayName("Should publish MarketplaceCommentCreatedEvent for MARKETPLACE parent")
         void shouldPublishMarketplaceCommentEvent() {
-            // Arrange
-            CreateCommentRequest request = new CreateCommentRequest("Marketplace comment");
+            when(marketplaceService.findById(testItemId)).thenReturn(Optional.of(testItem));
+            when(userService.findById(testUserId)).thenReturn(Optional.of(testUser));
+            stubSaveReturnsWithId();
 
-            when(marketplaceItemRepository.findById(testItemId)).thenReturn(Optional.of(testItem));
-            when(userRepository.findById(testUserId)).thenReturn(Optional.of(testUser));
-            when(commentRepository.save(any(Comment.class))).thenAnswer(invocation -> {
-                Comment comment = invocation.getArgument(0);
-                comment.setId(UUID.randomUUID());
-                return comment;
-            });
+            commentsService.addComment(CommentParentType.MARKETPLACE, testItemId,
+                    new CreateCommentRequest("Test"), testUserId);
 
-            // Act
-            Comment result = commentsService.addComment(CommentParentType.MARKETPLACE, testItemId, request, testUserId);
+            verify(marketplaceCommentEventPublisher).publishEvent(any(MarketplaceCommentCreatedEvent.class));
+            verify(eventPublisher, never()).publishEvent(any());
+            verify(internshipCommentEventPublisher, never()).publishEvent(any());
+        }
 
-            // Assert
-            assertNotNull(result);
-            verify(marketplaceCommentEventPublisher, times(1)).publishEvent(any(MarketplaceCommentCreatedEvent.class));
-            verify(eventPublisher, never()).publishEvent(any(CommentCreatedEvent.class));
-            verify(internshipCommentEventPublisher, never()).publishEvent(any(InternshipCommentCreatedEvent.class));
+        @Test
+        @DisplayName("Should accept comment text of exactly 5000 characters — boundary")
+        void shouldAcceptMaxLengthComment() {
+            when(postsService.findById(testPostId)).thenReturn(Optional.of(testPost));
+            when(userService.findById(testUserId)).thenReturn(Optional.of(testUser));
+            stubSaveReturnsWithId();
+
+            assertDoesNotThrow(() -> commentsService.addComment(CommentParentType.POST, testPostId,
+                    new CreateCommentRequest("a".repeat(5000)), testUserId));
+        }
+
+        @Test
+        @DisplayName("Should handle special characters and Unicode in comment text")
+        void shouldHandleSpecialAndUnicodeCharacters() {
+            when(postsService.findById(testPostId)).thenReturn(Optional.of(testPost));
+            when(userService.findById(testUserId)).thenReturn(Optional.of(testUser));
+            stubSaveReturnsWithId();
+
+            assertDoesNotThrow(() -> commentsService.addComment(CommentParentType.POST, testPostId,
+                    new CreateCommentRequest("Test 🎉 测试 !@#$%\nLine 2"), testUserId));
         }
     }
 
+    // ─── Add Comment — Validation Errors ──────────────────────────────────────
+
     @Nested
-    @DisplayName("Add Comment - Negative Cases")
-    class AddCommentNegativeCases {
+    @DisplayName("Add Comment — Validation Errors")
+    class AddCommentValidationErrors {
 
         @Test
-        @DisplayName("Should throw exception for non-existent post")
+        @DisplayName("Should throw when post not found")
         void shouldThrowForNonExistentPost() {
-            // Arrange
-            CreateCommentRequest request = new CreateCommentRequest("Test");
-            when(postRepository.findById(testPostId)).thenReturn(Optional.empty());
+            when(postsService.findById(testPostId)).thenReturn(Optional.empty());
 
-            // Act & Assert
-            IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-                () -> commentsService.addComment(CommentParentType.POST, testPostId, request, testUserId));
-            assertTrue(exception.getMessage().contains("Post not found"));
+            IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                    () -> commentsService.addComment(CommentParentType.POST, testPostId,
+                            new CreateCommentRequest("Test"), testUserId));
+            assertEquals("Post not found", ex.getMessage());
+            verifyNoInteractions(commentRepository);
+        }
+
+        @Test
+        @DisplayName("Should throw when internship not found")
+        void shouldThrowForNonExistentInternship() {
+            when(internshipService.findById(testInternshipId)).thenReturn(Optional.empty());
+
+            IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                    () -> commentsService.addComment(CommentParentType.INTERNSHIP, testInternshipId,
+                            new CreateCommentRequest("Test"), testUserId));
+            assertEquals("Internship not found", ex.getMessage());
+        }
+
+        @Test
+        @DisplayName("Should throw when marketplace item not found")
+        void shouldThrowForNonExistentMarketplaceItem() {
+            when(marketplaceService.findById(testItemId)).thenReturn(Optional.empty());
+
+            IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                    () -> commentsService.addComment(CommentParentType.MARKETPLACE, testItemId,
+                            new CreateCommentRequest("Test"), testUserId));
+            assertEquals("Marketplace item not found", ex.getMessage());
+        }
+
+        @Test
+        @DisplayName("Should throw when post is hidden")
+        void shouldThrowForHiddenPost() {
+            testPost.setHidden(true);
+            when(postsService.findById(testPostId)).thenReturn(Optional.of(testPost));
+
+            IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                    () -> commentsService.addComment(CommentParentType.POST, testPostId,
+                            new CreateCommentRequest("Test"), testUserId));
+            assertEquals("Content not found", ex.getMessage());
+            verifyNoInteractions(commentRepository);
+        }
+
+        @Test
+        @DisplayName("Should throw when comment text is null")
+        void shouldThrowForNullText() {
+            when(postsService.findById(testPostId)).thenReturn(Optional.of(testPost));
+
+            IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                    () -> commentsService.addComment(CommentParentType.POST, testPostId,
+                            new CreateCommentRequest(null), testUserId));
+            assertTrue(ex.getMessage().contains("cannot be empty"));
+            verifyNoInteractions(commentRepository);
+        }
+
+        @Test
+        @DisplayName("Should throw when comment text is empty")
+        void shouldThrowForEmptyText() {
+            when(postsService.findById(testPostId)).thenReturn(Optional.of(testPost));
+
+            IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                    () -> commentsService.addComment(CommentParentType.POST, testPostId,
+                            new CreateCommentRequest(""), testUserId));
+            assertTrue(ex.getMessage().contains("cannot be empty"));
+        }
+
+        @Test
+        @DisplayName("Should throw when comment text is only whitespace")
+        void shouldThrowForWhitespaceOnlyText() {
+            when(postsService.findById(testPostId)).thenReturn(Optional.of(testPost));
+
+            assertThrows(IllegalArgumentException.class,
+                    () -> commentsService.addComment(CommentParentType.POST, testPostId,
+                            new CreateCommentRequest("   "), testUserId));
+        }
+
+        @Test
+        @DisplayName("Should throw when comment text exceeds 5000 characters")
+        void shouldThrowForTextTooLong() {
+            when(postsService.findById(testPostId)).thenReturn(Optional.of(testPost));
+
+            IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                    () -> commentsService.addComment(CommentParentType.POST, testPostId,
+                            new CreateCommentRequest("a".repeat(5001)), testUserId));
+            assertTrue(ex.getMessage().contains("exceeds maximum length"));
+            verifyNoInteractions(commentRepository);
+        }
+
+        @Test
+        @DisplayName("Should throw when user not found")
+        void shouldThrowForNonExistentUser() {
+            when(postsService.findById(testPostId)).thenReturn(Optional.of(testPost));
+            when(userService.findById(testUserId)).thenReturn(Optional.empty());
+
+            IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                    () -> commentsService.addComment(CommentParentType.POST, testPostId,
+                            new CreateCommentRequest("Test"), testUserId));
+            assertEquals("User not found", ex.getMessage());
             verify(commentRepository, never()).save(any());
         }
 
         @Test
-        @DisplayName("Should throw exception for empty comment text")
-        void shouldThrowForEmptyText() {
-            // Arrange
-            CreateCommentRequest request = new CreateCommentRequest("");
-            when(postRepository.findById(testPostId)).thenReturn(Optional.of(testPost));
-
-            // Act & Assert
-            IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-                () -> commentsService.addComment(CommentParentType.POST, testPostId, request, testUserId));
-            assertTrue(exception.getMessage().contains("cannot be empty"));
-        }
-
-        @Test
-        @DisplayName("Should throw exception for null comment text")
-        void shouldThrowForNullText() {
-            // Arrange
-            CreateCommentRequest request = new CreateCommentRequest(null);
-            when(postRepository.findById(testPostId)).thenReturn(Optional.of(testPost));
-
-            // Act & Assert
-            IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-                () -> commentsService.addComment(CommentParentType.POST, testPostId, request, testUserId));
-            assertTrue(exception.getMessage().contains("cannot be empty"));
-        }
-
-        @Test
-        @DisplayName("Should throw exception for whitespace-only text")
-        void shouldThrowForWhitespaceOnlyText() {
-            // Arrange
-            CreateCommentRequest request = new CreateCommentRequest("   ");
-            when(postRepository.findById(testPostId)).thenReturn(Optional.of(testPost));
-
-            // Act & Assert
-            assertThrows(IllegalArgumentException.class,
-                () -> commentsService.addComment(CommentParentType.POST, testPostId, request, testUserId));
-        }
-
-        @Test
-        @DisplayName("Should throw exception for text exceeding max length")
-        void shouldThrowForTextTooLong() {
-            // Arrange
-            CreateCommentRequest request = new CreateCommentRequest("a".repeat(5001));
-            when(postRepository.findById(testPostId)).thenReturn(Optional.of(testPost));
-
-            // Act & Assert
-            IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-                () -> commentsService.addComment(CommentParentType.POST, testPostId, request, testUserId));
-            assertTrue(exception.getMessage().contains("exceeds maximum length"));
-        }
-
-        @Test
-        @DisplayName("Should throw exception for non-existent user")
-        void shouldThrowForNonExistentUser() {
-            // Arrange
-            CreateCommentRequest request = new CreateCommentRequest("Test");
-            when(postRepository.findById(testPostId)).thenReturn(Optional.of(testPost));
-            when(userRepository.findById(testUserId)).thenReturn(Optional.empty());
-
-            // Act & Assert
-            IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-                () -> commentsService.addComment(CommentParentType.POST, testPostId, request, testUserId));
-            assertTrue(exception.getMessage().contains("User not found"));
-        }
-
-        @Test
-        @DisplayName("Should throw exception for hidden post")
-        void shouldThrowForHiddenPost() {
-            // Arrange
-            testPost.setHidden(true);
-            CreateCommentRequest request = new CreateCommentRequest("Test");
-            when(postRepository.findById(testPostId)).thenReturn(Optional.of(testPost));
-
-            // Act & Assert
-            assertThrows(IllegalArgumentException.class,
-                () -> commentsService.addComment(CommentParentType.POST, testPostId, request, testUserId));
-        }
-
-        @Test
-        @DisplayName("Should throw exception for campus post from different school")
+        @DisplayName("Should throw when user is from different school on campus post")
         void shouldThrowForDifferentSchool() {
-            // Arrange
             testPost.setWall("campus");
             testPost.setSchoolDomain("mit.edu");
             testUser.setSchoolDomain("harvard.edu");
-            
-            CreateCommentRequest request = new CreateCommentRequest("Test");
-            
-            when(postRepository.findById(testPostId)).thenReturn(Optional.of(testPost));
-            when(userRepository.findById(testUserId)).thenReturn(Optional.of(testUser));
 
-            // Act & Assert
-            IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-                () -> commentsService.addComment(CommentParentType.POST, testPostId, request, testUserId));
-            assertTrue(exception.getMessage().contains("other schools"));
+            when(postsService.findById(testPostId)).thenReturn(Optional.of(testPost));
+            when(userService.findById(testUserId)).thenReturn(Optional.of(testUser));
+
+            IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                    () -> commentsService.addComment(CommentParentType.POST, testPostId,
+                            new CreateCommentRequest("Test"), testUserId));
+            assertTrue(ex.getMessage().contains("other schools"));
+            verifyNoInteractions(commentRepository);
         }
 
         @Test
-        @DisplayName("Should throw exception when user has no school domain for campus post")
+        @DisplayName("Should throw when user has no school domain on campus post")
         void shouldThrowWhenUserHasNoSchoolDomain() {
-            // Arrange
             testPost.setWall("campus");
             testPost.setSchoolDomain("harvard.edu");
             testUser.setSchoolDomain(null);
-            
-            CreateCommentRequest request = new CreateCommentRequest("Test");
-            
-            when(postRepository.findById(testPostId)).thenReturn(Optional.of(testPost));
-            when(userRepository.findById(testUserId)).thenReturn(Optional.of(testUser));
 
-            // Act & Assert
-            assertThrows(IllegalArgumentException.class,
-                () -> commentsService.addComment(CommentParentType.POST, testPostId, request, testUserId));
+            when(postsService.findById(testPostId)).thenReturn(Optional.of(testPost));
+            when(userService.findById(testUserId)).thenReturn(Optional.of(testUser));
+
+            IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                    () -> commentsService.addComment(CommentParentType.POST, testPostId,
+                            new CreateCommentRequest("Test"), testUserId));
+            assertTrue(ex.getMessage().contains("campus posts"));
+        }
+
+        @Test
+        @DisplayName("Should throw when user not found during campus visibility check")
+        void shouldThrowWhenUserNotFoundDuringCampusCheck() {
+            testPost.setWall("campus");
+            testPost.setSchoolDomain("harvard.edu");
+
+            when(postsService.findById(testPostId)).thenReturn(Optional.of(testPost));
+            // Campus check calls findById; returning empty should throw here, before profileName lookup
+            when(userService.findById(testUserId)).thenReturn(Optional.empty());
+
+            IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                    () -> commentsService.addComment(CommentParentType.POST, testPostId,
+                            new CreateCommentRequest("Test"), testUserId));
+            assertEquals("User not found", ex.getMessage());
+        }
+
+        @Test
+        @DisplayName("Should NOT call userService during visibility check for national post")
+        void shouldNotCallUserServiceDuringNationalVisibilityCheck() {
+            // national wall skips user lookup in validateParentVisibility entirely —
+            // userService is only called once (for profileName) not twice.
+            when(postsService.findById(testPostId)).thenReturn(Optional.of(testPost));
+            when(userService.findById(testUserId)).thenReturn(Optional.of(testUser));
+            stubSaveReturnsWithId();
+
+            commentsService.addComment(CommentParentType.POST, testPostId,
+                    new CreateCommentRequest("Test"), testUserId);
+
+            verify(userService, times(1)).findById(testUserId);
         }
     }
 
-    @Nested
-    @DisplayName("Add Comment - Edge Cases")
-    class AddCommentEdgeCases {
-
-        @Test
-        @DisplayName("Should handle comment at max length (5000 chars)")
-        void shouldHandleMaxLengthComment() {
-            // Arrange
-            CreateCommentRequest request = new CreateCommentRequest("a".repeat(5000));
-            
-            when(postRepository.findById(testPostId)).thenReturn(Optional.of(testPost));
-            when(userRepository.findById(testUserId)).thenReturn(Optional.of(testUser));
-            when(commentRepository.save(any(Comment.class))).thenAnswer(invocation -> {
-                Comment comment = invocation.getArgument(0);
-                comment.setId(UUID.randomUUID());
-                return comment;
-            });
-
-            // Act
-            Comment result = commentsService.addComment(CommentParentType.POST, testPostId, request, testUserId);
-
-            // Assert
-            assertNotNull(result);
-        }
-
-        @Test
-        @DisplayName("Should handle comment with special characters")
-        void shouldHandleSpecialCharacters() {
-            // Arrange
-            CreateCommentRequest request = new CreateCommentRequest("Test !@#$%^&*()_+-=[]{}|;':\",./<>?");
-            
-            when(postRepository.findById(testPostId)).thenReturn(Optional.of(testPost));
-            when(userRepository.findById(testUserId)).thenReturn(Optional.of(testUser));
-            when(commentRepository.save(any(Comment.class))).thenAnswer(invocation -> {
-                Comment comment = invocation.getArgument(0);
-                comment.setId(UUID.randomUUID());
-                return comment;
-            });
-
-            // Act
-            Comment result = commentsService.addComment(CommentParentType.POST, testPostId, request, testUserId);
-
-            // Assert
-            assertNotNull(result);
-        }
-
-        @Test
-        @DisplayName("Should handle comment with Unicode characters")
-        void shouldHandleUnicodeCharacters() {
-            // Arrange
-            CreateCommentRequest request = new CreateCommentRequest("测试评论 こんにちは 🎉🎊");
-            
-            when(postRepository.findById(testPostId)).thenReturn(Optional.of(testPost));
-            when(userRepository.findById(testUserId)).thenReturn(Optional.of(testUser));
-            when(commentRepository.save(any(Comment.class))).thenAnswer(invocation -> {
-                Comment comment = invocation.getArgument(0);
-                comment.setId(UUID.randomUUID());
-                return comment;
-            });
-
-            // Act
-            Comment result = commentsService.addComment(CommentParentType.POST, testPostId, request, testUserId);
-
-            // Assert
-            assertNotNull(result);
-        }
-
-        @Test
-        @DisplayName("Should handle comment with newlines")
-        void shouldHandleNewlines() {
-            // Arrange
-            CreateCommentRequest request = new CreateCommentRequest("Line 1\nLine 2\nLine 3");
-            
-            when(postRepository.findById(testPostId)).thenReturn(Optional.of(testPost));
-            when(userRepository.findById(testUserId)).thenReturn(Optional.of(testUser));
-            when(commentRepository.save(any(Comment.class))).thenAnswer(invocation -> {
-                Comment comment = invocation.getArgument(0);
-                comment.setId(UUID.randomUUID());
-                return comment;
-            });
-
-            // Act
-            Comment result = commentsService.addComment(CommentParentType.POST, testPostId, request, testUserId);
-
-            // Assert
-            assertNotNull(result);
-        }
-    }
+    // ─── Hide Comment — Positive ───────────────────────────────────────────────
 
     @Nested
-    @DisplayName("Hide Comment - Positive Cases")
+    @DisplayName("Hide Comment — Positive Cases")
     class HideCommentPositiveCases {
 
         @Test
-        @DisplayName("Should hide own comment successfully")
+        @DisplayName("Should hide own comment and decrement parent comment count")
         void shouldHideOwnComment() {
-            // Arrange
             UUID commentId = UUID.randomUUID();
-            Comment comment = new Comment(testPostId, "POST", testUserId, "Test");
+            Comment comment = buildComment(testPostId, testUserId);
             comment.setId(commentId);
-            comment.setHidden(false);
-            
-            when(postRepository.findById(testPostId)).thenReturn(Optional.of(testPost));
-            when(commentRepository.findById(commentId)).thenReturn(Optional.of(comment));
-            when(commentRepository.update(any(Comment.class))).thenAnswer(invocation -> invocation.getArgument(0));
+            int initialCount = testPost.getCommentCount();
 
-            // Act
+            when(postsService.findById(testPostId)).thenReturn(Optional.of(testPost));
+            when(commentRepository.findById(commentId)).thenReturn(Optional.of(comment));
+            when(commentRepository.update(any())).thenAnswer(inv -> inv.getArgument(0));
+
             Comment result = commentsService.hideComment(CommentParentType.POST, testPostId, commentId, testUserId);
 
-            // Assert
             assertTrue(result.isHidden());
-            verify(commentRepository, times(1)).update(any(Comment.class));
-            verify(postRepository, times(1)).update(any(Post.class));
+            verify(commentRepository).update(any(Comment.class));
+            verify(postsService).update(testPost);
+            assertEquals(Math.max(initialCount - 1, 0), testPost.getCommentCount(),
+                    "Comment count must be decremented after hiding");
         }
 
         @Test
-        @DisplayName("Should return comment if already hidden")
+        @DisplayName("Should return already-hidden comment without updating or decrementing count")
         void shouldReturnIfAlreadyHidden() {
-            // Arrange
             UUID commentId = UUID.randomUUID();
-            Comment comment = new Comment(testPostId, "POST", testUserId, "Test");
+            Comment comment = buildComment(testPostId, testUserId);
             comment.setId(commentId);
             comment.setHidden(true);
-            
-            when(postRepository.findById(testPostId)).thenReturn(Optional.of(testPost));
+            int initialCount = testPost.getCommentCount();
+
+            when(postsService.findById(testPostId)).thenReturn(Optional.of(testPost));
             when(commentRepository.findById(commentId)).thenReturn(Optional.of(comment));
 
-            // Act
             Comment result = commentsService.hideComment(CommentParentType.POST, testPostId, commentId, testUserId);
 
-            // Assert
             assertTrue(result.isHidden());
+            // Both update AND saveParent must be skipped — count must not change
             verify(commentRepository, never()).update(any());
+            verify(postsService, never()).update(any());
+            assertEquals(initialCount, testPost.getCommentCount(),
+                    "Comment count must not change when comment was already hidden");
         }
     }
 
+    // ─── Hide Comment — Negative ───────────────────────────────────────────────
+
     @Nested
-    @DisplayName("Hide Comment - Negative Cases")
+    @DisplayName("Hide Comment — Negative Cases")
     class HideCommentNegativeCases {
 
         @Test
-        @DisplayName("Should throw exception when hiding other user's comment")
+        @DisplayName("Should throw when hiding another user's comment")
         void shouldThrowWhenHidingOthersComment() {
-            // Arrange
             UUID commentId = UUID.randomUUID();
             UUID otherUserId = UUID.randomUUID();
-            Comment comment = new Comment(testPostId, "POST", otherUserId, "Test");
+            Comment comment = buildComment(testPostId, otherUserId);
             comment.setId(commentId);
-            
-            when(postRepository.findById(testPostId)).thenReturn(Optional.of(testPost));
+
+            when(postsService.findById(testPostId)).thenReturn(Optional.of(testPost));
             when(commentRepository.findById(commentId)).thenReturn(Optional.of(comment));
 
-            // Act & Assert
-            IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-                () -> commentsService.hideComment(CommentParentType.POST, testPostId, commentId, testUserId));
-            assertTrue(exception.getMessage().contains("only hide your own"));
+            IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                    () -> commentsService.hideComment(CommentParentType.POST, testPostId, commentId, testUserId));
+            assertTrue(ex.getMessage().contains("only hide your own"));
+            verify(commentRepository, never()).update(any());
+            verify(postsService, never()).update(any());
         }
 
         @Test
-        @DisplayName("Should throw exception for non-existent comment")
+        @DisplayName("Should throw when comment not found")
         void shouldThrowForNonExistentComment() {
-            // Arrange
             UUID commentId = UUID.randomUUID();
-            when(postRepository.findById(testPostId)).thenReturn(Optional.of(testPost));
+            when(postsService.findById(testPostId)).thenReturn(Optional.of(testPost));
             when(commentRepository.findById(commentId)).thenReturn(Optional.empty());
 
-            // Act & Assert
-            assertThrows(IllegalArgumentException.class,
-                () -> commentsService.hideComment(CommentParentType.POST, testPostId, commentId, testUserId));
+            IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                    () -> commentsService.hideComment(CommentParentType.POST, testPostId, commentId, testUserId));
+            assertEquals("Comment not found", ex.getMessage());
         }
 
         @Test
-        @DisplayName("Should throw exception when comment belongs to different post")
+        @DisplayName("Should throw when comment belongs to a different parent")
         void shouldThrowWhenCommentBelongsToDifferentPost() {
-            // Arrange
             UUID commentId = UUID.randomUUID();
             UUID otherPostId = UUID.randomUUID();
-            Comment comment = new Comment(otherPostId, "POST", testUserId, "Test");
+            Comment comment = buildComment(otherPostId, testUserId);
             comment.setId(commentId);
-            
-            when(postRepository.findById(testPostId)).thenReturn(Optional.of(testPost));
+
+            when(postsService.findById(testPostId)).thenReturn(Optional.of(testPost));
             when(commentRepository.findById(commentId)).thenReturn(Optional.of(comment));
 
-            // Act & Assert
-            IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-                () -> commentsService.hideComment(CommentParentType.POST, testPostId, commentId, testUserId));
-            assertTrue(exception.getMessage().contains("does not belong"));
+            IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                    () -> commentsService.hideComment(CommentParentType.POST, testPostId, commentId, testUserId));
+            assertTrue(ex.getMessage().contains("does not belong"));
         }
     }
 
+    // ─── Unhide Comment — Positive ─────────────────────────────────────────────
+
     @Nested
-    @DisplayName("Unhide Comment - Positive Cases")
+    @DisplayName("Unhide Comment — Positive Cases")
     class UnhideCommentPositiveCases {
 
         @Test
-        @DisplayName("Should unhide own comment successfully")
+        @DisplayName("Should unhide own comment and increment parent comment count")
         void shouldUnhideOwnComment() {
-            // Arrange
             UUID commentId = UUID.randomUUID();
-            Comment comment = new Comment(testPostId, "POST", testUserId, "Test");
+            Comment comment = buildComment(testPostId, testUserId);
             comment.setId(commentId);
             comment.setHidden(true);
-            
-            when(postRepository.findById(testPostId)).thenReturn(Optional.of(testPost));
-            when(commentRepository.findById(commentId)).thenReturn(Optional.of(comment));
-            when(commentRepository.update(any(Comment.class))).thenAnswer(invocation -> invocation.getArgument(0));
+            int initialCount = testPost.getCommentCount();
 
-            // Act
+            when(postsService.findById(testPostId)).thenReturn(Optional.of(testPost));
+            when(commentRepository.findById(commentId)).thenReturn(Optional.of(comment));
+            when(commentRepository.update(any())).thenAnswer(inv -> inv.getArgument(0));
+
             Comment result = commentsService.unhideComment(CommentParentType.POST, testPostId, commentId, testUserId);
 
-            // Assert
             assertFalse(result.isHidden());
-            verify(commentRepository, times(1)).update(any(Comment.class));
-            verify(postRepository, times(1)).update(any(Post.class));
+            verify(commentRepository).update(any(Comment.class));
+            verify(postsService).update(testPost);
+            assertEquals(initialCount + 1, testPost.getCommentCount(),
+                    "Comment count must be incremented after unhiding");
         }
 
         @Test
-        @DisplayName("Should return comment if not hidden")
+        @DisplayName("Should return already-visible comment without updating or incrementing count")
         void shouldReturnIfNotHidden() {
-            // Arrange
             UUID commentId = UUID.randomUUID();
-            Comment comment = new Comment(testPostId, "POST", testUserId, "Test");
+            Comment comment = buildComment(testPostId, testUserId);
             comment.setId(commentId);
             comment.setHidden(false);
-            
-            when(postRepository.findById(testPostId)).thenReturn(Optional.of(testPost));
+            int initialCount = testPost.getCommentCount();
+
+            when(postsService.findById(testPostId)).thenReturn(Optional.of(testPost));
             when(commentRepository.findById(commentId)).thenReturn(Optional.of(comment));
 
-            // Act
             Comment result = commentsService.unhideComment(CommentParentType.POST, testPostId, commentId, testUserId);
 
-            // Assert
             assertFalse(result.isHidden());
+            // Both update AND saveParent must be skipped — count must not change
             verify(commentRepository, never()).update(any());
+            verify(postsService, never()).update(any());
+            assertEquals(initialCount, testPost.getCommentCount(),
+                    "Comment count must not change when comment was already visible");
         }
     }
 
+    // ─── Unhide Comment — Negative ─────────────────────────────────────────────
+
     @Nested
-    @DisplayName("Unhide Comment - Negative Cases")
+    @DisplayName("Unhide Comment — Negative Cases")
     class UnhideCommentNegativeCases {
 
         @Test
-        @DisplayName("Should throw exception when unhiding other user's comment")
+        @DisplayName("Should throw when unhiding another user's comment")
         void shouldThrowWhenUnhidingOthersComment() {
-            // Arrange
             UUID commentId = UUID.randomUUID();
             UUID otherUserId = UUID.randomUUID();
-            Comment comment = new Comment(testPostId, "POST", otherUserId, "Test");
+            Comment comment = buildComment(testPostId, otherUserId);
             comment.setId(commentId);
             comment.setHidden(true);
-            
-            when(postRepository.findById(testPostId)).thenReturn(Optional.of(testPost));
+
+            when(postsService.findById(testPostId)).thenReturn(Optional.of(testPost));
             when(commentRepository.findById(commentId)).thenReturn(Optional.of(comment));
 
-            // Act & Assert
-            IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-                () -> commentsService.unhideComment(CommentParentType.POST, testPostId, commentId, testUserId));
-            assertTrue(exception.getMessage().contains("only unhide your own"));
+            IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                    () -> commentsService.unhideComment(CommentParentType.POST, testPostId, commentId, testUserId));
+            assertTrue(ex.getMessage().contains("only unhide your own"));
+            verify(commentRepository, never()).update(any());
+            verify(postsService, never()).update(any());
+        }
+
+        @Test
+        @DisplayName("Should throw when comment not found")
+        void shouldThrowForNonExistentComment() {
+            UUID commentId = UUID.randomUUID();
+            when(postsService.findById(testPostId)).thenReturn(Optional.of(testPost));
+            when(commentRepository.findById(commentId)).thenReturn(Optional.empty());
+
+            assertThrows(IllegalArgumentException.class,
+                    () -> commentsService.unhideComment(CommentParentType.POST, testPostId, commentId, testUserId));
+        }
+
+        @Test
+        @DisplayName("Should throw when comment belongs to a different parent")
+        void shouldThrowWhenCommentBelongsToDifferentPost() {
+            UUID commentId = UUID.randomUUID();
+            UUID otherPostId = UUID.randomUUID();
+            Comment comment = buildComment(otherPostId, testUserId);
+            comment.setId(commentId);
+            comment.setHidden(true);
+
+            when(postsService.findById(testPostId)).thenReturn(Optional.of(testPost));
+            when(commentRepository.findById(commentId)).thenReturn(Optional.of(comment));
+
+            assertThrows(IllegalArgumentException.class,
+                    () -> commentsService.unhideComment(CommentParentType.POST, testPostId, commentId, testUserId));
+        }
+    }
+
+    // ─── Get Comments With Pagination ──────────────────────────────────────────
+
+    @Nested
+    @DisplayName("Get Comments With Pagination")
+    class GetCommentsWithPagination {
+
+        @Test
+        @DisplayName("Should return comments ordered by newest when sortBy is NEWEST")
+        void shouldReturnCommentsNewest() {
+            Pageable pageable = Pageable.from(0, 20);
+            Page<Comment> mockPage = mock(Page.class);
+            when(commentRepository.findByParentTypeAndParentIdAndHiddenFalseOrderByCreatedAtDesc(
+                    "POST", testPostId, pageable)).thenReturn(mockPage);
+
+            Page<Comment> result = commentsService.getCommentsWithPagination(
+                    CommentParentType.POST, testPostId, pageable, SortBy.NEWEST);
+
+            assertSame(mockPage, result);
+            verify(commentRepository).findByParentTypeAndParentIdAndHiddenFalseOrderByCreatedAtDesc(
+                    "POST", testPostId, pageable);
+        }
+
+        @Test
+        @DisplayName("Should return comments ordered by oldest when sortBy is OLDEST")
+        void shouldReturnCommentsOldest() {
+            Pageable pageable = Pageable.from(0, 20);
+            Page<Comment> mockPage = mock(Page.class);
+            when(commentRepository.findByParentTypeAndParentIdAndHiddenFalseOrderByCreatedAtAsc(
+                    "POST", testPostId, pageable)).thenReturn(mockPage);
+
+            Page<Comment> result = commentsService.getCommentsWithPagination(
+                    CommentParentType.POST, testPostId, pageable, SortBy.OLDEST);
+
+            assertSame(mockPage, result);
+            verify(commentRepository).findByParentTypeAndParentIdAndHiddenFalseOrderByCreatedAtAsc(
+                    "POST", testPostId, pageable);
+        }
+
+        @Test
+        @DisplayName("Should default to NEWEST order when sortBy is null")
+        void shouldDefaultToNewestWhenSortByNull() {
+            Pageable pageable = Pageable.from(0, 20);
+            Page<Comment> mockPage = mock(Page.class);
+            when(commentRepository.findByParentTypeAndParentIdAndHiddenFalseOrderByCreatedAtDesc(
+                    "POST", testPostId, pageable)).thenReturn(mockPage);
+
+            Page<Comment> result = commentsService.getCommentsWithPagination(
+                    CommentParentType.POST, testPostId, pageable, null);
+
+            assertSame(mockPage, result);
+            verify(commentRepository).findByParentTypeAndParentIdAndHiddenFalseOrderByCreatedAtDesc(
+                    "POST", testPostId, pageable);
+        }
+
+        @Test
+        @DisplayName("Should filter out comments from blocked users when currentUserId provided")
+        void shouldFilterBlockedUserComments() {
+            UUID blockedUserId = UUID.randomUUID();
+            Pageable pageable = Pageable.from(0, 20);
+
+            Comment visibleComment = buildComment(testPostId, testUserId);
+            Comment blockedComment = buildComment(testPostId, blockedUserId);
+
+            Page<Comment> mockPage = mock(Page.class);
+            when(mockPage.getContent()).thenReturn(List.of(visibleComment, blockedComment));
+            when(mockPage.getPageable()).thenReturn(pageable);
+            when(mockPage.getTotalSize()).thenReturn(2L);
+
+            when(commentRepository.findByParentTypeAndParentIdAndHiddenFalseOrderByCreatedAtDesc(
+                    "POST", testPostId, pageable)).thenReturn(mockPage);
+            when(userBlockService.getCombinedBlockedUserIds(testUserId))
+                    .thenReturn(Set.of(blockedUserId));
+
+            Page<Comment> result = commentsService.getCommentsWithPagination(
+                    CommentParentType.POST, testPostId, pageable, SortBy.NEWEST, testUserId);
+
+            assertEquals(1, result.getContent().size());
+            assertEquals(testUserId, result.getContent().get(0).getUserId());
+            assertEquals(1L, result.getTotalSize(),
+                    "Total size must be reduced by number of filtered comments");
+        }
+
+        @Test
+        @DisplayName("Should return all comments unfiltered when currentUserId is null")
+        void shouldReturnAllCommentsWhenCurrentUserIdNull() {
+            Pageable pageable = Pageable.from(0, 20);
+            Page<Comment> mockPage = mock(Page.class);
+            when(commentRepository.findByParentTypeAndParentIdAndHiddenFalseOrderByCreatedAtDesc(
+                    "POST", testPostId, pageable)).thenReturn(mockPage);
+
+            Page<Comment> result = commentsService.getCommentsWithPagination(
+                    CommentParentType.POST, testPostId, pageable, SortBy.NEWEST, null);
+
+            assertSame(mockPage, result);
+            verifyNoInteractions(userBlockService);
+        }
+
+        @Test
+        @DisplayName("Should return all comments unfiltered when blocked set is empty")
+        void shouldReturnAllCommentsWhenNoBlocksExist() {
+            Pageable pageable = Pageable.from(0, 20);
+            Page<Comment> mockPage = mock(Page.class);
+            when(commentRepository.findByParentTypeAndParentIdAndHiddenFalseOrderByCreatedAtDesc(
+                    "POST", testPostId, pageable)).thenReturn(mockPage);
+            when(userBlockService.getCombinedBlockedUserIds(testUserId))
+                    .thenReturn(Collections.emptySet());
+
+            Page<Comment> result = commentsService.getCommentsWithPagination(
+                    CommentParentType.POST, testPostId, pageable, SortBy.NEWEST, testUserId);
+
+            // Impl returns early without building a new Page when blockedUserIds is empty
+            assertSame(mockPage, result);
+        }
+    }
+
+    // ─── Get User Own Comments ─────────────────────────────────────────────────
+
+    @Nested
+    @DisplayName("Get User Own Comments")
+    class GetUserOwnComments {
+
+        @Test
+        @DisplayName("Should return user comments ordered by newest when sortBy is NEWEST")
+        void shouldReturnUserCommentsNewest() {
+            Pageable pageable = Pageable.from(0, 20);
+            Page<Comment> mockPage = mock(Page.class);
+            when(commentRepository.findByUserIdAndHiddenFalseOrderByCreatedAtDesc(testUserId, pageable))
+                    .thenReturn(mockPage);
+
+            Page<Comment> result = commentsService.getUserOwnComments(testUserId, pageable, SortBy.NEWEST);
+
+            assertSame(mockPage, result);
+            verify(commentRepository).findByUserIdAndHiddenFalseOrderByCreatedAtDesc(testUserId, pageable);
+        }
+
+        @Test
+        @DisplayName("Should return user comments ordered by oldest when sortBy is OLDEST")
+        void shouldReturnUserCommentsOldest() {
+            Pageable pageable = Pageable.from(0, 20);
+            Page<Comment> mockPage = mock(Page.class);
+            when(commentRepository.findByUserIdAndHiddenFalseOrderByCreatedAtAsc(testUserId, pageable))
+                    .thenReturn(mockPage);
+
+            Page<Comment> result = commentsService.getUserOwnComments(testUserId, pageable, SortBy.OLDEST);
+
+            assertSame(mockPage, result);
+            verify(commentRepository).findByUserIdAndHiddenFalseOrderByCreatedAtAsc(testUserId, pageable);
+        }
+
+        @Test
+        @DisplayName("Should default to NEWEST order when sortBy is null")
+        void shouldDefaultToNewestWhenSortByNull() {
+            Pageable pageable = Pageable.from(0, 20);
+            Page<Comment> mockPage = mock(Page.class);
+            when(commentRepository.findByUserIdAndHiddenFalseOrderByCreatedAtDesc(testUserId, pageable))
+                    .thenReturn(mockPage);
+
+            Page<Comment> result = commentsService.getUserOwnComments(testUserId, pageable, null);
+
+            assertSame(mockPage, result);
+            verify(commentRepository).findByUserIdAndHiddenFalseOrderByCreatedAtDesc(testUserId, pageable);
+        }
+    }
+
+    // ─── Report Comment ────────────────────────────────────────────────────────
+
+    @Nested
+    @DisplayName("Report Comment")
+    class ReportComment {
+
+        @Test
+        @DisplayName("Should create report and increment author report count")
+        void shouldCreateReportAndIncrementCount() {
+            UUID commentId = UUID.randomUUID();
+            Comment comment = buildComment(testPostId, UUID.randomUUID()); // author != reporter
+            comment.setId(commentId);
+            UserEntity author = new UserEntity();
+            author.setId(comment.getUserId());
+            author.setReportCount(2);
+
+            when(commentRepository.findById(commentId)).thenReturn(Optional.of(comment));
+            when(commentReportService.existsByCommentIdAndReporterUserId(commentId, testUserId))
+                    .thenReturn(false);
+            when(userService.findById(comment.getUserId())).thenReturn(Optional.of(author));
+
+            commentsService.reportComment(commentId, testUserId, "Spam");
+
+            verify(commentReportService).save(any(CommentReport.class));
+            ArgumentCaptor<UserEntity> captor = ArgumentCaptor.forClass(UserEntity.class);
+            verify(userService).update(captor.capture());
+            assertEquals(3, captor.getValue().getReportCount(),
+                    "Author report count must be incremented by 1");
+        }
+
+        @Test
+        @DisplayName("Should set correct fields on saved CommentReport")
+        void shouldSetCorrectFieldsOnReport() {
+            UUID commentId = UUID.randomUUID();
+            UUID authorId = UUID.randomUUID();
+            Comment comment = new Comment(testPostId, "POST", authorId, "Text");
+            comment.setId(commentId);
+            UserEntity author = new UserEntity();
+            author.setId(authorId);
+
+            when(commentRepository.findById(commentId)).thenReturn(Optional.of(comment));
+            when(commentReportService.existsByCommentIdAndReporterUserId(commentId, testUserId))
+                    .thenReturn(false);
+            when(userService.findById(authorId)).thenReturn(Optional.of(author));
+
+            commentsService.reportComment(commentId, testUserId, "Offensive");
+
+            ArgumentCaptor<CommentReport> captor = ArgumentCaptor.forClass(CommentReport.class);
+            verify(commentReportService).save(captor.capture());
+            CommentReport saved = captor.getValue();
+            assertEquals(commentId, saved.getCommentId());
+            assertEquals(testUserId, saved.getReporterUserId());
+            assertEquals(authorId, saved.getReportedUserId(),
+                    "reportedUserId must be the comment author, not the reporter");
+            assertEquals("Offensive", saved.getReason());
+        }
+
+        @Test
+        @DisplayName("Should throw when comment not found")
+        void shouldThrowWhenCommentNotFound() {
+            UUID commentId = UUID.randomUUID();
+            when(commentRepository.findById(commentId)).thenReturn(Optional.empty());
+
+            IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                    () -> commentsService.reportComment(commentId, testUserId, "Reason"));
+            assertEquals("Comment not found", ex.getMessage());
+            verifyNoInteractions(commentReportService);
+            verifyNoInteractions(userService);
+        }
+
+        @Test
+        @DisplayName("Should throw when user has already reported this comment")
+        void shouldThrowOnDuplicateReport() {
+            UUID commentId = UUID.randomUUID();
+            Comment comment = buildComment(testPostId, UUID.randomUUID());
+            comment.setId(commentId);
+
+            when(commentRepository.findById(commentId)).thenReturn(Optional.of(comment));
+            when(commentReportService.existsByCommentIdAndReporterUserId(commentId, testUserId))
+                    .thenReturn(true);
+
+            IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                    () -> commentsService.reportComment(commentId, testUserId, "Duplicate"));
+            assertEquals("You have already reported this comment", ex.getMessage());
+            verify(commentReportService, never()).save(any());
+            verifyNoInteractions(userService);
+        }
+
+        @Test
+        @DisplayName("Should not throw when author not found — report is still saved")
+        void shouldStillSaveReportWhenAuthorNotFound() {
+            // Impl checks authorOpt.isPresent() before incrementing — gracefully skips if not found.
+            UUID commentId = UUID.randomUUID();
+            Comment comment = buildComment(testPostId, UUID.randomUUID());
+            comment.setId(commentId);
+
+            when(commentRepository.findById(commentId)).thenReturn(Optional.of(comment));
+            when(commentReportService.existsByCommentIdAndReporterUserId(commentId, testUserId))
+                    .thenReturn(false);
+            when(userService.findById(comment.getUserId())).thenReturn(Optional.empty());
+
+            assertDoesNotThrow(() -> commentsService.reportComment(commentId, testUserId, "Reason"));
+            verify(commentReportService).save(any(CommentReport.class));
+            verify(userService, never()).update(any());
+        }
+    }
+
+    // ─── Update Profile Name ───────────────────────────────────────────────────
+
+    @Nested
+    @DisplayName("Update Profile Name By UserId")
+    class UpdateProfileName {
+
+        @Test
+        @DisplayName("Should delegate to repository and succeed")
+        void shouldUpdateProfileName() {
+            doNothing().when(commentRepository).updateProfileNameByUserId(testUserId, "NewName");
+
+            assertDoesNotThrow(() ->
+                    commentsService.updateProfileNameByUserId(testUserId, "NewName"));
+
+            verify(commentRepository).updateProfileNameByUserId(testUserId, "NewName");
+        }
+
+        @Test
+        @DisplayName("Should rethrow exception from repository — @Retryable sees it")
+        void shouldRethrowRepositoryException() {
+            RuntimeException dbError = new RuntimeException("DB error");
+            doThrow(dbError).when(commentRepository).updateProfileNameByUserId(testUserId, "NewName");
+
+            RuntimeException thrown = assertThrows(RuntimeException.class,
+                    () -> commentsService.updateProfileNameByUserId(testUserId, "NewName"));
+            assertSame(dbError, thrown,
+                    "Exception must be rethrown as-is so @Retryable can intercept it");
         }
     }
 }

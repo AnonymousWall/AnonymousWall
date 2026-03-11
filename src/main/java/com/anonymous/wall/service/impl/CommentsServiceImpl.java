@@ -12,8 +12,10 @@ import com.anonymous.wall.service.base.*;
 import io.micronaut.context.event.ApplicationEventPublisher;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
+import io.micronaut.transaction.TransactionDefinition;
 import io.micronaut.transaction.annotation.Transactional;
 import jakarta.inject.Inject;
+import jakarta.inject.Provider;
 import jakarta.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,7 +35,7 @@ public class CommentsServiceImpl implements CommentsService {
     private CommentRepository commentRepository;
 
     @Inject
-    private PostsService postsService;
+    private Provider<PostsService> postsServiceProvider;
 
     @Inject
     private InternshipService internshipService;
@@ -64,7 +66,7 @@ public class CommentsServiceImpl implements CommentsService {
      */
     private Commentable resolveParent(CommentParentType parentType, UUID parentId) {
         return switch (parentType) {
-            case POST -> postsService.findById(parentId)
+            case POST -> postsServiceProvider.get().findById(parentId)
                     .orElseThrow(() -> new IllegalArgumentException("Post not found"));
             case INTERNSHIP -> internshipService.findById(parentId)
                     .orElseThrow(() -> new IllegalArgumentException("Internship not found"));
@@ -78,7 +80,7 @@ public class CommentsServiceImpl implements CommentsService {
      */
     private void saveParent(CommentParentType parentType, Commentable parent) {
         switch (parentType) {
-            case POST -> postsService.update((Post) parent);
+            case POST -> postsServiceProvider.get().update((Post) parent);
             case INTERNSHIP -> internshipService.update((Internship) parent);
             case MARKETPLACE -> marketplaceService.update((MarketplaceItem) parent);
         }
@@ -379,7 +381,7 @@ public class CommentsServiceImpl implements CommentsService {
     }
 
     @Override
-    @Transactional
+    @Transactional(propagation = TransactionDefinition.Propagation.REQUIRES_NEW)
     public void updateProfileNameByUserId(UUID userId, String profileName) {
         try {
             log.info("Updating profile name for user: userId={}, newName={}", userId, profileName);

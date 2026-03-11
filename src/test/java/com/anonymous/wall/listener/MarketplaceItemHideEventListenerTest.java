@@ -2,6 +2,7 @@ package com.anonymous.wall.listener;
 
 import com.anonymous.wall.event.MarketplaceItemHiddenEvent;
 import com.anonymous.wall.repository.CommentRepository;
+import com.anonymous.wall.service.base.CommentsService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -14,18 +15,18 @@ import static org.mockito.Mockito.*;
 class MarketplaceItemHideEventListenerTest {
 
     private MarketplaceItemHideEventListener listener;
-    private CommentRepository commentRepository;
+    private CommentsService commentService;
 
     @BeforeEach
     void setUp() {
-        commentRepository = mock(CommentRepository.class);
+        commentService = mock(CommentsService.class);
         listener = new MarketplaceItemHideEventListener();
 
         // Use reflection to inject mock
         try {
-            var commentRepoField = MarketplaceItemHideEventListener.class.getDeclaredField("commentRepository");
+            var commentRepoField = MarketplaceItemHideEventListener.class.getDeclaredField("commentService");
             commentRepoField.setAccessible(true);
-            commentRepoField.set(listener, commentRepository);
+            commentRepoField.set(listener, commentService);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -40,22 +41,22 @@ class MarketplaceItemHideEventListenerTest {
 
         listener.onApplicationEvent(event);
 
-        verify(commentRepository, times(1)).updateByParentTypeAndParentId("MARKETPLACE", itemId, true);
+        verify(commentService, times(1)).updateByParentTypeAndParentId("MARKETPLACE", itemId, true);
     }
 
     @Test
-    @DisplayName("Should handle repository exceptions gracefully")
-    void shouldHandleRepositoryExceptionsGracefully() {
+    @DisplayName("Should handle service exceptions gracefully")
+    void shouldHandleServiceExceptionsGracefully() {
         UUID itemId = UUID.randomUUID();
         UUID userId = UUID.randomUUID();
         MarketplaceItemHiddenEvent event = new MarketplaceItemHiddenEvent(itemId, userId);
 
         doThrow(new RuntimeException("Database error"))
-            .when(commentRepository).updateByParentTypeAndParentId(any(), any(), anyBoolean());
+            .when(commentService).updateByParentTypeAndParentId(any(), any(), anyBoolean());
 
         // Act - should not throw exception
         listener.onApplicationEvent(event);
 
-        verify(commentRepository, times(1)).updateByParentTypeAndParentId("MARKETPLACE", itemId, true);
+        verify(commentService, times(1)).updateByParentTypeAndParentId("MARKETPLACE", itemId, true);
     }
 }

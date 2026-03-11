@@ -16,8 +16,10 @@ import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
 import io.micronaut.http.multipart.CompletedFileUpload;
 import jakarta.inject.Inject;
+import jakarta.inject.Provider;
+import io.micronaut.transaction.TransactionDefinition;
+import io.micronaut.transaction.annotation.Transactional;
 import jakarta.inject.Singleton;
-import jakarta.transaction.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,7 +45,7 @@ public class MarketplaceServiceImpl implements MarketplaceService {
     private UserService userService;
 
     @Inject
-    private CommentsService commentsService;
+    private Provider<CommentsService> commentsServiceProvider;
 
     @Inject
     private ApplicationEventPublisher<MarketplaceItemHiddenEvent> marketplaceItemHiddenEventPublisher;
@@ -419,12 +421,12 @@ public class MarketplaceServiceImpl implements MarketplaceService {
         item.setUpdatedAt(java.time.OffsetDateTime.now());
         marketplaceItemRepository.update(item);
         // Unhide all comments associated with this item (within same transaction)
-        commentsService.updateByParentTypeAndParentId("MARKETPLACE", itemId, false);
+        commentsServiceProvider.get().updateByParentTypeAndParentId("MARKETPLACE", itemId, false);
         log.info("Unhid marketplace item {}", itemId);
     }
 
     @Override
-    @Transactional
+    @Transactional(propagation = TransactionDefinition.Propagation.REQUIRES_NEW)
     public void updateProfileNameByUserId(UUID userId, String profileName) {
         try {
             log.info("Updating profile name for user: userId={}, newName={}", userId, profileName);

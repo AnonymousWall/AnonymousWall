@@ -1,115 +1,113 @@
 package com.anonymous.wall.listener;
 
 import com.anonymous.wall.event.ProfileNameChangedEvent;
-import com.anonymous.wall.repository.CommentRepository;
-import com.anonymous.wall.repository.PostRepository;
+import com.anonymous.wall.service.base.CommentsService;
+import com.anonymous.wall.service.base.InternshipService;
+import com.anonymous.wall.service.base.MarketplaceService;
+import com.anonymous.wall.service.base.PostsService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
 @DisplayName("ProfileNameUpdateEventListener Tests")
 class ProfileNameUpdateEventListenerTest {
 
     private ProfileNameUpdateEventListener listener;
-    private PostRepository postRepository;
-    private CommentRepository commentRepository;
+    private PostsService postsService;
+    private CommentsService commentsService;
+    private InternshipService internshipService;
+    private MarketplaceService marketplaceService;
 
     @BeforeEach
     void setUp() {
-        postRepository = mock(PostRepository.class);
-        commentRepository = mock(CommentRepository.class);
+        postsService = mock(PostsService.class);
+        commentsService = mock(CommentsService.class);
+        internshipService = mock(InternshipService.class);
+        marketplaceService = mock(MarketplaceService.class);
         listener = new ProfileNameUpdateEventListener();
-        
-        // Use reflection to inject mocks
+
         try {
-            var postRepoField = ProfileNameUpdateEventListener.class.getDeclaredField("postRepository");
-            postRepoField.setAccessible(true);
-            postRepoField.set(listener, postRepository);
-            
-            var commentRepoField = ProfileNameUpdateEventListener.class.getDeclaredField("commentRepository");
-            commentRepoField.setAccessible(true);
-            commentRepoField.set(listener, commentRepository);
+            var f = ProfileNameUpdateEventListener.class.getDeclaredField("postsService");
+            f.setAccessible(true); f.set(listener, postsService);
+            f = ProfileNameUpdateEventListener.class.getDeclaredField("commentsService");
+            f.setAccessible(true); f.set(listener, commentsService);
+            f = ProfileNameUpdateEventListener.class.getDeclaredField("internshipService");
+            f.setAccessible(true); f.set(listener, internshipService);
+            f = ProfileNameUpdateEventListener.class.getDeclaredField("marketplaceService");
+            f.setAccessible(true); f.set(listener, marketplaceService);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
     @Test
-    @DisplayName("Should update posts and comments when event is received")
-    void shouldUpdatePostsAndCommentsWhenEventReceived() {
-        // Arrange
+    @DisplayName("Should call all four services when event is received")
+    void shouldCallAllFourServicesOnEvent() {
         UUID userId = UUID.randomUUID();
-        String oldName = "OldName";
-        String newName = "NewName";
-        ProfileNameChangedEvent event = new ProfileNameChangedEvent(userId, oldName, newName);
-        
-        // Act
+        ProfileNameChangedEvent event = new ProfileNameChangedEvent(userId, "OldName", "NewName");
+
         listener.onApplicationEvent(event);
-        
-        // Assert
-        verify(postRepository, times(1)).updateProfileNameByUserId(userId, newName);
-        verify(commentRepository, times(1)).updateProfileNameByUserId(userId, newName);
+
+        verify(postsService).updateProfileNameByUserId(userId, "NewName");
+        verify(commentsService).updateProfileNameByUserId(userId, "NewName");
+        verify(internshipService).updateProfileNameByUserId(userId, "NewName");
+        verify(marketplaceService).updateProfileNameByUserId(userId, "NewName");
     }
-    
+
     @Test
-    @DisplayName("Should handle repository exceptions gracefully")
-    void shouldHandleRepositoryExceptionsGracefully() {
-        // Arrange
+    @DisplayName("Should propagate exception when a service fails — allows @Retryable to retry")
+    void shouldPropagateExceptionWhenServiceFails() {
         UUID userId = UUID.randomUUID();
-        String oldName = "OldName";
-        String newName = "NewName";
-        ProfileNameChangedEvent event = new ProfileNameChangedEvent(userId, oldName, newName);
-        
-        doThrow(new RuntimeException("Database error"))
-            .when(postRepository).updateProfileNameByUserId(any(), any());
-        
-        // Act - should not throw exception
-        listener.onApplicationEvent(event);
-        
-        // Assert
-        verify(postRepository, times(1)).updateProfileNameByUserId(userId, newName);
-        // With fail-safe behavior, comments should still be attempted
-        verify(commentRepository, times(1)).updateProfileNameByUserId(userId, newName);
+        ProfileNameChangedEvent event = new ProfileNameChangedEvent(userId, "OldName", "NewName");
+
+        doThrow(new RuntimeException("DB error"))
+                .when(postsService).updateProfileNameByUserId(any(), any());
+
+        // Exception must propagate — not swallowed — so @Retryable can catch and retry
+        assertThrows(RuntimeException.class, () -> listener.onApplicationEvent(event));
+
+        // postsService was called, but subsequent services were NOT reached
+        verify(postsService).updateProfileNameByUserId(userId, "NewName");
+        verifyNoInteractions(commentsService);
+        verifyNoInteractions(internshipService);
+        verifyNoInteractions(marketplaceService);
     }
-    
+
     @Test
-    @DisplayName("Should update comments even if posts update fails (fail-safe)")
-    void shouldUpdateCommentsEvenIfPostsUpdateFails() {
-        // Arrange
+    @DisplayName("Should propagate exception when a middle service fails")
+    void shouldPropagateExceptionWhenMiddleServiceFails() {
         UUID userId = UUID.randomUUID();
-        String oldName = "OldName";
-        String newName = "NewName";
-        ProfileNameChangedEvent event = new ProfileNameChangedEvent(userId, oldName, newName);
-        
-        doThrow(new RuntimeException("Posts update failed"))
-            .when(postRepository).updateProfileNameByUserId(any(), any());
-        
-        // Act
-        listener.onApplicationEvent(event);
-        
-        // Assert
-        verify(postRepository, times(1)).updateProfileNameByUserId(userId, newName);
-        // With fail-safe behavior, comments should still be updated even if posts failed
-        verify(commentRepository, times(1)).updateProfileNameByUserId(userId, newName);
+        ProfileNameChangedEvent event = new ProfileNameChangedEvent(userId, "OldName", "NewName");
+
+        doThrow(new RuntimeException("DB error"))
+                .when(commentsService).updateProfileNameByUserId(any(), any());
+
+        assertThrows(RuntimeException.class, () -> listener.onApplicationEvent(event));
+
+        // Posts succeeded before the failure
+        verify(postsService).updateProfileNameByUserId(userId, "NewName");
+        verify(commentsService).updateProfileNameByUserId(userId, "NewName");
+        // Services after the failure were never reached
+        verifyNoInteractions(internshipService);
+        verifyNoInteractions(marketplaceService);
     }
-    
+
     @Test
-    @DisplayName("Should handle null old name in event")
-    void shouldHandleNullOldNameInEvent() {
-        // Arrange
+    @DisplayName("Should handle null old name — old name is unused by listener")
+    void shouldHandleNullOldName() {
         UUID userId = UUID.randomUUID();
-        String newName = "NewName";
-        ProfileNameChangedEvent event = new ProfileNameChangedEvent(userId, null, newName);
-        
-        // Act
+        ProfileNameChangedEvent event = new ProfileNameChangedEvent(userId, null, "NewName");
+
         listener.onApplicationEvent(event);
-        
-        // Assert
-        verify(postRepository, times(1)).updateProfileNameByUserId(userId, newName);
-        verify(commentRepository, times(1)).updateProfileNameByUserId(userId, newName);
+
+        verify(postsService).updateProfileNameByUserId(userId, "NewName");
+        verify(commentsService).updateProfileNameByUserId(userId, "NewName");
+        verify(internshipService).updateProfileNameByUserId(userId, "NewName");
+        verify(marketplaceService).updateProfileNameByUserId(userId, "NewName");
     }
 }

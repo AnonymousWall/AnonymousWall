@@ -107,7 +107,7 @@ public class PostConcurrencyTest {
             Thread.sleep(1000);
 
             // Verify at least some comments were saved and count is reasonable
-            Post refreshedPost = postRepository.findById(testPost.getId()).orElseThrow();
+            Post refreshedPost = postsService.findById(testPost.getId()).orElseThrow();
             long actualCommentCount = commentRepository.findByParentTypeAndParentIdAndHiddenFalse("POST", testPost.getId()).size();
 
             assertTrue(actualCommentCount > 0, "At least some comments should be saved");
@@ -144,7 +144,7 @@ public class PostConcurrencyTest {
 
         Thread.sleep(1000);
 
-        Post refreshedPost = postRepository.findById(testPost.getId()).orElseThrow();
+        Post refreshedPost = postsService.findById(testPost.getId()).orElseThrow();
         long actualLikeCount = postLikeRepository.countByPostId(testPost.getId());
 
         // Most important: count in post matches actual likes
@@ -182,7 +182,7 @@ public class PostConcurrencyTest {
 
         Thread.sleep(1000);
 
-        Post refreshedPost = postRepository.findById(testPost.getId()).orElseThrow();
+        Post refreshedPost = postsService.findById(testPost.getId()).orElseThrow();
         long actualCommentCount = commentRepository.findByParentTypeAndParentIdAndHiddenFalse("POST", testPost.getId()).size();
         long actualLikeCount = postLikeRepository.countByPostId(testPost.getId());
 
@@ -226,7 +226,7 @@ public class PostConcurrencyTest {
 
             Thread.sleep(1000);
 
-            Post refreshedPost = postRepository.findById(testPost.getId()).orElseThrow();
+            Post refreshedPost = postsService.findById(testPost.getId()).orElseThrow();
             long actualCommentCount = commentRepository.findByParentTypeAndParentIdAndHiddenFalse("POST", testPost.getId()).size();
 
             // Verify counts are consistent (not zero, and match actual)
