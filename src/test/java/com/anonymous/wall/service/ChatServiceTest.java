@@ -441,13 +441,13 @@ class ChatServiceTest {
 
             when(userService.existsById(testUser1Id)).thenReturn(true);
             when(userService.existsById(testUser2Id)).thenReturn(true);
-            when(chatMessageRepository.findByConversationIdOrderByCreatedAtAsc(any(UUID.class), eq(pageable)))
+            when(chatMessageRepository.findByConversationIdOrderByCreatedAtDesc(any(UUID.class), eq(pageable)))
                     .thenReturn(mockPage);
 
             Page<ChatMessage> result = chatService.getMessageHistory(testUser1Id, testUser2Id, pageable);
 
             assertNotNull(result);
-            verify(chatMessageRepository).findByConversationIdOrderByCreatedAtAsc(any(UUID.class), eq(pageable));
+            verify(chatMessageRepository).findByConversationIdOrderByCreatedAtDesc(any(UUID.class), eq(pageable));
         }
 
         @Test
@@ -458,7 +458,7 @@ class ChatServiceTest {
 
             when(userService.existsById(testUser1Id)).thenReturn(true);
             when(userService.existsById(testUser2Id)).thenReturn(true);
-            when(chatMessageRepository.findByConversationIdOrderByCreatedAtAsc(any(UUID.class), eq(pageable)))
+            when(chatMessageRepository.findByConversationIdOrderByCreatedAtDesc(any(UUID.class), eq(pageable)))
                     .thenReturn(mockPage);
 
             chatService.getMessageHistory(testUser1Id, testUser2Id, pageable);
@@ -466,7 +466,7 @@ class ChatServiceTest {
 
             ArgumentCaptor<UUID> captor = ArgumentCaptor.forClass(UUID.class);
             verify(chatMessageRepository, times(2))
-                    .findByConversationIdOrderByCreatedAtAsc(captor.capture(), eq(pageable));
+                    .findByConversationIdOrderByCreatedAtDesc(captor.capture(), eq(pageable));
 
             assertEquals(captor.getAllValues().get(0), captor.getAllValues().get(1),
                     "Same conversation ID must be used regardless of user order");

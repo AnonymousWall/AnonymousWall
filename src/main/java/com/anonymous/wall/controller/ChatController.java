@@ -116,6 +116,8 @@ public class ChatController {
                     .map(this::convertToDTO)
                     .collect(Collectors.toList());
 
+            Collections.reverse(messageDTOs);
+
             // Build response
             Map<String, Object> response = new HashMap<>();
             response.put("messages", messageDTOs);

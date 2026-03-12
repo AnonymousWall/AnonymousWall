@@ -159,7 +159,7 @@ public class ChatServiceImpl implements ChatService {
 
         // Generate conversation ID and query by it
         UUID conversationId = ConversationIdGenerator.generate(userId1, userId2);
-        return chatMessageRepository.findByConversationIdOrderByCreatedAtAsc(conversationId, pageable);
+        return chatMessageRepository.findByConversationIdOrderByCreatedAtDesc(conversationId, pageable);
     }
 
     @Override
