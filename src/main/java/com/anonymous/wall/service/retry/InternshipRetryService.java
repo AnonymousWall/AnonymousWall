@@ -22,42 +22,42 @@ public class InternshipRetryService {
         this.internshipService = internshipService;
     }
 
-    @Retryable(attempts = "3", delay = "500ms")
+    @Retryable(attempts = "3", delay = "500ms", excludes = IllegalArgumentException.class)
     public Internship createInternship(CreateInternshipRequest request, UUID userId) {
         return internshipService.createInternship(request, userId);
     }
 
-    @Retryable(attempts = "3", delay = "500ms")
+    @Retryable(attempts = "3", delay = "500ms", excludes = IllegalArgumentException.class)
     public Page<Internship> listInternships(Pageable pageable, String sortBy) {
         return internshipService.listInternships(pageable, sortBy);
     }
 
-    @Retryable(attempts = "3", delay = "500ms")
+    @Retryable(attempts = "3", delay = "500ms", excludes = IllegalArgumentException.class)
     public Page<Internship> getInternshipsByWall(String wall, Pageable pageable, UUID userId, String schoolDomain, String sortBy) {
         return internshipService.getInternshipsByWall(wall, pageable, userId, schoolDomain, sortBy);
     }
 
-    @Retryable(attempts = "3", delay = "500ms")
+    @Retryable(attempts = "3", delay = "500ms", excludes = IllegalArgumentException.class)
     public Internship getInternship(UUID internshipId) {
         return internshipService.getInternship(internshipId);
     }
 
-    @Retryable(attempts = "3", delay = "500ms")
+    @Retryable(attempts = "3", delay = "500ms", excludes = IllegalArgumentException.class)
     public Internship getInternship(UUID internshipId, UUID userId) {
         return internshipService.getInternship(internshipId, userId);
     }
 
-    @Retryable(attempts = "3", delay = "500ms")
+    @Retryable(attempts = "3", delay = "500ms", excludes = IllegalArgumentException.class)
     public void hideInternship(UUID internshipId, UUID userId) {
         internshipService.hideInternship(internshipId, userId);
     }
 
-    @Retryable(attempts = "3", delay = "500ms")
+    @Retryable(attempts = "3", delay = "500ms", excludes = IllegalArgumentException.class)
     public void unhideInternship(UUID internshipId, UUID userId) {
         internshipService.unhideInternship(internshipId, userId);
     }
 
-    @Retryable(attempts = "3", delay = "500ms")
+    @Retryable(attempts = "3", delay = "500ms", excludes = IllegalArgumentException.class)
     public Page<Internship> getUserOwnInternships(UUID userId, Pageable pageable, String sortBy) {
         return internshipService.getUserOwnInternships(userId, pageable, sortBy);
     }

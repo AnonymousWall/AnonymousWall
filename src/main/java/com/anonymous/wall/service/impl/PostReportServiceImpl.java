@@ -15,7 +15,7 @@ public class PostReportServiceImpl implements PostReportService {
     private PostReportRepository postReportRepository;
 
     @Override
-    @Transactional
+    @Transactional(readOnly = true)
     public boolean existsByPostIdAndReporterUserId(UUID postId, UUID reporterUserId) {
         return postReportRepository.existsByPostIdAndReporterUserId(postId, reporterUserId);
     }

@@ -216,6 +216,7 @@ public class MarketplaceServiceImpl implements MarketplaceService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Page<MarketplaceItem> listItems(Pageable pageable, String sortBy) {
         log.info("Listing marketplace items with sortBy={}", sortBy);
 
@@ -235,6 +236,7 @@ public class MarketplaceServiceImpl implements MarketplaceService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Page<MarketplaceItem> getItemsByWall(String wall, Pageable pageable, UUID userId, String schoolDomain, String sortBy, String category) {
         log.info("Listing marketplace items by wall={}, sortBy={}, schoolDomain={}, category={}", wall, sortBy, schoolDomain, category);
 
@@ -334,6 +336,7 @@ public class MarketplaceServiceImpl implements MarketplaceService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public MarketplaceItem getItem(UUID itemId) {
         log.info("Getting marketplace item {}", itemId);
         return marketplaceItemRepository.findById(itemId)
@@ -341,6 +344,7 @@ public class MarketplaceServiceImpl implements MarketplaceService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public MarketplaceItem getItem(UUID itemId, UUID userId) {
         log.info("Getting marketplace item {} for user {}", itemId, userId);
         MarketplaceItem item = marketplaceItemRepository.findById(itemId)
@@ -366,6 +370,7 @@ public class MarketplaceServiceImpl implements MarketplaceService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Page<MarketplaceItem> getUserOwnItems(UUID userId, Pageable pageable, String sortBy) {
         log.info("Getting own marketplace items for user {}, sortBy={}", userId, sortBy);
 
@@ -439,7 +444,7 @@ public class MarketplaceServiceImpl implements MarketplaceService {
     }
 
     @Override
-    @Transactional
+    @Transactional(readOnly = true)
     public Optional<MarketplaceItem> findById(UUID itemId) {
         return marketplaceItemRepository.findById(itemId);
     }

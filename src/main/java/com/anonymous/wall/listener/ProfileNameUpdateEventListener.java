@@ -16,7 +16,7 @@ import org.slf4j.LoggerFactory;
 
 @Singleton
 public class ProfileNameUpdateEventListener implements ApplicationEventListener<ProfileNameChangedEvent> {
-    
+
     private static final Logger log = LoggerFactory.getLogger(ProfileNameUpdateEventListener.class);
 
     @Inject
@@ -32,19 +32,20 @@ public class ProfileNameUpdateEventListener implements ApplicationEventListener<
     private MarketplaceService marketplaceService;
 
     @Override
-    @Async(TaskExecutors.IO)
-    @Retryable(
-            attempts = "3",
-            delay = "50ms",
-            multiplier = "2.0"
-    )
+    @Async(TaskExecutors.BLOCKING)
     public void onApplicationEvent(ProfileNameChangedEvent event) {
         log.info("Processing profile name change: userId={}, newName={}",
                 event.getUserId(), event.getNewName());
-        postsService.updateProfileNameByUserId(event.getUserId(), event.getNewName());
-        commentsService.updateProfileNameByUserId(event.getUserId(), event.getNewName());
-        internshipService.updateProfileNameByUserId(event.getUserId(), event.getNewName());
-        marketplaceService.updateProfileNameByUserId(event.getUserId(), event.getNewName());
-        log.info("Profile name propagation completed for userId={}", event.getUserId());
+
+        try {
+            postsService.updateProfileNameByUserId(event.getUserId(), event.getNewName());
+            commentsService.updateProfileNameByUserId(event.getUserId(), event.getNewName());
+            internshipService.updateProfileNameByUserId(event.getUserId(), event.getNewName());
+            marketplaceService.updateProfileNameByUserId(event.getUserId(), event.getNewName());
+            log.info("Profile name propagation completed for userId={}", event.getUserId());
+        } catch (Exception e) {
+            log.error("Failed to propagate profile name change for userId={}: {}",
+                    event.getUserId(), e.getMessage(), e);
+        }
     }
 }

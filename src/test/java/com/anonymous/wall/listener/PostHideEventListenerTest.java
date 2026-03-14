@@ -1,6 +1,7 @@
 package com.anonymous.wall.listener;
 
 import com.anonymous.wall.event.PostHiddenEvent;
+import com.anonymous.wall.listener.helper.CommentHideTransactionHelper;
 import com.anonymous.wall.repository.CommentRepository;
 import com.anonymous.wall.service.base.CommentsService;
 import org.junit.jupiter.api.BeforeEach;
@@ -15,18 +16,18 @@ import static org.mockito.Mockito.*;
 class PostHideEventListenerTest {
 
     private PostHideEventListener listener;
-    private CommentsService commentService;
+    private CommentHideTransactionHelper commentHideTransactionHelper;
 
     @BeforeEach
     void setUp() {
-        commentService = mock(CommentsService.class);
+        commentHideTransactionHelper = mock(CommentHideTransactionHelper.class);
         listener = new PostHideEventListener();
         
         // Use reflection to inject mock
         try {
-            var commentRepoField = PostHideEventListener.class.getDeclaredField("commentService");
+            var commentRepoField = PostHideEventListener.class.getDeclaredField("commentHideTransactionHelper");
             commentRepoField.setAccessible(true);
-            commentRepoField.set(listener, commentService);
+            commentRepoField.set(listener, commentHideTransactionHelper);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -44,7 +45,7 @@ class PostHideEventListenerTest {
         listener.onApplicationEvent(event);
         
         // Assert
-        verify(commentService, times(1)).updateByParentTypeAndParentId("POST", postId, true);
+        verify(commentHideTransactionHelper, times(1)).hideCommentsByParent("POST", postId, true);
     }
     
     @Test
@@ -56,12 +57,12 @@ class PostHideEventListenerTest {
         PostHiddenEvent event = new PostHiddenEvent(postId, userId);
         
         doThrow(new RuntimeException("Database error"))
-            .when(commentService).updateByParentTypeAndParentId(any(), any(), anyBoolean());
+            .when(commentHideTransactionHelper).hideCommentsByParent(any(), any(), anyBoolean());
         
         // Act - should not throw exception
         listener.onApplicationEvent(event);
         
         // Assert
-        verify(commentService, times(1)).updateByParentTypeAndParentId("POST", postId, true);
+        verify(commentHideTransactionHelper, times(1)).hideCommentsByParent("POST", postId, true);
     }
 }

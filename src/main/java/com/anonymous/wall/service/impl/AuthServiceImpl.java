@@ -189,6 +189,7 @@ public class AuthServiceImpl implements AuthService {
      * Login user with email and password
      */
     @Override
+    @Transactional(readOnly = true)
     public UserEntity loginWithPassword(PasswordLoginRequest request) {
         log.debug("Attempting password-based login for: {}", request.getEmail());
 
@@ -225,6 +226,7 @@ public class AuthServiceImpl implements AuthService {
      * Set password for first time (user must be authenticated)
      */
     @Override
+    @Transactional
     public UserEntity setPassword(SetPasswordRequest request, UserEntity currentUser) {
         if (currentUser == null) {
             log.warn("Set password failed - user not authenticated");
@@ -246,6 +248,7 @@ public class AuthServiceImpl implements AuthService {
      * Change password (user must be authenticated and provide old password)
      */
     @Override
+    @Transactional
     public UserEntity changePassword(ChangePasswordRequest request, UserEntity currentUser) {
         if (currentUser == null) {
             log.warn("Change password failed - user not authenticated");
@@ -276,6 +279,7 @@ public class AuthServiceImpl implements AuthService {
      * Request password reset (forgot password flow)
      */
     @Override
+    @Transactional
     public UserEntity requestPasswordReset(PasswordResetRequestRequest request) {
         log.debug("Processing password reset request for email: {}", request.getEmail());
 
@@ -385,6 +389,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Optional<RefreshToken> findValidRefreshToken(String rawRefreshToken) {
         String tokenHash = jwtTokenService.hashToken(rawRefreshToken);
         Optional<RefreshToken> stored = refreshTokenService.findByTokenHashAndRevokedFalse(tokenHash);

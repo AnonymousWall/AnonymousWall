@@ -290,7 +290,7 @@ class PushNotificationServiceTest {
 
         @Test
         @DisplayName("APNs 200 → no further action")
-        void status200Success() throws Exception {
+        void status200Success() {
             when(apnsClient.send(any(), any(), any(), any())).thenReturn(200);
 
             pushNotificationService.sendPush("token", "title", "body", Map.of());
@@ -321,20 +321,16 @@ class PushNotificationServiceTest {
         }
 
         @Test
-        @DisplayName("APNs 500 → retry once after 2 seconds, then log failure")
-        void status500RetriesOnce() {
-            when(apnsClient.send(any(), any(), any(), any()))
-                    .thenReturn(500)
-                    .thenReturn(503);
+        @DisplayName("APNs 500 → throws RuntimeException (retry delegated to @Retryable AOP proxy)")
+        void status500ThrowsForRetry() {
+            when(apnsClient.send(any(), any(), any(), any())).thenReturn(500);
 
-            long start = System.currentTimeMillis();
-            pushNotificationService.sendPush("token-500", "title", "body", Map.of());
-            long elapsed = System.currentTimeMillis() - start;
+            assertThrows(RuntimeException.class, () ->
+                    pushNotificationService.sendPush("token-500", "title", "body", Map.of()));
 
-            verify(apnsClient, times(2)).send(any(), any(), any(), any());
+            // sendPush called once — @Retryable proxy (not present in unit test) would call again
+            verify(apnsClient, times(1)).send(any(), any(), any(), any());
             verify(deviceTokenService, never()).deactivate(any());
-            // Should have waited ~2000ms
-            assertTrue(elapsed >= 1900, "Expected at least 2s delay before retry");
         }
     }
 
@@ -363,15 +359,12 @@ class PushNotificationServiceTest {
             ApnsClient client = spy(new ApnsClient());
             doReturn("jwt-v1", "jwt-v2").when(client).generateJwt();
 
-            // First call generates JWT
             String jwt1 = client.getOrRefreshJwt();
 
-            // Simulate JWT being 51 minutes old via reflection
             var jwtGeneratedAtField = ApnsClient.class.getDeclaredField("jwtGeneratedAt");
             jwtGeneratedAtField.setAccessible(true);
             jwtGeneratedAtField.set(client, java.time.Instant.now().minus(java.time.Duration.ofMinutes(51)));
 
-            // Second call should regenerate
             String jwt2 = client.getOrRefreshJwt();
 
             assertNotEquals(jwt1, jwt2);

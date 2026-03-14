@@ -205,6 +205,30 @@ curl http://$LB_IP/health
 # Expected response: {"status":"UP"}
 ```
 
+** Spin up multiple test users:**
+
+```bash
+DECLARE
+  v_hash VARCHAR2(255) := '$2a$12$3wavdTE7Itab693iPtZAwOWxc.tQRuPB.NpoDthSp/8mCoy6/8Cfy';  -- ← paste it here
+  v_id   VARCHAR2(36);
+BEGIN
+  FOR i IN 1..1000 LOOP
+    SELECT LOWER(REGEXP_REPLACE(RAWTOHEX(SYS_GUID()),
+      '([A-F0-9]{8})([A-F0-9]{4})([A-F0-9]{4})([A-F0-9]{4})([A-F0-9]{12})',
+      '\1-\2-\3-\4-\5')) INTO v_id FROM DUAL;
+
+    INSERT INTO users (id, email, profile_name, school_domain, report_count,
+                       password_hash, is_verified, password_set, role, blocked,
+                       created_at, updated_at)
+    VALUES (v_id, i || '@msu.edu', i || 'Anonymous', 'msu.edu', 0,
+            v_hash, 1, 1, 'USER', 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+  END LOOP;
+  COMMIT;
+  DBMS_OUTPUT.PUT_LINE('Done: 100 test users inserted.');
+END;
+/
+```
+
 **Troubleshooting Failed Deployments:**
 
 If the health check fails, check these common issues:

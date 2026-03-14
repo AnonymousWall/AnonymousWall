@@ -19,32 +19,32 @@ public class UserRetryService {
         this.userService = userService;
     }
 
-    @Retryable(attempts = "3", delay = "500ms")
+    @Retryable(attempts = "3", delay = "500ms", excludes = IllegalArgumentException.class)
     public Optional<UserEntity> findById(UUID userId) {
         return userService.findById(userId);
     }
 
-    @Retryable(attempts = "3", delay = "500ms")
+    @Retryable(attempts = "3", delay = "500ms", excludes = IllegalArgumentException.class)
     public Optional<UserEntity> findByEmail(String email) {
         return userService.findByEmail(email);
     }
 
-    @Retryable(attempts = "3", delay = "500ms")
+    @Retryable(attempts = "3", delay = "500ms", excludes = IllegalArgumentException.class)
     public UserEntity updateProfileName(UUID userId, String profileName) {
         return userService.updateProfileName(userId, profileName);
     }
 
-    @Retryable(attempts = "3", delay = "500ms")
+    @Retryable(attempts = "3", delay = "500ms", excludes = IllegalArgumentException.class)
     public UserEntity update(UserEntity user) {
         return userService.update(user);
     }
 
-    @Retryable(attempts = "3", delay = "500ms")
+    @Retryable(attempts = "3", delay = "500ms", excludes = IllegalArgumentException.class)
     public UserEntity save(UserEntity user) {
         return userService.save(user);
     }
 
-    @Retryable(attempts = "3", delay = "500ms")
+    @Retryable(attempts = "3", delay = "500ms", excludes = IllegalArgumentException.class)
     public boolean isUserBlocked(UUID userId) {
         return userService.isUserBlocked(userId);
     }

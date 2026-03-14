@@ -1,6 +1,7 @@
 package com.anonymous.wall.listener;
 
 import com.anonymous.wall.event.MarketplaceItemHiddenEvent;
+import com.anonymous.wall.listener.helper.CommentHideTransactionHelper;
 import com.anonymous.wall.repository.CommentRepository;
 import com.anonymous.wall.service.base.CommentsService;
 import org.junit.jupiter.api.BeforeEach;
@@ -15,18 +16,18 @@ import static org.mockito.Mockito.*;
 class MarketplaceItemHideEventListenerTest {
 
     private MarketplaceItemHideEventListener listener;
-    private CommentsService commentService;
+    private CommentHideTransactionHelper commentHideTransactionHelper;
 
     @BeforeEach
     void setUp() {
-        commentService = mock(CommentsService.class);
+        commentHideTransactionHelper = mock(CommentHideTransactionHelper.class);
         listener = new MarketplaceItemHideEventListener();
 
         // Use reflection to inject mock
         try {
-            var commentRepoField = MarketplaceItemHideEventListener.class.getDeclaredField("commentService");
+            var commentRepoField = MarketplaceItemHideEventListener.class.getDeclaredField("commentHideTransactionHelper");
             commentRepoField.setAccessible(true);
-            commentRepoField.set(listener, commentService);
+            commentRepoField.set(listener, commentHideTransactionHelper);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -41,7 +42,7 @@ class MarketplaceItemHideEventListenerTest {
 
         listener.onApplicationEvent(event);
 
-        verify(commentService, times(1)).updateByParentTypeAndParentId("MARKETPLACE", itemId, true);
+        verify(commentHideTransactionHelper, times(1)).hideCommentsByParent("MARKETPLACE", itemId, true);
     }
 
     @Test
@@ -52,11 +53,11 @@ class MarketplaceItemHideEventListenerTest {
         MarketplaceItemHiddenEvent event = new MarketplaceItemHiddenEvent(itemId, userId);
 
         doThrow(new RuntimeException("Database error"))
-            .when(commentService).updateByParentTypeAndParentId(any(), any(), anyBoolean());
+            .when(commentHideTransactionHelper).hideCommentsByParent(any(), any(), anyBoolean());
 
         // Act - should not throw exception
         listener.onApplicationEvent(event);
 
-        verify(commentService, times(1)).updateByParentTypeAndParentId("MARKETPLACE", itemId, true);
+        verify(commentHideTransactionHelper, times(1)).hideCommentsByParent("MARKETPLACE", itemId, true);
     }
 }

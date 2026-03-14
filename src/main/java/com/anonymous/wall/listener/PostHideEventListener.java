@@ -1,6 +1,7 @@
 package com.anonymous.wall.listener;
 
 import com.anonymous.wall.event.PostHiddenEvent;
+import com.anonymous.wall.listener.helper.CommentHideTransactionHelper;
 import com.anonymous.wall.service.base.CommentsService;
 import io.micronaut.context.event.ApplicationEventListener;
 import io.micronaut.scheduling.TaskExecutors;
@@ -21,33 +22,24 @@ import org.slf4j.LoggerFactory;
  */
 @Singleton
 public class PostHideEventListener implements ApplicationEventListener<PostHiddenEvent> {
-    
+
     private static final Logger log = LoggerFactory.getLogger(PostHideEventListener.class);
-    
+
     @Inject
-    private CommentsService commentService;
-    
-    /**
-     * Handles post hide events asynchronously.
-     * Updates all comments associated with the post.
-     * Uses fail-safe behavior: logs errors but doesn't throw exceptions.
-     * Runs in its own transaction to avoid closed connection issues.
-     */
+    private CommentHideTransactionHelper commentHideTransactionHelper;
+
     @Override
-    @Async(TaskExecutors.IO)
-    @Transactional(propagation = TransactionDefinition.Propagation.REQUIRES_NEW)
+    @Async(TaskExecutors.BLOCKING)
     public void onApplicationEvent(PostHiddenEvent event) {
-        log.info("Processing post hidden event: postId={}, userId={}", 
+        log.info("Processing post hidden event: postId={}, userId={}",
                 event.getPostId(), event.getUserId());
-        
+
         try {
-            commentService.updateByParentTypeAndParentId("POST", event.getPostId(), true);
-            log.debug("Hidden all comments for postId={}", event.getPostId());
+            commentHideTransactionHelper.hideCommentsByParent("POST", event.getPostId(), true);
+            log.info("Post hide propagation completed for postId={}", event.getPostId());
         } catch (Exception e) {
-            log.error("Failed to hide comments for postId={}: {}", 
+            log.error("Failed to hide comments for postId={}: {}",
                     event.getPostId(), e.getMessage(), e);
         }
-        
-        log.info("Post hide propagation completed for postId={}", event.getPostId());
     }
 }

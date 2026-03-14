@@ -96,6 +96,7 @@ public class PollServiceImpl implements PollService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Map<String, Object> getPollData(UUID postId, UUID userId, boolean viewResults) {
         Optional<Post> postOpt = postServiceProvider.get().findById(postId);
         if (postOpt.isEmpty()) {
@@ -147,6 +148,7 @@ public class PollServiceImpl implements PollService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<PollOption> getPollOptions(UUID postId) {
         return pollOptionRepository.findByPostIdOrderByDisplayOrder(postId);
     }

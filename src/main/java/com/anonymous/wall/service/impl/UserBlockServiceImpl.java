@@ -42,6 +42,7 @@ public class UserBlockServiceImpl implements UserBlockService {
      * - target's incoming block set changed
      */
     @Override
+    @Transactional
     @CacheInvalidate(parameters = {"blockerId"})
     @CacheInvalidate(parameters = {"targetUserId"})
     public void blockUser(UUID blockerId, UUID targetUserId) {
@@ -92,6 +93,7 @@ public class UserBlockServiceImpl implements UserBlockService {
      * to benefit from caching when checking multiple users.
      */
     @Override
+    @Transactional(readOnly = true)
     public boolean isBlocking(UUID blockerId, UUID targetUserId) {
         return userBlockRepository.existsByBlockerIdAndBlockedId(blockerId, targetUserId);
     }
@@ -111,6 +113,7 @@ public class UserBlockServiceImpl implements UserBlockService {
      */
     @Override
     @Cacheable(parameters = {"userId"})
+    @Transactional(readOnly = true)
     public Set<UUID> getBlockedUserIds(UUID userId) {
         log.debug("getBlockedUserIds cache miss for user {}", userId);
         return userBlockRepository.findByBlockerId(userId).stream()
@@ -125,6 +128,7 @@ public class UserBlockServiceImpl implements UserBlockService {
      */
     @Override
     @Cacheable(parameters = {"userId"})
+    @Transactional(readOnly = true)
     public Set<UUID> getCombinedBlockedUserIds(UUID userId) {
         log.debug("getCombinedBlockedUserIds cache miss for user {}", userId);
         Set<UUID> combined = new HashSet<>();
@@ -141,6 +145,7 @@ public class UserBlockServiceImpl implements UserBlockService {
      * Get the full block list for a user (not cached — low frequency, user-facing only).
      */
     @Override
+    @Transactional(readOnly = true)
     public List<UserBlock> getBlockList(UUID blockerId) {
         return userBlockRepository.findByBlockerId(blockerId);
     }

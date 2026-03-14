@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.Mockito.*;
 
 @DisplayName("ProfileNameUpdateEventListener Tests")
@@ -60,18 +60,18 @@ class ProfileNameUpdateEventListenerTest {
     }
 
     @Test
-    @DisplayName("Should propagate exception when a service fails — allows @Retryable to retry")
-    void shouldPropagateExceptionWhenServiceFails() {
+    @DisplayName("Should swallow exception and log error — fail-safe behavior for async listener")
+    void shouldSwallowExceptionWhenServiceFails() {
         UUID userId = UUID.randomUUID();
         ProfileNameChangedEvent event = new ProfileNameChangedEvent(userId, "OldName", "NewName");
 
         doThrow(new RuntimeException("DB error"))
                 .when(postsService).updateProfileNameByUserId(any(), any());
 
-        // Exception must propagate — not swallowed — so @Retryable can catch and retry
-        assertThrows(RuntimeException.class, () -> listener.onApplicationEvent(event));
+        // Fail-safe: exception is caught and logged, not propagated
+        assertDoesNotThrow(() -> listener.onApplicationEvent(event));
 
-        // postsService was called, but subsequent services were NOT reached
+        // postsService was called and threw — subsequent services were not reached
         verify(postsService).updateProfileNameByUserId(userId, "NewName");
         verifyNoInteractions(commentsService);
         verifyNoInteractions(internshipService);
@@ -79,15 +79,16 @@ class ProfileNameUpdateEventListenerTest {
     }
 
     @Test
-    @DisplayName("Should propagate exception when a middle service fails")
-    void shouldPropagateExceptionWhenMiddleServiceFails() {
+    @DisplayName("Should swallow exception when a middle service fails")
+    void shouldSwallowExceptionWhenMiddleServiceFails() {
         UUID userId = UUID.randomUUID();
         ProfileNameChangedEvent event = new ProfileNameChangedEvent(userId, "OldName", "NewName");
 
         doThrow(new RuntimeException("DB error"))
                 .when(commentsService).updateProfileNameByUserId(any(), any());
 
-        assertThrows(RuntimeException.class, () -> listener.onApplicationEvent(event));
+        // Fail-safe: exception is caught and logged, not propagated
+        assertDoesNotThrow(() -> listener.onApplicationEvent(event));
 
         // Posts succeeded before the failure
         verify(postsService).updateProfileNameByUserId(userId, "NewName");

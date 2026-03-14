@@ -246,6 +246,7 @@ public class ChatWebSocketHandler {
      * Handle WebSocket connection close.
      */
     @OnClose
+    @ExecuteOn(TaskExecutors.BLOCKING)
     public void onClose(WebSocketSession session) {
         try {
             UUID userId = getUserIdFromSession(session);
@@ -274,6 +275,7 @@ public class ChatWebSocketHandler {
      * Handle WebSocket errors.
      */
     @OnError
+    @ExecuteOn(TaskExecutors.BLOCKING)
     public void onError(WebSocketSession session, Throwable throwable) {
         try {
             UUID userId = getUserIdFromSession(session);
@@ -334,6 +336,9 @@ public class ChatWebSocketHandler {
             for (WebSocketSession session : sessions) {
                 if (session.isOpen()) {
                     session.sendAsync(message);
+                }
+                else {
+                    sessions.remove(session);  // prune stale sessions proactively
                 }
             }
             log.debug("Delivered Redis message to user {} ({} local sessions)", userId, sessions.size());

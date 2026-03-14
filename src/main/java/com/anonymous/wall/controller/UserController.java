@@ -21,6 +21,8 @@ import io.micronaut.http.annotation.Get;
 import io.micronaut.http.annotation.Patch;
 import io.micronaut.http.annotation.PathVariable;
 import io.micronaut.http.annotation.QueryValue;
+import io.micronaut.scheduling.TaskExecutors;
+import io.micronaut.scheduling.annotation.ExecuteOn;
 import io.micronaut.security.annotation.Secured;
 import io.micronaut.security.rules.SecurityRule;
 import jakarta.inject.Inject;
@@ -32,6 +34,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Controller("/api/v1/users")
+@ExecuteOn(TaskExecutors.BLOCKING)
 public class UserController {
 
     private static final Logger log = LoggerFactory.getLogger(UserController.class);

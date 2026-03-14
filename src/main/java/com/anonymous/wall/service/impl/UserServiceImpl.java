@@ -31,7 +31,7 @@ public class UserServiceImpl implements UserService {
      * Find user by ID
      */
     @Override
-    @Transactional
+    @Transactional(readOnly = true)
     public Optional<UserEntity> findById(UUID userId) {
         log.debug("Finding user by ID: {}", userId);
         return userRepository.findById(userId);
@@ -41,7 +41,7 @@ public class UserServiceImpl implements UserService {
      * Find user by email
      */
     @Override
-    @Transactional
+    @Transactional(readOnly = true)
     public Optional<UserEntity> findByEmail(String email) {
         log.debug("Finding user by email: {}", email);
         return userRepository.findByEmail(email);
@@ -113,7 +113,7 @@ public class UserServiceImpl implements UserService {
      * @return true if user exists, false otherwise
      */
     @Override
-    @Transactional
+    @Transactional(readOnly = true)
     public boolean existsById(UUID userId) {
         log.debug("Checking existence of user: {}", userId);
         return userRepository.existsById(userId);
@@ -126,6 +126,7 @@ public class UserServiceImpl implements UserService {
      */
     @Override
     @Cacheable
+    @Transactional(readOnly = true)
     public boolean isUserBlocked(UUID userId) {
         log.debug("Checking blocked status for user: {} (cache miss)", userId);
         Optional<UserEntity> userOpt = userRepository.findById(userId);

@@ -23,47 +23,47 @@ public class ChatRetryService {
         this.chatService = chatService;
     }
 
-    @Retryable(attempts = "3", delay = "500ms")
+    @Retryable(attempts = "3", delay = "500ms", excludes = IllegalArgumentException.class)
     public ChatMessage sendMessage(UUID senderId, UUID receiverId, String content) {
         return chatService.sendMessage(senderId, receiverId, content);
     }
 
-    @Retryable(attempts = "3", delay = "500ms")
+    @Retryable(attempts = "3", delay = "500ms", excludes = IllegalArgumentException.class)
     public ChatMessage sendMessage(UUID senderId, UUID receiverId, String content, String imageUrl) {
         return chatService.sendMessage(senderId, receiverId, content, imageUrl);
     }
 
-    @Retryable(attempts = "3", delay = "500ms")
+    @Retryable(attempts = "3", delay = "500ms", excludes = IllegalArgumentException.class)
     public Page<ChatMessage> getMessageHistory(UUID userId1, UUID userId2, Pageable pageable) {
         return chatService.getMessageHistory(userId1, userId2, pageable);
     }
 
-    @Retryable(attempts = "3", delay = "500ms")
+    @Retryable(attempts = "3", delay = "500ms", excludes = IllegalArgumentException.class)
     public List<ConversationDTO> getConversations(UUID userId) {
         return chatService.getConversations(userId);
     }
 
-    @Retryable(attempts = "3", delay = "500ms")
+    @Retryable(attempts = "3", delay = "500ms", excludes = IllegalArgumentException.class)
     public ChatMessage markMessageAsRead(UUID messageId, UUID userId) {
         return chatService.markMessageAsRead(messageId, userId);
     }
 
-    @Retryable(attempts = "3", delay = "500ms")
+    @Retryable(attempts = "3", delay = "500ms", excludes = IllegalArgumentException.class)
     public void markConversationAsRead(UUID receiverId, UUID senderId) {
         chatService.markConversationAsRead(receiverId, senderId);
     }
 
-    @Retryable(attempts = "3", delay = "500ms")
+    @Retryable(attempts = "3", delay = "500ms", excludes = IllegalArgumentException.class)
     public long countUnreadMessages(UUID receiverId, UUID senderId) {
         return chatService.countUnreadMessages(receiverId, senderId);
     }
 
-    @Retryable(attempts = "3", delay = "500ms")
+    @Retryable(attempts = "3", delay = "500ms", excludes = IllegalArgumentException.class)
     public long countTotalUnreadMessages(UUID userId) {
         return chatService.countTotalUnreadMessages(userId);
     }
 
-    @Retryable(attempts = "3", delay = "500ms")
+    @Retryable(attempts = "3", delay = "500ms", excludes = IllegalArgumentException.class)
     public List<ChatMessage> getUnreadMessages(UUID receiverId, UUID senderId) {
         return chatService.getUnreadMessages(receiverId, senderId);
     }

@@ -24,37 +24,37 @@ public class CommentsRetryService {
         this.commentsService = commentsService;
     }
 
-    @Retryable(attempts = "3", delay = "500ms")
+    @Retryable(attempts = "3", delay = "500ms", excludes = IllegalArgumentException.class)
     public Comment addComment(CommentParentType parentType, UUID parentId, CreateCommentRequest request, UUID userId) {
         return commentsService.addComment(parentType, parentId, request, userId);
     }
 
-    @Retryable(attempts = "3", delay = "500ms")
+    @Retryable(attempts = "3", delay = "500ms", excludes = IllegalArgumentException.class)
     public Page<Comment> getCommentsWithPagination(CommentParentType parentType, UUID parentId, Pageable pageable, SortBy sortBy) {
         return commentsService.getCommentsWithPagination(parentType, parentId, pageable, sortBy);
     }
 
-    @Retryable(attempts = "3", delay = "500ms")
+    @Retryable(attempts = "3", delay = "500ms", excludes = IllegalArgumentException.class)
     public Page<Comment> getCommentsWithPagination(CommentParentType parentType, UUID parentId, Pageable pageable, SortBy sortBy, UUID currentUserId) {
         return commentsService.getCommentsWithPagination(parentType, parentId, pageable, sortBy, currentUserId);
     }
 
-    @Retryable(attempts = "3", delay = "500ms")
+    @Retryable(attempts = "3", delay = "500ms", excludes = IllegalArgumentException.class)
     public Comment hideComment(CommentParentType parentType, UUID parentId, UUID commentId, UUID userId) {
         return commentsService.hideComment(parentType, parentId, commentId, userId);
     }
 
-    @Retryable(attempts = "3", delay = "500ms")
+    @Retryable(attempts = "3", delay = "500ms", excludes = IllegalArgumentException.class)
     public Comment unhideComment(CommentParentType parentType, UUID parentId, UUID commentId, UUID userId) {
         return commentsService.unhideComment(parentType, parentId, commentId, userId);
     }
 
-    @Retryable(attempts = "3", delay = "500ms")
+    @Retryable(attempts = "3", delay = "500ms", excludes = IllegalArgumentException.class)
     public Page<Comment> getUserOwnComments(UUID userId, Pageable pageable, SortBy sortBy) {
         return commentsService.getUserOwnComments(userId, pageable, sortBy);
     }
 
-    @Retryable(attempts = "3", delay = "500ms")
+    @Retryable(attempts = "3", delay = "500ms", excludes = IllegalArgumentException.class)
     public void reportComment(UUID commentId, UUID reporterUserId, String reason) {
         commentsService.reportComment(commentId, reporterUserId, reason);
     }

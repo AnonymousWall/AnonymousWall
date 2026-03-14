@@ -182,6 +182,7 @@ public class PostsServiceImpl implements PostsService {
      * National posts: visible to all users
      */
     @Override
+    @Transactional(readOnly = true)
     public Page<Post> getPostsByWall(String wall, Pageable pageable, UUID currentUserId, String schoolDomain, SortBy sortBy) {
         if (!wall.equals("campus") && !wall.equals("national")) {
             throw new IllegalArgumentException("Wall must be 'campus' or 'national'");
@@ -320,6 +321,7 @@ public class PostsServiceImpl implements PostsService {
      * Validates that the user has permission to view the post
      */
     @Override
+    @Transactional(readOnly = true)
     public Post getPost(UUID postId, UUID currentUserId) {
         log.debug("Fetching post: {}, user: {}", postId, currentUserId);
 
@@ -492,6 +494,7 @@ public class PostsServiceImpl implements PostsService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Page<Post> getUserOwnPosts(UUID userId, Pageable pageable, SortBy sortBy) {
         if (sortBy == null) {
             sortBy = SortBy.NEWEST; // Default sorting
@@ -563,7 +566,7 @@ public class PostsServiceImpl implements PostsService {
     }
 
     @Override
-    @Transactional
+    @Transactional(readOnly = true)
     public Optional<Post> findById(UUID postId) {
         return postRepository.findById(postId);
     }

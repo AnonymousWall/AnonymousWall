@@ -37,52 +37,55 @@ public class RedisPubSubService {
      * Called by whichever instance receives the outbound message.
      */
     public void publish(UUID userId, String messageJson) {
-        try {
-            redisConnection.async().publish(channelFor(userId), messageJson);
-        } catch (Exception e) {
-            log.error("Failed to publish Redis message for user {}: {}", userId, e.getMessage());
-        }
+        redisConnection.async().publish(channelFor(userId), messageJson)
+                .exceptionally(ex -> {
+                    log.error("Failed to publish Redis message for user {}: {}", userId, ex.getMessage());
+                    return null;
+                });
     }
 
     /**
      * Subscribe to a user's channel.
      * Called when a user connects their WebSocket on this instance.
      */
-    public void subscribe(UUID userId, Consumer<String> onMessage) {
-        synchronized (listeners) {
-            RedisPubSubAdapter<String, String> listener = new RedisPubSubAdapter<>() {
-                @Override
-                public void message(String channel, String message) {
-                    try {
-                        onMessage.accept(message);
-                    } catch (Exception e) {
-                        log.error("Error in Redis subscriber callback for user {}: {}", userId, e.getMessage());
-                    }
-                }
-            };
-            listeners.put(userId, listener);
-            redisPubSubConnection.addListener(listener);
-            redisPubSubConnection.async().subscribe(channelFor(userId));
-            log.debug("Subscribed to Redis channel for user {}", userId);
+    public synchronized void subscribe(UUID userId, Consumer<String> onMessage) {
+        // Evict any stale listener first to avoid orphaned callbacks on reconnect
+        RedisPubSubAdapter<String, String> stale = listeners.remove(userId);
+        if (stale != null) {
+            redisPubSubConnection.removeListener(stale);
         }
+
+        RedisPubSubAdapter<String, String> listener = new RedisPubSubAdapter<>() {
+            @Override
+            public void message(String channel, String message) {
+                try {
+                    onMessage.accept(message);
+                } catch (Exception e) {
+                    log.error("Error in Redis subscriber callback for user {}: {}", userId, e.getMessage());
+                }
+            }
+        };
+
+        listeners.put(userId, listener);
+        redisPubSubConnection.addListener(listener);
+        redisPubSubConnection.async().subscribe(channelFor(userId));
+        log.debug("Subscribed to Redis channel for user {}", userId);
     }
 
     /**
      * Unsubscribe from a user's channel.
      * Called when all WebSocket sessions for a user disconnect from this instance.
      */
-    public void unsubscribe(UUID userId) {
-        synchronized (listeners) {
-            RedisPubSubAdapter<String, String> listener = listeners.remove(userId);
-            if (listener != null) {
-                redisPubSubConnection.removeListener(listener);
-                redisPubSubConnection.async().unsubscribe(channelFor(userId));
-                log.debug("Unsubscribed from Redis channel for user {}", userId);
-            }
+    public synchronized void unsubscribe(UUID userId) {
+        RedisPubSubAdapter<String, String> listener = listeners.remove(userId);
+        if (listener != null) {
+            redisPubSubConnection.removeListener(listener);
+            redisPubSubConnection.async().unsubscribe(channelFor(userId));
+            log.debug("Unsubscribed from Redis channel for user {}", userId);
         }
     }
 
     private String channelFor(UUID userId) {
-        return CHANNEL_PREFIX + userId.toString();
+        return CHANNEL_PREFIX + userId;
     }
 }

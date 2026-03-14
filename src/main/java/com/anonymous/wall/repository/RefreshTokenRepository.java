@@ -16,5 +16,5 @@ public interface RefreshTokenRepository extends CrudRepository<RefreshToken, UUI
 
     void updateRevokedByUserId(UUID userId, boolean revoked);
 
-    void deleteByExpiresAtBefore(OffsetDateTime expiresAt);
+    long deleteByExpiresAtBefore(OffsetDateTime expiresAt);
 }

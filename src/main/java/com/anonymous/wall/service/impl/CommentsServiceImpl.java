@@ -192,7 +192,7 @@ public class CommentsServiceImpl implements CommentsService {
      * Get comments for a parent entity with pagination and sorting.
      */
     @Override
-    @Transactional
+    @Transactional(readOnly = true)
     public Page<Comment> getCommentsWithPagination(CommentParentType parentType, UUID parentId, Pageable pageable, SortBy sortBy) {
         if (sortBy == null) {
             sortBy = SortBy.NEWEST;
@@ -214,7 +214,7 @@ public class CommentsServiceImpl implements CommentsService {
      * Get comments for a parent entity with pagination, sorting, and block filtering.
      */
     @Override
-    @Transactional
+    @Transactional(readOnly = true)
     public Page<Comment> getCommentsWithPagination(CommentParentType parentType, UUID parentId, Pageable pageable, SortBy sortBy, UUID currentUserId) {
         Page<Comment> comments = getCommentsWithPagination(parentType, parentId, pageable, sortBy);
         if (currentUserId == null) {
@@ -327,7 +327,7 @@ public class CommentsServiceImpl implements CommentsService {
      * Get user's own comments with pagination and sorting.
      */
     @Override
-    @Transactional
+    @Transactional(readOnly = true)
     public Page<Comment> getUserOwnComments(UUID userId, Pageable pageable, SortBy sortBy) {
         if (sortBy == null) {
             sortBy = SortBy.NEWEST;

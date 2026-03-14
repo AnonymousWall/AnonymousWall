@@ -26,10 +26,10 @@ public class DeviceToken {
     private String platform;
 
     @MappedProperty("created_at")
-    private OffsetDateTime createdAt = OffsetDateTime.now();
+    private OffsetDateTime createdAt;
 
     @MappedProperty("updated_at")
-    private OffsetDateTime updatedAt = OffsetDateTime.now();
+    private OffsetDateTime updatedAt;
 
     @MappedProperty("active")
     private boolean active = true;

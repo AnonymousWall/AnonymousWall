@@ -22,7 +22,7 @@ public class DeviceTokenServiceImpl implements DeviceTokenService {
     private DeviceTokenRepository deviceTokenRepository;
 
     @Override
-    @Transactional
+    @Transactional(propagation = TransactionDefinition.Propagation.REQUIRES_NEW)
     public void registerToken(UUID userId, String deviceToken, String platform) {
         Optional<DeviceToken> existing = deviceTokenRepository.findByDeviceToken(deviceToken);
         if (existing.isPresent()) {
@@ -40,6 +40,7 @@ public class DeviceTokenServiceImpl implements DeviceTokenService {
     }
 
     @Override
+    @Transactional(propagation = TransactionDefinition.Propagation.REQUIRES_NEW, readOnly = true)
     public List<String> getActiveTokens(UUID userId) {
         return deviceTokenRepository.findByUserIdAndActiveTrue(userId)
                 .stream()
@@ -48,6 +49,7 @@ public class DeviceTokenServiceImpl implements DeviceTokenService {
     }
 
     @Override
+    @Transactional(propagation = TransactionDefinition.Propagation.REQUIRES_NEW)
     public void deactivate(String deviceToken) {
         Optional<DeviceToken> opt = deviceTokenRepository.findByDeviceToken(deviceToken);
         opt.ifPresent(dt -> {

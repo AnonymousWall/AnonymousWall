@@ -7,6 +7,7 @@ import com.anonymous.wall.service.base.AuthService;
 import io.micronaut.retry.annotation.Retryable;
 import jakarta.inject.Singleton;
 
+import java.sql.SQLException;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -26,62 +27,62 @@ public class AuthRetryService {
         this.authService = authService;
     }
 
-    @Retryable(attempts = "3", delay = "1000ms")
+//    @Retryable(attempts = "3", delay = "1000ms")
     public void sendEmailCode(SendEmailCodeRequest request) {
         authService.sendEmailCode(request);
     }
 
-    @Retryable(attempts = "3", delay = "500ms")
+//    @Retryable(attempts = "3", delay = "500ms")
     public UserEntity registerWithEmail(RegisterEmailRequest request) {
         return authService.registerWithEmail(request);
     }
 
-    @Retryable(attempts = "3", delay = "500ms")
+//    @Retryable(attempts = "3", delay = "500ms")
     public UserEntity loginWithEmail(LoginEmailRequest request) {
         return authService.loginWithEmail(request);
     }
 
-    @Retryable(attempts = "3", delay = "500ms")
+    @Retryable(attempts = "3", delay = "500ms", excludes = IllegalArgumentException.class)
     public UserEntity loginWithPassword(PasswordLoginRequest request) {
         return authService.loginWithPassword(request);
     }
 
-    @Retryable(attempts = "3", delay = "500ms")
+    @Retryable(attempts = "3", delay = "500ms", excludes = IllegalArgumentException.class)
     public UserEntity setPassword(SetPasswordRequest request, UserEntity currentUser) {
         return authService.setPassword(request, currentUser);
     }
 
-    @Retryable(attempts = "3", delay = "500ms")
+    @Retryable(attempts = "3", delay = "500ms", excludes = IllegalArgumentException.class)
     public UserEntity changePassword(ChangePasswordRequest request, UserEntity currentUser) {
         return authService.changePassword(request, currentUser);
     }
 
-    @Retryable(attempts = "3", delay = "500ms")
+//    @Retryable(attempts = "3", delay = "500ms")
     public UserEntity requestPasswordReset(PasswordResetRequestRequest request) {
         return authService.requestPasswordReset(request);
     }
 
-    @Retryable(attempts = "3", delay = "500ms")
+//    @Retryable(attempts = "3", delay = "500ms")
     public UserEntity resetPassword(ResetPasswordRequest request) {
         return authService.resetPassword(request);
     }
 
-    @Retryable(attempts = "3", delay = "500ms")
+    @Retryable(attempts = "3", delay = "500ms", excludes = IllegalArgumentException.class)
     public String issueRefreshToken(UUID userId) {
         return authService.issueRefreshToken(userId);
     }
 
-    @Retryable(attempts = "3", delay = "500ms")
+    @Retryable(attempts = "3", delay = "500ms", excludes = IllegalArgumentException.class)
     public Optional<RefreshToken> findValidRefreshToken(String rawRefreshToken) {
         return authService.findValidRefreshToken(rawRefreshToken);
     }
 
-    @Retryable(attempts = "3", delay = "500ms")
+    @Retryable(attempts = "3", delay = "500ms", excludes = IllegalArgumentException.class)
     public void revokeRefreshToken(RefreshToken refreshToken) {
         authService.revokeRefreshToken(refreshToken);
     }
 
-    @Retryable(attempts = "3", delay = "500ms")
+    @Retryable(attempts = "3", delay = "500ms", excludes = IllegalArgumentException.class)
     public void revokeRefreshTokensForUser(UUID userId) {
         authService.revokeRefreshTokensForUser(userId);
     }

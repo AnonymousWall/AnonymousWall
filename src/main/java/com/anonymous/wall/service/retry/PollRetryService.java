@@ -3,6 +3,7 @@ package com.anonymous.wall.service.retry;
 import com.anonymous.wall.entity.PollOption;
 import com.anonymous.wall.entity.PollVote;
 import com.anonymous.wall.service.base.PollService;
+import com.anonymous.wall.service.impl.PollServiceImpl;
 import io.micronaut.retry.annotation.Retryable;
 import jakarta.inject.Singleton;
 
@@ -22,22 +23,22 @@ public class PollRetryService {
         this.pollService = pollService;
     }
 
-    @Retryable(attempts = "3", delay = "500ms")
+    @Retryable(attempts = "3", delay = "500ms", excludes = IllegalArgumentException.class)
     public List<PollOption> createPollOptions(UUID postId, List<String> optionTexts) {
         return pollService.createPollOptions(postId, optionTexts);
     }
 
-    @Retryable(attempts = "3", delay = "500ms")
+    @Retryable(attempts = "3", delay = "500ms", excludes = {IllegalArgumentException.class, PollServiceImpl.DuplicateVoteException.class})
     public PollVote vote(UUID postId, UUID optionId, UUID userId) {
         return pollService.vote(postId, optionId, userId);
     }
 
-    @Retryable(attempts = "3", delay = "500ms")
+    @Retryable(attempts = "3", delay = "500ms", excludes = IllegalArgumentException.class)
     public Map<String, Object> getPollData(UUID postId, UUID userId, boolean viewResults) {
         return pollService.getPollData(postId, userId, viewResults);
     }
 
-    @Retryable(attempts = "3", delay = "500ms")
+    @Retryable(attempts = "3", delay = "500ms", excludes = IllegalArgumentException.class)
     public List<PollOption> getPollOptions(UUID postId) {
         return pollService.getPollOptions(postId);
     }

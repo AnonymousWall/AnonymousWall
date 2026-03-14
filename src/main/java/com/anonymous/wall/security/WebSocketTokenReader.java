@@ -36,7 +36,7 @@ public class WebSocketTokenReader implements TokenReader<HttpRequest<?>> {
     private static final String BEARER_PREFIX = "Bearer.";
     
     // High order to run after standard header readers
-    public static final Integer ORDER = 200;
+    public static final int ORDER = 200;
 
     @Override
     public Optional<String> findToken(HttpRequest<?> request) {
@@ -56,7 +56,7 @@ public class WebSocketTokenReader implements TokenReader<HttpRequest<?>> {
         token = request.getParameters().get(TOKEN_PARAM, String.class);
         
         if (token.isPresent()) {
-            log.info("WebSocketTokenReader: Found JWT token in '{}' query parameter for path: {}", TOKEN_PARAM, requestPath);
+            log.debug("WebSocketTokenReader: Found JWT token in '{}' query parameter for path: {}", TOKEN_PARAM, requestPath);
             return token;
         }
         
@@ -64,7 +64,7 @@ public class WebSocketTokenReader implements TokenReader<HttpRequest<?>> {
         token = request.getParameters().get(ACCESS_TOKEN_PARAM, String.class);
         
         if (token.isPresent()) {
-            log.info("WebSocketTokenReader: Found JWT token in '{}' query parameter for path: {}", ACCESS_TOKEN_PARAM, requestPath);
+            log.debug("WebSocketTokenReader: Found JWT token in '{}' query parameter for path: {}", ACCESS_TOKEN_PARAM, requestPath);
             return token;
         }
         
@@ -98,7 +98,7 @@ public class WebSocketTokenReader implements TokenReader<HttpRequest<?>> {
             if (trimmedProtocol.startsWith(BEARER_PREFIX)) {
                 String token = trimmedProtocol.substring(BEARER_PREFIX.length());
                 if (!token.isEmpty()) {
-                    log.info("WebSocketTokenReader: Found JWT token in '{}' header (Bearer format) for path: {}", 
+                    log.debug("WebSocketTokenReader: Found JWT token in '{}' header (Bearer format) for path: {}",
                             SEC_WEBSOCKET_PROTOCOL_HEADER, requestPath);
                     return Optional.of(token);
                 }
@@ -106,7 +106,7 @@ public class WebSocketTokenReader implements TokenReader<HttpRequest<?>> {
             
             // Check if it looks like a JWT token (starts with "eyJ" which is base64 encoded "{")
             if (trimmedProtocol.startsWith("eyJ")) {
-                log.info("WebSocketTokenReader: Found JWT token in '{}' header (plain format) for path: {}", 
+                log.debug("WebSocketTokenReader: Found JWT token in '{}' header (plain format) for path: {}",
                         SEC_WEBSOCKET_PROTOCOL_HEADER, requestPath);
                 return Optional.of(trimmedProtocol);
             }

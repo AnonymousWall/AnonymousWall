@@ -11,6 +11,8 @@ import io.micronaut.http.MediaType;
 import io.micronaut.http.annotation.Controller;
 import io.micronaut.http.annotation.Get;
 import io.micronaut.http.server.types.files.StreamedFile;
+import io.micronaut.scheduling.TaskExecutors;
+import io.micronaut.scheduling.annotation.ExecuteOn;
 import io.micronaut.security.annotation.Secured;
 import io.micronaut.security.rules.SecurityRule;
 import jakarta.annotation.PostConstruct;
@@ -20,6 +22,7 @@ import org.slf4j.LoggerFactory;
 
 @Controller("/api/v1/media")
 @Secured(SecurityRule.IS_AUTHENTICATED)
+@ExecuteOn(TaskExecutors.BLOCKING)
 @Requires(env = "prod")
 public class MediaController {
 
@@ -27,7 +30,7 @@ public class MediaController {
 
     private final String namespace;
     private final String bucketName;
-    private volatile ObjectStorageClient objectStorageClient;
+    private ObjectStorageClient objectStorageClient;
 
     public MediaController(
             @Property(name = "oci.media.namespace") String namespace,

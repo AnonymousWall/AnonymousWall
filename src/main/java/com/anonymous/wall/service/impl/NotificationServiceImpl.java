@@ -7,6 +7,7 @@ import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
 import io.micronaut.http.HttpStatus;
 import io.micronaut.http.exceptions.HttpStatusException;
+import io.micronaut.transaction.TransactionDefinition;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import io.micronaut.transaction.annotation.Transactional;
@@ -25,7 +26,7 @@ public class NotificationServiceImpl implements NotificationService {
     private NotificationRepository notificationRepository;
 
     @Override
-    @Transactional
+    @Transactional(propagation = TransactionDefinition.Propagation.REQUIRES_NEW)
     public void createNotification(UUID recipientUserId, UUID actorUserId, String type, UUID entityId,
                                    String entityTitle, String actorProfileName) {
         if (recipientUserId.equals(actorUserId)) {

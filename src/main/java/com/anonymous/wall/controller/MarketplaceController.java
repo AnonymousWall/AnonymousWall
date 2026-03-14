@@ -36,6 +36,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Controller("/api/v1/marketplace")
+@ExecuteOn(TaskExecutors.BLOCKING)
 public class MarketplaceController {
 
     private static final Logger log = LoggerFactory.getLogger(MarketplaceController.class);
@@ -78,7 +79,6 @@ public class MarketplaceController {
 
     @Post(consumes = MediaType.MULTIPART_FORM_DATA)
     @Secured(SecurityRule.IS_AUTHENTICATED)
-    @ExecuteOn(TaskExecutors.BLOCKING)
     public HttpResponse<Object> createItem(
             @Body MultipartBody body,
             HttpRequest<?> httpRequest) {

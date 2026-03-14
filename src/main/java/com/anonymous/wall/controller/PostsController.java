@@ -32,6 +32,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Controller("/api/v1/posts")
+@ExecuteOn(TaskExecutors.BLOCKING)
 public class PostsController {
 
     private static final Logger log = LoggerFactory.getLogger(PostsController.class);
@@ -86,7 +87,6 @@ public class PostsController {
      */
     @io.micronaut.http.annotation.Post(consumes = MediaType.MULTIPART_FORM_DATA)
     @Secured(SecurityRule.IS_AUTHENTICATED)
-    @ExecuteOn(TaskExecutors.BLOCKING)
     public HttpResponse<Object> createPost(
             @Body MultipartBody body,
             HttpRequest<?> httpRequest) {

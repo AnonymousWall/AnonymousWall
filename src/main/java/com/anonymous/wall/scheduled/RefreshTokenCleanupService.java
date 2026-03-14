@@ -1,7 +1,10 @@
 package com.anonymous.wall.scheduled;
 
 import com.anonymous.wall.repository.RefreshTokenRepository;
+import io.micronaut.scheduling.TaskExecutors;
+import io.micronaut.scheduling.annotation.ExecuteOn;
 import io.micronaut.scheduling.annotation.Scheduled;
+import io.micronaut.transaction.annotation.Transactional;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import org.slf4j.Logger;
@@ -18,9 +21,11 @@ public class RefreshTokenCleanupService {
     private RefreshTokenRepository refreshTokenRepository;
 
     @Scheduled(fixedDelay = "24h", initialDelay = "1m")
+    @ExecuteOn(TaskExecutors.BLOCKING)
+    @Transactional
     public void purgeExpiredTokens() {
         log.info("Purging expired refresh tokens");
-        refreshTokenRepository.deleteByExpiresAtBefore(OffsetDateTime.now());
-        log.info("Expired refresh token purge complete");
+        long deleted = refreshTokenRepository.deleteByExpiresAtBefore(OffsetDateTime.now());
+        log.info("Expired refresh token purge complete, deleted={}", deleted);
     }
 }

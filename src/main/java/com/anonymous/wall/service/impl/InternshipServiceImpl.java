@@ -117,6 +117,7 @@ public class InternshipServiceImpl implements InternshipService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Page<Internship> listInternships(Pageable pageable, String sortBy) {
         log.info("Listing internships with sortBy={}", sortBy);
 
@@ -134,6 +135,7 @@ public class InternshipServiceImpl implements InternshipService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Page<Internship> getInternshipsByWall(String wall, Pageable pageable, UUID userId, String schoolDomain, String sortBy) {
         log.info("Listing internships by wall={}, sortBy={}, schoolDomain={}", wall, sortBy, schoolDomain);
 
@@ -185,6 +187,7 @@ public class InternshipServiceImpl implements InternshipService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Internship getInternship(UUID internshipId) {
         log.info("Getting internship {}", internshipId);
         return internshipRepository.findById(internshipId)
@@ -192,6 +195,7 @@ public class InternshipServiceImpl implements InternshipService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Internship getInternship(UUID internshipId, UUID userId) {
         log.info("Getting internship {} for user {}", internshipId, userId);
         Internship internship = internshipRepository.findById(internshipId)
@@ -267,6 +271,7 @@ public class InternshipServiceImpl implements InternshipService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Page<Internship> getUserOwnInternships(UUID userId, Pageable pageable, String sortBy) {
         log.info("Getting own internships for user {}, sortBy={}", userId, sortBy);
 
@@ -297,7 +302,7 @@ public class InternshipServiceImpl implements InternshipService {
     }
 
     @Override
-    @Transactional
+    @Transactional(readOnly = true)
     public Optional<Internship> findById(UUID internshipId) {
         return internshipRepository.findById(internshipId);
     }

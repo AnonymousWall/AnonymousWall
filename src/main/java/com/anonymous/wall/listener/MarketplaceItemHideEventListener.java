@@ -1,6 +1,7 @@
 package com.anonymous.wall.listener;
 
 import com.anonymous.wall.event.MarketplaceItemHiddenEvent;
+import com.anonymous.wall.listener.helper.CommentHideTransactionHelper;
 import com.anonymous.wall.service.base.CommentsService;
 import io.micronaut.context.event.ApplicationEventListener;
 import io.micronaut.scheduling.TaskExecutors;
@@ -25,29 +26,20 @@ public class MarketplaceItemHideEventListener implements ApplicationEventListene
     private static final Logger log = LoggerFactory.getLogger(MarketplaceItemHideEventListener.class);
 
     @Inject
-    private CommentsService commentService;
+    private CommentHideTransactionHelper commentHideTransactionHelper;
 
-    /**
-     * Handles marketplace item hide events asynchronously.
-     * Updates all comments associated with the marketplace item.
-     * Uses fail-safe behavior: logs errors but doesn't throw exceptions.
-     * Runs in its own transaction to avoid closed connection issues.
-     */
     @Override
-    @Async(TaskExecutors.IO)
-    @Transactional(propagation = TransactionDefinition.Propagation.REQUIRES_NEW)
+    @Async(TaskExecutors.BLOCKING)
     public void onApplicationEvent(MarketplaceItemHiddenEvent event) {
         log.info("Processing marketplace item hidden event: itemId={}, userId={}",
                 event.getItemId(), event.getUserId());
 
         try {
-            commentService.updateByParentTypeAndParentId("MARKETPLACE", event.getItemId(), true);
-            log.debug("Hidden all comments for marketplace itemId={}", event.getItemId());
+            commentHideTransactionHelper.hideCommentsByParent("MARKETPLACE", event.getItemId(), true);
+            log.info("Marketplace item hide propagation completed for itemId={}", event.getItemId());
         } catch (Exception e) {
             log.error("Failed to hide comments for marketplace itemId={}: {}",
                     event.getItemId(), e.getMessage(), e);
         }
-
-        log.info("Marketplace item hide propagation completed for itemId={}", event.getItemId());
     }
 }

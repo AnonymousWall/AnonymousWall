@@ -17,7 +17,7 @@ public class PostLikeServiceImpl implements PostLikeService {
     private PostLikeRepository postLikeRepository;
 
     @Override
-    @Transactional
+    @Transactional(readOnly = true)
     public Optional<PostLike> findByPostIdAndUserId(UUID postId, UUID userId) {
         return postLikeRepository.findByPostIdAndUserId(postId, userId);
     }
@@ -35,7 +35,7 @@ public class PostLikeServiceImpl implements PostLikeService {
     }
 
     @Override
-    @Transactional
+    @Transactional(readOnly = true)
     public List<PostLike> findByUserIdAndPostIdIn(UUID userId, List<UUID> postIds) {
         return postLikeRepository.findByUserIdAndPostIdIn(userId, postIds);
     }

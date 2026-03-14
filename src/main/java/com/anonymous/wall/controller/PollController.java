@@ -5,6 +5,8 @@ import com.anonymous.wall.service.retry.PollRetryService;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.annotation.*;
+import io.micronaut.scheduling.TaskExecutors;
+import io.micronaut.scheduling.annotation.ExecuteOn;
 import io.micronaut.security.annotation.Secured;
 import io.micronaut.security.rules.SecurityRule;
 import jakarta.inject.Inject;
@@ -18,6 +20,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Controller("/api/v1/posts")
+@ExecuteOn(TaskExecutors.BLOCKING)
 public class PollController {
 
     private static final Logger log = LoggerFactory.getLogger(PollController.class);

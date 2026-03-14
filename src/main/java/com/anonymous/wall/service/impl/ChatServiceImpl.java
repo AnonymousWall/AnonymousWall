@@ -13,12 +13,12 @@ import com.anonymous.wall.util.ConversationIdGenerator;
 import io.micronaut.context.event.ApplicationEventPublisher;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
+import io.micronaut.transaction.annotation.Transactional;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import jakarta.transaction.Transactional;
 import java.time.OffsetDateTime;
 import java.util.*;
 
@@ -141,7 +141,7 @@ public class ChatServiceImpl implements ChatService {
     }
 
     @Override
-    @Transactional
+    @Transactional(readOnly = true)
     public Page<ChatMessage> getMessageHistory(UUID userId1, UUID userId2, Pageable pageable) {
         log.debug("Getting message history between {} and {}", userId1, userId2);
 
@@ -163,7 +163,7 @@ public class ChatServiceImpl implements ChatService {
     }
 
     @Override
-    @Transactional
+    @Transactional(readOnly = true)
     public List<ConversationDTO> getConversations(UUID userId) {
         log.debug("Getting conversations for user {}", userId);
 
@@ -287,7 +287,7 @@ public class ChatServiceImpl implements ChatService {
     }
 
     @Override
-    @Transactional
+    @Transactional(readOnly = true)
     public long countUnreadMessages(UUID receiverId, UUID senderId) {
         if (receiverId == null || senderId == null) {
             throw new IllegalArgumentException("Receiver ID and sender ID must not be null");
@@ -300,7 +300,7 @@ public class ChatServiceImpl implements ChatService {
     }
 
     @Override
-    @Transactional
+    @Transactional(readOnly = true)
     public long countTotalUnreadMessages(UUID receiverId) {
         if (receiverId == null) {
             throw new IllegalArgumentException("Receiver ID must not be null");
@@ -310,7 +310,7 @@ public class ChatServiceImpl implements ChatService {
     }
 
     @Override
-    @Transactional
+    @Transactional(readOnly = true)
     public List<ChatMessage> getUnreadMessages(UUID receiverId, UUID senderId) {
         if (receiverId == null || senderId == null) {
             throw new IllegalArgumentException("Receiver ID and sender ID must not be null");

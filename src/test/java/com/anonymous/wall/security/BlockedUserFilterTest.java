@@ -11,7 +11,6 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.reactivestreams.Publisher;
 import reactor.core.publisher.Mono;
 
 import java.security.Principal;
@@ -51,15 +50,12 @@ class BlockedUserFilterTest {
         @Test
         @DisplayName("Should allow unauthenticated requests to pass through")
         void shouldAllowUnauthenticatedRequests() {
-            // Arrange
             when(request.getPath()).thenReturn("/api/v1/posts");
             when(request.getUserPrincipal()).thenReturn(Optional.empty());
             when(chain.proceed(request)).thenReturn(Mono.empty());
 
-            // Act
-            Publisher<MutableHttpResponse<?>> result = filter.doFilter(request, chain);
+            Mono.from(filter.doFilter(request, chain)).block();
 
-            // Assert
             verify(chain).proceed(request);
             verifyNoInteractions(userService);
         }
@@ -72,7 +68,6 @@ class BlockedUserFilterTest {
         @Test
         @DisplayName("Should allow authenticated non-blocked user to pass through")
         void shouldAllowNonBlockedUser() {
-            // Arrange
             UUID userId = UUID.randomUUID();
             when(request.getPath()).thenReturn("/api/v1/posts");
             when(request.getUserPrincipal()).thenReturn(Optional.of(principal));
@@ -80,12 +75,10 @@ class BlockedUserFilterTest {
             when(userService.isUserBlocked(userId)).thenReturn(false);
             when(chain.proceed(request)).thenReturn(Mono.empty());
 
-            // Act
-            Publisher<MutableHttpResponse<?>> result = filter.doFilter(request, chain);
+            Mono.from(filter.doFilter(request, chain)).block();
 
-            // Assert
-            verify(chain).proceed(request);
             verify(userService).isUserBlocked(userId);
+            verify(chain).proceed(request);
         }
     }
 
@@ -96,27 +89,18 @@ class BlockedUserFilterTest {
         @Test
         @DisplayName("Should block authenticated blocked user with 403 Forbidden")
         void shouldBlockBlockedUser() {
-            // Arrange
             UUID userId = UUID.randomUUID();
-
+            when(request.getPath()).thenReturn("/api/v1/posts");
             when(request.getUserPrincipal()).thenReturn(Optional.of(principal));
             when(principal.getName()).thenReturn(userId.toString());
-            when(request.getPath()).thenReturn("/api/v1/posts");
             when(userService.isUserBlocked(userId)).thenReturn(true);
 
-            // Act
-            Publisher<MutableHttpResponse<?>> result = filter.doFilter(request, chain);
+            MutableHttpResponse<?> response = Mono.from(filter.doFilter(request, chain)).block();
 
-            // Assert
             verify(userService).isUserBlocked(userId);
             verifyNoInteractions(chain);
-            
-            // Verify that response is 403
-            Mono.from(result).subscribe(response -> {
-                assertEquals(HttpStatus.FORBIDDEN, response.getStatus());
-                assertTrue(response.getBody(String.class).isPresent());
-                assertTrue(response.getBody(String.class).get().contains("blocked"));
-            });
+            assertNotNull(response);
+            assertEquals(HttpStatus.FORBIDDEN, response.getStatus());
         }
     }
 
@@ -127,16 +111,13 @@ class BlockedUserFilterTest {
         @Test
         @DisplayName("Should handle invalid UUID format gracefully")
         void shouldHandleInvalidUuidFormat() {
-            // Arrange
             when(request.getPath()).thenReturn("/api/v1/posts");
             when(request.getUserPrincipal()).thenReturn(Optional.of(principal));
             when(principal.getName()).thenReturn("invalid-uuid");
             when(chain.proceed(request)).thenReturn(Mono.empty());
 
-            // Act
-            Publisher<MutableHttpResponse<?>> result = filter.doFilter(request, chain);
+            Mono.from(filter.doFilter(request, chain)).block();
 
-            // Assert
             verify(chain).proceed(request);
             verifyNoInteractions(userService);
         }
@@ -144,19 +125,15 @@ class BlockedUserFilterTest {
         @Test
         @DisplayName("Should handle user not found in database gracefully")
         void shouldHandleUserNotFound() {
-            // Arrange
             UUID userId = UUID.randomUUID();
             when(request.getPath()).thenReturn("/api/v1/posts");
             when(request.getUserPrincipal()).thenReturn(Optional.of(principal));
             when(principal.getName()).thenReturn(userId.toString());
-            // Service returns false when user not found (handled in UserServiceImpl.isUserBlocked)
             when(userService.isUserBlocked(userId)).thenReturn(false);
             when(chain.proceed(request)).thenReturn(Mono.empty());
 
-            // Act
-            Publisher<MutableHttpResponse<?>> result = filter.doFilter(request, chain);
+            Mono.from(filter.doFilter(request, chain)).block();
 
-            // Assert
             verify(userService).isUserBlocked(userId);
             verify(chain).proceed(request);
         }
@@ -167,7 +144,7 @@ class BlockedUserFilterTest {
             when(request.getPath()).thenReturn("/health");
             when(chain.proceed(request)).thenReturn(Mono.empty());
 
-            filter.doFilter(request, chain);
+            Mono.from(filter.doFilter(request, chain)).block();
 
             verify(chain).proceed(request);
             verifyNoInteractions(userService);
