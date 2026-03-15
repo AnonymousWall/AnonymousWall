@@ -26,8 +26,8 @@ public class MarketplaceRetryService {
     }
 
     @Retryable(attempts = "3", delay = "500ms", excludes = IllegalArgumentException.class)
-    public MarketplaceItem createItem(CreateItemRequest request, List<CompletedFileUpload> images, UUID userId) {
-        return marketplaceService.createItem(request, images, userId);
+    public MarketplaceItem createItem(CreateItemRequest request, UUID userId) {
+        return marketplaceService.createItem(request, userId);
     }
 
     @Retryable(attempts = "3", delay = "500ms", excludes = IllegalArgumentException.class)

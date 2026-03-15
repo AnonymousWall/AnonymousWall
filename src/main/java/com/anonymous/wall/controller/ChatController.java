@@ -5,14 +5,11 @@ import com.anonymous.wall.model.ChatMessageDTO;
 import com.anonymous.wall.model.ConversationDTO;
 import com.anonymous.wall.model.SendMessageRequest;
 import com.anonymous.wall.service.retry.ChatRetryService;
-import com.anonymous.wall.util.MediaUtilInterface;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpResponse;
-import io.micronaut.http.MediaType;
 import io.micronaut.http.annotation.*;
-import io.micronaut.http.multipart.CompletedFileUpload;
 import io.micronaut.scheduling.TaskExecutors;
 import io.micronaut.scheduling.annotation.ExecuteOn;
 import io.micronaut.security.annotation.Secured;
@@ -40,9 +37,6 @@ public class ChatController {
 
     @Inject
     private ChatWebSocketHandler chatWebSocketHandler;
-
-    @Inject
-    private MediaUtilInterface mediaUtil;
 
     /**
      * Helper to extract user ID from Principal
@@ -140,31 +134,6 @@ public class ChatController {
     }
 
     /**
-     * POST /chat/images
-     * Upload a chat image, returns URL immediately
-     */
-    @Post("/images")
-    @Consumes(MediaType.MULTIPART_FORM_DATA)
-    @ExecuteOn(TaskExecutors.BLOCKING)
-    public HttpResponse<?> uploadChatImage(
-            @Part("image") CompletedFileUpload image,
-            HttpRequest<?> httpRequest) {
-        try {
-            UUID userId = getUserIdFromRequest(httpRequest);
-            log.info("POST /chat/images - user={}, size={}", userId, image.getSize());
-
-            String url = mediaUtil.uploadChatImage(image, userId);
-
-            return HttpResponse.created(Map.of("url", url));
-        } catch (IllegalArgumentException e) {
-            return HttpResponse.badRequest(Map.of("error", e.getMessage()));
-        } catch (Exception e) {
-            log.error("POST /chat/images - Error uploading image", e);
-            return HttpResponse.serverError(Map.of("error", "Failed to upload image"));
-        }
-    }
-
-    /**
      * POST /chat/messages
      * Send a chat message
      */
@@ -179,7 +148,7 @@ public class ChatController {
 
             // Send message
             ChatMessage message = chatRetryService.sendMessage(
-                    senderId, receiverId, request.getContent(), request.getImageUrl());
+                    senderId, receiverId, request.getContent(), request.getImageObjectName());
 
             // Convert to DTO
             ChatMessageDTO messageDTO = convertToDTO(message);

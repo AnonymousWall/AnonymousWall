@@ -11,11 +11,7 @@ import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpResponse;
-import io.micronaut.http.MediaType;
 import io.micronaut.http.annotation.*;
-import io.micronaut.http.multipart.CompletedFileUpload;
-import io.micronaut.http.multipart.CompletedPart;
-import io.micronaut.http.server.multipart.MultipartBody;
 import io.micronaut.scheduling.TaskExecutors;
 import io.micronaut.scheduling.annotation.ExecuteOn;
 import io.micronaut.security.annotation.Secured;
@@ -23,11 +19,8 @@ import io.micronaut.security.rules.SecurityRule;
 import jakarta.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import reactor.core.publisher.Flux;
 
-import java.nio.charset.StandardCharsets;
 import java.security.Principal;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -77,86 +70,23 @@ public class MarketplaceController {
         return null;
     }
 
-    @Post(consumes = MediaType.MULTIPART_FORM_DATA)
+    @Post
     @Secured(SecurityRule.IS_AUTHENTICATED)
     public HttpResponse<Object> createItem(
-            @Body MultipartBody body,
+            @Body CreateItemRequest request,
             HttpRequest<?> httpRequest) {
         try {
             UUID userId = getUserIdFromRequest(httpRequest);
             log.info("POST /marketplace - Creating new item, user={}", userId);
 
-            List<CompletedPart> parts = Flux.from(body).collectList().block();
-
-            String title = null;
-            String description = null;
-            String priceStr = null;
-            String category = null;
-            String condition = null;
-            String wall = null;
-            List<CompletedFileUpload> images = new ArrayList<>();
-
-            for (CompletedPart part : parts) {
-                if (part instanceof CompletedFileUpload file) {
-                    if ("images".equals(file.getName()) && file.getSize() > 0) {
-                        images.add(file);
-                    }
-                } else {
-                    String value = new String(part.getBytes(), StandardCharsets.UTF_8);
-                    switch (part.getName()) {
-                        case "title"       -> title = value;
-                        case "description" -> description = value;
-                        case "price"       -> priceStr = value;
-                        case "category"    -> category = value;
-                        case "condition"   -> condition = value;
-                        case "wall"        -> wall = value;
-                    }
-                }
-            }
-
-            log.info("POST /marketplace - user={}, title={}, imageCount={}", userId, title, images.size());
-
-            if (title == null || title.isBlank()) {
+            if (request.getTitle() == null || request.getTitle().isBlank()) {
                 return HttpResponse.badRequest(error("Title is required"));
             }
-            if (priceStr == null || priceStr.isBlank()) {
+            if (request.getPrice() == null) {
                 return HttpResponse.badRequest(error("Price is required"));
             }
 
-            Float price;
-            try {
-                price = Float.parseFloat(priceStr);
-            } catch (NumberFormatException e) {
-                return HttpResponse.badRequest(error("Price must be a valid number"));
-            }
-
-            CreateItemRequest request = new CreateItemRequest(title, price);
-            if (description != null && !description.isBlank()) {
-                request.setDescription(description);
-            }
-            if (category != null && !category.isBlank()) {
-                try {
-                    request.setCategory(CreateItemRequestCategory.fromValue(category));
-                } catch (IllegalArgumentException e) {
-                    return HttpResponse.badRequest(error("Invalid category. Must be one of: textbooks, electronics, furniture, clothing, stationery, sports, transport, food, services, housing, tickets, other"));
-                }
-            }
-            if (condition != null && !condition.isBlank()) {
-                try {
-                    request.setCondition(CreateItemRequestCondition.fromValue(condition));
-                } catch (IllegalArgumentException e) {
-                    return HttpResponse.badRequest(error("Invalid condition. Must be one of: new, like-new, good, fair"));
-                }
-            }
-            if (wall != null && !wall.isBlank()) {
-                try {
-                    request.setWall(CreatePostRequestWall.fromValue(wall.toLowerCase()));
-                } catch (IllegalArgumentException e) {
-                    return HttpResponse.badRequest(error("Wall must be 'campus' or 'national'"));
-                }
-            }
-
-            MarketplaceItem item = marketplaceRetryService.createItem(request, images, userId);
+            MarketplaceItem item = marketplaceRetryService.createItem(request, userId);
             ItemDTO dto = mapItemToDTO(item);
             log.info("POST /marketplace - Item created successfully, itemId={}", dto.getId());
             return HttpResponse.created(dto);

@@ -847,4 +847,90 @@
         </createIndex>
     </changeSet>
 
+    <!-- ================= Performance Indexes for List Queries ================= -->
+    <changeSet id="25-add-critical-composite-indexes" author="ziyihuang">
+        <comment>Composite indexes covering wall+is_hidden+sort columns for list query performance</comment>
+
+        <!-- Posts: national/campus wall list — most queried endpoints -->
+        <createIndex tableName="posts" indexName="idx_posts_wall_hidden_created">
+            <column name="wall"/>
+            <column name="is_hidden"/>
+            <column name="created_at" descending="true"/>
+        </createIndex>
+
+        <createIndex tableName="posts" indexName="idx_posts_wall_hidden_likes">
+            <column name="wall"/>
+            <column name="is_hidden"/>
+            <column name="like_count" descending="true"/>
+        </createIndex>
+
+        <!-- Posts: campus wall additionally filters by school_domain -->
+        <createIndex tableName="posts" indexName="idx_posts_domain_hidden_created">
+            <column name="school_domain"/>
+            <column name="is_hidden"/>
+            <column name="created_at" descending="true"/>
+        </createIndex>
+
+        <!-- Internships: wall list queries -->
+        <createIndex tableName="internships" indexName="idx_internships_wall_hidden_created">
+            <column name="wall"/>
+            <column name="is_hidden"/>
+            <column name="created_at" descending="true"/>
+        </createIndex>
+
+        <createIndex tableName="internships" indexName="idx_internships_domain_hidden_created">
+            <column name="school_domain"/>
+            <column name="is_hidden"/>
+            <column name="created_at" descending="true"/>
+        </createIndex>
+
+        <!-- Marketplace: wall list queries — also sorts by price -->
+        <createIndex tableName="marketplace_items" indexName="idx_marketplace_wall_hidden_created">
+            <column name="wall"/>
+            <column name="is_hidden"/>
+            <column name="created_at" descending="true"/>
+        </createIndex>
+
+        <createIndex tableName="marketplace_items" indexName="idx_marketplace_wall_hidden_price_asc">
+            <column name="wall"/>
+            <column name="is_hidden"/>
+            <column name="price"/>
+        </createIndex>
+
+        <createIndex tableName="marketplace_items" indexName="idx_marketplace_wall_hidden_price_desc">
+            <column name="wall"/>
+            <column name="is_hidden"/>
+            <column name="price" descending="true"/>
+        </createIndex>
+
+        <createIndex tableName="marketplace_items" indexName="idx_marketplace_domain_hidden_created">
+            <column name="school_domain"/>
+            <column name="is_hidden"/>
+            <column name="created_at" descending="true"/>
+        </createIndex>
+
+        <!-- Comments: parent lookup — most comment queries filter hidden too -->
+        <createIndex tableName="comments" indexName="idx_comments_parent_hidden_created">
+            <column name="parent_type"/>
+            <column name="parent_id"/>
+            <column name="is_hidden"/>
+            <column name="created_at" descending="true"/>
+        </createIndex>
+
+        <!-- Notifications: unread count query (called on every WebSocket connect) -->
+        <createIndex tableName="notifications" indexName="idx_notifications_recipient_unread">
+            <column name="recipient_user_id"/>
+            <column name="is_read"/>
+        </createIndex>
+
+        <!-- Chat: conversation list lookup by sender or receiver -->
+        <createIndex tableName="chat_messages" indexName="idx_chat_sender_id">
+            <column name="sender_id"/>
+        </createIndex>
+
+        <createIndex tableName="chat_messages" indexName="idx_chat_receiver_id">
+            <column name="receiver_id"/>
+        </createIndex>
+    </changeSet>
+
 </databaseChangeLog>

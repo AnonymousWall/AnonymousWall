@@ -90,7 +90,7 @@ class PollServiceTest {
         CreatePostRequest req = new CreatePostRequest("Poll Title", "");
         req.setPostType(CreatePostRequestPostType.POLL);
         req.setPollOptions(options);
-        return postsService.createPost(req, null, owner.getId());
+        return postsService.createPost(req, owner.getId());
     }
 
     /** Convenience overload that uses testUser. */
@@ -102,7 +102,7 @@ class PollServiceTest {
     private Post createRegularPost() {
         CreatePostRequest req = new CreatePostRequest("Regular Post", "Content");
         req.setPostType(CreatePostRequestPostType.STANDARD);
-        return postsService.createPost(req, null, testUser.getId());
+        return postsService.createPost(req, testUser.getId());
     }
 
     // ─── createPollOptions ─────────────────────────────────────────────────────
@@ -572,7 +572,7 @@ class PollServiceTest {
             // Create a post without poll options by using the raw createPollOptions path
             CreatePostRequest req = new CreatePostRequest("Empty Poll Post", "Some content");
             req.setPostType(CreatePostRequestPostType.STANDARD); // no options attached
-            Post post = postsService.createPost(req, null, testUser.getId());
+            Post post = postsService.createPost(req, testUser.getId());
 
             List<PollOption> options = pollService.getPollOptions(post.getId());
 
@@ -607,7 +607,7 @@ class PollServiceTest {
             req.setPostType(CreatePostRequestPostType.POLL);
             req.setPollOptions(Arrays.asList("Alpha", "Beta", "Gamma"));
 
-            Post post = postsService.createPost(req, null, testUser.getId());
+            Post post = postsService.createPost(req, testUser.getId());
 
             assertNotNull(post.getId());
             assertEquals("poll", post.getPostType());
@@ -627,7 +627,7 @@ class PollServiceTest {
             req.setPollOptions(List.of("Only")); // 1 option — requires at least 2
 
             IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                    () -> postsService.createPost(req, null, testUser.getId()));
+                    () -> postsService.createPost(req, testUser.getId()));
             assertTrue(ex.getMessage().contains("at least 2"));
         }
 
@@ -643,7 +643,7 @@ class PollServiceTest {
             req.setPostType(CreatePostRequestPostType.POLL);
             req.setPollOptions(null); // explicitly null
 
-            Post post = postsService.createPost(req, null, testUser.getId());
+            Post post = postsService.createPost(req, testUser.getId());
 
             assertNotNull(post.getId());
             assertEquals("poll", post.getPostType());
@@ -660,7 +660,7 @@ class PollServiceTest {
             req.setPostType(CreatePostRequestPostType.POLL);
             req.setPollOptions(List.of()); // explicitly empty
 
-            Post post = postsService.createPost(req, null, testUser.getId());
+            Post post = postsService.createPost(req, testUser.getId());
 
             assertNotNull(post.getId());
             assertEquals("poll", post.getPostType());
@@ -678,7 +678,7 @@ class PollServiceTest {
             req.setPostType(CreatePostRequestPostType.STANDARD);
             req.setPollOptions(Arrays.asList("Ignored A", "Ignored B"));
 
-            Post post = postsService.createPost(req, null, testUser.getId());
+            Post post = postsService.createPost(req, testUser.getId());
 
             assertNotNull(post.getId());
             assertNotEquals("poll", post.getPostType());
@@ -698,7 +698,7 @@ class PollServiceTest {
             req.setPollOptions(null);
 
             // Must not throw — the guard short-circuits before createPollOptions is called
-            assertDoesNotThrow(() -> postsService.createPost(req, null, testUser.getId()));
+            assertDoesNotThrow(() -> postsService.createPost(req, testUser.getId()));
 
             long optionCount = pollOptionRepository.findAll().stream()
                     .filter(o -> postRepository.findById(o.getPostId())

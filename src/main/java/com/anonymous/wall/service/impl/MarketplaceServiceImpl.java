@@ -58,11 +58,11 @@ public class MarketplaceServiceImpl implements MarketplaceService {
 
     @Override
     @Transactional
-    public MarketplaceItem createItem(CreateItemRequest request, List<CompletedFileUpload> images, UUID userId) {
+    public MarketplaceItem createItem(CreateItemRequest request, UUID userId) {
         log.info("Creating marketplace item for user {}", userId);
 
         // Validate image count before any DB access
-        if (images != null && images.size() > MAX_IMAGES_PER_ITEM) {
+        if (request.getImageObjectNames() != null && request.getImageObjectNames().size() > MAX_IMAGES_PER_ITEM) {
             throw new IllegalArgumentException("Maximum " + MAX_IMAGES_PER_ITEM + " images per item allowed");
         }
 
@@ -130,15 +130,9 @@ public class MarketplaceServiceImpl implements MarketplaceService {
         item.setCreatedAt(OffsetDateTime.now());
         item.setUpdatedAt(OffsetDateTime.now());
 
-        // Upload images
-        List<String> imageUrls = new ArrayList<>();
-        if (images != null) {
-            for (CompletedFileUpload image : images) {
-                if (image != null && image.getSize() > 0) {
-                    imageUrls.add(mediaUtil.uploadMarketplaceImage(image, userId));
-                }
-            }
-        }
+        List<String> imageUrls = request.getImageObjectNames() != null
+                ? request.getImageObjectNames()
+                : new ArrayList<>();
         item.setImageUrls(imageUrls);
 
         MarketplaceItem saved = marketplaceItemRepository.save(item);

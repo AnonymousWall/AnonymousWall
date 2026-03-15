@@ -10,23 +10,17 @@ import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.HttpRequest;
-import io.micronaut.http.MediaType;
 import io.micronaut.http.annotation.*;
-import io.micronaut.http.multipart.CompletedFileUpload;
-import io.micronaut.http.multipart.CompletedPart;
-import io.micronaut.http.server.multipart.MultipartBody;
 import io.micronaut.scheduling.TaskExecutors;
 import io.micronaut.scheduling.annotation.ExecuteOn;
 import io.micronaut.security.annotation.Secured;
 import io.micronaut.security.rules.SecurityRule;
 import jakarta.inject.Inject;
 
-import java.nio.charset.StandardCharsets;
 import java.security.Principal;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import reactor.core.publisher.Flux;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -85,58 +79,28 @@ public class PostsController {
      * POST /posts
      * Create a new post (multipart/form-data with optional images)
      */
-    @io.micronaut.http.annotation.Post(consumes = MediaType.MULTIPART_FORM_DATA)
+    @io.micronaut.http.annotation.Post
     @Secured(SecurityRule.IS_AUTHENTICATED)
     public HttpResponse<Object> createPost(
-            @Body MultipartBody body,
+            @Body CreatePostRequest request,
             HttpRequest<?> httpRequest) {
         try {
             UUID userId = getUserIdFromRequest(httpRequest);
             log.info("POST /posts - Creating new post, user={}", userId);
-            // Safe to block here because @ExecuteOn(BLOCKING) moves us off the event loop
-            List<CompletedPart> parts = Flux.from(body).collectList().block();
 
-            String title = null;
-            String content = null;
-            String wall = null;
-            String postType = null;
-            List<String> pollOptions = new ArrayList<>();
-            List<CompletedFileUpload> images = new ArrayList<>();
-
-            for (CompletedPart part : parts) {
-                if (part instanceof CompletedFileUpload file) {
-                    if ("images".equals(file.getName()) && file.getSize() > 0) {
-                        images.add(file);
-                    }
-                } else {
-                    String value = new String(part.getBytes(), StandardCharsets.UTF_8);
-                    switch (part.getName()) {
-                        case "title"        -> title = value;
-                        case "content"      -> content = value;
-                        case "wall"         -> wall = value;
-                        case "postType"     -> postType = value;
-                        case "pollOptions"  -> pollOptions.add(value);
-                    }
-                }
-            }
-
-            log.info("POST /posts - user={}, content_length={}, imageCount={}, postType={}",
-                    userId, content != null ? content.length() : 0, images.size(), postType);
-
-            if (title == null || title.isBlank()) {
+            if (request.getTitle() == null || request.getTitle().isBlank()) {
                 return HttpResponse.badRequest(error("Title is required"));
             }
 
-            boolean isPoll = "poll".equalsIgnoreCase(postType);
+            boolean isPoll = CreatePostRequestPostType.POLL.equals(request.getPostType());
 
-            // For standard posts, content is required
-            if (!isPoll && (content == null || content.isBlank())) {
+            if (!isPoll && (request.getContent() == null || request.getContent().isBlank())) {
                 return HttpResponse.badRequest(error("Content is required"));
             }
 
-            // Validate poll options early
             if (isPoll) {
-                if (pollOptions.size() < 2) {
+                List<String> pollOptions = request.getPollOptions();
+                if (pollOptions == null || pollOptions.size() < 2) {
                     return HttpResponse.badRequest(error("Poll must have at least 2 options"));
                 }
                 if (pollOptions.size() > 4) {
@@ -152,20 +116,13 @@ public class PostsController {
                 }
             }
 
-            CreatePostRequest request = new CreatePostRequest(title, content != null ? content : "");
-            if (wall != null && !wall.isEmpty()) {
-                try {
-                    request.setWall(CreatePostRequestWall.fromValue(wall.toLowerCase()));
-                } catch (IllegalArgumentException e) {
-                    return HttpResponse.badRequest(error("Wall must be 'campus' or 'national'"));
-                }
-            }
-            if (isPoll) {
-                request.setPostType(CreatePostRequestPostType.POLL);
-                request.setPollOptions(pollOptions);
-            }
+            log.info("POST /posts - user={}, content_length={}, imageCount={}, postType={}",
+                    userId,
+                    request.getContent() != null ? request.getContent().length() : 0,
+                    request.getImageObjectNames() != null ? request.getImageObjectNames().size() : 0,
+                    request.getPostType());
 
-            Post post = postsRetryService.createPost(request, images, userId);
+            Post post = postsRetryService.createPost(request, userId);
 
             PostDTO dto = mapPostToDTO(post, userId);
 

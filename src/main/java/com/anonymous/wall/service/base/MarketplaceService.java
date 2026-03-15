@@ -13,7 +13,7 @@ import java.util.UUID;
 
 public interface MarketplaceService {
 
-    MarketplaceItem createItem(CreateItemRequest request, List<CompletedFileUpload> images, UUID userId);
+    MarketplaceItem createItem(CreateItemRequest request, UUID userId);
 
     MarketplaceItem updateItem(UUID itemId, UpdateItemRequest request, UUID userId);
 

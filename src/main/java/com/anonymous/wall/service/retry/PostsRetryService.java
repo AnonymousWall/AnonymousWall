@@ -27,8 +27,8 @@ public class PostsRetryService {
     }
 
     @Retryable(attempts = "3", delay = "500ms", excludes = IllegalArgumentException.class)
-    public Post createPost(CreatePostRequest request, List<CompletedFileUpload> images, UUID userId) {
-        return postsService.createPost(request, images, userId);
+    public Post createPost(CreatePostRequest request, UUID userId) {
+        return postsService.createPost(request, userId);
     }
 
     @Retryable(attempts = "3", delay = "500ms", excludes = IllegalArgumentException.class)

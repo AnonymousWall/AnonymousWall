@@ -104,13 +104,13 @@ class MarketplaceServiceImplTest {
     // ─── Helpers ───────────────────────────────────────────────────────────────
 
     private MarketplaceItem createCampusItem(String title, float price, UserEntity owner) {
-        return marketplaceService.createItem(new CreateItemRequest(title, price), null, owner.getId());
+        return marketplaceService.createItem(new CreateItemRequest(title, price), owner.getId());
     }
 
     private MarketplaceItem createNationalItem(String title, float price, UserEntity owner) {
         CreateItemRequest req = new CreateItemRequest(title, price);
         req.setWall(CreatePostRequestWall.NATIONAL); // adjust to your WallType enum
-        return marketplaceService.createItem(req, null, owner.getId());
+        return marketplaceService.createItem(req, owner.getId());
     }
 
     // ─── Create Item — Positive ────────────────────────────────────────────────
@@ -127,7 +127,7 @@ class MarketplaceServiceImplTest {
             request.setCategory(CreateItemRequestCategory.ELECTRONICS);
             request.setCondition(CreateItemRequestCondition.NEW);
 
-            MarketplaceItem result = marketplaceService.createItem(request, null, testUser.getId());
+            MarketplaceItem result = marketplaceService.createItem(request, testUser.getId());
 
             assertNotNull(result);
             assertNotNull(result.getId());
@@ -147,7 +147,7 @@ class MarketplaceServiceImplTest {
         void shouldCreateItemWithMinimumFields() {
             CreateItemRequest request = new CreateItemRequest("Min Item", 0f);
 
-            MarketplaceItem result = marketplaceService.createItem(request, null, testUser.getId());
+            MarketplaceItem result = marketplaceService.createItem(request, testUser.getId());
 
             assertNotNull(result);
             assertEquals("Min Item", result.getTitle());
@@ -162,7 +162,7 @@ class MarketplaceServiceImplTest {
         void shouldDefaultWallToCampus() {
             CreateItemRequest request = new CreateItemRequest("Textbook", 25f);
 
-            MarketplaceItem result = marketplaceService.createItem(request, null, testUser.getId());
+            MarketplaceItem result = marketplaceService.createItem(request, testUser.getId());
 
             assertEquals("campus", result.getWall(),
                     "Wall must default to campus when not specified");
@@ -176,7 +176,7 @@ class MarketplaceServiceImplTest {
             CreateItemRequest request = new CreateItemRequest("Textbook", 25f);
             request.setWall(CreatePostRequestWall.NATIONAL);
 
-            MarketplaceItem result = marketplaceService.createItem(request, null, testUser.getId());
+            MarketplaceItem result = marketplaceService.createItem(request, testUser.getId());
 
             assertEquals("national", result.getWall());
             assertNull(result.getSchoolDomain(),
@@ -188,7 +188,7 @@ class MarketplaceServiceImplTest {
         void shouldSetProfileNameFromUser() {
             CreateItemRequest request = new CreateItemRequest("Laptop", 500f);
 
-            MarketplaceItem result = marketplaceService.createItem(request, null, testUser.getId());
+            MarketplaceItem result = marketplaceService.createItem(request, testUser.getId());
 
             assertEquals("TestSeller", result.getProfileName());
         }
@@ -197,7 +197,7 @@ class MarketplaceServiceImplTest {
         @DisplayName("Should create item with zero price")
         void shouldCreateItemWithZeroPrice() {
             MarketplaceItem result = marketplaceService.createItem(
-                    new CreateItemRequest("Free Item", 0f), null, testUser.getId());
+                    new CreateItemRequest("Free Item", 0f), testUser.getId());
 
             assertEquals(0, BigDecimal.ZERO.compareTo(result.getPrice()));
         }
@@ -209,7 +209,7 @@ class MarketplaceServiceImplTest {
                 CreateItemRequest request = new CreateItemRequest("Item " + condition.getValue(), 10f);
                 request.setCondition(condition);
 
-                MarketplaceItem result = marketplaceService.createItem(request, null, testUser.getId());
+                MarketplaceItem result = marketplaceService.createItem(request, testUser.getId());
 
                 assertEquals(condition.getValue(), result.getCondition());
             }
@@ -219,7 +219,7 @@ class MarketplaceServiceImplTest {
         @DisplayName("Should trim title whitespace")
         void shouldTrimTitleWhitespace() {
             MarketplaceItem result = marketplaceService.createItem(
-                    new CreateItemRequest("  Trimmed Title  ", 10f), null, testUser.getId());
+                    new CreateItemRequest("  Trimmed Title  ", 10f), testUser.getId());
 
             assertEquals("Trimmed Title", result.getTitle());
         }
@@ -245,7 +245,7 @@ class MarketplaceServiceImplTest {
         void shouldFailWhenUserNotFound() {
             IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                     () -> marketplaceService.createItem(
-                            new CreateItemRequest("Test", 10f), null, UUID.randomUUID()));
+                            new CreateItemRequest("Test", 10f), UUID.randomUUID()));
             assertTrue(ex.getMessage().contains("User not found"));
         }
 
@@ -254,7 +254,7 @@ class MarketplaceServiceImplTest {
         void shouldFailWhenTitleNull() {
             IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                     () -> marketplaceService.createItem(
-                            new CreateItemRequest(null, 10f), null, testUser.getId()));
+                            new CreateItemRequest(null, 10f), testUser.getId()));
             assertTrue(ex.getMessage().contains("Title is required"));
         }
 
@@ -263,7 +263,7 @@ class MarketplaceServiceImplTest {
         void shouldFailWhenTitleBlank() {
             IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                     () -> marketplaceService.createItem(
-                            new CreateItemRequest("   ", 10f), null, testUser.getId()));
+                            new CreateItemRequest("   ", 10f), testUser.getId()));
             assertTrue(ex.getMessage().contains("Title is required"));
         }
 
@@ -274,7 +274,7 @@ class MarketplaceServiceImplTest {
             request.setPrice(null);
 
             IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                    () -> marketplaceService.createItem(request, null, testUser.getId()));
+                    () -> marketplaceService.createItem(request, testUser.getId()));
             assertTrue(ex.getMessage().contains("Price is required"));
         }
 
@@ -283,7 +283,7 @@ class MarketplaceServiceImplTest {
         void shouldFailWhenPriceNegative() {
             IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                     () -> marketplaceService.createItem(
-                            new CreateItemRequest("Test", -1f), null, testUser.getId()));
+                            new CreateItemRequest("Test", -1f), testUser.getId()));
             assertTrue(ex.getMessage().contains("Price must be greater than or equal to 0"));
         }
 
@@ -292,7 +292,7 @@ class MarketplaceServiceImplTest {
         void shouldFailWhenTitleTooLong() {
             IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                     () -> marketplaceService.createItem(
-                            new CreateItemRequest("a".repeat(256), 10f), null, testUser.getId()));
+                            new CreateItemRequest("a".repeat(256), 10f), testUser.getId()));
             assertTrue(ex.getMessage().contains("Title cannot exceed 255 characters"));
         }
 
@@ -301,7 +301,7 @@ class MarketplaceServiceImplTest {
         void shouldFailWhenUserHasNoSchoolDomainForCampusWall() {
             IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                     () -> marketplaceService.createItem(
-                            new CreateItemRequest("Laptop", 500f), null, userWithNoSchoolDomain.getId()));
+                            new CreateItemRequest("Laptop", 500f), userWithNoSchoolDomain.getId()));
             assertTrue(ex.getMessage().contains("school domain"));
         }
 
@@ -311,14 +311,14 @@ class MarketplaceServiceImplTest {
         @DisplayName("Should accept title of exactly 255 characters — boundary")
         void shouldAcceptTitleAtExactLimit() {
             assertDoesNotThrow(() -> marketplaceService.createItem(
-                    new CreateItemRequest("a".repeat(255), 10f), null, testUser.getId()));
+                    new CreateItemRequest("a".repeat(255), 10f), testUser.getId()));
         }
 
         @Test
         @DisplayName("Should accept single-character title")
         void shouldAcceptOneCharTitle() {
             MarketplaceItem result = marketplaceService.createItem(
-                    new CreateItemRequest("A", 10f), null, testUser.getId());
+                    new CreateItemRequest("A", 10f), testUser.getId());
             assertEquals("A", result.getTitle());
         }
 
@@ -326,7 +326,7 @@ class MarketplaceServiceImplTest {
         @DisplayName("Should accept large price within DECIMAL(10,2) limits")
         void shouldAcceptLargePrice() {
             MarketplaceItem result = marketplaceService.createItem(
-                    new CreateItemRequest("Expensive", 9999999.99f), null, testUser.getId());
+                    new CreateItemRequest("Expensive", 9999999.99f), testUser.getId());
             assertTrue(result.getPrice().compareTo(BigDecimal.valueOf(9999999.0)) > 0);
         }
     }
@@ -441,7 +441,7 @@ class MarketplaceServiceImplTest {
             req.setDescription("Original Description");
             req.setCategory(CreateItemRequestCategory.TEXTBOOKS);
             req.setCondition(CreateItemRequestCondition.GOOD);
-            testItem = marketplaceService.createItem(req, null, testUser.getId());
+            testItem = marketplaceService.createItem(req, testUser.getId());
         }
 
         @Test
@@ -909,15 +909,15 @@ class MarketplaceServiceImplTest {
         void shouldFilterCampusItemsByCategory() {
             CreateItemRequest req1 = new CreateItemRequest("Laptop", 500f);
             req1.setCategory(CreateItemRequestCategory.ELECTRONICS);
-            marketplaceService.createItem(req1, null, testUser.getId());
+            marketplaceService.createItem(req1, testUser.getId());
 
             CreateItemRequest req2 = new CreateItemRequest("Phone", 300f);
             req2.setCategory(CreateItemRequestCategory.ELECTRONICS);
-            marketplaceService.createItem(req2, null, testUser.getId());
+            marketplaceService.createItem(req2, testUser.getId());
 
             CreateItemRequest req3 = new CreateItemRequest("Math Book", 30f);
             req3.setCategory(CreateItemRequestCategory.TEXTBOOKS);
-            marketplaceService.createItem(req3, null, testUser.getId());
+            marketplaceService.createItem(req3, testUser.getId());
 
             Page<MarketplaceItem> result = marketplaceService.getItemsByWall(
                     "campus", Pageable.from(0, 10), testUser.getId(), "harvard.edu", "newest", "electronics");
@@ -932,11 +932,11 @@ class MarketplaceServiceImplTest {
         void shouldReturnAllCampusItemsWithoutCategory() {
             CreateItemRequest req1 = new CreateItemRequest("Laptop", 500f);
             req1.setCategory(CreateItemRequestCategory.ELECTRONICS);
-            marketplaceService.createItem(req1, null, testUser.getId());
+            marketplaceService.createItem(req1, testUser.getId());
 
             CreateItemRequest req2 = new CreateItemRequest("Math Book", 30f);
             req2.setCategory(CreateItemRequestCategory.TEXTBOOKS);
-            marketplaceService.createItem(req2, null, testUser.getId());
+            marketplaceService.createItem(req2, testUser.getId());
 
             Page<MarketplaceItem> result = marketplaceService.getItemsByWall(
                     "campus", Pageable.from(0, 10), testUser.getId(), "harvard.edu", "newest", null);
@@ -949,11 +949,11 @@ class MarketplaceServiceImplTest {
         void shouldSortCampusItemsByPriceAsc() {
             CreateItemRequest cheap = new CreateItemRequest("Basic Phone", 100f);
             cheap.setCategory(CreateItemRequestCategory.ELECTRONICS);
-            marketplaceService.createItem(cheap, null, testUser.getId());
+            marketplaceService.createItem(cheap, testUser.getId());
 
             CreateItemRequest expensive = new CreateItemRequest("Gaming PC", 2000f);
             expensive.setCategory(CreateItemRequestCategory.ELECTRONICS);
-            marketplaceService.createItem(expensive, null, testUser.getId());
+            marketplaceService.createItem(expensive, testUser.getId());
 
             Page<MarketplaceItem> result = marketplaceService.getItemsByWall(
                     "campus", Pageable.from(0, 10), testUser.getId(), "harvard.edu", "price-asc", "electronics");
@@ -967,11 +967,11 @@ class MarketplaceServiceImplTest {
         void shouldSortCampusItemsByPriceDesc() {
             CreateItemRequest cheap = new CreateItemRequest("Basic Phone", 100f);
             cheap.setCategory(CreateItemRequestCategory.ELECTRONICS);
-            marketplaceService.createItem(cheap, null, testUser.getId());
+            marketplaceService.createItem(cheap, testUser.getId());
 
             CreateItemRequest expensive = new CreateItemRequest("Gaming PC", 2000f);
             expensive.setCategory(CreateItemRequestCategory.ELECTRONICS);
-            marketplaceService.createItem(expensive, null, testUser.getId());
+            marketplaceService.createItem(expensive, testUser.getId());
 
             Page<MarketplaceItem> result = marketplaceService.getItemsByWall(
                     "campus", Pageable.from(0, 10), testUser.getId(), "harvard.edu", "price-desc", "electronics");
@@ -985,7 +985,7 @@ class MarketplaceServiceImplTest {
         void shouldReturnEmptyWhenNoCategoryMatch() {
             CreateItemRequest req = new CreateItemRequest("Laptop", 500f);
             req.setCategory(CreateItemRequestCategory.ELECTRONICS);
-            marketplaceService.createItem(req, null, testUser.getId());
+            marketplaceService.createItem(req, testUser.getId());
 
             Page<MarketplaceItem> result = marketplaceService.getItemsByWall(
                     "campus", Pageable.from(0, 10), testUser.getId(), "harvard.edu", "newest", "furniture");
@@ -1011,12 +1011,12 @@ class MarketplaceServiceImplTest {
             CreateItemRequest req1 = new CreateItemRequest("National Laptop", 500f);
             req1.setWall(CreatePostRequestWall.NATIONAL);
             req1.setCategory(CreateItemRequestCategory.ELECTRONICS);
-            marketplaceService.createItem(req1, null, testUser.getId());
+            marketplaceService.createItem(req1, testUser.getId());
 
             CreateItemRequest req2 = new CreateItemRequest("National Textbook", 30f);
             req2.setWall(CreatePostRequestWall.NATIONAL);
             req2.setCategory(CreateItemRequestCategory.TEXTBOOKS);
-            marketplaceService.createItem(req2, null, testUser.getId());
+            marketplaceService.createItem(req2, testUser.getId());
 
             Page<MarketplaceItem> result = marketplaceService.getItemsByWall(
                     "national", Pageable.from(0, 10), mitUser.getId(), null, "newest", "electronics");
@@ -1223,121 +1223,82 @@ class MarketplaceServiceImplTest {
         }
 
         @Test
-        @DisplayName("Should upload single image and attach URL to saved item")
-        void shouldUploadSingleImage() {
+        @DisplayName("Should attach objectNames from request to saved item")
+        void shouldAttachImageObjectNamesToItem() {
             UserEntity user = stubUser("test.edu");
-            String imageUrl = "http://media/marketplace/test.jpg";
-            when(mockMediaUtil.uploadMarketplaceImage(any(), any())).thenReturn(imageUrl);
-            when(mockItemRepo.save(any())).thenReturn(savedItem(user.getId(), List.of(imageUrl)));
+            List<String> objectNames = List.of("marketplace/uuid1.jpg");
+            when(mockItemRepo.save(any())).thenReturn(savedItem(user.getId(), objectNames));
 
-            CompletedFileUpload image = mock(CompletedFileUpload.class);
-            when(image.getSize()).thenReturn(1024L);
-            when(image.getContentType()).thenReturn(Optional.of(MediaType.IMAGE_JPEG_TYPE));
+            CreateItemRequest request = new CreateItemRequest("Test", 10f);
+            request.setImageObjectNames(objectNames);
+            MarketplaceItem result = svc.createItem(request, user.getId());
 
-            MarketplaceItem result = svc.createItem(
-                    new CreateItemRequest("Test", 10f), List.of(image), user.getId());
-
-            assertEquals(List.of(imageUrl), result.getImageUrls());
-            verify(mockMediaUtil).uploadMarketplaceImage(image, user.getId());
+            assertEquals(objectNames, result.getImageUrls());
+            verifyNoInteractions(mockMediaUtil);
         }
 
         @Test
-        @DisplayName("Should upload multiple images and attach all URLs")
-        void shouldUploadMultipleImages() {
+        @DisplayName("Should attach multiple objectNames from request")
+        void shouldAttachMultipleImageObjectNames() {
             UserEntity user = stubUser("test.edu");
-            String url1 = "http://media/marketplace/img1.jpg";
-            String url2 = "http://media/marketplace/img2.png";
-            when(mockMediaUtil.uploadMarketplaceImage(any(), any())).thenReturn(url1, url2);
-            when(mockItemRepo.save(any())).thenReturn(savedItem(user.getId(), List.of(url1, url2)));
+            List<String> objectNames = List.of("marketplace/uuid1.jpg", "marketplace/uuid2.png");
+            when(mockItemRepo.save(any())).thenReturn(savedItem(user.getId(), objectNames));
 
-            CompletedFileUpload img1 = mock(CompletedFileUpload.class);
-            when(img1.getSize()).thenReturn(1024L);
-            CompletedFileUpload img2 = mock(CompletedFileUpload.class);
-            when(img2.getSize()).thenReturn(2048L);
-
-            MarketplaceItem result = svc.createItem(
-                    new CreateItemRequest("Test", 10f), List.of(img1, img2), user.getId());
+            CreateItemRequest request = new CreateItemRequest("Test", 10f);
+            request.setImageObjectNames(objectNames);
+            MarketplaceItem result = svc.createItem(request, user.getId());
 
             assertEquals(2, result.getImageUrls().size());
-            verify(mockMediaUtil, times(2)).uploadMarketplaceImage(any(), any());
+            verifyNoInteractions(mockMediaUtil);
         }
 
         @Test
-        @DisplayName("Should throw before DB access when more than 5 images provided")
+        @DisplayName("Should throw before DB access when more than 5 objectNames provided")
         void shouldThrowImmediatelyForTooManyImages() {
-            // Image count validation happens BEFORE userService.findById in the impl.
-            // Verifying userService is never called confirms the early-exit order.
             UUID userId = UUID.randomUUID();
-            List<CompletedFileUpload> sixImages = List.of(
-                    mock(CompletedFileUpload.class), mock(CompletedFileUpload.class),
-                    mock(CompletedFileUpload.class), mock(CompletedFileUpload.class),
-                    mock(CompletedFileUpload.class), mock(CompletedFileUpload.class));
+            CreateItemRequest request = new CreateItemRequest("Title", 10f);
+            request.setImageObjectNames(List.of(
+                    "marketplace/a.jpg", "marketplace/b.jpg", "marketplace/c.jpg",
+                    "marketplace/d.jpg", "marketplace/e.jpg", "marketplace/f.jpg"));
 
             IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                    () -> svc.createItem(new CreateItemRequest("Title", 10f), sixImages, userId));
+                    () -> svc.createItem(request, userId));
             assertTrue(ex.getMessage().contains("5"));
             verify(mockUserService, never()).findById(any());
         }
 
         @Test
-        @DisplayName("Should not call mediaUtil when images list is null")
-        void shouldSkipUploadWhenImagesNull() {
+        @DisplayName("Should create item with no images when imageObjectNames is null")
+        void shouldCreateItemWithNoImages() {
             UserEntity user = stubUser("test.edu");
             when(mockItemRepo.save(any())).thenReturn(savedItem(user.getId(), null));
 
-            svc.createItem(new CreateItemRequest("Test", 10f), null, user.getId());
+            CreateItemRequest request = new CreateItemRequest("Test", 10f);
+            svc.createItem(request, user.getId());
 
-            verify(mockMediaUtil, never()).uploadMarketplaceImage(any(), any());
+            verifyNoInteractions(mockMediaUtil);
         }
 
         @Test
-        @DisplayName("Should not call mediaUtil when images list is empty")
-        void shouldSkipUploadWhenImagesEmpty() {
+        @DisplayName("Should create item with no images when imageObjectNames is empty")
+        void shouldCreateItemWithEmptyImageList() {
             UserEntity user = stubUser("test.edu");
             when(mockItemRepo.save(any())).thenReturn(savedItem(user.getId(), null));
 
-            svc.createItem(new CreateItemRequest("Test", 10f), List.of(), user.getId());
+            CreateItemRequest request = new CreateItemRequest("Test", 10f);
+            request.setImageObjectNames(List.of());
+            svc.createItem(request, user.getId());
 
-            verify(mockMediaUtil, never()).uploadMarketplaceImage(any(), any());
+            verifyNoInteractions(mockMediaUtil);
         }
 
         @Test
-        @DisplayName("Should skip zero-size images — not uploaded")
-        void shouldSkipZeroSizeImages() {
-            UserEntity user = stubUser("test.edu");
-            when(mockItemRepo.save(any())).thenReturn(savedItem(user.getId(), null));
-
-            CompletedFileUpload empty = mock(CompletedFileUpload.class);
-            when(empty.getSize()).thenReturn(0L);
-
-            svc.createItem(new CreateItemRequest("Test", 10f), List.of(empty), user.getId());
-
-            verify(mockMediaUtil, never()).uploadMarketplaceImage(any(), any());
-        }
-
-        @Test
-        @DisplayName("Should propagate exception thrown by media upload")
-        void shouldPropagateMediaUploadException() {
-            UserEntity user = stubUser("test.edu");
-            when(mockMediaUtil.uploadMarketplaceImage(any(), any()))
-                    .thenThrow(new IllegalArgumentException("Image exceeds 5MB limit"));
-
-            CompletedFileUpload image = mock(CompletedFileUpload.class);
-            when(image.getSize()).thenReturn(6 * 1024 * 1024L);
-            when(image.getContentType()).thenReturn(Optional.of(MediaType.IMAGE_JPEG_TYPE));
-
-            IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                    () -> svc.createItem(new CreateItemRequest("Title", 10f), List.of(image), user.getId()));
-            assertTrue(ex.getMessage().contains("5MB"));
-        }
-
-        @Test
-        @DisplayName("Should throw when user not found — image upload path")
+        @DisplayName("Should throw when user not found")
         void shouldThrowWhenUserNotFound() {
             when(mockUserService.findById(any())).thenReturn(Optional.empty());
 
             assertThrows(IllegalArgumentException.class,
-                    () -> svc.createItem(new CreateItemRequest("Title", 10f), null, UUID.randomUUID()));
+                    () -> svc.createItem(new CreateItemRequest("Title", 10f), UUID.randomUUID()));
         }
     }
 }

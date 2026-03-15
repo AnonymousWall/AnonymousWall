@@ -104,13 +104,13 @@ class PostsServiceImplTest {
 
     private Post createCampusPostViaService(String title, String content, UserEntity owner) {
         CreatePostRequest req = new CreatePostRequest(title, content);
-        return postsService.createPost(req, null, owner.getId());
+        return postsService.createPost(req, owner.getId());
     }
 
     private Post createNationalPostViaService(String title, String content, UserEntity owner) {
         CreatePostRequest req = new CreatePostRequest(title, content);
         req.setWall(com.anonymous.wall.model.CreatePostRequestWall.NATIONAL);
-        return postsService.createPost(req, null, owner.getId());
+        return postsService.createPost(req, owner.getId());
     }
 
     // ─── createPost ───────────────────────────────────────────────────────────
@@ -135,7 +135,7 @@ class PostsServiceImplTest {
         void shouldDefaultWallToCampus() {
             CreatePostRequest req = new CreatePostRequest("Title", "Content");
             // wall not set — impl defaults to "campus"
-            Post result = postsService.createPost(req, null, testUser.getId());
+            Post result = postsService.createPost(req, testUser.getId());
 
             assertEquals("campus", result.getWall());
         }
@@ -213,7 +213,7 @@ class PostsServiceImplTest {
         void shouldFailWhenTitleNull() {
             CreatePostRequest req = new CreatePostRequest(null, "Content");
             IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                    () -> postsService.createPost(req, null, testUser.getId()));
+                    () -> postsService.createPost(req, testUser.getId()));
             assertTrue(ex.getMessage().contains("title cannot be empty"));
         }
 
@@ -222,7 +222,7 @@ class PostsServiceImplTest {
         void shouldFailWhenTitleBlank() {
             CreatePostRequest req = new CreatePostRequest("   ", "Content");
             IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                    () -> postsService.createPost(req, null, testUser.getId()));
+                    () -> postsService.createPost(req, testUser.getId()));
             assertTrue(ex.getMessage().contains("title cannot be empty"));
         }
 
@@ -231,7 +231,7 @@ class PostsServiceImplTest {
         void shouldFailWhenTitleTooLong() {
             CreatePostRequest req = new CreatePostRequest("T".repeat(256), "Content");
             IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                    () -> postsService.createPost(req, null, testUser.getId()));
+                    () -> postsService.createPost(req, testUser.getId()));
             assertTrue(ex.getMessage().contains("exceeds maximum length of 255 characters"));
         }
 
@@ -240,7 +240,7 @@ class PostsServiceImplTest {
         void shouldFailWhenContentEmpty() {
             CreatePostRequest req = new CreatePostRequest("Title", "");
             IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                    () -> postsService.createPost(req, null, testUser.getId()));
+                    () -> postsService.createPost(req, testUser.getId()));
             assertTrue(ex.getMessage().contains("cannot be empty"));
         }
 
@@ -249,7 +249,7 @@ class PostsServiceImplTest {
         void shouldFailWhenContentBlank() {
             CreatePostRequest req = new CreatePostRequest("Title", "   \n\t   ");
             IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                    () -> postsService.createPost(req, null, testUser.getId()));
+                    () -> postsService.createPost(req, testUser.getId()));
             assertTrue(ex.getMessage().contains("cannot be empty"));
         }
 
@@ -258,7 +258,7 @@ class PostsServiceImplTest {
         void shouldFailWhenContentTooLong() {
             CreatePostRequest req = new CreatePostRequest("Title", "X".repeat(5001));
             IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                    () -> postsService.createPost(req, null, testUser.getId()));
+                    () -> postsService.createPost(req, testUser.getId()));
             assertTrue(ex.getMessage().contains("exceeds maximum length"));
         }
 
@@ -267,7 +267,7 @@ class PostsServiceImplTest {
         void shouldFailWhenUserNotFound() {
             CreatePostRequest req = new CreatePostRequest("Title", "Content");
             IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                    () -> postsService.createPost(req, null, UUID.randomUUID()));
+                    () -> postsService.createPost(req, UUID.randomUUID()));
             assertTrue(ex.getMessage().contains("User not found"));
         }
 
@@ -281,7 +281,7 @@ class PostsServiceImplTest {
             CreatePostRequest req = new CreatePostRequest("Title", "Content");
             UUID uid = noSchool.getId();
             IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                    () -> postsService.createPost(req, null, uid));
+                    () -> postsService.createPost(req, uid));
             assertTrue(ex.getMessage().contains("Cannot post to campus wall"));
         }
 
@@ -293,7 +293,7 @@ class PostsServiceImplTest {
             req.setPollOptions(List.of("A", "B"));
 
             // Must not throw for missing content when type=POLL
-            assertDoesNotThrow(() -> postsService.createPost(req, null, testUser.getId()));
+            assertDoesNotThrow(() -> postsService.createPost(req, testUser.getId()));
         }
     }
 
@@ -1443,7 +1443,6 @@ class PostsServiceImplTest {
     class ImageUploadTests {
 
         private PostsServiceImpl imageService;
-        private MediaUtilInterface mediaUtil;
         private PostRepository mockPostRepo;
         private UserService mockUserService;
 
@@ -1451,16 +1450,14 @@ class PostsServiceImplTest {
         void setUpImageService() throws Exception {
             mockPostRepo    = mock(PostRepository.class);
             mockUserService = mock(UserService.class);
-            mediaUtil       = mock(MediaUtilInterface.class);
 
             imageService = new PostsServiceImpl();
-            setField("postRepository",          mockPostRepo);
-            setField("userService",             mockUserService);
-            setField("mediaUtil",               mediaUtil);
-            setField("postLikeService",         mock(PostLikeService.class));
-            setField("postReportService",       mock(PostReportService.class));
-            setField("postHiddenEventPublisher",mock(ApplicationEventPublisher.class));
-            setField("userBlockService",        mock(UserBlockService.class));
+            setField("postRepository",           mockPostRepo);
+            setField("userService",              mockUserService);
+            setField("postLikeService",          mock(PostLikeService.class));
+            setField("postReportService",        mock(PostReportService.class));
+            setField("postHiddenEventPublisher", mock(ApplicationEventPublisher.class));
+            setField("userBlockService",         mock(UserBlockService.class));
             setProviderField("commentsServiceProvider", mock(CommentsService.class));
             setProviderField("pollServiceProvider",     mock(PollService.class));
         }
@@ -1496,53 +1493,48 @@ class PostsServiceImplTest {
         }
 
         @Test
-        @DisplayName("Should upload single image and include URL in saved post")
+        @DisplayName("Should attach single objectName from request to saved post")
         void shouldUploadSingleImage() {
             UserEntity user = mockUser();
             when(mockUserService.findById(user.getId())).thenReturn(Optional.of(user));
-            String url = "https://cdn/img1.jpg";
-            when(mediaUtil.uploadPostImage(any(), any())).thenReturn(url);
+
+            List<String> objectNames = List.of("posts/uuid1.jpg");
             Post saved = stubSavedPost(user.getId());
-            saved.setImageUrls(List.of(url));
+            saved.setImageUrls(objectNames);
             when(mockPostRepo.save(any())).thenReturn(saved);
 
-            CompletedFileUpload img = mock(CompletedFileUpload.class);
-            when(img.getSize()).thenReturn(1024L);
-
-            Post result = imageService.createPost(new CreatePostRequest("T", "C"),
-                    List.of(img), user.getId());
+            CreatePostRequest request = new CreatePostRequest("T", "C");
+            request.setImageObjectNames(objectNames);
+            Post result = imageService.createPost(request, user.getId());
 
             assertEquals(1, result.getImageUrls().size());
-            verify(mediaUtil, times(1)).uploadPostImage(img, user.getId());
         }
 
         @Test
-        @DisplayName("Should skip images with size=0 — zero-byte files not uploaded")
+        @DisplayName("Should create post with no images when imageObjectNames is empty")
         void shouldSkipZeroSizeImages() {
             UserEntity user = mockUser();
             when(mockUserService.findById(user.getId())).thenReturn(Optional.of(user));
             Post saved = stubSavedPost(user.getId());
             when(mockPostRepo.save(any())).thenReturn(saved);
 
-            CompletedFileUpload empty = mock(CompletedFileUpload.class);
-            when(empty.getSize()).thenReturn(0L);
-
-            imageService.createPost(new CreatePostRequest("T", "C"), List.of(empty), user.getId());
-
-            verify(mediaUtil, never()).uploadPostImage(any(), any());
+            CreatePostRequest request = new CreatePostRequest("T", "C");
+            request.setImageObjectNames(List.of());
+            imageService.createPost(request, user.getId());
         }
 
         @Test
-        @DisplayName("Should throw immediately when more than 5 images provided — before any DB access")
+        @DisplayName("Should throw immediately when more than 5 objectNames provided — before any DB access")
         void shouldThrowImmediatelyForTooManyImages() {
-            List<CompletedFileUpload> images = java.util.Collections.nCopies(6, mock(CompletedFileUpload.class));
+            CreatePostRequest request = new CreatePostRequest("T", "C");
+            request.setImageObjectNames(List.of(
+                    "posts/a.jpg", "posts/b.jpg", "posts/c.jpg",
+                    "posts/d.jpg", "posts/e.jpg", "posts/f.jpg"));
 
             IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                    () -> imageService.createPost(new CreatePostRequest("T", "C"),
-                            images, UUID.randomUUID()));
+                    () -> imageService.createPost(request, UUID.randomUUID()));
 
             assertTrue(ex.getMessage().contains("5"));
-            // Image count check must fire before any DB access
             verify(mockUserService, never()).findById(any());
         }
 
@@ -1554,27 +1546,9 @@ class PostsServiceImplTest {
             Post saved = stubSavedPost(user.getId());
             when(mockPostRepo.save(any())).thenReturn(saved);
 
-            Post result = imageService.createPost(new CreatePostRequest("T", "C"), null, user.getId());
+            Post result = imageService.createPost(new CreatePostRequest("T", "C"), user.getId());
 
             assertNotNull(result);
-            verify(mediaUtil, never()).uploadPostImage(any(), any());
-        }
-
-        @Test
-        @DisplayName("Should propagate exception thrown by media upload")
-        void shouldPropagateMediaUploadException() {
-            UserEntity user = mockUser();
-            when(mockUserService.findById(user.getId())).thenReturn(Optional.of(user));
-            when(mediaUtil.uploadPostImage(any(), any()))
-                    .thenThrow(new IllegalArgumentException("Image exceeds 5MB limit"));
-
-            CompletedFileUpload img = mock(CompletedFileUpload.class);
-            when(img.getSize()).thenReturn(6 * 1024 * 1024L);
-
-            IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                    () -> imageService.createPost(new CreatePostRequest("T", "C"),
-                            List.of(img), user.getId()));
-            assertTrue(ex.getMessage().contains("5MB"));
         }
     }
 }

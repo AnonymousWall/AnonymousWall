@@ -8,11 +8,9 @@ import com.anonymous.wall.model.CreatePostRequest;
 import com.anonymous.wall.model.SortBy;
 import com.anonymous.wall.repository.PostRepository;
 import com.anonymous.wall.service.base.*;
-import com.anonymous.wall.util.MediaUtilInterface;
 import io.micronaut.context.event.ApplicationEventPublisher;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
-import io.micronaut.http.multipart.CompletedFileUpload;
 import io.micronaut.transaction.TransactionDefinition;
 import io.micronaut.transaction.annotation.Transactional;
 import jakarta.inject.Inject;
@@ -55,9 +53,6 @@ public class PostsServiceImpl implements PostsService {
     private ApplicationEventPublisher<PostHiddenEvent> postHiddenEventPublisher;
 
     @Inject
-    private MediaUtilInterface mediaUtil;
-
-    @Inject
     private UserBlockService userBlockService;
 
     @Inject
@@ -71,9 +66,9 @@ public class PostsServiceImpl implements PostsService {
      */
     @Override
     @Transactional
-    public Post createPost(CreatePostRequest request, List<CompletedFileUpload> images, UUID userId) {
+    public Post createPost(CreatePostRequest request, UUID userId) {
         // Validate image count before any DB access
-        if (images != null && images.size() > MAX_IMAGES_PER_POST) {
+        if (request.getImageObjectNames() != null && request.getImageObjectNames().size() > MAX_IMAGES_PER_POST) {
             throw new IllegalArgumentException("Maximum " + MAX_IMAGES_PER_POST + " images per post allowed");
         }
 
@@ -81,15 +76,9 @@ public class PostsServiceImpl implements PostsService {
         UserEntity user = fetchUser(userId);
         String schoolDomain = resolveSchoolDomain(wall, user);
 
-        // Upload images
-        List<String> imageUrls = new ArrayList<>();
-        if (images != null) {
-            for (CompletedFileUpload image : images) {
-                if (image != null && image.getSize() > 0) {
-                    imageUrls.add(mediaUtil.uploadPostImage(image, userId));
-                }
-            }
-        }
+        List<String> imageUrls = request.getImageObjectNames() != null
+                ? request.getImageObjectNames()
+                : new ArrayList<>();
 
         Post post = new Post(userId, request.getTitle(), request.getContent(), wall, schoolDomain);
         post.setProfileName(user.getProfileName());

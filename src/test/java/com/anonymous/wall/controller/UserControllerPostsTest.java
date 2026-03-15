@@ -102,16 +102,13 @@ class UserControllerPostsTest {
         void shouldReturnUserOwnPosts() {
             // User1 creates 2 posts
             postsService.createPost(
-                new com.anonymous.wall.model.CreatePostRequest("Title 1", "Content 1"), 
-                null, testUser1.getId());
+                new com.anonymous.wall.model.CreatePostRequest("Title 1", "Content 1"), testUser1.getId());
             postsService.createPost(
-                new com.anonymous.wall.model.CreatePostRequest("Title 2", "Content 2"), 
-                null, testUser1.getId());
+                new com.anonymous.wall.model.CreatePostRequest("Title 2", "Content 2"), testUser1.getId());
 
             // User2 creates 1 post
             postsService.createPost(
-                new com.anonymous.wall.model.CreatePostRequest("Title 3", "Content 3"), 
-                null, testUser2.getId());
+                new com.anonymous.wall.model.CreatePostRequest("Title 3", "Content 3"), testUser2.getId());
 
             String endpoint = BASE_PATH;
             HttpRequest<?> request = HttpRequest.GET(endpoint).bearerAuth(jwtToken1);
@@ -158,15 +155,13 @@ class UserControllerPostsTest {
             // User1 creates 3 posts
             for (int i = 0; i < 3; i++) {
                 postsService.createPost(
-                    new com.anonymous.wall.model.CreatePostRequest("User1 Title " + i, "User1 Content " + i), 
-                    null, testUser1.getId());
+                    new com.anonymous.wall.model.CreatePostRequest("User1 Title " + i, "User1 Content " + i), testUser1.getId());
             }
 
             // User2 creates 5 posts
             for (int i = 0; i < 5; i++) {
                 postsService.createPost(
-                    new com.anonymous.wall.model.CreatePostRequest("User2 Title " + i, "User2 Content " + i), 
-                    null, testUser2.getId());
+                    new com.anonymous.wall.model.CreatePostRequest("User2 Title " + i, "User2 Content " + i), testUser2.getId());
             }
 
             // User1 should only see their 3 posts
@@ -198,8 +193,7 @@ class UserControllerPostsTest {
             // Create 25 posts for user1
             for (int i = 0; i < 25; i++) {
                 postsService.createPost(
-                    new com.anonymous.wall.model.CreatePostRequest("Title " + i, "Content " + i), 
-                    null, testUser1.getId());
+                    new com.anonymous.wall.model.CreatePostRequest("Title " + i, "Content " + i), testUser1.getId());
             }
 
             // Get first page (default limit 20)
@@ -236,8 +230,7 @@ class UserControllerPostsTest {
             // Create 15 posts
             for (int i = 0; i < 15; i++) {
                 postsService.createPost(
-                    new com.anonymous.wall.model.CreatePostRequest("Title " + i, "Content " + i), 
-                    null, testUser1.getId());
+                    new com.anonymous.wall.model.CreatePostRequest("Title " + i, "Content " + i), testUser1.getId());
             }
 
             String endpoint = BASE_PATH + "?page=1&limit=5";
@@ -264,8 +257,7 @@ class UserControllerPostsTest {
             // Create posts with delays to ensure different timestamps
             for (int i = 1; i <= 3; i++) {
                 postsService.createPost(
-                    new com.anonymous.wall.model.CreatePostRequest("Title " + i, "Content " + i), 
-                    null, testUser1.getId());
+                    new com.anonymous.wall.model.CreatePostRequest("Title " + i, "Content " + i), testUser1.getId());
                 Thread.sleep(1000); // 1 second delay to ensure different timestamps
             }
 
@@ -289,8 +281,7 @@ class UserControllerPostsTest {
             // Create posts with delays
             for (int i = 1; i <= 3; i++) {
                 postsService.createPost(
-                    new com.anonymous.wall.model.CreatePostRequest("Title " + i, "Content " + i), 
-                    null, testUser1.getId());
+                    new com.anonymous.wall.model.CreatePostRequest("Title " + i, "Content " + i), testUser1.getId());
                 Thread.sleep(1000); // 1 second delay to ensure different timestamps
             }
 
@@ -313,14 +304,11 @@ class UserControllerPostsTest {
         void shouldSortByMostLiked() {
             // Create posts
             Post post1 = postsService.createPost(
-                new com.anonymous.wall.model.CreatePostRequest("Title 1", "Content 1"), 
-                null, testUser1.getId());
+                new com.anonymous.wall.model.CreatePostRequest("Title 1", "Content 1"), testUser1.getId());
             Post post2 = postsService.createPost(
-                new com.anonymous.wall.model.CreatePostRequest("Title 2", "Content 2"), 
-                null, testUser1.getId());
+                new com.anonymous.wall.model.CreatePostRequest("Title 2", "Content 2"), testUser1.getId());
             Post post3 = postsService.createPost(
-                new com.anonymous.wall.model.CreatePostRequest("Title 3", "Content 3"), 
-                null, testUser1.getId());
+                new com.anonymous.wall.model.CreatePostRequest("Title 3", "Content 3"), testUser1.getId());
 
             // Add likes to simulate different like counts
             // Post2: 5 likes, Post3: 2 likes, Post1: 0 likes
@@ -352,14 +340,11 @@ class UserControllerPostsTest {
         void shouldSortByLeastLiked() {
             // Create posts
             Post post1 = postsService.createPost(
-                new com.anonymous.wall.model.CreatePostRequest("Title 1", "Content 1"), 
-                null, testUser1.getId());
+                new com.anonymous.wall.model.CreatePostRequest("Title 1", "Content 1"), testUser1.getId());
             Post post2 = postsService.createPost(
-                new com.anonymous.wall.model.CreatePostRequest("Title 2", "Content 2"), 
-                null, testUser1.getId());
+                new com.anonymous.wall.model.CreatePostRequest("Title 2", "Content 2"), testUser1.getId());
             Post post3 = postsService.createPost(
-                new com.anonymous.wall.model.CreatePostRequest("Title 3", "Content 3"), 
-                null, testUser1.getId());
+                new com.anonymous.wall.model.CreatePostRequest("Title 3", "Content 3"), testUser1.getId());
 
             // Add likes to simulate different like counts
             // Post2: 5 likes, Post3: 2 likes, Post1: 0 likes
@@ -396,14 +381,11 @@ class UserControllerPostsTest {
         void shouldExcludeHiddenPostsByDefault() {
             // Create 3 posts
             Post post1 = postsService.createPost(
-                new com.anonymous.wall.model.CreatePostRequest("Title 1", "Content 1"), 
-                null, testUser1.getId());
+                new com.anonymous.wall.model.CreatePostRequest("Title 1", "Content 1"), testUser1.getId());
             Post post2 = postsService.createPost(
-                new com.anonymous.wall.model.CreatePostRequest("Title 2", "Content 2"), 
-                null, testUser1.getId());
+                new com.anonymous.wall.model.CreatePostRequest("Title 2", "Content 2"), testUser1.getId());
             postsService.createPost(
-                new com.anonymous.wall.model.CreatePostRequest("Title 3", "Content 3"), 
-                null, testUser1.getId());
+                new com.anonymous.wall.model.CreatePostRequest("Title 3", "Content 3"), testUser1.getId());
 
             // Hide post2
             postsService.hidePost(post2.getId(), testUser1.getId());
@@ -429,8 +411,7 @@ class UserControllerPostsTest {
         @DisplayName("Should handle invalid page parameter")
         void shouldHandleInvalidPageParameter() {
             postsService.createPost(
-                new com.anonymous.wall.model.CreatePostRequest("Title 1", "Content 1"), 
-                null, testUser1.getId());
+                new com.anonymous.wall.model.CreatePostRequest("Title 1", "Content 1"), testUser1.getId());
 
             // Page 0 should default to 1
             String endpoint = BASE_PATH + "?page=0";
@@ -448,8 +429,7 @@ class UserControllerPostsTest {
         @DisplayName("Should handle limit out of bounds")
         void shouldHandleLimitOutOfBounds() {
             postsService.createPost(
-                new com.anonymous.wall.model.CreatePostRequest("Title 1", "Content 1"), 
-                null, testUser1.getId());
+                new com.anonymous.wall.model.CreatePostRequest("Title 1", "Content 1"), testUser1.getId());
 
             // Limit > 100 should default to 20
             String endpoint = BASE_PATH + "?limit=200";
@@ -467,8 +447,7 @@ class UserControllerPostsTest {
         @DisplayName("Should handle page beyond total pages")
         void shouldHandlePageBeyondTotal() {
             postsService.createPost(
-                new com.anonymous.wall.model.CreatePostRequest("Title 1", "Content 1"), 
-                null, testUser1.getId());
+                new com.anonymous.wall.model.CreatePostRequest("Title 1", "Content 1"), testUser1.getId());
 
             // Request page 10 when there's only 1 page
             String endpoint = BASE_PATH + "?page=10";
@@ -493,8 +472,7 @@ class UserControllerPostsTest {
             // Create 100 posts
             for (int i = 0; i < 100; i++) {
                 postsService.createPost(
-                    new com.anonymous.wall.model.CreatePostRequest("Title " + i, "Content " + i), 
-                    null, testUser1.getId());
+                    new com.anonymous.wall.model.CreatePostRequest("Title " + i, "Content " + i), testUser1.getId());
             }
 
             // This should use a single optimized query with the composite index

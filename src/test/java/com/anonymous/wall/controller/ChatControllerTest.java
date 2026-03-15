@@ -194,7 +194,7 @@ class ChatControllerTest {
         void shouldSendImageOnlyMessageSuccessfully() {
             // Arrange
             SendMessageRequest request = new SendMessageRequest(testUser2.getId());
-            request.setImageUrl("https://example.com/chat/image.jpg");
+            request.setImageObjectName("chat/test-image.jpg");
 
             // Act
             HttpResponse<ChatMessageDTO> response = client.toBlocking().exchange(
@@ -207,17 +207,17 @@ class ChatControllerTest {
             assertEquals(HttpStatus.CREATED, response.getStatus());
             assertNotNull(response.body());
             ChatMessageDTO message = response.body();
-            assertEquals("https://example.com/chat/image.jpg", message.getImageUrl());
+            assertEquals("chat/test-image.jpg", message.getImageUrl());
         }
 
         @Test
         @Order(6)
-        @DisplayName("Should send message with both content and imageUrl")
-        void shouldSendMessageWithContentAndImageUrl() {
+        @DisplayName("Should send message with both content and imageObjectName")
+        void shouldSendMessageWithContentAndImageObjectName() {
             // Arrange
             SendMessageRequest request = new SendMessageRequest(testUser2.getId());
             request.setContent("Check this image!");
-            request.setImageUrl("https://example.com/chat/image.jpg");
+            request.setImageObjectName("chat/test-image.jpg");
 
             // Act
             HttpResponse<ChatMessageDTO> response = client.toBlocking().exchange(
@@ -231,7 +231,7 @@ class ChatControllerTest {
             assertNotNull(response.body());
             ChatMessageDTO message = response.body();
             assertEquals("Check this image!", message.getContent());
-            assertEquals("https://example.com/chat/image.jpg", message.getImageUrl());
+            assertEquals("chat/test-image.jpg", message.getImageUrl());
         }
     }
 
