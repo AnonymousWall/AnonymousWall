@@ -11,4 +11,5 @@ public interface PostLikeService {
     void deleteByPostIdAndUserId(UUID postId, UUID userId);
     PostLike save(PostLike postLike);
     List<PostLike> findByUserIdAndPostIdIn(UUID userId, List<UUID> postIds);
+    List<PostLike> findByUserId(UUID userId);
 }

@@ -10,7 +10,7 @@ import io.micronaut.data.repository.CrudRepository;
 import java.util.List;
 import java.util.UUID;
 
-@JdbcRepository(dialect = Dialect.MYSQL)
+@JdbcRepository(dialect = Dialect.ORACLE)
 public interface CommentRepository extends CrudRepository<Comment, UUID> {
 
     // ===== Parent-based queries (replacing postId-based queries) =====

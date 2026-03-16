@@ -5,6 +5,7 @@ import com.anonymous.wall.entity.UserEntity;
 import com.anonymous.wall.model.CreatePostRequest;
 import com.anonymous.wall.repository.PostRepository;
 import com.anonymous.wall.service.base.*;
+import com.anonymous.wall.service.impl.PostsCache;
 import com.anonymous.wall.service.impl.PostsServiceImpl;
 import io.micronaut.context.event.ApplicationEventPublisher;
 import jakarta.inject.Provider;
@@ -45,6 +46,7 @@ class PostsServiceImplImageUploadTest {
             setField("postReportService", mock(PostReportService.class));
             setField("postHiddenEventPublisher", mock(ApplicationEventPublisher.class));
             setField("userBlockService", mock(UserBlockService.class));
+            setField("postsCache", mock(PostsCache.class));
             setProviderField("pollServiceProvider", mock(PollService.class));
         } catch (Exception e) {
             throw new RuntimeException(e);

@@ -10,7 +10,7 @@ import io.micronaut.data.repository.CrudRepository;
 import java.util.Optional;
 import java.util.UUID;
 
-@JdbcRepository(dialect = Dialect.MYSQL)
+@JdbcRepository(dialect = Dialect.ORACLE)
 public interface PostReportRepository extends CrudRepository<PostReport, UUID> {
     
     /**

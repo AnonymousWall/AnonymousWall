@@ -6,6 +6,7 @@ import com.anonymous.wall.model.InternshipDTO;
 import com.anonymous.wall.repository.InternshipRepository;
 import com.anonymous.wall.repository.UserRepository;
 import com.anonymous.wall.service.JwtTokenService;
+import com.anonymous.wall.service.impl.InternshipsCache;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.HttpStatus;
@@ -41,6 +42,9 @@ class InternshipControllerTest {
     @Inject
     private JwtTokenService jwtTokenService;
 
+    @Inject
+    private InternshipsCache internshipsCache;
+
     private static final String BASE_PATH = "/api/v1/internships";
 
     private UserEntity testUser;
@@ -59,10 +63,12 @@ class InternshipControllerTest {
         jwtToken = jwtTokenService.generateToken(testUser);
 
         internshipRepository.deleteAll();
+        internshipsCache.invalidateAll();
     }
 
     @AfterEach
     void tearDown() {
+        internshipsCache.invalidateAll();
         internshipRepository.deleteAll();
     }
 

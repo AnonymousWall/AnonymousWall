@@ -16,7 +16,7 @@ import java.util.UUID;
  * Provides methods for querying messages, conversations, and unread counts.
  * Uses conversationId for efficient querying and indexing.
  */
-@JdbcRepository(dialect = Dialect.MYSQL)
+@JdbcRepository(dialect = Dialect.ORACLE)
 public interface ChatMessageRepository extends CrudRepository<ChatMessage, UUID> {
 
     /**

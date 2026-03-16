@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-@JdbcRepository(dialect = Dialect.MYSQL)
+@JdbcRepository(dialect = Dialect.ORACLE)
 public interface DeviceTokenRepository extends CrudRepository<DeviceToken, UUID> {
 
     Optional<DeviceToken> findByDeviceToken(String deviceToken);

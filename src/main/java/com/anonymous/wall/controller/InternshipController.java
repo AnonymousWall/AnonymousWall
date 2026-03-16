@@ -2,11 +2,9 @@ package com.anonymous.wall.controller;
 
 import com.anonymous.wall.entity.Comment;
 import com.anonymous.wall.entity.Internship;
-import com.anonymous.wall.entity.UserEntity;
 import com.anonymous.wall.model.*;
 import com.anonymous.wall.service.retry.CommentsRetryService;
 import com.anonymous.wall.service.retry.InternshipRetryService;
-import com.anonymous.wall.service.retry.UserRetryService;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
 import io.micronaut.http.HttpRequest;
@@ -39,9 +37,6 @@ public class InternshipController {
 
     @Inject
     private CommentsRetryService commentsRetryService;
-
-    @Inject
-    private UserRetryService userRetryService;
 
 
     private UUID getUserIdFromRequest(HttpRequest<?> request) {
@@ -372,16 +367,7 @@ public class InternshipController {
 
         InternshipDTOAuthor author = new InternshipDTOAuthor();
         author.setId(internship.getUserId().toString());
-
-        Optional<UserEntity> userOpt = userRetryService.findById(internship.getUserId());
-        if (userOpt.isPresent()) {
-            UserEntity user = userOpt.get();
-            author.setProfileName(user.getProfileName());
-        } else {
-            log.warn("User {} not found for internship {}", internship.getUserId(), internship.getId());
-            author.setProfileName("Unknown User");
-        }
-
+        author.setProfileName(internship.getProfileName()); // ← no DB call
         author.setIsAnonymous(false);
         dto.setAuthor(author);
 

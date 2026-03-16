@@ -5,7 +5,6 @@ import com.anonymous.wall.entity.Post;
 import com.anonymous.wall.entity.PostLike;
 import com.anonymous.wall.entity.UserEntity;
 import com.anonymous.wall.entity.PostReport;
-import com.anonymous.wall.event.PostHiddenEvent;
 import com.anonymous.wall.model.CommentParentType;
 import com.anonymous.wall.model.CreateCommentRequest;
 import com.anonymous.wall.model.CreatePostRequest;
@@ -13,13 +12,11 @@ import com.anonymous.wall.model.CreatePostRequestPostType;
 import com.anonymous.wall.model.SortBy;
 import com.anonymous.wall.repository.*;
 import com.anonymous.wall.service.base.*;
+import com.anonymous.wall.service.impl.PostsCache;
 import com.anonymous.wall.service.impl.PostsServiceImpl;
-import com.anonymous.wall.util.MediaUtilInterface;
 import io.micronaut.context.event.ApplicationEventPublisher;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
-import io.micronaut.http.MediaType;
-import io.micronaut.http.multipart.CompletedFileUpload;
 import io.micronaut.test.extensions.junit5.annotation.MicronautTest;
 import jakarta.inject.Inject;
 import jakarta.inject.Provider;
@@ -46,6 +43,7 @@ class PostsServiceImplTest {
     @Inject private CommentRepository commentRepository;
     @Inject private UserRepository userRepository;
     @Inject private PollOptionRepository pollOptionRepository;
+    @Inject private PostsCache postsCache;
 
     // Three shared users — created fresh each test with UUID suffix to avoid email collisions.
     // testUser   = harvard.edu (primary actor)
@@ -57,6 +55,7 @@ class PostsServiceImplTest {
 
     @BeforeEach
     void setUp() {
+        postsCache.invalidateAll();
         postReportRepository.deleteAll();
         postLikeRepository.deleteAll();
         commentRepository.deleteAll();
@@ -81,6 +80,7 @@ class PostsServiceImplTest {
         pollOptionRepository.deleteAll();
         postRepository.deleteAll();
         userRepository.deleteAll();
+        postsCache.invalidateAll();
     }
 
     // ─── Helpers ───────────────────────────────────────────────────────────────
@@ -350,11 +350,11 @@ class PostsServiceImplTest {
         }
 
         @Test
-        @DisplayName("Should throw when user does not exist")
-        void shouldThrowWhenUserNotFound() {
-            assertThrows(IllegalArgumentException.class, () ->
-                    postsService.getPostsByWall("campus",
-                            Pageable.from(0, 20), UUID.randomUUID(), "harvard.edu", SortBy.NEWEST));
+        @DisplayName("Non-existent userId returns empty results — no DB user validation in getPostsByWall")
+        void shouldReturnEmptyForNonExistentUser() {
+            Page<Post> result = postsService.getPostsByWall("campus",
+                    Pageable.from(0, 20), UUID.randomUUID(), "harvard.edu", SortBy.NEWEST);
+            assertTrue(result.isEmpty());
         }
 
         @Test
@@ -1460,6 +1460,7 @@ class PostsServiceImplTest {
             setField("userBlockService",         mock(UserBlockService.class));
             setProviderField("commentsServiceProvider", mock(CommentsService.class));
             setProviderField("pollServiceProvider",     mock(PollService.class));
+            setField("postsCache", mock(PostsCache.class));
         }
 
         private void setField(String name, Object value) throws Exception {

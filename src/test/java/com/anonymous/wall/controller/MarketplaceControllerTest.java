@@ -246,6 +246,7 @@ class MarketplaceControllerTest {
         void shouldGetItemById() {
             MarketplaceItem item = new MarketplaceItem();
             item.setUserId(testUser.getId());
+            item.setProfileName(testUser.getProfileName());
             item.setSchoolDomain("test.edu");
             item.setTitle("Test Item");
             item.setDescription("Description");

@@ -39,4 +39,10 @@ public class PostLikeServiceImpl implements PostLikeService {
     public List<PostLike> findByUserIdAndPostIdIn(UUID userId, List<UUID> postIds) {
         return postLikeRepository.findByUserIdAndPostIdIn(userId, postIds);
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<PostLike> findByUserId(UUID userId) {
+        return postLikeRepository.findByUserId(userId);
+    }
 }

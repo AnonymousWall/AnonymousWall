@@ -8,6 +8,7 @@ import com.anonymous.wall.model.CreatePostRequest;
 import com.anonymous.wall.model.SortBy;
 import com.anonymous.wall.repository.PostRepository;
 import com.anonymous.wall.service.base.*;
+import io.micronaut.cache.annotation.CacheInvalidate;
 import io.micronaut.context.event.ApplicationEventPublisher;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
@@ -58,6 +59,9 @@ public class PostsServiceImpl implements PostsService {
     @Inject
     private Provider<PollService> pollServiceProvider;
 
+    @Inject
+    private PostsCache postsCache;
+
     /**
      * Create a new post with optional image uploads (up to 5 images).
      * Images are uploaded before the transaction begins; the post and any
@@ -66,6 +70,7 @@ public class PostsServiceImpl implements PostsService {
      */
     @Override
     @Transactional
+    @CacheInvalidate(cacheNames = "national-posts", all = true)
     public Post createPost(CreatePostRequest request, UUID userId) {
         // Validate image count before any DB access
         if (request.getImageObjectNames() != null && request.getImageObjectNames().size() > MAX_IMAGES_PER_POST) {
@@ -177,12 +182,6 @@ public class PostsServiceImpl implements PostsService {
             throw new IllegalArgumentException("Wall must be 'campus' or 'national'");
         }
 
-        // Fetch user
-        Optional<UserEntity> userOpt = userService.findById(currentUserId);
-        if (userOpt.isEmpty()) {
-            throw new IllegalArgumentException("User not found");
-        }
-
         if (sortBy == null) {
             sortBy = SortBy.NEWEST; // Default sorting
         }
@@ -193,7 +192,7 @@ public class PostsServiceImpl implements PostsService {
 
         if (wall.equals("national")) {
             // National posts are visible to all users
-            posts = getPostsWithSort("national", null, pageable, sortBy);
+            posts = getPostsWithSort(null, pageable, sortBy);
             log.debug("Retrieved {} national posts (sort: {}) for user: {}", posts.getNumberOfElements(), sortBy, currentUserId);
         } else {
             // Campus posts: only visible to users from the same school
@@ -202,7 +201,7 @@ public class PostsServiceImpl implements PostsService {
                 log.warn("User has no school domain, cannot retrieve campus posts with sort: {}", currentUserId);
                 posts = Page.empty();
             } else {
-                posts = getPostsWithSort("campus", schoolDomain, pageable, sortBy);
+                posts = getPostsWithSort(schoolDomain, pageable, sortBy);
                 log.debug("Retrieved {} campus posts (sort: {}) for user: {}, schoolDomain: {}", posts.getNumberOfElements(), sortBy, currentUserId, schoolDomain);
             }
         }
@@ -229,28 +228,9 @@ public class PostsServiceImpl implements PostsService {
     /**
      * Helper method to get posts with specified sorting
      */
-    private Page<Post> getPostsWithSort(String wall, String schoolDomain, Pageable pageable, SortBy sortBy) {
-        if (schoolDomain == null) {
-            // National posts (filter hidden)
-            return switch (sortBy) {
-                case NEWEST -> postRepository.findByWallAndHiddenFalseOrderByCreatedAtDesc(wall, pageable);
-                case OLDEST -> postRepository.findByWallAndHiddenFalseOrderByCreatedAtAsc(wall, pageable);
-                case MOST_LIKED -> postRepository.findByWallAndHiddenFalseOrderByLikeCountDesc(wall, pageable);
-                case LEAST_LIKED -> postRepository.findByWallAndHiddenFalseOrderByLikeCountAsc(wall, pageable);
-                case MOST_COMMENTED -> postRepository.findByWallAndHiddenFalseOrderByCommentCountDesc(wall, pageable);
-                case LEAST_COMMENTED -> postRepository.findByWallAndHiddenFalseOrderByCommentCountAsc(wall, pageable);
-            };
-        } else {
-            // Campus posts (filter hidden)
-            return switch (sortBy) {
-                case NEWEST -> postRepository.findByWallAndSchoolDomainAndHiddenFalseOrderByCreatedAtDesc(wall, schoolDomain, pageable);
-                case OLDEST -> postRepository.findByWallAndSchoolDomainAndHiddenFalseOrderByCreatedAtAsc(wall, schoolDomain, pageable);
-                case MOST_LIKED -> postRepository.findByWallAndSchoolDomainAndHiddenFalseOrderByLikeCountDesc(wall, schoolDomain, pageable);
-                case LEAST_LIKED -> postRepository.findByWallAndSchoolDomainAndHiddenFalseOrderByLikeCountAsc(wall, schoolDomain, pageable);
-                case MOST_COMMENTED -> postRepository.findByWallAndSchoolDomainAndHiddenFalseOrderByCommentCountDesc(wall, schoolDomain, pageable);
-                case LEAST_COMMENTED -> postRepository.findByWallAndSchoolDomainAndHiddenFalseOrderByCommentCountAsc(wall, schoolDomain, pageable);
-            };
-        }
+    private Page<Post> getPostsWithSort(String schoolDomain, Pageable pageable, SortBy sortBy) {
+        // Both national (schoolDomain=null) and campus now go through the cache
+        return postsCache.get(pageable.getNumber(), pageable.getSize(), sortBy, schoolDomain);
     }
 
     /**
@@ -414,6 +394,7 @@ public class PostsServiceImpl implements PostsService {
      */
     @Override
     @Transactional
+    @CacheInvalidate(cacheNames = "national-posts", all = true)
     public Post hidePost(UUID postId, UUID userId) {
         // Verify post exists
         Optional<Post> postOpt = postRepository.findById(postId);
@@ -442,6 +423,7 @@ public class PostsServiceImpl implements PostsService {
         log.debug("Published PostHiddenEvent for postId={}", postId);
 
         log.info("Post hidden: id={}, user={}", postId, userId);
+        postsCache.invalidateAll();
         return updatedPost;
     }
 
@@ -452,6 +434,7 @@ public class PostsServiceImpl implements PostsService {
      */
     @Override
     @Transactional
+    @CacheInvalidate(cacheNames = "national-posts", all = true)
     public Post unhidePost(UUID postId, UUID userId) {
         // Verify post exists
         Optional<Post> postOpt = postRepository.findById(postId);
@@ -479,6 +462,7 @@ public class PostsServiceImpl implements PostsService {
         commentsServiceProvider.get().updateByParentTypeAndParentId("POST", postId, false);
 
         log.info("Post unhidden: id={}, user={}", postId, userId);
+        postsCache.invalidateAll();
         return updatedPost;
     }
 

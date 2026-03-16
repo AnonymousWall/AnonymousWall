@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-@JdbcRepository(dialect = Dialect.MYSQL)
+@JdbcRepository(dialect = Dialect.ORACLE)
 public interface MarketplaceItemRepository extends CrudRepository<MarketplaceItem, UUID> {
 
     Page<MarketplaceItem> findAllOrderByCreatedAtDesc(Pageable pageable);

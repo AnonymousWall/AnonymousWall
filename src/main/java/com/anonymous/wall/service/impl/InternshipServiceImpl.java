@@ -9,6 +9,7 @@ import com.anonymous.wall.service.base.CommentsService;
 import com.anonymous.wall.service.base.InternshipService;
 import com.anonymous.wall.service.base.UserBlockService;
 import com.anonymous.wall.service.base.UserService;
+import io.micronaut.cache.annotation.CacheInvalidate;
 import io.micronaut.context.event.ApplicationEventPublisher;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
@@ -48,8 +49,12 @@ public class InternshipServiceImpl implements InternshipService {
     @Inject
     private UserBlockService userBlockService;
 
+    @Inject
+    private InternshipsCache internshipsCache;
+
     @Override
     @Transactional
+    @CacheInvalidate(cacheNames = "national-internships", all = true)
     public Internship createInternship(CreateInternshipRequest request, UUID userId) {
         log.info("Creating internship for user {}", userId);
 
@@ -139,41 +144,16 @@ public class InternshipServiceImpl implements InternshipService {
     public Page<Internship> getInternshipsByWall(String wall, Pageable pageable, UUID userId, String schoolDomain, String sortBy) {
         log.info("Listing internships by wall={}, sortBy={}, schoolDomain={}", wall, sortBy, schoolDomain);
 
-        if (sortBy == null) {
-            sortBy = "newest";
+        if (sortBy == null) sortBy = "newest";
+
+        if ("campus".equals(wall) && (schoolDomain == null || schoolDomain.trim().isEmpty())) {
+            throw new IllegalArgumentException("School domain is required to view campus internships");
         }
 
-        Page<Internship> result;
+        Page<Internship> result = internshipsCache.get(
+                pageable.getNumber(), pageable.getSize(), sortBy,
+                "campus".equals(wall) ? schoolDomain : null);
 
-        if ("campus".equals(wall)) {
-            if (schoolDomain == null || schoolDomain.trim().isEmpty()) {
-                throw new IllegalArgumentException("School domain is required to view campus internships");
-            }
-            switch (sortBy.toLowerCase()) {
-                case "oldest":
-                    result = internshipRepository.findByWallAndSchoolDomainAndHiddenFalseOrderByCreatedAtAsc("campus", schoolDomain, pageable);
-                    break;
-                case "newest":
-                default:
-                    result = internshipRepository.findByWallAndSchoolDomainAndHiddenFalseOrderByCreatedAtDesc("campus", schoolDomain, pageable);
-                    break;
-            }
-        } else {
-            // National wall
-            switch (sortBy.toLowerCase()) {
-                case "oldest":
-                    result = internshipRepository.findByWallAndHiddenFalseOrderByCreatedAtAsc("national", pageable);
-                    break;
-                case "newest":
-                default:
-                    result = internshipRepository.findByWallAndHiddenFalseOrderByCreatedAtDesc("national", pageable);
-                    break;
-            }
-        }
-
-        // Filter out internships from users blocked in either direction.
-        // Note: pagination total is approximated; for perfectly accurate counts,
-        // a DB-level NOT IN query would be required.
         Set<UUID> blockedUserIds = userBlockService.getCombinedBlockedUserIds(userId);
         if (!blockedUserIds.isEmpty()) {
             List<Internship> filtered = result.getContent().stream()
@@ -223,6 +203,7 @@ public class InternshipServiceImpl implements InternshipService {
 
     @Override
     @Transactional
+    @CacheInvalidate(cacheNames = "national-internships", all = true)
     public void hideInternship(UUID internshipId, UUID userId) {
         log.info("Hiding internship {} for user {}", internshipId, userId);
 
@@ -244,10 +225,12 @@ public class InternshipServiceImpl implements InternshipService {
         internshipHiddenEventPublisher.publishEvent(new InternshipHiddenEvent(internshipId, userId));
         log.debug("Published InternshipHiddenEvent for internshipId={}", internshipId);
         log.info("Hid internship {}", internshipId);
+        internshipsCache.invalidateAll();
     }
 
     @Override
     @Transactional
+    @CacheInvalidate(cacheNames = "national-internships", all = true)
     public void unhideInternship(UUID internshipId, UUID userId) {
         log.info("Unhiding internship {} for user {}", internshipId, userId);
 
@@ -267,6 +250,7 @@ public class InternshipServiceImpl implements InternshipService {
         internshipRepository.update(internship);
         // Unhide all comments associated with this internship (within same transaction)
         commentsServiceProvider.get().updateByParentTypeAndParentId("INTERNSHIP", internshipId, false);
+        internshipsCache.invalidateAll();
         log.info("Unhid internship {}", internshipId);
     }
 

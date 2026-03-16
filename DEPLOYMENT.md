@@ -173,6 +173,20 @@ Useful commands:
   - Stop app:        podman-compose -f docker-compose.prod.yml down
   - Restart app:     podman-compose -f docker-compose.prod.yml restart
   - Health check:    curl http://localhost:8080/health
+    df -h
+    du -sh /home/opc/.local/share/containers/
+    
+    # Remove stopped containers
+    podman container prune -f
+    
+    # Remove unused images
+    podman image prune -a -f
+    
+    # Remove build cache
+    podman system prune -a -f
+    
+    # Check how much was freed
+    df -h
 ```
 
 The script will:

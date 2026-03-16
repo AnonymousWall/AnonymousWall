@@ -11,10 +11,10 @@ import com.anonymous.wall.service.base.MarketplaceService;
 import com.anonymous.wall.service.base.UserBlockService;
 import com.anonymous.wall.service.base.UserService;
 import com.anonymous.wall.util.MediaUtilInterface;
+import io.micronaut.cache.annotation.CacheInvalidate;
 import io.micronaut.context.event.ApplicationEventPublisher;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
-import io.micronaut.http.multipart.CompletedFileUpload;
 import jakarta.inject.Inject;
 import jakarta.inject.Provider;
 import io.micronaut.transaction.TransactionDefinition;
@@ -56,8 +56,12 @@ public class MarketplaceServiceImpl implements MarketplaceService {
     @Inject
     private UserBlockService userBlockService;
 
+    @Inject
+    private MarketplaceCache marketplaceCache;
+
     @Override
     @Transactional
+    @CacheInvalidate(cacheNames = "national-marketplace", all = true)
     public MarketplaceItem createItem(CreateItemRequest request, UUID userId) {
         log.info("Creating marketplace item for user {}", userId);
 
@@ -238,81 +242,13 @@ public class MarketplaceServiceImpl implements MarketplaceService {
             sortBy = "newest";
         }
 
-        Page<MarketplaceItem> result;
-
-        if ("campus".equals(wall)) {
-            if (schoolDomain == null || schoolDomain.trim().isEmpty()) {
-                throw new IllegalArgumentException("School domain is required to view campus marketplace items");
-            }
-            if (category != null) {
-                switch (sortBy.toLowerCase()) {
-                    case "oldest":
-                        result = marketplaceItemRepository.findByWallAndSchoolDomainAndCategoryAndHiddenFalseOrderByCreatedAtAsc("campus", schoolDomain, category, pageable);
-                        break;
-                    case "price-asc":
-                        result = marketplaceItemRepository.findByWallAndSchoolDomainAndCategoryAndHiddenFalseOrderByPriceAsc("campus", schoolDomain, category, pageable);
-                        break;
-                    case "price-desc":
-                        result = marketplaceItemRepository.findByWallAndSchoolDomainAndCategoryAndHiddenFalseOrderByPriceDesc("campus", schoolDomain, category, pageable);
-                        break;
-                    case "newest":
-                    default:
-                        result = marketplaceItemRepository.findByWallAndSchoolDomainAndCategoryAndHiddenFalseOrderByCreatedAtDesc("campus", schoolDomain, category, pageable);
-                        break;
-                }
-            } else {
-                switch (sortBy.toLowerCase()) {
-                    case "oldest":
-                        result = marketplaceItemRepository.findByWallAndSchoolDomainAndHiddenFalseOrderByCreatedAtAsc("campus", schoolDomain, pageable);
-                        break;
-                    case "price-asc":
-                        result = marketplaceItemRepository.findByWallAndSchoolDomainAndHiddenFalseOrderByPriceAsc("campus", schoolDomain, pageable);
-                        break;
-                    case "price-desc":
-                        result = marketplaceItemRepository.findByWallAndSchoolDomainAndHiddenFalseOrderByPriceDesc("campus", schoolDomain, pageable);
-                        break;
-                    case "newest":
-                    default:
-                        result = marketplaceItemRepository.findByWallAndSchoolDomainAndHiddenFalseOrderByCreatedAtDesc("campus", schoolDomain, pageable);
-                        break;
-                }
-            }
-        } else {
-            // National wall
-            if (category != null) {
-                switch (sortBy.toLowerCase()) {
-                    case "oldest":
-                        result = marketplaceItemRepository.findByWallAndCategoryAndHiddenFalseOrderByCreatedAtAsc("national", category, pageable);
-                        break;
-                    case "price-asc":
-                        result = marketplaceItemRepository.findByWallAndCategoryAndHiddenFalseOrderByPriceAsc("national", category, pageable);
-                        break;
-                    case "price-desc":
-                        result = marketplaceItemRepository.findByWallAndCategoryAndHiddenFalseOrderByPriceDesc("national", category, pageable);
-                        break;
-                    case "newest":
-                    default:
-                        result = marketplaceItemRepository.findByWallAndCategoryAndHiddenFalseOrderByCreatedAtDesc("national", category, pageable);
-                        break;
-                }
-            } else {
-                switch (sortBy.toLowerCase()) {
-                    case "oldest":
-                        result = marketplaceItemRepository.findByWallAndHiddenFalseOrderByCreatedAtAsc("national", pageable);
-                        break;
-                    case "price-asc":
-                        result = marketplaceItemRepository.findByWallAndHiddenFalseOrderByPriceAsc("national", pageable);
-                        break;
-                    case "price-desc":
-                        result = marketplaceItemRepository.findByWallAndHiddenFalseOrderByPriceDesc("national", pageable);
-                        break;
-                    case "newest":
-                    default:
-                        result = marketplaceItemRepository.findByWallAndHiddenFalseOrderByCreatedAtDesc("national", pageable);
-                        break;
-                }
-            }
+        if ("campus".equals(wall) && (schoolDomain == null || schoolDomain.trim().isEmpty())) {
+            throw new IllegalArgumentException("School domain is required to view campus marketplace items");
         }
+
+        Page<MarketplaceItem> result = marketplaceCache.get(
+                pageable.getNumber(), pageable.getSize(), sortBy, category,
+                "campus".equals(wall) ? schoolDomain : null);
 
         // Filter out items from users blocked in either direction.
         // Note: pagination total is approximated; for perfectly accurate counts,
@@ -391,6 +327,7 @@ public class MarketplaceServiceImpl implements MarketplaceService {
 
     @Override
     @Transactional
+    @CacheInvalidate(cacheNames = "national-marketplace", all = true)
     public void hideItem(UUID itemId, UUID userId) {
         log.info("Hiding marketplace item {} for user {}", itemId, userId);
         MarketplaceItem item = marketplaceItemRepository.findById(itemId)
@@ -405,10 +342,12 @@ public class MarketplaceServiceImpl implements MarketplaceService {
         marketplaceItemHiddenEventPublisher.publishEvent(new MarketplaceItemHiddenEvent(itemId, userId));
         log.debug("Published MarketplaceItemHiddenEvent for itemId={}", itemId);
         log.info("Hid marketplace item {}", itemId);
+        marketplaceCache.invalidateAll();
     }
 
     @Override
     @Transactional
+    @CacheInvalidate(cacheNames = "national-marketplace", all = true)
     public void unhideItem(UUID itemId, UUID userId) {
         log.info("Unhiding marketplace item {} for user {}", itemId, userId);
         MarketplaceItem item = marketplaceItemRepository.findById(itemId)
@@ -422,6 +361,7 @@ public class MarketplaceServiceImpl implements MarketplaceService {
         // Unhide all comments associated with this item (within same transaction)
         commentsServiceProvider.get().updateByParentTypeAndParentId("MARKETPLACE", itemId, false);
         log.info("Unhid marketplace item {}", itemId);
+        marketplaceCache.invalidateAll();
     }
 
     @Override

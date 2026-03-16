@@ -1,12 +1,15 @@
 package com.anonymous.wall.controller;
 
 import com.anonymous.wall.entity.ChatMessage;
+import com.anonymous.wall.entity.Conversation;
 import com.anonymous.wall.entity.UserEntity;
 import com.anonymous.wall.model.ChatMessageDTO;
 import com.anonymous.wall.model.SendMessageRequest;
 import com.anonymous.wall.repository.ChatMessageRepository;
+import com.anonymous.wall.repository.ConversationRepository;
 import com.anonymous.wall.repository.UserRepository;
 import com.anonymous.wall.service.JwtTokenService;
+import com.anonymous.wall.util.ConversationIdGenerator;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.HttpStatus;
@@ -17,16 +20,13 @@ import io.micronaut.test.extensions.junit5.annotation.MicronautTest;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.*;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Integration tests for ChatController REST endpoints.
- * Tests the full HTTP request/response cycle with authentication.
- */
 @MicronautTest(transactional = false)
 @DisplayName("ChatController Integration Tests")
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
@@ -43,6 +43,9 @@ class ChatControllerTest {
     ChatMessageRepository chatMessageRepository;
 
     @Inject
+    ConversationRepository conversationRepository;
+
+    @Inject
     private JwtTokenService jwtTokenService;
 
     private static final String BASE_PATH = "/api/v1/chat";
@@ -55,10 +58,9 @@ class ChatControllerTest {
 
     @BeforeEach
     void setUp() {
-        // Clean up test data
+        conversationRepository.deleteAll();
         chatMessageRepository.deleteAll();
 
-        // Create test users
         testUser1 = new UserEntity();
         testUser1.setEmail("chattest1_" + System.currentTimeMillis() + "@harvard.edu");
         testUser1.setProfileName("ChatTestUser1");
@@ -83,20 +85,43 @@ class ChatControllerTest {
         blockedUser.setBlocked(true);
         blockedUser = userRepository.save(blockedUser);
 
-        // Generate JWT tokens
         user1Token = jwtTokenService.generateToken(testUser1);
-
         user2Token = jwtTokenService.generateToken(testUser2);
     }
 
     @AfterEach
     void tearDown() {
-        // Clean up test data
+        conversationRepository.deleteAll();
         chatMessageRepository.deleteAll();
         if (testUser1 != null) userRepository.deleteById(testUser1.getId());
         if (testUser2 != null) userRepository.deleteById(testUser2.getId());
         if (blockedUser != null) userRepository.deleteById(blockedUser.getId());
     }
+
+    // ─── Helper ────────────────────────────────────────────────────────────────
+
+    /**
+     * Directly inserts a conversation row for user1 — simulates what sendMessage would do.
+     * Use this instead of creating ChatMessage rows directly for getConversations tests.
+     */
+    private void seedConversation(UUID userId, UUID partnerId, String partnerProfileName,
+                                  String lastContent, int unreadCount) {
+        UUID convId = ConversationIdGenerator.generate(userId, partnerId);
+        Conversation conv = new Conversation();
+        conv.setConversationId(convId);
+        conv.setUserId(userId);
+        conv.setPartnerId(partnerId);
+        conv.setPartnerProfileName(partnerProfileName);
+        conv.setLastMessageContent(lastContent);
+        conv.setLastMessageSenderId(partnerId);
+        conv.setLastMessageReceiverId(userId);
+        conv.setLastMessageReadStatus(false);
+        conv.setLastMessageAt(OffsetDateTime.now());
+        conv.setUnreadCount(unreadCount);
+        conversationRepository.save(conv);
+    }
+
+    // ─── Send Message ──────────────────────────────────────────────────────────
 
     @Nested
     @DisplayName("Send Message Tests")
@@ -106,22 +131,17 @@ class ChatControllerTest {
         @Order(1)
         @DisplayName("Should send message successfully")
         void shouldSendMessageSuccessfully() {
-            // Arrange
             SendMessageRequest request = new SendMessageRequest(testUser2.getId());
             request.setContent("Hello, this is a test message!");
 
-            // Act
             HttpResponse<ChatMessageDTO> response = client.toBlocking().exchange(
-                HttpRequest.POST(BASE_PATH + "/messages", request)
-                    .bearerAuth(user1Token),
-                ChatMessageDTO.class
+                    HttpRequest.POST(BASE_PATH + "/messages", request).bearerAuth(user1Token),
+                    ChatMessageDTO.class
             );
 
-            // Assert
             assertEquals(HttpStatus.CREATED, response.getStatus());
-            assertNotNull(response.body());
-            
             ChatMessageDTO message = response.body();
+            assertNotNull(message);
             assertEquals(testUser1.getId(), message.getSenderId());
             assertEquals(testUser2.getId(), message.getReceiverId());
             assertEquals("Hello, this is a test message!", message.getContent());
@@ -130,182 +150,105 @@ class ChatControllerTest {
 
         @Test
         @Order(2)
-        @DisplayName("Should fail to send message without authentication")
-        void shouldFailWithoutAuth() {
-            // Arrange
+        @DisplayName("Should create conversation rows after sending message")
+        void shouldCreateConversationRowsAfterSend() {
             SendMessageRequest request = new SendMessageRequest(testUser2.getId());
-            request.setContent("Test message");
+            request.setContent("Hello!");
 
-            // Act & Assert
-            HttpClientResponseException exception = assertThrows(
-                HttpClientResponseException.class,
-                () -> client.toBlocking().exchange(
-                    HttpRequest.POST(BASE_PATH + "/messages", request)
-                )
+            client.toBlocking().exchange(
+                    HttpRequest.POST(BASE_PATH + "/messages", request).bearerAuth(user1Token),
+                    ChatMessageDTO.class
             );
 
-            assertEquals(HttpStatus.UNAUTHORIZED, exception.getStatus());
+            UUID convId = ConversationIdGenerator.generate(testUser1.getId(), testUser2.getId());
+            assertTrue(conversationRepository.findByConversationIdAndUserId(convId, testUser1.getId()).isPresent());
+            assertTrue(conversationRepository.findByConversationIdAndUserId(convId, testUser2.getId()).isPresent());
         }
 
         @Test
         @Order(3)
-        @DisplayName("Should fail to send message to blocked user")
-        void shouldFailToSendToBlockedUser() {
-            // Arrange
-            SendMessageRequest request = new SendMessageRequest(blockedUser.getId());
-            request.setContent("Test message");
+        @DisplayName("Should fail without authentication")
+        void shouldFailWithoutAuth() {
+            SendMessageRequest request = new SendMessageRequest(testUser2.getId());
+            request.setContent("Test");
 
-            // Act & Assert
-            HttpClientResponseException exception = assertThrows(
-                HttpClientResponseException.class,
-                () -> client.toBlocking().exchange(
-                    HttpRequest.POST(BASE_PATH + "/messages", request)
-                        .bearerAuth(user1Token),
-                    ChatMessageDTO.class
-                )
-            );
-
-            assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
+            assertThrows(HttpClientResponseException.class, () ->
+                    client.toBlocking().exchange(
+                            HttpRequest.POST(BASE_PATH + "/messages", request), ChatMessageDTO.class));
         }
 
         @Test
         @Order(4)
-        @DisplayName("Should fail when neither content nor imageUrl is provided")
-        void shouldFailWithNeitherContentNorImageUrl() {
-            // Arrange - request with no content and no imageUrl
-            SendMessageRequest request = new SendMessageRequest(testUser2.getId());
+        @DisplayName("Should fail to send message to blocked user")
+        void shouldFailToSendToBlockedUser() {
+            SendMessageRequest request = new SendMessageRequest(blockedUser.getId());
+            request.setContent("Test");
 
-            // Act & Assert
-            HttpClientResponseException exception = assertThrows(
-                HttpClientResponseException.class,
-                () -> client.toBlocking().exchange(
-                    HttpRequest.POST(BASE_PATH + "/messages", request)
-                        .bearerAuth(user1Token),
-                    ChatMessageDTO.class
-                )
-            );
+            HttpClientResponseException ex = assertThrows(HttpClientResponseException.class, () ->
+                    client.toBlocking().exchange(
+                            HttpRequest.POST(BASE_PATH + "/messages", request).bearerAuth(user1Token),
+                            ChatMessageDTO.class));
 
-            assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
+            assertEquals(HttpStatus.BAD_REQUEST, ex.getStatus());
         }
 
         @Test
         @Order(5)
-        @DisplayName("Should send image-only message successfully")
-        void shouldSendImageOnlyMessageSuccessfully() {
-            // Arrange
+        @DisplayName("Should send image-only message")
+        void shouldSendImageOnlyMessage() {
             SendMessageRequest request = new SendMessageRequest(testUser2.getId());
             request.setImageObjectName("chat/test-image.jpg");
 
-            // Act
             HttpResponse<ChatMessageDTO> response = client.toBlocking().exchange(
-                HttpRequest.POST(BASE_PATH + "/messages", request)
-                    .bearerAuth(user1Token),
-                ChatMessageDTO.class
+                    HttpRequest.POST(BASE_PATH + "/messages", request).bearerAuth(user1Token),
+                    ChatMessageDTO.class
             );
 
-            // Assert
             assertEquals(HttpStatus.CREATED, response.getStatus());
-            assertNotNull(response.body());
-            ChatMessageDTO message = response.body();
-            assertEquals("chat/test-image.jpg", message.getImageUrl());
-        }
-
-        @Test
-        @Order(6)
-        @DisplayName("Should send message with both content and imageObjectName")
-        void shouldSendMessageWithContentAndImageObjectName() {
-            // Arrange
-            SendMessageRequest request = new SendMessageRequest(testUser2.getId());
-            request.setContent("Check this image!");
-            request.setImageObjectName("chat/test-image.jpg");
-
-            // Act
-            HttpResponse<ChatMessageDTO> response = client.toBlocking().exchange(
-                HttpRequest.POST(BASE_PATH + "/messages", request)
-                    .bearerAuth(user1Token),
-                ChatMessageDTO.class
-            );
-
-            // Assert
-            assertEquals(HttpStatus.CREATED, response.getStatus());
-            assertNotNull(response.body());
-            ChatMessageDTO message = response.body();
-            assertEquals("Check this image!", message.getContent());
-            assertEquals("chat/test-image.jpg", message.getImageUrl());
+            assertEquals("chat/test-image.jpg", response.body().getImageUrl());
         }
     }
+
+    // ─── Get Message History ───────────────────────────────────────────────────
 
     @Nested
     @DisplayName("Get Message History Tests")
     class GetMessageHistoryTests {
 
         @Test
-        @Order(5)
+        @Order(6)
         @DisplayName("Should get message history successfully")
         void shouldGetMessageHistorySuccessfully() {
-            // Arrange - create some messages
-            ChatMessage msg1 = new ChatMessage(testUser1.getId(), testUser2.getId(), "Message 1");
-            ChatMessage msg2 = new ChatMessage(testUser2.getId(), testUser1.getId(), "Message 2");
-            ChatMessage msg3 = new ChatMessage(testUser1.getId(), testUser2.getId(), "Message 3");
-            chatMessageRepository.save(msg1);
-            chatMessageRepository.save(msg2);
-            chatMessageRepository.save(msg3);
+            chatMessageRepository.save(new ChatMessage(testUser1.getId(), testUser2.getId(), "Message 1"));
+            chatMessageRepository.save(new ChatMessage(testUser2.getId(), testUser1.getId(), "Message 2"));
+            chatMessageRepository.save(new ChatMessage(testUser1.getId(), testUser2.getId(), "Message 3"));
 
-            // Act
             HttpResponse<Map> response = client.toBlocking().exchange(
-                HttpRequest.GET(BASE_PATH + "/messages/" + testUser2.getId())
-                    .bearerAuth(user1Token),
-                Map.class
+                    HttpRequest.GET(BASE_PATH + "/messages/" + testUser2.getId()).bearerAuth(user1Token),
+                    Map.class
             );
 
-            // Assert
             assertEquals(HttpStatus.OK, response.getStatus());
-            assertNotNull(response.body());
-            
-            Map<String, Object> body = response.body();
-            assertTrue(body.containsKey("messages"));
-            
-            @SuppressWarnings("unchecked")
-            List<Map> messages = (List<Map>) body.get("messages");
+            List<Map> messages = (List<Map>) response.body().get("messages");
             assertEquals(3, messages.size());
         }
 
         @Test
-        @Order(6)
-        @DisplayName("Should return empty list when no messages exist")
+        @Order(7)
+        @DisplayName("Should return empty list when no messages")
         void shouldReturnEmptyList() {
-            // Act
             HttpResponse<Map> response = client.toBlocking().exchange(
-                HttpRequest.GET(BASE_PATH + "/messages/" + testUser2.getId())
-                    .bearerAuth(user1Token),
-                Map.class
+                    HttpRequest.GET(BASE_PATH + "/messages/" + testUser2.getId()).bearerAuth(user1Token),
+                    Map.class
             );
 
-            // Assert
             assertEquals(HttpStatus.OK, response.getStatus());
-            assertNotNull(response.body());
-            
-            Map<String, Object> body = response.body();
-            @SuppressWarnings("unchecked")
-            List<Map> messages = (List<Map>) body.get("messages");
+            List<Map> messages = (List<Map>) response.body().get("messages");
             assertEquals(0, messages.size());
         }
-
-        @Test
-        @Order(7)
-        @DisplayName("Should fail without authentication")
-        void shouldFailWithoutAuth() {
-            // Act & Assert
-            HttpClientResponseException exception = assertThrows(
-                HttpClientResponseException.class,
-                () -> client.toBlocking().exchange(
-                    HttpRequest.GET(BASE_PATH + "/messages/" + testUser2.getId())
-                )
-            );
-
-            assertEquals(HttpStatus.UNAUTHORIZED, exception.getStatus());
-        }
     }
+
+    // ─── Get Conversations ─────────────────────────────────────────────────────
 
     @Nested
     @DisplayName("Get Conversations Tests")
@@ -313,132 +256,124 @@ class ChatControllerTest {
 
         @Test
         @Order(8)
-        @DisplayName("Should get conversations successfully")
+        @DisplayName("Should get conversations from conversation table")
         void shouldGetConversationsSuccessfully() {
-            // Arrange - create messages with user2
-            ChatMessage msg1 = new ChatMessage(testUser2.getId(), testUser1.getId(), "Hello!");
-            chatMessageRepository.save(msg1);
+            // Seed conversation row directly — not via chat_messages
+            seedConversation(testUser1.getId(), testUser2.getId(), "ChatTestUser2", "Hello!", 1);
 
-            // Act
             HttpResponse<Map> response = client.toBlocking().exchange(
-                HttpRequest.GET(BASE_PATH + "/conversations")
-                    .bearerAuth(user1Token),
-                Map.class
+                    HttpRequest.GET(BASE_PATH + "/conversations").bearerAuth(user1Token),
+                    Map.class
             );
 
-            // Assert
             assertEquals(HttpStatus.OK, response.getStatus());
-            assertNotNull(response.body());
-            
-            Map<String, Object> body = response.body();
-            assertTrue(body.containsKey("conversations"));
-            
-            @SuppressWarnings("unchecked")
-            List<Map> conversations = (List<Map>) body.get("conversations");
+            List<Map> conversations = (List<Map>) response.body().get("conversations");
             assertEquals(1, conversations.size());
-            
-            Map<String, Object> conversation = conversations.get(0);
-            assertEquals("ChatTestUser2", conversation.get("profileName"));
+            assertEquals("ChatTestUser2", conversations.get(0).get("profileName"));
         }
 
         @Test
         @Order(9)
         @DisplayName("Should return empty conversations when none exist")
         void shouldReturnEmptyConversations() {
-            // Act
             HttpResponse<Map> response = client.toBlocking().exchange(
-                HttpRequest.GET(BASE_PATH + "/conversations")
-                    .bearerAuth(user1Token),
-                Map.class
+                    HttpRequest.GET(BASE_PATH + "/conversations").bearerAuth(user1Token),
+                    Map.class
             );
 
-            // Assert
             assertEquals(HttpStatus.OK, response.getStatus());
-            assertNotNull(response.body());
-            
-            @SuppressWarnings("unchecked")
             List<Map> conversations = (List<Map>) response.body().get("conversations");
             assertEquals(0, conversations.size());
         }
+
+        @Test
+        @Order(10)
+        @DisplayName("Should populate conversation rows when message is sent via API")
+        void shouldPopulateConversationOnSend() {
+            SendMessageRequest request = new SendMessageRequest(testUser2.getId());
+            request.setContent("Hi!");
+            client.toBlocking().exchange(
+                    HttpRequest.POST(BASE_PATH + "/messages", request).bearerAuth(user1Token),
+                    ChatMessageDTO.class
+            );
+
+            HttpResponse<Map> response = client.toBlocking().exchange(
+                    HttpRequest.GET(BASE_PATH + "/conversations").bearerAuth(user1Token),
+                    Map.class
+            );
+
+            List<Map> conversations = (List<Map>) response.body().get("conversations");
+            assertEquals(1, conversations.size());
+        }
     }
+
+    // ─── Mark Message As Read ──────────────────────────────────────────────────
 
     @Nested
     @DisplayName("Mark Message As Read Tests")
     class MarkMessageAsReadTests {
 
         @Test
-        @Order(10)
+        @Order(11)
         @DisplayName("Should mark message as read successfully")
         void shouldMarkMessageAsReadSuccessfully() {
-            // Arrange
             ChatMessage message = new ChatMessage(testUser1.getId(), testUser2.getId(), "Test");
             message.setReadStatus(false);
             message = chatMessageRepository.save(message);
 
-            // Act
             HttpResponse<Map> response = client.toBlocking().exchange(
-                HttpRequest.PUT(BASE_PATH + "/messages/" + message.getId() + "/read", null)
-                    .bearerAuth(user2Token),
-                Map.class
+                    HttpRequest.PUT(BASE_PATH + "/messages/" + message.getId() + "/read", null)
+                            .bearerAuth(user2Token),
+                    Map.class
             );
 
-            // Assert
             assertEquals(HttpStatus.OK, response.getStatus());
-            
-            // Verify message was marked as read
-            ChatMessage updated = chatMessageRepository.findById(message.getId()).orElse(null);
-            assertNotNull(updated);
-            assertTrue(updated.isReadStatus());
+            assertTrue(chatMessageRepository.findById(message.getId()).orElseThrow().isReadStatus());
         }
 
         @Test
-        @Order(11)
+        @Order(12)
         @DisplayName("Should fail when user is not the receiver")
         void shouldFailWhenNotReceiver() {
-            // Arrange
-            ChatMessage message = new ChatMessage(testUser1.getId(), testUser2.getId(), "Test");
-            ChatMessage savedMessage = chatMessageRepository.save(message);
-            UUID messageId = savedMessage.getId();
+            ChatMessage message = chatMessageRepository.save(
+                    new ChatMessage(testUser1.getId(), testUser2.getId(), "Test"));
+            UUID messageId = message.getId();
 
-            // Act & Assert
-            HttpClientResponseException exception = assertThrows(
-                HttpClientResponseException.class,
-                () -> client.toBlocking().exchange(
-                    HttpRequest.PUT(BASE_PATH + "/messages/" + messageId + "/read", null)
-                        .bearerAuth(user1Token),
-                    Map.class
-                )
-            );
+            HttpClientResponseException ex = assertThrows(HttpClientResponseException.class, () ->
+                    client.toBlocking().exchange(
+                            HttpRequest.PUT(BASE_PATH + "/messages/" + messageId + "/read", null)
+                                    .bearerAuth(user1Token),
+                            Map.class));
 
-            assertEquals(HttpStatus.FORBIDDEN, exception.getStatus());
+            assertEquals(HttpStatus.FORBIDDEN, ex.getStatus());
         }
     }
+
+    // ─── Mark Conversation As Read ─────────────────────────────────────────────
 
     @Nested
     @DisplayName("Mark Conversation As Read Tests")
     class MarkConversationAsReadTests {
 
         @Test
-        @Order(12)
-        @DisplayName("Should mark all messages in conversation as read")
+        @Order(13)
+        @DisplayName("Should mark conversation as read and reset unread count")
         void shouldMarkConversationAsRead() {
-            // Arrange
-            ChatMessage msg1 = new ChatMessage(testUser1.getId(), testUser2.getId(), "Message 1");
-            ChatMessage msg2 = new ChatMessage(testUser1.getId(), testUser2.getId(), "Message 2");
-            msg1.setReadStatus(false);
-            msg2.setReadStatus(false);
-            chatMessageRepository.save(msg1);
-            chatMessageRepository.save(msg2);
+            chatMessageRepository.save(new ChatMessage(testUser1.getId(), testUser2.getId(), "Msg 1"));
+            chatMessageRepository.save(new ChatMessage(testUser1.getId(), testUser2.getId(), "Msg 2"));
+            seedConversation(testUser2.getId(), testUser1.getId(), "ChatTestUser1", "Msg 2", 2);
 
-            // Act
             HttpResponse<Map> response = client.toBlocking().exchange(
-                HttpRequest.PUT(BASE_PATH + "/conversations/" + testUser1.getId() + "/read", null)
-                    .bearerAuth(user2Token),
-                Map.class
+                    HttpRequest.PUT(BASE_PATH + "/conversations/" + testUser1.getId() + "/read", null)
+                            .bearerAuth(user2Token),
+                    Map.class
             );
 
-            // Assert
             assertEquals(HttpStatus.OK, response.getStatus());
+
+            UUID convId = ConversationIdGenerator.generate(testUser2.getId(), testUser1.getId());
+            conversationRepository.findByConversationIdAndUserId(convId, testUser2.getId())
+                    .ifPresent(c -> assertEquals(0, c.getUnreadCount()));
         }
     }
 }

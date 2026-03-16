@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-@JdbcRepository(dialect = Dialect.MYSQL)
+@JdbcRepository(dialect = Dialect.ORACLE)
 public interface PostLikeRepository extends CrudRepository<PostLike, UUID> {
 
     /**
@@ -37,4 +37,6 @@ public interface PostLikeRepository extends CrudRepository<PostLike, UUID> {
      * Delete all likes for a post (useful for post deletion)
      */
     long deleteByPostId(UUID postId);
+
+    List<PostLike> findByUserId(UUID userId);
 }

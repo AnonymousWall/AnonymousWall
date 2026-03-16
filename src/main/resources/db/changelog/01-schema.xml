@@ -933,4 +933,44 @@
         </createIndex>
     </changeSet>
 
+    <changeSet id="26-create-conversations-table" author="ziyihuang">
+        <createTable tableName="conversations">
+            <column name="id" type="CHAR(36)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="conversation_id" type="CHAR(36)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="user_id" type="CHAR(36)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="partner_id" type="CHAR(36)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="partner_profile_name" type="VARCHAR(255)"/>
+            <column name="last_message_content" type="TEXT"/>
+            <column name="last_message_image_url" type="VARCHAR(1000)"/>
+            <column name="last_message_sender_id" type="CHAR(36)"/>
+            <column name="last_message_receiver_id" type="CHAR(36)"/>
+            <column name="last_message_read_status" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="last_message_at" type="TIMESTAMP"/>
+            <column name="unread_count" type="INT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="conversations" baseColumnNames="user_id"
+                                 constraintName="fk_conversations_user"
+                                 referencedTableName="users" referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+        <createIndex tableName="conversations" indexName="idx_conversations_user_last_message">
+            <column name="user_id"/>
+            <column name="last_message_at" descending="true"/>
+        </createIndex>
+        <addUniqueConstraint tableName="conversations"
+                             columnNames="conversation_id,user_id"
+                             constraintName="uk_conversations_conv_user"/>
+    </changeSet>
+
 </databaseChangeLog>

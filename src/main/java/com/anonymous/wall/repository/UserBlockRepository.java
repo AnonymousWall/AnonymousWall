@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-@JdbcRepository(dialect = Dialect.MYSQL)
+@JdbcRepository(dialect = Dialect.ORACLE)
 public interface UserBlockRepository extends CrudRepository<UserBlock, UUID> {
 
     Optional<UserBlock> findByBlockerIdAndBlockedId(UUID blockerId, UUID blockedId);

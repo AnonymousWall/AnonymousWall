@@ -8,6 +8,7 @@ import com.anonymous.wall.repository.PostLikeRepository;
 import com.anonymous.wall.repository.PostRepository;
 import com.anonymous.wall.repository.UserRepository;
 import com.anonymous.wall.service.base.PostsService;
+import com.anonymous.wall.service.impl.PostsCache;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
 import io.micronaut.test.extensions.junit5.annotation.MicronautTest;
@@ -38,6 +39,9 @@ class PostsServiceOptimizedUserLookupTest {
     @Inject
     private UserRepository userRepository;
 
+    @Inject
+    private PostsCache postsCache;
+
     private UserEntity testUser1;
     private UserEntity testUser2;
     private UUID userId1;
@@ -47,6 +51,7 @@ class PostsServiceOptimizedUserLookupTest {
     @BeforeEach
     void setUp() {
         // Clean up
+        postsCache.invalidateAll();
         postLikeRepository.deleteAll();
         postRepository.deleteAll();
         userRepository.deleteAll();
@@ -79,6 +84,7 @@ class PostsServiceOptimizedUserLookupTest {
         postLikeRepository.deleteAll();
         postRepository.deleteAll();
         userRepository.deleteAll();
+        postsCache.invalidateAll();
     }
 
     @Nested

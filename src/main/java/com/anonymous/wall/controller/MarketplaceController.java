@@ -2,11 +2,9 @@ package com.anonymous.wall.controller;
 
 import com.anonymous.wall.entity.Comment;
 import com.anonymous.wall.entity.MarketplaceItem;
-import com.anonymous.wall.entity.UserEntity;
 import com.anonymous.wall.model.*;
 import com.anonymous.wall.service.retry.CommentsRetryService;
 import com.anonymous.wall.service.retry.MarketplaceRetryService;
-import com.anonymous.wall.service.retry.UserRetryService;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
 import io.micronaut.http.HttpRequest;
@@ -39,9 +37,6 @@ public class MarketplaceController {
 
     @Inject
     private CommentsRetryService commentsRetryService;
-
-    @Inject
-    private UserRetryService userRetryService;
 
     private UUID getUserIdFromRequest(HttpRequest<?> request) {
         Optional<Principal> principalOpt = request.getUserPrincipal();
@@ -438,13 +433,7 @@ public class MarketplaceController {
         ItemDTOAuthor author = new ItemDTOAuthor();
         author.setId(item.getUserId().toString());
 
-        Optional<UserEntity> userOpt = userRetryService.findById(item.getUserId());
-        if (userOpt.isPresent()) {
-            UserEntity user = userOpt.get();
-            author.setProfileName(user.getProfileName());
-        } else {
-            author.setProfileName("Anonymous");
-        }
+        author.setProfileName(item.getProfileName());
 
         author.setIsAnonymous(false);
         dto.setAuthor(author);

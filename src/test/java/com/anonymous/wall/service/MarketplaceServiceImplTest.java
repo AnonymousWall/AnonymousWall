@@ -10,13 +10,12 @@ import com.anonymous.wall.service.base.CommentsService;
 import com.anonymous.wall.service.base.MarketplaceService;
 import com.anonymous.wall.service.base.UserBlockService;
 import com.anonymous.wall.service.base.UserService;
+import com.anonymous.wall.service.impl.MarketplaceCache;
 import com.anonymous.wall.service.impl.MarketplaceServiceImpl;
 import com.anonymous.wall.util.MediaUtilInterface;
 import io.micronaut.context.event.ApplicationEventPublisher;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
-import io.micronaut.http.MediaType;
-import io.micronaut.http.multipart.CompletedFileUpload;
 import io.micronaut.test.extensions.junit5.annotation.MicronautTest;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.*;
@@ -1183,6 +1182,7 @@ class MarketplaceServiceImplTest {
             setProviderField(svc, "commentsServiceProvider", mock(CommentsService.class));
             setField(svc, "marketplaceItemHiddenEventPublisher", mock(ApplicationEventPublisher.class));
             setField(svc, "userBlockService", mock(UserBlockService.class));
+            setField(svc, "marketplaceCache", mock(MarketplaceCache.class));
         }
 
         private void setField(Object target, String name, Object value) throws Exception {
