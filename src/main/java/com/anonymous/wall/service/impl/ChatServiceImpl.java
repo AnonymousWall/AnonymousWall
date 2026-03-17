@@ -155,6 +155,7 @@ public class ChatServiceImpl implements ChatService {
         conv.setLastMessageReceiverId(msg.getReceiverId());
         conv.setLastMessageReadStatus(msg.isReadStatus());
         conv.setLastMessageAt(msg.getCreatedAt());
+        conv.setLastMessageId(msg.getId());
 
         if (incrementUnread) {
             conv.setUnreadCount(conv.getUnreadCount() + 1);
@@ -208,6 +209,7 @@ public class ChatServiceImpl implements ChatService {
         dto.setUnreadCount(c.getUnreadCount());
 
         ChatMessageDTO lastMsg = new ChatMessageDTO();
+        lastMsg.setId(c.getLastMessageId());
         lastMsg.setSenderId(c.getLastMessageSenderId());
         lastMsg.setReceiverId(c.getLastMessageReceiverId());
         lastMsg.setContent(c.getLastMessageContent());

@@ -53,6 +53,10 @@ public class Conversation {
     @MappedProperty("unread_count")
     private int unreadCount;
 
+    @MappedProperty("last_message_id")
+    @Nullable
+    private UUID lastMessageId;
+
     // getters and setters
 
     public UUID getId() { return id; }
@@ -90,4 +94,7 @@ public class Conversation {
 
     public int getUnreadCount() { return unreadCount; }
     public void setUnreadCount(int unreadCount) { this.unreadCount = unreadCount; }
+
+    public UUID getLastMessageId() { return lastMessageId; }
+    public void setLastMessageId(UUID lastMessageId) { this.lastMessageId = lastMessageId; }
 }

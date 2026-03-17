@@ -70,7 +70,6 @@ public class PostsServiceImpl implements PostsService {
      */
     @Override
     @Transactional
-    @CacheInvalidate(cacheNames = "national-posts", all = true)
     public Post createPost(CreatePostRequest request, UUID userId) {
         // Validate image count before any DB access
         if (request.getImageObjectNames() != null && request.getImageObjectNames().size() > MAX_IMAGES_PER_POST) {
