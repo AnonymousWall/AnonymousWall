@@ -4,15 +4,12 @@ import com.anonymous.wall.entity.ChatMessage;
 import com.anonymous.wall.model.ChatMessageDTO;
 import com.anonymous.wall.model.ConversationDTO;
 import com.anonymous.wall.model.SendMessageRequest;
-import com.anonymous.wall.service.ChatService;
-import com.anonymous.wall.util.MediaUtilInterface;
+import com.anonymous.wall.service.retry.ChatRetryService;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpResponse;
-import io.micronaut.http.MediaType;
 import io.micronaut.http.annotation.*;
-import io.micronaut.http.multipart.CompletedFileUpload;
 import io.micronaut.scheduling.TaskExecutors;
 import io.micronaut.scheduling.annotation.ExecuteOn;
 import io.micronaut.security.annotation.Secured;
@@ -36,13 +33,10 @@ public class ChatController {
     private static final Logger log = LoggerFactory.getLogger(ChatController.class);
 
     @Inject
-    private ChatService chatService;
+    private ChatRetryService chatRetryService;
 
     @Inject
     private ChatWebSocketHandler chatWebSocketHandler;
-
-    @Inject
-    private MediaUtilInterface mediaUtil;
 
     /**
      * Helper to extract user ID from Principal
@@ -67,12 +61,13 @@ public class ChatController {
      * Get list of conversations for the authenticated user
      */
     @Get("/conversations")
+    @ExecuteOn(TaskExecutors.BLOCKING)
     public HttpResponse<?> getConversations(HttpRequest<?> request) {
         try {
             UUID userId = getUserIdFromRequest(request);
             log.debug("Getting conversations for user {}", userId);
 
-            List<ConversationDTO> conversations = chatService.getConversations(userId);
+            List<ConversationDTO> conversations = chatRetryService.getConversations(userId);
 
             Map<String, Object> response = new HashMap<>();
             response.put("conversations", conversations);
@@ -92,6 +87,7 @@ public class ChatController {
      * Get message history with another user
      */
     @Get("/messages/{otherUserId}")
+    @ExecuteOn(TaskExecutors.BLOCKING)
     public HttpResponse<?> getMessageHistory(
             @PathVariable String otherUserId,
             @QueryValue(defaultValue = "1") int page,
@@ -107,12 +103,14 @@ public class ChatController {
             Pageable pageable = Pageable.from(page - 1, limit);
 
             // Get messages
-            Page<ChatMessage> messagesPage = chatService.getMessageHistory(userId, otherUserUUID, pageable);
+            Page<ChatMessage> messagesPage = chatRetryService.getMessageHistory(userId, otherUserUUID, pageable);
 
             // Convert to DTOs
             List<ChatMessageDTO> messageDTOs = messagesPage.getContent().stream()
                     .map(this::convertToDTO)
                     .collect(Collectors.toList());
+
+            Collections.reverse(messageDTOs);
 
             // Build response
             Map<String, Object> response = new HashMap<>();
@@ -136,35 +134,11 @@ public class ChatController {
     }
 
     /**
-     * POST /chat/images
-     * Upload a chat image, returns URL immediately
-     */
-    @Post("/images")
-    @Consumes(MediaType.MULTIPART_FORM_DATA)
-    @ExecuteOn(TaskExecutors.BLOCKING)
-    public HttpResponse<?> uploadChatImage(
-            @Part("image") CompletedFileUpload image,
-            HttpRequest<?> httpRequest) {
-        try {
-            UUID userId = getUserIdFromRequest(httpRequest);
-            log.info("POST /chat/images - user={}, size={}", userId, image.getSize());
-
-            String url = mediaUtil.uploadChatImage(image, userId);
-
-            return HttpResponse.created(Map.of("url", url));
-        } catch (IllegalArgumentException e) {
-            return HttpResponse.badRequest(Map.of("error", e.getMessage()));
-        } catch (Exception e) {
-            log.error("POST /chat/images - Error uploading image", e);
-            return HttpResponse.serverError(Map.of("error", "Failed to upload image"));
-        }
-    }
-
-    /**
      * POST /chat/messages
      * Send a chat message
      */
     @Post("/messages")
+    @ExecuteOn(TaskExecutors.BLOCKING)
     public HttpResponse<?> sendMessage(@Body SendMessageRequest request, HttpRequest<?> httpRequest) {
         try {
             UUID senderId = getUserIdFromRequest(httpRequest);
@@ -173,8 +147,8 @@ public class ChatController {
             log.debug("Sending message from {} to {}", senderId, receiverId);
 
             // Send message
-            ChatMessage message = chatService.sendMessage(
-                    senderId, receiverId, request.getContent(), request.getImageUrl());
+            ChatMessage message = chatRetryService.sendMessage(
+                    senderId, receiverId, request.getContent(), request.getImageObjectName());
 
             // Convert to DTO
             ChatMessageDTO messageDTO = convertToDTO(message);
@@ -186,6 +160,14 @@ public class ChatController {
             chatWebSocketHandler.broadcastToUser(
                     receiverId,
                     chatWebSocketHandler.serializeToJson(wsMessage));
+
+            long receiverUnreadCount = chatRetryService.countTotalUnreadMessages(receiverId);
+            Map<String, Object> unreadUpdate = new HashMap<>();
+            unreadUpdate.put("type", "unreadCount");
+            unreadUpdate.put("count", receiverUnreadCount);
+            chatWebSocketHandler.broadcastToUser(receiverId, chatWebSocketHandler.serializeToJson(unreadUpdate));
+
+            log.info("WebSocket message delivered from {} to {}", senderId, receiverId);
 
             return HttpResponse.created(messageDTO);
         } catch (IllegalArgumentException e) {
@@ -202,6 +184,7 @@ public class ChatController {
      * Mark a specific message as read
      */
     @Put("/messages/{messageId}/read")
+    @ExecuteOn(TaskExecutors.BLOCKING)
     public HttpResponse<?> markMessageAsRead(
             @PathVariable String messageId,
             HttpRequest<?> request) {
@@ -211,7 +194,7 @@ public class ChatController {
 
             log.debug("Marking message {} as read by user {}", messageUUID, userId);
 
-            chatService.markMessageAsRead(messageUUID, userId);
+            chatRetryService.markMessageAsRead(messageUUID, userId);
 
             return HttpResponse.ok(Map.of("message", "Message marked as read"));
         } catch (IllegalArgumentException e) {
@@ -232,6 +215,7 @@ public class ChatController {
      * Mark all messages from a user as read
      */
     @Put("/conversations/{otherUserId}/read")
+    @ExecuteOn(TaskExecutors.BLOCKING)
     public HttpResponse<?> markConversationAsRead(
             @PathVariable String otherUserId,
             HttpRequest<?> request) {
@@ -241,9 +225,9 @@ public class ChatController {
 
             log.debug("Marking all messages from {} to {} as read", otherUserUUID, userId);
 
-            List<ChatMessage> unreadMessages = chatService.getUnreadMessages(userId, otherUserUUID);
+            List<ChatMessage> unreadMessages = chatRetryService.getUnreadMessages(userId, otherUserUUID);
 
-            chatService.markConversationAsRead(userId, otherUserUUID);
+            chatRetryService.markConversationAsRead(userId, otherUserUUID);
 
             for (ChatMessage message : unreadMessages) {
                 UUID senderId = message.getSenderId();
@@ -260,7 +244,7 @@ public class ChatController {
             }
 
             // ✅ NEW: Send updated unread count to reader
-            long unreadCount = chatService.countTotalUnreadMessages(userId);
+            long unreadCount = chatRetryService.countTotalUnreadMessages(userId);
             Map<String, Object> unreadUpdate = new HashMap<>();
             unreadUpdate.put("type", "unreadCount");
             unreadUpdate.put("count", unreadCount);

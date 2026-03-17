@@ -1,6 +1,6 @@
 package com.anonymous.wall.security;
 
-import com.anonymous.wall.service.UserService;
+import com.anonymous.wall.service.base.UserService;
 import io.micronaut.core.order.Ordered;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpResponse;
@@ -11,6 +11,7 @@ import io.micronaut.http.filter.HttpServerFilter;
 import io.micronaut.http.filter.ServerFilterChain;
 import io.micronaut.http.filter.ServerFilterPhase;
 import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,6 +29,7 @@ import java.util.UUID;
  * Runs after SECURITY phase to ensure authentication has been processed first.
  */
 @Filter("/**")
+@Singleton
 public class BlockedUserFilter implements HttpServerFilter, Ordered {
 
     private static final Logger log = LoggerFactory.getLogger(BlockedUserFilter.class);
@@ -65,19 +67,17 @@ public class BlockedUserFilter implements HttpServerFilter, Ordered {
                 UUID userId = UUID.fromString(principalName);
                 
                 // Use cached method to check blocked status - avoids DB hit on every request
-                if (userService.isUserBlocked(userId)) {
-                    log.warn("BlockedUserFilter: Blocked user attempted to access: userId={}, path={}", userId, request.getPath());
-                    
-                    // Return 403 Forbidden for blocked users
-                    Map<String, String> errorResponse = new HashMap<>();
-                    errorResponse.put("error", BLOCKED_USER_ERROR_MESSAGE);
-                    
-                    MutableHttpResponse<Map<String, String>> response = HttpResponse.status(HttpStatus.FORBIDDEN)
-                        .body(errorResponse);
-                    return Mono.just(response);
-                }
-                
-                log.debug("BlockedUserFilter: User {} is not blocked, allowing access to path: {}", userId, request.getPath());
+                return Mono.fromCallable(() -> userService.isUserBlocked(userId))
+                        .subscribeOn(reactor.core.scheduler.Schedulers.boundedElastic())
+                        .flatMap(isBlocked -> {
+                            if (isBlocked) {
+                                log.warn("BlockedUserFilter: Blocked user attempted access: userId={}, path={}", userId, path);
+                                Map<String, String> errorResponse = new HashMap<>();
+                                errorResponse.put("error", BLOCKED_USER_ERROR_MESSAGE);
+                                return Mono.just(HttpResponse.status(HttpStatus.FORBIDDEN).body(errorResponse));
+                            }
+                            return Mono.from(chain.proceed(request));
+                        });
             } catch (IllegalArgumentException e) {
                 // Invalid UUID format - let it pass through to be handled by other filters
                 log.debug("BlockedUserFilter: Invalid user ID format in principal: {}", principalName);

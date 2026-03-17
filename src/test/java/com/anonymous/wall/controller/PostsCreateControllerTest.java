@@ -2,6 +2,9 @@ package com.anonymous.wall.controller;
 
 import com.anonymous.wall.entity.Post;
 import com.anonymous.wall.entity.UserEntity;
+import com.anonymous.wall.model.CreatePostRequest;
+import com.anonymous.wall.model.CreatePostRequestPostType;
+import com.anonymous.wall.model.CreatePostRequestWall;
 import com.anonymous.wall.model.PostDTO;
 import com.anonymous.wall.repository.PollOptionRepository;
 import com.anonymous.wall.repository.PollVoteRepository;
@@ -11,11 +14,9 @@ import com.anonymous.wall.service.JwtTokenService;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.HttpStatus;
-import io.micronaut.http.MediaType;
 import io.micronaut.http.client.HttpClient;
 import io.micronaut.http.client.annotation.Client;
 import io.micronaut.http.client.exceptions.HttpClientResponseException;
-import io.micronaut.http.client.multipart.MultipartBody;
 import io.micronaut.test.extensions.junit5.annotation.MicronautTest;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.*;
@@ -59,12 +60,10 @@ class PostsCreateControllerTest {
 
     @BeforeEach
     void setUp() {
-        // Clean up in FK-safe order
         pollVoteRepository.deleteAll();
         pollOptionRepository.deleteAll();
         postRepository.deleteAll();
 
-        // All users register with school email and have school domain
         testUserCampus = new UserEntity();
         testUserCampus.setEmail("student" + System.currentTimeMillis() + "@harvard.edu");
         testUserCampus.setSchoolDomain("harvard.edu");
@@ -73,7 +72,6 @@ class PostsCreateControllerTest {
         testUserCampus = userRepository.save(testUserCampus);
         jwtTokenCampus = jwtTokenService.generateToken(testUserCampus);
 
-        // User from different school - also has school domain
         testUserDifferentSchool = new UserEntity();
         testUserDifferentSchool.setEmail("student" + System.currentTimeMillis() + "@mit.edu");
         testUserDifferentSchool.setSchoolDomain("mit.edu");
@@ -90,27 +88,32 @@ class PostsCreateControllerTest {
         postRepository.deleteAll();
     }
 
-    private MultipartBody multipart(String title, String content, String wall) {
-        MultipartBody.Builder builder = MultipartBody.builder();
-        if (title != null) builder.addPart("title", title);
-        if (content != null) builder.addPart("content", content);
-        if (wall != null) builder.addPart("wall", wall);
-        return builder.build();
-    }
-
-    private MultipartBody multipart(String title, String content) {
-        return multipart(title, content, null);
-    }
-
-    private MultipartBody pollMultipart(String title, String wall, String... options) {
-        MultipartBody.Builder builder = MultipartBody.builder();
-        if (title != null) builder.addPart("title", title);
-        builder.addPart("postType", "poll");
-        if (wall != null) builder.addPart("wall", wall);
-        for (String option : options) {
-            builder.addPart("pollOptions", option);
+    private CreatePostRequest post(String title, String content, String wall) {
+        CreatePostRequest request = new CreatePostRequest(title, content != null ? content : "");
+        if (wall != null) {
+            try {
+                request.setWall(CreatePostRequestWall.fromValue(wall));
+            } catch (IllegalArgumentException ignored) {
+                // let the server reject it
+            }
         }
-        return builder.build();
+        return request;
+    }
+
+    private CreatePostRequest post(String title, String content) {
+        return post(title, content, null);
+    }
+
+    private CreatePostRequest poll(String title, String wall, String... options) {
+        CreatePostRequest request = new CreatePostRequest(title, "");
+        request.setPostType(CreatePostRequestPostType.POLL);
+        if (wall != null) {
+            try {
+                request.setWall(CreatePostRequestWall.fromValue(wall));
+            } catch (IllegalArgumentException ignored) {}
+        }
+        request.setPollOptions(List.of(options));
+        return request;
     }
 
     @Nested
@@ -121,10 +124,9 @@ class PostsCreateControllerTest {
         @DisplayName("Should create campus post with valid content")
         void shouldCreateCampusPost() {
             HttpResponse<PostDTO> response = client.toBlocking().exchange(
-                HttpRequest.POST(BASE_PATH, multipart("Test Campus Post", "This is a great campus post!", "campus"))
-                    .contentType(MediaType.MULTIPART_FORM_DATA_TYPE)
-                    .header("Authorization", "Bearer " + jwtTokenCampus),
-                PostDTO.class
+                    HttpRequest.POST(BASE_PATH, post("Test Campus Post", "This is a great campus post!", "campus"))
+                            .header("Authorization", "Bearer " + jwtTokenCampus),
+                    PostDTO.class
             );
 
             assertEquals(HttpStatus.CREATED, response.getStatus());
@@ -149,10 +151,9 @@ class PostsCreateControllerTest {
         @DisplayName("Should create national post with valid content")
         void shouldCreateNationalPost() {
             HttpResponse<PostDTO> response = client.toBlocking().exchange(
-                HttpRequest.POST(BASE_PATH, multipart("Test National Post", "This is a national post visible to everyone!", "national"))
-                    .contentType(MediaType.MULTIPART_FORM_DATA_TYPE)
-                    .header("Authorization", "Bearer " + jwtTokenDifferentSchool),
-                PostDTO.class
+                    HttpRequest.POST(BASE_PATH, post("Test National Post", "This is a national post visible to everyone!", "national"))
+                            .header("Authorization", "Bearer " + jwtTokenDifferentSchool),
+                    PostDTO.class
             );
 
             assertEquals(HttpStatus.CREATED, response.getStatus());
@@ -170,10 +171,9 @@ class PostsCreateControllerTest {
         @DisplayName("Should default to campus wall when not specified")
         void shouldDefaultToCampusWall() {
             HttpResponse<PostDTO> response = client.toBlocking().exchange(
-                HttpRequest.POST(BASE_PATH, multipart("Test Default Campus Post", "Default campus post"))
-                    .contentType(MediaType.MULTIPART_FORM_DATA_TYPE)
-                    .header("Authorization", "Bearer " + jwtTokenCampus),
-                PostDTO.class
+                    HttpRequest.POST(BASE_PATH, post("Test Default Campus Post", "Default campus post"))
+                            .header("Authorization", "Bearer " + jwtTokenCampus),
+                    PostDTO.class
             );
 
             assertEquals(HttpStatus.CREATED, response.getStatus());
@@ -189,10 +189,9 @@ class PostsCreateControllerTest {
         void shouldCreatePostWithSpecialCharacters() {
             String content = "Check this out! @everyone #campus 💯 This is awesome🎉";
             HttpResponse<PostDTO> response = client.toBlocking().exchange(
-                HttpRequest.POST(BASE_PATH, multipart("Test Special Characters Post", content))
-                    .contentType(MediaType.MULTIPART_FORM_DATA_TYPE)
-                    .header("Authorization", "Bearer " + jwtTokenCampus),
-                PostDTO.class
+                    HttpRequest.POST(BASE_PATH, post("Test Special Characters Post", content))
+                            .header("Authorization", "Bearer " + jwtTokenCampus),
+                    PostDTO.class
             );
 
             assertEquals(HttpStatus.CREATED, response.getStatus());
@@ -204,10 +203,9 @@ class PostsCreateControllerTest {
         void shouldCreatePostWithSpecialCharactersInTitle() {
             String title = "🎉 Special Post @mention #topic";
             HttpResponse<PostDTO> response = client.toBlocking().exchange(
-                HttpRequest.POST(BASE_PATH, multipart(title, "Content with special title"))
-                    .contentType(MediaType.MULTIPART_FORM_DATA_TYPE)
-                    .header("Authorization", "Bearer " + jwtTokenCampus),
-                PostDTO.class
+                    HttpRequest.POST(BASE_PATH, post(title, "Content with special title"))
+                            .header("Authorization", "Bearer " + jwtTokenCampus),
+                    PostDTO.class
             );
 
             assertEquals(HttpStatus.CREATED, response.getStatus());
@@ -219,10 +217,9 @@ class PostsCreateControllerTest {
         void shouldCreatePostWithMaximumTitleLength() {
             String title = "T".repeat(255);
             HttpResponse<PostDTO> response = client.toBlocking().exchange(
-                HttpRequest.POST(BASE_PATH, multipart(title, "Content with max length title"))
-                    .contentType(MediaType.MULTIPART_FORM_DATA_TYPE)
-                    .header("Authorization", "Bearer " + jwtTokenCampus),
-                PostDTO.class
+                    HttpRequest.POST(BASE_PATH, post(title, "Content with max length title"))
+                            .header("Authorization", "Bearer " + jwtTokenCampus),
+                    PostDTO.class
             );
 
             assertEquals(HttpStatus.CREATED, response.getStatus());
@@ -234,10 +231,9 @@ class PostsCreateControllerTest {
         @DisplayName("Should create post with minimum title length (1 character)")
         void shouldCreatePostWithMinimumTitleLength() {
             HttpResponse<PostDTO> response = client.toBlocking().exchange(
-                HttpRequest.POST(BASE_PATH, multipart("T", "Content with minimum title length"))
-                    .contentType(MediaType.MULTIPART_FORM_DATA_TYPE)
-                    .header("Authorization", "Bearer " + jwtTokenCampus),
-                PostDTO.class
+                    HttpRequest.POST(BASE_PATH, post("T", "Content with minimum title length"))
+                            .header("Authorization", "Bearer " + jwtTokenCampus),
+                    PostDTO.class
             );
 
             assertEquals(HttpStatus.CREATED, response.getStatus());
@@ -249,10 +245,9 @@ class PostsCreateControllerTest {
         @DisplayName("Should include title in response")
         void shouldIncludeTitleInResponse() {
             HttpResponse<PostDTO> response = client.toBlocking().exchange(
-                HttpRequest.POST(BASE_PATH, multipart("Test Title Response", "Test content"))
-                    .contentType(MediaType.MULTIPART_FORM_DATA_TYPE)
-                    .header("Authorization", "Bearer " + jwtTokenCampus),
-                PostDTO.class
+                    HttpRequest.POST(BASE_PATH, post("Test Title Response", "Test content"))
+                            .header("Authorization", "Bearer " + jwtTokenCampus),
+                    PostDTO.class
             );
 
             assertEquals(HttpStatus.CREATED, response.getStatus());
@@ -265,16 +260,14 @@ class PostsCreateControllerTest {
         @DisplayName("Should create multiple posts from same user")
         void shouldCreateMultiplePostsFromSameUser() {
             HttpResponse<PostDTO> response1 = client.toBlocking().exchange(
-                HttpRequest.POST(BASE_PATH, multipart("Test First Post", "First post"))
-                    .contentType(MediaType.MULTIPART_FORM_DATA_TYPE)
-                    .header("Authorization", "Bearer " + jwtTokenCampus),
-                PostDTO.class
+                    HttpRequest.POST(BASE_PATH, post("Test First Post", "First post"))
+                            .header("Authorization", "Bearer " + jwtTokenCampus),
+                    PostDTO.class
             );
             HttpResponse<PostDTO> response2 = client.toBlocking().exchange(
-                HttpRequest.POST(BASE_PATH, multipart("Test Second Post", "Second post"))
-                    .contentType(MediaType.MULTIPART_FORM_DATA_TYPE)
-                    .header("Authorization", "Bearer " + jwtTokenCampus),
-                PostDTO.class
+                    HttpRequest.POST(BASE_PATH, post("Test Second Post", "Second post"))
+                            .header("Authorization", "Bearer " + jwtTokenCampus),
+                    PostDTO.class
             );
 
             assertEquals(HttpStatus.CREATED, response1.getStatus());
@@ -293,12 +286,11 @@ class PostsCreateControllerTest {
         @DisplayName("Should fail without authentication")
         void shouldFailWithoutAuthentication() {
             HttpClientResponseException exception = assertThrows(
-                HttpClientResponseException.class,
-                () -> client.toBlocking().exchange(
-                    HttpRequest.POST(BASE_PATH, multipart("Test Unauthorized Post", "Unauthorized post"))
-                        .contentType(MediaType.MULTIPART_FORM_DATA_TYPE),
-                    PostDTO.class
-                )
+                    HttpClientResponseException.class,
+                    () -> client.toBlocking().exchange(
+                            HttpRequest.POST(BASE_PATH, post("Test Unauthorized Post", "Unauthorized post")),
+                            PostDTO.class
+                    )
             );
             assertEquals(HttpStatus.UNAUTHORIZED, exception.getStatus());
         }
@@ -307,13 +299,12 @@ class PostsCreateControllerTest {
         @DisplayName("Should fail with empty content")
         void shouldFailWithEmptyContent() {
             HttpClientResponseException exception = assertThrows(
-                HttpClientResponseException.class,
-                () -> client.toBlocking().exchange(
-                    HttpRequest.POST(BASE_PATH, multipart("Test Empty Content", ""))
-                        .contentType(MediaType.MULTIPART_FORM_DATA_TYPE)
-                        .header("Authorization", "Bearer " + jwtTokenCampus),
-                    PostDTO.class
-                )
+                    HttpClientResponseException.class,
+                    () -> client.toBlocking().exchange(
+                            HttpRequest.POST(BASE_PATH, post("Test Empty Content", ""))
+                                    .header("Authorization", "Bearer " + jwtTokenCampus),
+                            PostDTO.class
+                    )
             );
             assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
         }
@@ -322,13 +313,12 @@ class PostsCreateControllerTest {
         @DisplayName("Should fail when title is missing")
         void shouldFailWithMissingTitle() {
             HttpClientResponseException exception = assertThrows(
-                HttpClientResponseException.class,
-                () -> client.toBlocking().exchange(
-                    HttpRequest.POST(BASE_PATH, multipart(null, "Content without title"))
-                        .contentType(MediaType.MULTIPART_FORM_DATA_TYPE)
-                        .header("Authorization", "Bearer " + jwtTokenCampus),
-                    PostDTO.class
-                )
+                    HttpClientResponseException.class,
+                    () -> client.toBlocking().exchange(
+                            HttpRequest.POST(BASE_PATH, post(null, "Content without title"))
+                                    .header("Authorization", "Bearer " + jwtTokenCampus),
+                            PostDTO.class
+                    )
             );
             assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
         }
@@ -337,13 +327,12 @@ class PostsCreateControllerTest {
         @DisplayName("Should fail with empty title")
         void shouldFailWithEmptyTitle() {
             HttpClientResponseException exception = assertThrows(
-                HttpClientResponseException.class,
-                () -> client.toBlocking().exchange(
-                    HttpRequest.POST(BASE_PATH, multipart("", "Content with empty title"))
-                        .contentType(MediaType.MULTIPART_FORM_DATA_TYPE)
-                        .header("Authorization", "Bearer " + jwtTokenCampus),
-                    PostDTO.class
-                )
+                    HttpClientResponseException.class,
+                    () -> client.toBlocking().exchange(
+                            HttpRequest.POST(BASE_PATH, post("", "Content with empty title"))
+                                    .header("Authorization", "Bearer " + jwtTokenCampus),
+                            PostDTO.class
+                    )
             );
             assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
         }
@@ -352,13 +341,12 @@ class PostsCreateControllerTest {
         @DisplayName("Should fail with whitespace-only title")
         void shouldFailWithWhitespaceOnlyTitle() {
             HttpClientResponseException exception = assertThrows(
-                HttpClientResponseException.class,
-                () -> client.toBlocking().exchange(
-                    HttpRequest.POST(BASE_PATH, multipart("   \n\t   ", "Content with whitespace title"))
-                        .contentType(MediaType.MULTIPART_FORM_DATA_TYPE)
-                        .header("Authorization", "Bearer " + jwtTokenCampus),
-                    PostDTO.class
-                )
+                    HttpClientResponseException.class,
+                    () -> client.toBlocking().exchange(
+                            HttpRequest.POST(BASE_PATH, post("   \n\t   ", "Content with whitespace title"))
+                                    .header("Authorization", "Bearer " + jwtTokenCampus),
+                            PostDTO.class
+                    )
             );
             assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
         }
@@ -366,15 +354,13 @@ class PostsCreateControllerTest {
         @Test
         @DisplayName("Should fail when title exceeds maximum length (255 characters)")
         void shouldFailWithTitleTooLong() {
-            String title = "T".repeat(256);
             HttpClientResponseException exception = assertThrows(
-                HttpClientResponseException.class,
-                () -> client.toBlocking().exchange(
-                    HttpRequest.POST(BASE_PATH, multipart(title, "Content with title too long"))
-                        .contentType(MediaType.MULTIPART_FORM_DATA_TYPE)
-                        .header("Authorization", "Bearer " + jwtTokenCampus),
-                    PostDTO.class
-                )
+                    HttpClientResponseException.class,
+                    () -> client.toBlocking().exchange(
+                            HttpRequest.POST(BASE_PATH, post("T".repeat(256), "Content with title too long"))
+                                    .header("Authorization", "Bearer " + jwtTokenCampus),
+                            PostDTO.class
+                    )
             );
             assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
         }
@@ -382,15 +368,13 @@ class PostsCreateControllerTest {
         @Test
         @DisplayName("Should fail when content exceeds maximum length")
         void shouldFailWithContentTooLong() {
-            String content = "X".repeat(5001);
             HttpClientResponseException exception = assertThrows(
-                HttpClientResponseException.class,
-                () -> client.toBlocking().exchange(
-                    HttpRequest.POST(BASE_PATH, multipart("Test Content Too Long", content))
-                        .contentType(MediaType.MULTIPART_FORM_DATA_TYPE)
-                        .header("Authorization", "Bearer " + jwtTokenCampus),
-                    PostDTO.class
-                )
+                    HttpClientResponseException.class,
+                    () -> client.toBlocking().exchange(
+                            HttpRequest.POST(BASE_PATH, post("Test Content Too Long", "X".repeat(5001)))
+                                    .header("Authorization", "Bearer " + jwtTokenCampus),
+                            PostDTO.class
+                    )
             );
             assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
         }
@@ -398,14 +382,19 @@ class PostsCreateControllerTest {
         @Test
         @DisplayName("Should fail with invalid wall type")
         void shouldFailWithInvalidWallType() {
+            // Send raw map to bypass enum validation on client side
+            Map<String, Object> rawRequest = Map.of(
+                    "title", "Test Invalid Wall Type",
+                    "content", "Post to invalid wall",
+                    "wall", "invalid"
+            );
             HttpClientResponseException exception = assertThrows(
-                HttpClientResponseException.class,
-                () -> client.toBlocking().exchange(
-                    HttpRequest.POST(BASE_PATH, multipart("Test Invalid Wall Type", "Post to invalid wall", "invalid"))
-                        .contentType(MediaType.MULTIPART_FORM_DATA_TYPE)
-                        .header("Authorization", "Bearer " + jwtTokenCampus),
-                    PostDTO.class
-                )
+                    HttpClientResponseException.class,
+                    () -> client.toBlocking().exchange(
+                            HttpRequest.POST(BASE_PATH, rawRequest)
+                                    .header("Authorization", "Bearer " + jwtTokenCampus),
+                            PostDTO.class
+                    )
             );
             assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
         }
@@ -427,13 +416,12 @@ class PostsCreateControllerTest {
             String tokenNoSchool = jwtTokenService.generateToken(userNoSchool);
 
             HttpClientResponseException exception = assertThrows(
-                HttpClientResponseException.class,
-                () -> client.toBlocking().exchange(
-                    HttpRequest.POST(BASE_PATH, multipart("Test Campus Post Without School Domain", "Campus post without school domain", "campus"))
-                        .contentType(MediaType.MULTIPART_FORM_DATA_TYPE)
-                        .header("Authorization", "Bearer " + tokenNoSchool),
-                    PostDTO.class
-                )
+                    HttpClientResponseException.class,
+                    () -> client.toBlocking().exchange(
+                            HttpRequest.POST(BASE_PATH, post("Test Campus Post Without School Domain", "Campus post without school domain", "campus"))
+                                    .header("Authorization", "Bearer " + tokenNoSchool),
+                            PostDTO.class
+                    )
             );
             assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
         }
@@ -450,10 +438,9 @@ class PostsCreateControllerTest {
             String tokenNoSchool = jwtTokenService.generateToken(userNoSchool);
 
             HttpResponse<PostDTO> response = client.toBlocking().exchange(
-                HttpRequest.POST(BASE_PATH, multipart("Test National Post Without School Domain", "National post from user without school", "national"))
-                    .contentType(MediaType.MULTIPART_FORM_DATA_TYPE)
-                    .header("Authorization", "Bearer " + tokenNoSchool),
-                PostDTO.class
+                    HttpRequest.POST(BASE_PATH, post("Test National Post Without School Domain", "National post from user without school", "national"))
+                            .header("Authorization", "Bearer " + tokenNoSchool),
+                    PostDTO.class
             );
 
             assertEquals(HttpStatus.CREATED, response.getStatus());
@@ -465,10 +452,9 @@ class PostsCreateControllerTest {
         void shouldCreatePostWithMaximumLength() {
             String content = "X".repeat(5000);
             HttpResponse<PostDTO> response = client.toBlocking().exchange(
-                HttpRequest.POST(BASE_PATH, multipart("Test Maximum Length", content))
-                    .contentType(MediaType.MULTIPART_FORM_DATA_TYPE)
-                    .header("Authorization", "Bearer " + jwtTokenCampus),
-                PostDTO.class
+                    HttpRequest.POST(BASE_PATH, post("Test Maximum Length", content))
+                            .header("Authorization", "Bearer " + jwtTokenCampus),
+                    PostDTO.class
             );
 
             assertEquals(HttpStatus.CREATED, response.getStatus());
@@ -479,10 +465,9 @@ class PostsCreateControllerTest {
         @DisplayName("Should create post with minimum length (1 character)")
         void shouldCreatePostWithMinimumLength() {
             HttpResponse<PostDTO> response = client.toBlocking().exchange(
-                HttpRequest.POST(BASE_PATH, multipart("Test Minimum Length", "A"))
-                    .contentType(MediaType.MULTIPART_FORM_DATA_TYPE)
-                    .header("Authorization", "Bearer " + jwtTokenCampus),
-                PostDTO.class
+                    HttpRequest.POST(BASE_PATH, post("Test Minimum Length", "A"))
+                            .header("Authorization", "Bearer " + jwtTokenCampus),
+                    PostDTO.class
             );
 
             assertEquals(HttpStatus.CREATED, response.getStatus());
@@ -498,10 +483,9 @@ class PostsCreateControllerTest {
         @DisplayName("Should anonymize user in response")
         void shouldAnonymizeUser() {
             HttpResponse<PostDTO> response = client.toBlocking().exchange(
-                HttpRequest.POST(BASE_PATH, multipart("Test Anonymity", "Test anonymity"))
-                    .contentType(MediaType.MULTIPART_FORM_DATA_TYPE)
-                    .header("Authorization", "Bearer " + jwtTokenCampus),
-                PostDTO.class
+                    HttpRequest.POST(BASE_PATH, post("Test Anonymity", "Test anonymity"))
+                            .header("Authorization", "Bearer " + jwtTokenCampus),
+                    PostDTO.class
             );
 
             assertTrue(response.body().getAuthor().getIsAnonymous());
@@ -512,10 +496,9 @@ class PostsCreateControllerTest {
         @DisplayName("Post should be created with correct user ID in database")
         void shouldStoreCorrectUserIdInDatabase() {
             HttpResponse<PostDTO> response = client.toBlocking().exchange(
-                HttpRequest.POST(BASE_PATH, multipart("Test Correct User", "Verify correct user"))
-                    .contentType(MediaType.MULTIPART_FORM_DATA_TYPE)
-                    .header("Authorization", "Bearer " + jwtTokenCampus),
-                PostDTO.class
+                    HttpRequest.POST(BASE_PATH, post("Test Correct User", "Verify correct user"))
+                            .header("Authorization", "Bearer " + jwtTokenCampus),
+                    PostDTO.class
             );
 
             Optional<Post> savedPost = postRepository.findById(response.body().getId());
@@ -527,16 +510,14 @@ class PostsCreateControllerTest {
         @DisplayName("Different users should have separate posts")
         void shouldKeepUsersPostsSeparate() {
             HttpResponse<PostDTO> response1 = client.toBlocking().exchange(
-                HttpRequest.POST(BASE_PATH, multipart("Test User 1 Post", "User 1 post"))
-                    .contentType(MediaType.MULTIPART_FORM_DATA_TYPE)
-                    .header("Authorization", "Bearer " + jwtTokenCampus),
-                PostDTO.class
+                    HttpRequest.POST(BASE_PATH, post("Test User 1 Post", "User 1 post"))
+                            .header("Authorization", "Bearer " + jwtTokenCampus),
+                    PostDTO.class
             );
             HttpResponse<PostDTO> response2 = client.toBlocking().exchange(
-                HttpRequest.POST(BASE_PATH, multipart("Test User 2 Post", "User 2 post"))
-                    .contentType(MediaType.MULTIPART_FORM_DATA_TYPE)
-                    .header("Authorization", "Bearer " + jwtTokenDifferentSchool),
-                PostDTO.class
+                    HttpRequest.POST(BASE_PATH, post("Test User 2 Post", "User 2 post"))
+                            .header("Authorization", "Bearer " + jwtTokenDifferentSchool),
+                    PostDTO.class
             );
 
             Optional<Post> post1 = postRepository.findById(response1.body().getId());
@@ -559,7 +540,6 @@ class PostsCreateControllerTest {
 
         @BeforeEach
         void setUp() {
-            // User with default profile name
             userWithDefaultName = new UserEntity();
             userWithDefaultName.setEmail("default" + System.currentTimeMillis() + "@harvard.edu");
             userWithDefaultName.setSchoolDomain("harvard.edu");
@@ -569,7 +549,6 @@ class PostsCreateControllerTest {
             userWithDefaultName = userRepository.save(userWithDefaultName);
             tokenDefaultName = jwtTokenService.generateToken(userWithDefaultName);
 
-            // User with custom profile name
             userWithCustomName = new UserEntity();
             userWithCustomName.setEmail("custom" + System.currentTimeMillis() + "@harvard.edu");
             userWithCustomName.setSchoolDomain("harvard.edu");
@@ -583,21 +562,17 @@ class PostsCreateControllerTest {
         @Test
         @DisplayName("Should capture default profile name 'Anonymous' in post")
         void shouldCaptureDefaultProfileNameInPost() {
-            // Act
             HttpResponse<PostDTO> response = client.toBlocking().exchange(
-                HttpRequest.POST(BASE_PATH, multipart("Test Default Post", "Post with default profile name", "campus"))
-                    .contentType(MediaType.MULTIPART_FORM_DATA_TYPE)
-                    .header("Authorization", "Bearer " + tokenDefaultName),
-                PostDTO.class
+                    HttpRequest.POST(BASE_PATH, post("Test Default Post", "Post with default profile name", "campus"))
+                            .header("Authorization", "Bearer " + tokenDefaultName),
+                    PostDTO.class
             );
 
-            // Assert
             assertEquals(HttpStatus.CREATED, response.getStatus());
             PostDTO postDTO = response.body();
             assertNotNull(postDTO.getAuthor());
             assertEquals("Anonymous", postDTO.getAuthor().getProfileName());
 
-            // Verify in database
             Optional<Post> savedPost = postRepository.findById(postDTO.getId());
             assertTrue(savedPost.isPresent());
             assertEquals("Anonymous", savedPost.get().getProfileName());
@@ -606,21 +581,17 @@ class PostsCreateControllerTest {
         @Test
         @DisplayName("Should capture custom profile name in post")
         void shouldCaptureCustomProfileNameInPost() {
-            // Act
             HttpResponse<PostDTO> response = client.toBlocking().exchange(
-                HttpRequest.POST(BASE_PATH, multipart("Test Custom Post", "Post with custom profile name", "campus"))
-                    .contentType(MediaType.MULTIPART_FORM_DATA_TYPE)
-                    .header("Authorization", "Bearer " + tokenCustomName),
-                PostDTO.class
+                    HttpRequest.POST(BASE_PATH, post("Test Custom Post", "Post with custom profile name", "campus"))
+                            .header("Authorization", "Bearer " + tokenCustomName),
+                    PostDTO.class
             );
 
-            // Assert
             assertEquals(HttpStatus.CREATED, response.getStatus());
             PostDTO postDTO = response.body();
             assertNotNull(postDTO.getAuthor());
             assertEquals("John Doe", postDTO.getAuthor().getProfileName());
 
-            // Verify in database
             Optional<Post> savedPost = postRepository.findById(postDTO.getId());
             assertTrue(savedPost.isPresent());
             assertEquals("John Doe", savedPost.get().getProfileName());
@@ -629,35 +600,29 @@ class PostsCreateControllerTest {
         @Test
         @DisplayName("Should preserve original profile name after user changes name")
         void shouldPreserveOriginalProfileNameAfterUserChanges() {
-            // Arrange - Create post with initial profile name "Custom Name"
             userWithDefaultName.setProfileName("Custom Name");
             userRepository.update(userWithDefaultName);
 
             HttpResponse<PostDTO> response = client.toBlocking().exchange(
-                HttpRequest.POST(BASE_PATH, multipart("Test Custom Name Post", "Post with custom name", "campus"))
-                    .contentType(MediaType.MULTIPART_FORM_DATA_TYPE)
-                    .header("Authorization", "Bearer " + tokenDefaultName),
-                PostDTO.class
+                    HttpRequest.POST(BASE_PATH, post("Test Custom Name Post", "Post with custom name", "campus"))
+                            .header("Authorization", "Bearer " + tokenDefaultName),
+                    PostDTO.class
             );
 
             PostDTO postDTO = response.body();
             assertEquals("Custom Name", postDTO.getAuthor().getProfileName());
 
-            // Now change user's profile name
             userWithDefaultName.setProfileName("New Name");
             userRepository.update(userWithDefaultName);
 
-            // Verify post still has original profile name
-            Optional<Post> post = postRepository.findById(postDTO.getId());
-            assertTrue(post.isPresent());
-            assertEquals("Custom Name", post.get().getProfileName());
+            Optional<Post> savedPost = postRepository.findById(postDTO.getId());
+            assertTrue(savedPost.isPresent());
+            assertEquals("Custom Name", savedPost.get().getProfileName());
 
-            // But new posts should use new name
             HttpResponse<PostDTO> response2 = client.toBlocking().exchange(
-                HttpRequest.POST(BASE_PATH, multipart("Test New Post", "New post", "campus"))
-                    .contentType(MediaType.MULTIPART_FORM_DATA_TYPE)
-                    .header("Authorization", "Bearer " + tokenDefaultName),
-                PostDTO.class
+                    HttpRequest.POST(BASE_PATH, post("Test New Post", "New post", "campus"))
+                            .header("Authorization", "Bearer " + tokenDefaultName),
+                    PostDTO.class
             );
 
             assertEquals("New Name", response2.body().getAuthor().getProfileName());
@@ -666,15 +631,12 @@ class PostsCreateControllerTest {
         @Test
         @DisplayName("Post author profile name should not equal user ID")
         void postAuthorProfileNameShouldNotEqualUserId() {
-            // Act
             HttpResponse<PostDTO> response = client.toBlocking().exchange(
-                HttpRequest.POST(BASE_PATH, multipart("Test Post", "Post content", "campus"))
-                    .contentType(MediaType.MULTIPART_FORM_DATA_TYPE)
-                    .header("Authorization", "Bearer " + tokenCustomName),
-                PostDTO.class
+                    HttpRequest.POST(BASE_PATH, post("Test Post", "Post content", "campus"))
+                            .header("Authorization", "Bearer " + tokenCustomName),
+                    PostDTO.class
             );
 
-            // Assert
             PostDTO postDTO = response.body();
             assertNotNull(postDTO.getAuthor());
             assertEquals("John Doe", postDTO.getAuthor().getProfileName());
@@ -691,10 +653,9 @@ class PostsCreateControllerTest {
         @DisplayName("Should create poll post with 2 options")
         void shouldCreatePollWith2Options() {
             HttpResponse<Map> response = client.toBlocking().exchange(
-                HttpRequest.POST(BASE_PATH, pollMultipart("Best language?", "campus", "Java", "Python"))
-                    .contentType(MediaType.MULTIPART_FORM_DATA_TYPE)
-                    .header("Authorization", "Bearer " + jwtTokenCampus),
-                Map.class
+                    HttpRequest.POST(BASE_PATH, poll("Best language?", "campus", "Java", "Python"))
+                            .header("Authorization", "Bearer " + jwtTokenCampus),
+                    Map.class
             );
 
             assertEquals(HttpStatus.CREATED, response.getStatus());
@@ -702,9 +663,9 @@ class PostsCreateControllerTest {
             assertEquals("poll", body.get("postType"));
             assertEquals(0, body.get("totalVotes"));
 
-            Map<?, ?> poll = (Map<?, ?>) body.get("poll");
-            assertNotNull(poll);
-            List<?> options = (List<?>) poll.get("options");
+            Map<?, ?> pollData = (Map<?, ?>) body.get("poll");
+            assertNotNull(pollData);
+            List<?> options = (List<?>) pollData.get("options");
             assertEquals(2, options.size());
         }
 
@@ -712,26 +673,24 @@ class PostsCreateControllerTest {
         @DisplayName("Should create poll post with 4 options")
         void shouldCreatePollWith4Options() {
             HttpResponse<Map> response = client.toBlocking().exchange(
-                HttpRequest.POST(BASE_PATH, pollMultipart("Favorite season?", "campus", "Spring", "Summer", "Autumn", "Winter"))
-                    .contentType(MediaType.MULTIPART_FORM_DATA_TYPE)
-                    .header("Authorization", "Bearer " + jwtTokenCampus),
-                Map.class
+                    HttpRequest.POST(BASE_PATH, poll("Favorite season?", "campus", "Spring", "Summer", "Autumn", "Winter"))
+                            .header("Authorization", "Bearer " + jwtTokenCampus),
+                    Map.class
             );
 
             assertEquals(HttpStatus.CREATED, response.getStatus());
-            Map<?, ?> poll = (Map<?, ?>) response.body().get("poll");
-            assertNotNull(poll);
-            assertEquals(4, ((List<?>) poll.get("options")).size());
+            Map<?, ?> pollData = (Map<?, ?>) response.body().get("poll");
+            assertNotNull(pollData);
+            assertEquals(4, ((List<?>) pollData.get("options")).size());
         }
 
         @Test
         @DisplayName("Poll post should have postType=poll in response")
         void shouldReturnCorrectPostTypeInResponse() {
             HttpResponse<Map> response = client.toBlocking().exchange(
-                HttpRequest.POST(BASE_PATH, pollMultipart("Poll?", "campus", "Yes", "No"))
-                    .contentType(MediaType.MULTIPART_FORM_DATA_TYPE)
-                    .header("Authorization", "Bearer " + jwtTokenCampus),
-                Map.class
+                    HttpRequest.POST(BASE_PATH, poll("Poll?", "campus", "Yes", "No"))
+                            .header("Authorization", "Bearer " + jwtTokenCampus),
+                    Map.class
             );
 
             assertEquals(HttpStatus.CREATED, response.getStatus());
@@ -742,14 +701,12 @@ class PostsCreateControllerTest {
         @DisplayName("Standard post should have postType=standard in response")
         void shouldReturnStandardPostType() {
             HttpResponse<Map> response = client.toBlocking().exchange(
-                HttpRequest.POST(BASE_PATH, multipart("Normal Post", "Content here"))
-                    .contentType(MediaType.MULTIPART_FORM_DATA_TYPE)
-                    .header("Authorization", "Bearer " + jwtTokenCampus),
-                Map.class
+                    HttpRequest.POST(BASE_PATH, post("Normal Post", "Content here"))
+                            .header("Authorization", "Bearer " + jwtTokenCampus),
+                    Map.class
             );
 
             assertEquals(HttpStatus.CREATED, response.getStatus());
-            // postType defaults to standard
             Object postType = response.body().get("postType");
             assertTrue(postType == null || "standard".equals(postType.toString().toLowerCase()));
         }
@@ -757,18 +714,15 @@ class PostsCreateControllerTest {
         @Test
         @DisplayName("Poll post content is optional")
         void shouldCreatePollWithoutContent() {
-            MultipartBody.Builder builder = MultipartBody.builder();
-            builder.addPart("title", "Poll without content");
-            builder.addPart("postType", "poll");
-            builder.addPart("wall", "campus");
-            builder.addPart("pollOptions", "Option A");
-            builder.addPart("pollOptions", "Option B");
+            CreatePostRequest request = new CreatePostRequest("Poll without content", "");
+            request.setPostType(CreatePostRequestPostType.POLL);
+            request.setWall(CreatePostRequestWall.CAMPUS);
+            request.setPollOptions(List.of("Option A", "Option B"));
 
             HttpResponse<Map> response = client.toBlocking().exchange(
-                HttpRequest.POST(BASE_PATH, builder.build())
-                    .contentType(MediaType.MULTIPART_FORM_DATA_TYPE)
-                    .header("Authorization", "Bearer " + jwtTokenCampus),
-                Map.class
+                    HttpRequest.POST(BASE_PATH, request)
+                            .header("Authorization", "Bearer " + jwtTokenCampus),
+                    Map.class
             );
 
             assertEquals(HttpStatus.CREATED, response.getStatus());
@@ -779,15 +733,14 @@ class PostsCreateControllerTest {
         @DisplayName("Poll options should preserve display order")
         void shouldPreserveOptionDisplayOrder() {
             HttpResponse<Map> response = client.toBlocking().exchange(
-                HttpRequest.POST(BASE_PATH, pollMultipart("Order test?", "campus", "First", "Second", "Third"))
-                    .contentType(MediaType.MULTIPART_FORM_DATA_TYPE)
-                    .header("Authorization", "Bearer " + jwtTokenCampus),
-                Map.class
+                    HttpRequest.POST(BASE_PATH, poll("Order test?", "campus", "First", "Second", "Third"))
+                            .header("Authorization", "Bearer " + jwtTokenCampus),
+                    Map.class
             );
 
             assertEquals(HttpStatus.CREATED, response.getStatus());
-            Map<?, ?> poll = (Map<?, ?>) response.body().get("poll");
-            List<?> options = (List<?>) poll.get("options");
+            Map<?, ?> pollData = (Map<?, ?>) response.body().get("poll");
+            List<?> options = (List<?>) pollData.get("options");
             assertEquals(3, options.size());
             assertEquals(0, ((Number) ((Map<?, ?>) options.get(0)).get("displayOrder")).intValue());
             assertEquals(1, ((Number) ((Map<?, ?>) options.get(1)).get("displayOrder")).intValue());
@@ -802,21 +755,13 @@ class PostsCreateControllerTest {
         @Test
         @DisplayName("Should fail when poll has only 1 option")
         void shouldFailWith1PollOption() {
-            MultipartBody body = MultipartBody.builder()
-                .addPart("title", "Bad Poll")
-                .addPart("postType", "poll")
-                .addPart("wall", "campus")
-                .addPart("pollOptions", "Only option")
-                .build();
-
             HttpClientResponseException exception = assertThrows(
-                HttpClientResponseException.class,
-                () -> client.toBlocking().exchange(
-                    HttpRequest.POST(BASE_PATH, body)
-                        .contentType(MediaType.MULTIPART_FORM_DATA_TYPE)
-                        .header("Authorization", "Bearer " + jwtTokenCampus),
-                    Map.class
-                )
+                    HttpClientResponseException.class,
+                    () -> client.toBlocking().exchange(
+                            HttpRequest.POST(BASE_PATH, poll("Bad Poll", "campus", "Only option"))
+                                    .header("Authorization", "Bearer " + jwtTokenCampus),
+                            Map.class
+                    )
             );
             assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
         }
@@ -824,25 +769,13 @@ class PostsCreateControllerTest {
         @Test
         @DisplayName("Should fail when poll has 5 options")
         void shouldFailWith5PollOptions() {
-            MultipartBody body = MultipartBody.builder()
-                .addPart("title", "Bad Poll")
-                .addPart("postType", "poll")
-                .addPart("wall", "campus")
-                .addPart("pollOptions", "A")
-                .addPart("pollOptions", "B")
-                .addPart("pollOptions", "C")
-                .addPart("pollOptions", "D")
-                .addPart("pollOptions", "E")
-                .build();
-
             HttpClientResponseException exception = assertThrows(
-                HttpClientResponseException.class,
-                () -> client.toBlocking().exchange(
-                    HttpRequest.POST(BASE_PATH, body)
-                        .contentType(MediaType.MULTIPART_FORM_DATA_TYPE)
-                        .header("Authorization", "Bearer " + jwtTokenCampus),
-                    Map.class
-                )
+                    HttpClientResponseException.class,
+                    () -> client.toBlocking().exchange(
+                            HttpRequest.POST(BASE_PATH, poll("Bad Poll", "campus", "A", "B", "C", "D", "E"))
+                                    .header("Authorization", "Bearer " + jwtTokenCampus),
+                            Map.class
+                    )
             );
             assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
         }
@@ -850,23 +783,13 @@ class PostsCreateControllerTest {
         @Test
         @DisplayName("Should fail when a poll option text exceeds 100 characters")
         void shouldFailWithPollOptionOver100Chars() {
-            String longOption = "X".repeat(101);
-            MultipartBody body = MultipartBody.builder()
-                .addPart("title", "Poll")
-                .addPart("postType", "poll")
-                .addPart("wall", "campus")
-                .addPart("pollOptions", "Short option")
-                .addPart("pollOptions", longOption)
-                .build();
-
             HttpClientResponseException exception = assertThrows(
-                HttpClientResponseException.class,
-                () -> client.toBlocking().exchange(
-                    HttpRequest.POST(BASE_PATH, body)
-                        .contentType(MediaType.MULTIPART_FORM_DATA_TYPE)
-                        .header("Authorization", "Bearer " + jwtTokenCampus),
-                    Map.class
-                )
+                    HttpClientResponseException.class,
+                    () -> client.toBlocking().exchange(
+                            HttpRequest.POST(BASE_PATH, poll("Poll", "campus", "Short option", "X".repeat(101)))
+                                    .header("Authorization", "Bearer " + jwtTokenCampus),
+                            Map.class
+                    )
             );
             assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
         }
@@ -874,20 +797,18 @@ class PostsCreateControllerTest {
         @Test
         @DisplayName("Should fail when poll has no options at all")
         void shouldFailWithNoPollOptions() {
-            MultipartBody body = MultipartBody.builder()
-                .addPart("title", "Poll no options")
-                .addPart("postType", "poll")
-                .addPart("wall", "campus")
-                .build();
+            CreatePostRequest request = new CreatePostRequest("Poll no options", "");
+            request.setPostType(CreatePostRequestPostType.POLL);
+            request.setWall(CreatePostRequestWall.CAMPUS);
+            request.setPollOptions(List.of());
 
             HttpClientResponseException exception = assertThrows(
-                HttpClientResponseException.class,
-                () -> client.toBlocking().exchange(
-                    HttpRequest.POST(BASE_PATH, body)
-                        .contentType(MediaType.MULTIPART_FORM_DATA_TYPE)
-                        .header("Authorization", "Bearer " + jwtTokenCampus),
-                    Map.class
-                )
+                    HttpClientResponseException.class,
+                    () -> client.toBlocking().exchange(
+                            HttpRequest.POST(BASE_PATH, request)
+                                    .header("Authorization", "Bearer " + jwtTokenCampus),
+                            Map.class
+                    )
             );
             assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
         }

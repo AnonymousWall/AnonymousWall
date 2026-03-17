@@ -1,7 +1,8 @@
 package com.anonymous.wall.listener;
 
 import com.anonymous.wall.event.InternshipHiddenEvent;
-import com.anonymous.wall.repository.CommentRepository;
+import com.anonymous.wall.listener.helper.CommentHideTransactionHelper;
+import com.anonymous.wall.service.base.CommentsService;
 import io.micronaut.context.event.ApplicationEventListener;
 import io.micronaut.scheduling.TaskExecutors;
 import io.micronaut.scheduling.annotation.Async;
@@ -25,7 +26,7 @@ public class InternshipHideEventListener implements ApplicationEventListener<Int
     private static final Logger log = LoggerFactory.getLogger(InternshipHideEventListener.class);
 
     @Inject
-    private CommentRepository commentRepository;
+    private CommentHideTransactionHelper commentHideTransactionHelper;
 
     /**
      * Handles internship hide events asynchronously.
@@ -34,20 +35,15 @@ public class InternshipHideEventListener implements ApplicationEventListener<Int
      * Runs in its own transaction to avoid closed connection issues.
      */
     @Override
-    @Async(TaskExecutors.IO)
-    @Transactional(propagation = TransactionDefinition.Propagation.REQUIRES_NEW)
+    @Async(TaskExecutors.BLOCKING)
     public void onApplicationEvent(InternshipHiddenEvent event) {
-        log.info("Processing internship hidden event: internshipId={}, userId={}",
-                event.getInternshipId(), event.getUserId());
-
+        log.info("Processing internship hidden event: internshipId={}", event.getInternshipId());
         try {
-            commentRepository.updateByParentTypeAndParentId("INTERNSHIP", event.getInternshipId(), true);
-            log.debug("Hidden all comments for internshipId={}", event.getInternshipId());
+            // @Transactional lives on commentService.hideByParent(), not here
+            commentHideTransactionHelper.hideCommentsByParent("INTERNSHIP", event.getInternshipId(), true);
+            log.info("Internship hide propagation completed for internshipId={}", event.getInternshipId());
         } catch (Exception e) {
-            log.error("Failed to hide comments for internshipId={}: {}",
-                    event.getInternshipId(), e.getMessage(), e);
+            log.error("Failed to hide comments for internshipId={}: {}", event.getInternshipId(), e.getMessage(), e);
         }
-
-        log.info("Internship hide propagation completed for internshipId={}", event.getInternshipId());
     }
 }

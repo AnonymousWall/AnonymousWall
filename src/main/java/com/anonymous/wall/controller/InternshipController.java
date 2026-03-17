@@ -2,16 +2,16 @@ package com.anonymous.wall.controller;
 
 import com.anonymous.wall.entity.Comment;
 import com.anonymous.wall.entity.Internship;
-import com.anonymous.wall.entity.UserEntity;
 import com.anonymous.wall.model.*;
-import com.anonymous.wall.service.CommentsService;
-import com.anonymous.wall.service.InternshipService;
-import com.anonymous.wall.service.UserService;
+import com.anonymous.wall.service.retry.CommentsRetryService;
+import com.anonymous.wall.service.retry.InternshipRetryService;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.annotation.*;
+import io.micronaut.scheduling.TaskExecutors;
+import io.micronaut.scheduling.annotation.ExecuteOn;
 import io.micronaut.security.annotation.Secured;
 import io.micronaut.security.rules.SecurityRule;
 import jakarta.inject.Inject;
@@ -27,18 +27,17 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Controller("/api/v1/internships")
+@ExecuteOn(TaskExecutors.BLOCKING)
 public class InternshipController {
 
     private static final Logger log = LoggerFactory.getLogger(InternshipController.class);
 
     @Inject
-    private InternshipService internshipService;
+    private InternshipRetryService internshipRetryService;
 
     @Inject
-    private CommentsService commentsService;
+    private CommentsRetryService commentsRetryService;
 
-    @Inject
-    private UserService userService;
 
     private UUID getUserIdFromRequest(HttpRequest<?> request) {
         Optional<Principal> principalOpt = request.getUserPrincipal();
@@ -73,7 +72,7 @@ public class InternshipController {
         try {
             UUID userId = getUserIdFromRequest(httpRequest);
             log.info("POST /internships - Creating new internship, user={}, company={}", userId, request.getCompany());
-            Internship internship = internshipService.createInternship(request, userId);
+            Internship internship = internshipRetryService.createInternship(request, userId);
             InternshipDTO dto = mapInternshipToDTO(internship);
             log.info("POST /internships - Internship created successfully, internshipId={}", dto.getId());
             return HttpResponse.created(dto);
@@ -104,7 +103,7 @@ public class InternshipController {
             if (limit < 1 || limit > 100) limit = 20;
 
             Pageable pageable = Pageable.from(page - 1, limit);
-            Page<Internship> internships = internshipService.getInternshipsByWall(wall, pageable, userId, schoolDomain, sortBy);
+            Page<Internship> internships = internshipRetryService.getInternshipsByWall(wall, pageable, userId, schoolDomain, sortBy);
 
             List<InternshipDTO> dtos = internships.getContent().stream()
                     .map(this::mapInternshipToDTO)
@@ -134,7 +133,7 @@ public class InternshipController {
             UUID userId = getUserIdFromRequest(httpRequest);
             UUID internshipUUID = UUID.fromString(internshipId);
             log.info("GET /internships/{} - Getting internship, user={}", internshipId, userId);
-            Internship internship = internshipService.getInternship(internshipUUID, userId);
+            Internship internship = internshipRetryService.getInternship(internshipUUID, userId);
             InternshipDTO dto = mapInternshipToDTO(internship);
             log.info("GET /internships/{} - Internship retrieved successfully", internshipId);
             return HttpResponse.ok(dto);
@@ -161,7 +160,7 @@ public class InternshipController {
         try {
             UUID userId = getUserIdFromRequest(httpRequest);
             log.info("PATCH /internships/{}/hide - Hiding internship, user={}", internshipId, userId);
-            internshipService.hideInternship(internshipId, userId);
+            internshipRetryService.hideInternship(internshipId, userId);
             Map<String, String> response = new HashMap<>();
             response.put("message", "Internship posting hidden successfully");
             log.info("PATCH /internships/{}/hide - Internship hidden successfully", internshipId);
@@ -189,7 +188,7 @@ public class InternshipController {
         try {
             UUID userId = getUserIdFromRequest(httpRequest);
             log.info("PATCH /internships/{}/unhide - Unhiding internship, user={}", internshipId, userId);
-            internshipService.unhideInternship(internshipId, userId);
+            internshipRetryService.unhideInternship(internshipId, userId);
             Map<String, String> response = new HashMap<>();
             response.put("message", "Internship posting unhidden successfully");
             log.info("PATCH /internships/{}/unhide - Internship unhidden successfully", internshipId);
@@ -220,7 +219,7 @@ public class InternshipController {
         try {
             UUID userId = getUserIdFromRequest(httpRequest);
             log.info("POST /internships/{}/comments - Adding comment, user={}", internshipId, userId);
-            Comment comment = commentsService.addComment(CommentParentType.INTERNSHIP, internshipId, request, userId);
+            Comment comment = commentsRetryService.addComment(CommentParentType.INTERNSHIP, internshipId, request, userId);
             CommentDTO dto = mapCommentToDTO(comment);
             log.info("POST /internships/{}/comments - Comment added successfully, commentId={}", internshipId, dto.getId());
             return HttpResponse.created(dto);
@@ -254,11 +253,11 @@ public class InternshipController {
             if (page < 1) page = 1;
             if (limit < 1 || limit > 100) limit = 20;
 
-            internshipService.getInternship(internshipId, userId);
+            internshipRetryService.getInternship(internshipId, userId);
 
             Pageable pageable = Pageable.from(page - 1, limit);
             SortBy sortBy = SortBy.parse(sort);
-            Page<Comment> commentPage = commentsService.getCommentsWithPagination(CommentParentType.INTERNSHIP, internshipId, pageable, sortBy, userId);
+            Page<Comment> commentPage = commentsRetryService.getCommentsWithPagination(CommentParentType.INTERNSHIP, internshipId, pageable, sortBy, userId);
 
             List<CommentDTO> dtos = commentPage.getContent().stream()
                     .map(this::mapCommentToDTO)
@@ -300,7 +299,7 @@ public class InternshipController {
         try {
             UUID userId = getUserIdFromRequest(httpRequest);
             log.info("PATCH /internships/{}/comments/{}/hide - Hiding comment, user={}", internshipId, commentId, userId);
-            commentsService.hideComment(CommentParentType.INTERNSHIP, internshipId, commentId, userId);
+            commentsRetryService.hideComment(CommentParentType.INTERNSHIP, internshipId, commentId, userId);
             Map<String, String> response = new HashMap<>();
             response.put("message", "Comment hidden successfully");
             return HttpResponse.ok(response);
@@ -328,7 +327,7 @@ public class InternshipController {
         try {
             UUID userId = getUserIdFromRequest(httpRequest);
             log.info("PATCH /internships/{}/comments/{}/unhide - Unhiding comment, user={}", internshipId, commentId, userId);
-            commentsService.unhideComment(CommentParentType.INTERNSHIP, internshipId, commentId, userId);
+            commentsRetryService.unhideComment(CommentParentType.INTERNSHIP, internshipId, commentId, userId);
             Map<String, String> response = new HashMap<>();
             response.put("message", "Comment unhidden successfully");
             return HttpResponse.ok(response);
@@ -368,16 +367,7 @@ public class InternshipController {
 
         InternshipDTOAuthor author = new InternshipDTOAuthor();
         author.setId(internship.getUserId().toString());
-
-        Optional<UserEntity> userOpt = userService.findById(internship.getUserId());
-        if (userOpt.isPresent()) {
-            UserEntity user = userOpt.get();
-            author.setProfileName(user.getProfileName());
-        } else {
-            log.warn("User {} not found for internship {}", internship.getUserId(), internship.getId());
-            author.setProfileName("Unknown User");
-        }
-
+        author.setProfileName(internship.getProfileName()); // ← no DB call
         author.setIsAnonymous(false);
         dto.setAuthor(author);
 

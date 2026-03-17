@@ -83,7 +83,7 @@ public class ApnsClient {
                 : "https://api.push.apple.com";
     }
 
-    public String getOrRefreshJwt() {
+    public synchronized String getOrRefreshJwt() {
         if (cachedJwt == null ||
                 Duration.between(jwtGeneratedAt, Instant.now()).toMinutes() >= 50) {
             cachedJwt = generateJwt();

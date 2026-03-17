@@ -2,6 +2,7 @@ package com.anonymous.wall.notification.service;
 
 import com.anonymous.wall.notification.apns.ApnsClient;
 import com.anonymous.wall.notification.device.DeviceTokenService;
+import io.micronaut.retry.annotation.Retryable;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import org.slf4j.Logger;
@@ -21,24 +22,19 @@ public class PushNotificationServiceImpl implements PushNotificationService {
     private DeviceTokenService deviceTokenService;
 
     @Override
+    @Retryable(attempts = "2", delay = "2s", excludes = IllegalArgumentException.class)
     public void sendPush(String deviceToken, String title, String body, Map<String, Object> data) {
-        try {
-            int status = apnsClient.send(deviceToken, title, body, data);
-            if (status == 200) {
-                // Success — no action
-            } else if (status == 410) {
-                deviceTokenService.deactivate(deviceToken);
-            } else if (status == 500) {
-                Thread.sleep(2000);
-                int retryStatus = apnsClient.send(deviceToken, title, body, data);
-                if (retryStatus != 200) {
-                    log.error("APNs retry failed for token {} with status {}", deviceToken, retryStatus);
-                }
-            } else {
-                log.error("APNs error for token {} with status {}", deviceToken, status);
-            }
-        } catch (Exception e) {
-            log.error("APNs send failed for token {}: {}", deviceToken, e.getMessage());
+        int status = apnsClient.send(deviceToken, title, body, data);
+        if (status == 200) {
+            // Success — no action
+        } else if (status == 410) {
+            // Permanent failure — token gone, deactivate and do not retry
+            deviceTokenService.deactivate(deviceToken);
+        } else if (status == 500) {
+            // Transient failure — throw so @Retryable can retry
+            throw new RuntimeException("APNs transient error for token " + deviceToken + ", status=500");
+        } else {
+            log.error("APNs error for token {} with status {}", deviceToken, status);
         }
     }
 }

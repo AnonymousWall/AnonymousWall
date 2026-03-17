@@ -8,11 +8,8 @@ import com.anonymous.wall.entity.UserBlock;
 import com.anonymous.wall.entity.UserEntity;
 import com.anonymous.wall.mapper.UserMapper;
 import com.anonymous.wall.model.*;
-import com.anonymous.wall.service.CommentsService;
-import com.anonymous.wall.service.InternshipService;
-import com.anonymous.wall.service.MarketplaceService;
-import com.anonymous.wall.service.UserBlockService;
-import com.anonymous.wall.service.UserService;
+import com.anonymous.wall.service.base.UserBlockService;
+import com.anonymous.wall.service.retry.*;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
 import io.micronaut.http.HttpRequest;
@@ -24,6 +21,8 @@ import io.micronaut.http.annotation.Get;
 import io.micronaut.http.annotation.Patch;
 import io.micronaut.http.annotation.PathVariable;
 import io.micronaut.http.annotation.QueryValue;
+import io.micronaut.scheduling.TaskExecutors;
+import io.micronaut.scheduling.annotation.ExecuteOn;
 import io.micronaut.security.annotation.Secured;
 import io.micronaut.security.rules.SecurityRule;
 import jakarta.inject.Inject;
@@ -35,24 +34,25 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Controller("/api/v1/users")
+@ExecuteOn(TaskExecutors.BLOCKING)
 public class UserController {
 
     private static final Logger log = LoggerFactory.getLogger(UserController.class);
 
     @Inject
-    private CommentsService commentsService;
+    private CommentsRetryService commentsRetryService;
 
     @Inject
-    private com.anonymous.wall.service.PostsService postsService;
+    private PostsRetryService postsRetryService;
 
     @Inject
-    private InternshipService internshipService;
+    private InternshipRetryService internshipRetryService;
 
     @Inject
-    private MarketplaceService marketplaceService;
+    private MarketplaceRetryService marketplaceRetryService;
 
     @Inject
-    private UserService userService;
+    private UserRetryService userRetryService;
 
     @Inject
     private UserBlockService userBlockService;
@@ -101,7 +101,7 @@ public class UserController {
 
             Pageable pageable = Pageable.from(page - 1, limit);
             SortBy sortBy = SortBy.parse(sort);
-            Page<Comment> commentPage = commentsService.getUserOwnComments(userId, pageable, sortBy);
+            Page<Comment> commentPage = commentsRetryService.getUserOwnComments(userId, pageable, sortBy);
 
             List<CommentDTO> dtos = commentPage.getContent().stream()
                     .map(this::mapCommentToDTO)
@@ -153,7 +153,7 @@ public class UserController {
 
             Pageable pageable = Pageable.from(page - 1, limit);
             SortBy sortBy = SortBy.parse(sort);
-            Page<Post> postPage = postsService.getUserOwnPosts(userId, pageable, sortBy);
+            Page<Post> postPage = postsRetryService.getUserOwnPosts(userId, pageable, sortBy);
 
             List<PostDTO> dtos = postPage.getContent().stream()
                     .map(this::mapPostToDTO)
@@ -203,7 +203,7 @@ public class UserController {
             if (limit < 1 || limit > 100) limit = 20;
 
             Pageable pageable = Pageable.from(page - 1, limit);
-            Page<Internship> internshipPage = internshipService.getUserOwnInternships(userId, pageable, sort);
+            Page<Internship> internshipPage = internshipRetryService.getUserOwnInternships(userId, pageable, sort);
 
             List<InternshipDTO> dtos = internshipPage.getContent().stream()
                     .map(this::mapInternshipToDTO)
@@ -253,7 +253,7 @@ public class UserController {
             if (limit < 1 || limit > 100) limit = 20;
 
             Pageable pageable = Pageable.from(page - 1, limit);
-            Page<MarketplaceItem> itemPage = marketplaceService.getUserOwnItems(userId, pageable, sort);
+            Page<MarketplaceItem> itemPage = marketplaceRetryService.getUserOwnItems(userId, pageable, sort);
 
             List<ItemDTO> dtos = itemPage.getContent().stream()
                     .map(this::mapItemToDTO)
@@ -295,7 +295,7 @@ public class UserController {
             String newProfileName = updateProfileNameRequest.getProfileName();
 
             // Use UserService which handles async propagation via events
-            UserEntity updatedUser = userService.updateProfileName(userId, newProfileName);
+            UserEntity updatedUser = userRetryService.updateProfileName(userId, newProfileName);
 
             log.info("PATCH /users/me/profile/name - Profile name updated successfully for user: {}, newName={}", 
                     userId, updatedUser.getProfileName());
@@ -368,7 +368,7 @@ public class UserController {
                 item.put("blockedUserId", block.getBlockedId().toString());
                 item.put("createdAt", block.getCreatedAt());
                 // Enrich with blocked user's profile name
-                userService.findById(block.getBlockedId()).ifPresent(u ->
+                userRetryService.findById(block.getBlockedId()).ifPresent(u ->
                     item.put("profileName", u.getProfileName())
                 );
                 return item;

@@ -4,7 +4,7 @@ import com.anonymous.wall.entity.SchoolDomain;
 import com.anonymous.wall.model.AdminDeleteSchoolDomain200Response;
 import com.anonymous.wall.model.CreateSchoolDomainRequest;
 import com.anonymous.wall.model.SchoolDomainDTO;
-import com.anonymous.wall.service.SchoolDomainService;
+import com.anonymous.wall.service.base.SchoolDomainService;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.annotation.*;
 import io.micronaut.security.annotation.Secured;

@@ -3,49 +3,42 @@ package com.anonymous.wall.controller;
 import com.anonymous.wall.entity.Post;
 import com.anonymous.wall.entity.Comment;
 import com.anonymous.wall.model.*;
-import com.anonymous.wall.service.PostsService;
-import com.anonymous.wall.service.CommentsService;
-import com.anonymous.wall.service.PollService;
+import com.anonymous.wall.service.retry.PollRetryService;
+import com.anonymous.wall.service.retry.PostsRetryService;
+import com.anonymous.wall.service.retry.CommentsRetryService;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.HttpRequest;
-import io.micronaut.http.MediaType;
 import io.micronaut.http.annotation.*;
-import io.micronaut.http.multipart.CompletedFileUpload;
-import io.micronaut.http.multipart.CompletedPart;
-import io.micronaut.http.server.multipart.MultipartBody;
 import io.micronaut.scheduling.TaskExecutors;
 import io.micronaut.scheduling.annotation.ExecuteOn;
 import io.micronaut.security.annotation.Secured;
 import io.micronaut.security.rules.SecurityRule;
-import jakarta.annotation.Nullable;
 import jakarta.inject.Inject;
 
-import java.nio.charset.StandardCharsets;
 import java.security.Principal;
 
-import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import reactor.core.publisher.Flux;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
 @Controller("/api/v1/posts")
+@ExecuteOn(TaskExecutors.BLOCKING)
 public class PostsController {
 
     private static final Logger log = LoggerFactory.getLogger(PostsController.class);
 
     @Inject
-    private PostsService postsService;
+    private PostsRetryService postsRetryService;
 
     @Inject
-    private CommentsService commentsService;
+    private PollRetryService pollRetryService;
 
     @Inject
-    private PollService pollService;
+    private CommentsRetryService commentsRetryService;
 
     // Helper to extract user ID from Principal
     private UUID getUserIdFromRequest(HttpRequest<?> request) {
@@ -86,59 +79,28 @@ public class PostsController {
      * POST /posts
      * Create a new post (multipart/form-data with optional images)
      */
-    @io.micronaut.http.annotation.Post(consumes = MediaType.MULTIPART_FORM_DATA)
+    @io.micronaut.http.annotation.Post
     @Secured(SecurityRule.IS_AUTHENTICATED)
-    @ExecuteOn(TaskExecutors.BLOCKING)
     public HttpResponse<Object> createPost(
-            @Body MultipartBody body,
+            @Body CreatePostRequest request,
             HttpRequest<?> httpRequest) {
         try {
             UUID userId = getUserIdFromRequest(httpRequest);
             log.info("POST /posts - Creating new post, user={}", userId);
-            // Safe to block here because @ExecuteOn(BLOCKING) moves us off the event loop
-            List<CompletedPart> parts = Flux.from(body).collectList().block();
 
-            String title = null;
-            String content = null;
-            String wall = null;
-            String postType = null;
-            List<String> pollOptions = new ArrayList<>();
-            List<CompletedFileUpload> images = new ArrayList<>();
-
-            for (CompletedPart part : parts) {
-                if (part instanceof CompletedFileUpload file) {
-                    if ("images".equals(file.getName()) && file.getSize() > 0) {
-                        images.add(file);
-                    }
-                } else {
-                    String value = new String(part.getBytes(), StandardCharsets.UTF_8);
-                    switch (part.getName()) {
-                        case "title"        -> title = value;
-                        case "content"      -> content = value;
-                        case "wall"         -> wall = value;
-                        case "postType"     -> postType = value;
-                        case "pollOptions"  -> pollOptions.add(value);
-                    }
-                }
-            }
-
-            log.info("POST /posts - user={}, content_length={}, imageCount={}, postType={}",
-                    userId, content != null ? content.length() : 0, images.size(), postType);
-
-            if (title == null || title.isBlank()) {
+            if (request.getTitle() == null || request.getTitle().isBlank()) {
                 return HttpResponse.badRequest(error("Title is required"));
             }
 
-            boolean isPoll = "poll".equalsIgnoreCase(postType);
+            boolean isPoll = CreatePostRequestPostType.POLL.equals(request.getPostType());
 
-            // For standard posts, content is required
-            if (!isPoll && (content == null || content.isBlank())) {
+            if (!isPoll && (request.getContent() == null || request.getContent().isBlank())) {
                 return HttpResponse.badRequest(error("Content is required"));
             }
 
-            // Validate poll options early
             if (isPoll) {
-                if (pollOptions.size() < 2) {
+                List<String> pollOptions = request.getPollOptions();
+                if (pollOptions == null || pollOptions.size() < 2) {
                     return HttpResponse.badRequest(error("Poll must have at least 2 options"));
                 }
                 if (pollOptions.size() > 4) {
@@ -154,20 +116,13 @@ public class PostsController {
                 }
             }
 
-            CreatePostRequest request = new CreatePostRequest(title, content != null ? content : "");
-            if (wall != null && !wall.isEmpty()) {
-                try {
-                    request.setWall(CreatePostRequestWall.fromValue(wall.toLowerCase()));
-                } catch (IllegalArgumentException e) {
-                    return HttpResponse.badRequest(error("Wall must be 'campus' or 'national'"));
-                }
-            }
-            if (isPoll) {
-                request.setPostType(CreatePostRequestPostType.POLL);
-                request.setPollOptions(pollOptions);
-            }
+            log.info("POST /posts - user={}, content_length={}, imageCount={}, postType={}",
+                    userId,
+                    request.getContent() != null ? request.getContent().length() : 0,
+                    request.getImageObjectNames() != null ? request.getImageObjectNames().size() : 0,
+                    request.getPostType());
 
-            Post post = postsService.createPost(request, images, userId);
+            Post post = postsRetryService.createPost(request, userId);
 
             PostDTO dto = mapPostToDTO(post, userId);
 
@@ -195,7 +150,7 @@ public class PostsController {
             UUID userId = getUserIdFromRequest(httpRequest);
             log.info("GET /posts/{} - Getting post, user={}", postId, userId);
 
-            Post post = postsService.getPost(postId, userId);
+            Post post = postsRetryService.getPost(postId, userId);
             PostDTO dto = mapPostToDTO(post, userId);
 
             log.info("GET /posts/{} - Post retrieved successfully", postId);
@@ -242,7 +197,7 @@ public class PostsController {
             com.anonymous.wall.model.SortBy sortBy = com.anonymous.wall.model.SortBy.parse(sort);
             
             // Use optimized method that doesn't require user lookup
-            Page<Post> posts = postsService.getPostsByWall(wall, pageable, userId, schoolDomain, sortBy);
+            Page<Post> posts = postsRetryService.getPostsByWall(wall, pageable, userId, schoolDomain, sortBy);
 
             List<PostDTO> dtos = posts.getContent().stream()
                     .map(p -> mapPostToDTO(p, userId))
@@ -277,7 +232,7 @@ public class PostsController {
             UUID userId = getUserIdFromRequest(httpRequest);
             log.info("POST /posts/{}/comments - Adding comment, user={}, text_length={}", postId, userId, request.getText().length());
 
-            Comment comment = commentsService.addComment(CommentParentType.POST, postId, request, userId);
+            Comment comment = commentsRetryService.addComment(CommentParentType.POST, postId, request, userId);
             CommentDTO dto = mapCommentToDTO(comment);
 
             log.info("POST /posts/{}/comments - Comment added successfully, commentId={}", postId, dto.getId());
@@ -320,11 +275,11 @@ public class PostsController {
             if (limit < 1 || limit > 100) limit = 20;
 
             // This will validate visibility and throw if user doesn't have access
-            postsService.getPost(postId, userId);
+            postsRetryService.getPost(postId, userId);
 
             Pageable pageable = Pageable.from(page - 1, limit);
             com.anonymous.wall.model.SortBy sortBy = com.anonymous.wall.model.SortBy.parse(sort);
-            Page<Comment> commentPage = commentsService.getCommentsWithPagination(CommentParentType.POST, postId, pageable, sortBy, userId);
+            Page<Comment> commentPage = commentsRetryService.getCommentsWithPagination(CommentParentType.POST, postId, pageable, sortBy, userId);
 
             List<CommentDTO> dtos = commentPage.getContent().stream()
                     .map(this::mapCommentToDTO)
@@ -368,7 +323,7 @@ public class PostsController {
             UUID userId = getUserIdFromRequest(httpRequest);
             log.info("POST /posts/{}/likes - Toggling like, user={}", postId, userId);
 
-            Map<String, Object> result = postsService.toggleLikeWithDetails(postId, userId);
+            Map<String, Object> result = postsRetryService.toggleLikeWithDetails(postId, userId);
 
             log.info("POST /posts/{}/likes - Like toggled successfully, liked={}, likeCount={}", postId, result.get("liked"), result.get("likeCount"));
             return HttpResponse.ok(result);
@@ -401,7 +356,7 @@ public class PostsController {
             UUID userId = getUserIdFromRequest(httpRequest);
             log.info("PATCH /posts/{}/comments/{}/hide - Hiding comment, user={}", postId, commentId, userId);
 
-            commentsService.hideComment(CommentParentType.POST, postId, commentId, userId);
+            commentsRetryService.hideComment(CommentParentType.POST, postId, commentId, userId);
 
             Map<String, String> response = new HashMap<>();
             response.put("message", "Comment hidden successfully");
@@ -438,7 +393,7 @@ public class PostsController {
             UUID userId = getUserIdFromRequest(httpRequest);
             log.info("PATCH /posts/{}/comments/{}/unhide - Unhiding comment, user={}", postId, commentId, userId);
 
-            commentsService.unhideComment(CommentParentType.POST, postId, commentId, userId);
+            commentsRetryService.unhideComment(CommentParentType.POST, postId, commentId, userId);
 
             Map<String, String> response = new HashMap<>();
             response.put("message", "Comment unhidden successfully");
@@ -474,7 +429,7 @@ public class PostsController {
             UUID userId = getUserIdFromRequest(httpRequest);
             log.info("PATCH /posts/{}/hide - Hiding post, user={}", postId, userId);
 
-            postsService.hidePost(postId, userId);
+            postsRetryService.hidePost(postId, userId);
 
             Map<String, String> response = new HashMap<>();
             response.put("message", "Post hidden successfully");
@@ -509,7 +464,7 @@ public class PostsController {
             UUID userId = getUserIdFromRequest(httpRequest);
             log.info("PATCH /posts/{}/unhide - Unhiding post, user={}", postId, userId);
 
-            postsService.unhidePost(postId, userId);
+            postsRetryService.unhidePost(postId, userId);
 
             Map<String, String> response = new HashMap<>();
             response.put("message", "Post unhidden successfully");
@@ -546,7 +501,7 @@ public class PostsController {
             log.info("POST /posts/{}/reports - Reporting post, user={}", postId, userId);
 
             String reason = request != null && request.getReason() != null ? request.getReason() : null;
-            postsService.reportPost(postId, userId, reason);
+            postsRetryService.reportPost(postId, userId, reason);
 
             Map<String, String> response = new HashMap<>();
             response.put("message", "Post reported successfully");
@@ -581,7 +536,7 @@ public class PostsController {
             log.info("POST /posts/{}/comments/{}/reports - Reporting comment, user={}", postId, commentId, userId);
 
             String reason = request != null && request.getReason() != null ? request.getReason() : null;
-            commentsService.reportComment(commentId, userId, reason);
+            commentsRetryService.reportComment(commentId, userId, reason);
 
             Map<String, String> response = new HashMap<>();
             response.put("message", "Comment reported successfully");
@@ -625,7 +580,7 @@ public class PostsController {
             // Include poll data if userId is available
             if (currentUserId != null) {
                 try {
-                    Map<String, Object> pollData = pollService.getPollData(post.getId(), currentUserId, false);
+                    Map<String, Object> pollData = pollRetryService.getPollData(post.getId(), currentUserId, false);
                     PollDTO pollDTO = buildPollDTO(pollData);
                     dto.setPoll(pollDTO);
                 } catch (Exception e) {

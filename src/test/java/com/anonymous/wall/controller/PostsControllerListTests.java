@@ -7,6 +7,7 @@ import com.anonymous.wall.repository.PostLikeRepository;
 import com.anonymous.wall.repository.PostRepository;
 import com.anonymous.wall.repository.UserRepository;
 import com.anonymous.wall.service.JwtTokenService;
+import com.anonymous.wall.service.impl.PostsCache;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.HttpStatus;
@@ -46,6 +47,9 @@ class PostsControllerListTests {
     @Inject
     private JwtTokenService jwtTokenService;
 
+    @Inject
+    private PostsCache postsCache;
+
     private static final String BASE_PATH = "/api/v1/posts";
 
     private UserEntity testUserHarvard;
@@ -57,6 +61,7 @@ class PostsControllerListTests {
 
     @BeforeEach
     void setUp() {
+        postsCache.invalidateAll();
         // Clean up any leftover data
         postLikeRepository.deleteAll();
         commentRepository.deleteAll();
@@ -98,6 +103,7 @@ class PostsControllerListTests {
         postLikeRepository.deleteAll();
         commentRepository.deleteAll();
         postRepository.deleteAll();
+        postsCache.invalidateAll();
     }
 
     @Nested

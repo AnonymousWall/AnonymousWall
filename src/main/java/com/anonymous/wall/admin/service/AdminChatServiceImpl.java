@@ -59,6 +59,6 @@ public class AdminChatServiceImpl implements AdminChatService {
     @Override
     public Page<ChatMessage> getConversationMessages(UUID conversationId, Pageable pageable) {
         log.info("Admin fetching messages for conversation: {}", conversationId);
-        return chatMessageRepository.findByConversationIdOrderByCreatedAtAsc(conversationId, pageable);
+        return chatMessageRepository.findByConversationIdOrderByCreatedAtDesc(conversationId, pageable);
     }
 }

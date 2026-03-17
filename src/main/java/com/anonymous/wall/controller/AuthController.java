@@ -4,14 +4,15 @@ import com.anonymous.wall.entity.RefreshToken;
 import com.anonymous.wall.entity.UserEntity;
 import com.anonymous.wall.mapper.UserMapper;
 import com.anonymous.wall.model.*;
-import com.anonymous.wall.repository.RefreshTokenRepository;
-import com.anonymous.wall.service.AuthService;
+import com.anonymous.wall.service.retry.AuthRetryService;
 import com.anonymous.wall.service.JwtTokenService;
-import com.anonymous.wall.service.UserService;
+import com.anonymous.wall.service.retry.UserRetryService;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.annotation.Body;
 import io.micronaut.http.annotation.Controller;
 import io.micronaut.http.annotation.Post;
+import io.micronaut.scheduling.TaskExecutors;
+import io.micronaut.scheduling.annotation.ExecuteOn;
 import io.micronaut.security.annotation.Secured;
 import io.micronaut.security.rules.SecurityRule;
 import io.micronaut.serde.annotation.Serdeable;
@@ -19,29 +20,26 @@ import jakarta.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.time.OffsetDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
 @Controller("/api/v1/auth")
+@ExecuteOn(TaskExecutors.BLOCKING)
 public class AuthController {
 
     private static final Logger log = LoggerFactory.getLogger(AuthController.class);
 
     @Inject
-    private AuthService authService;
+    private AuthRetryService authRetryService;
 
     @Inject
-    private UserService userService;
+    private UserRetryService userRetryService;
 
     @Inject
     private UserMapper userMapper;
 
     @Inject
     private JwtTokenService jwtTokenService;
-
-    @Inject
-    private RefreshTokenRepository refreshTokenRepository;
 
     /**
      * POST /auth/email/send-code
@@ -60,7 +58,7 @@ public class AuthController {
             }
 
             // Check email exists for login/reset
-            Optional<UserEntity> userOpt = userService.findByEmail(request.getEmail());
+            Optional<UserEntity> userOpt = userRetryService.findByEmail(request.getEmail());
 
             if (request.getPurpose() == SendEmailCodeRequestPurpose.REGISTER) {
                 if (userOpt.isPresent()) {
@@ -75,7 +73,7 @@ public class AuthController {
                 }
             }
 
-            authService.sendEmailCode(request);
+            authRetryService.sendEmailCode(request);
             log.info("POST /auth/email/send-code - Verification code sent successfully to email: {}", request.getEmail());
             return HttpResponse.ok(new MessageResponse("Verification code sent to email"));
         } catch (Exception e) {
@@ -94,9 +92,9 @@ public class AuthController {
         try {
             log.info("POST /auth/register/email - Registering new user with email: {}", request.getEmail());
 
-            UserEntity user = authService.registerWithEmail(request);
+            UserEntity user = authRetryService.registerWithEmail(request);
             String accessToken = jwtTokenService.generateToken(user);
-            String rawRefreshToken = issueRefreshToken(user.getId());
+            String rawRefreshToken = authRetryService.issueRefreshToken(user.getId());
 
             log.info("POST /auth/register/email - User registered successfully, userId={}", user.getId());
             return HttpResponse.created(success(
@@ -126,9 +124,9 @@ public class AuthController {
         try {
             log.info("POST /auth/login/email - Login attempt with email: {}", request.getEmail());
 
-            UserEntity user = authService.loginWithEmail(request);
+            UserEntity user = authRetryService.loginWithEmail(request);
             String accessToken = jwtTokenService.generateToken(user);
-            String rawRefreshToken = issueRefreshToken(user.getId());
+            String rawRefreshToken = authRetryService.issueRefreshToken(user.getId());
 
             log.info("POST /auth/login/email - User logged in successfully, userId={}", user.getId());
             return HttpResponse.ok(success(
@@ -155,9 +153,9 @@ public class AuthController {
         try {
             log.info("POST /auth/login/password - Login attempt with email: {}", request.getEmail());
 
-            UserEntity user = authService.loginWithPassword(request);
+            UserEntity user = authRetryService.loginWithPassword(request);
             String accessToken = jwtTokenService.generateToken(user);
-            String rawRefreshToken = issueRefreshToken(user.getId());
+            String rawRefreshToken = authRetryService.issueRefreshToken(user.getId());
 
             log.info("POST /auth/login/password - User logged in successfully, userId={}", user.getId());
             return HttpResponse.ok(success(
@@ -193,14 +191,14 @@ public class AuthController {
             UUID userId = UUID.fromString(principalOpt.get().getName());
             log.info("POST /auth/password/set - Setting password for user: {}", userId);
 
-            Optional<UserEntity> userOpt = userService.findById(userId);
+            Optional<UserEntity> userOpt = userRetryService.findById(userId);
 
             if (userOpt.isEmpty()) {
                 log.warn("POST /auth/password/set - User not found: {}", userId);
                 return HttpResponse.badRequest(error("User not found"));
             }
 
-            UserEntity user = authService.setPassword(request, userOpt.get());
+            UserEntity user = authRetryService.setPassword(request, userOpt.get());
             if (user == null) {
                 log.warn("POST /auth/password/set - Failed to set password for user: {}", userId);
                 return HttpResponse.badRequest(error("Failed to set password"));
@@ -236,14 +234,14 @@ public class AuthController {
             UUID userId = UUID.fromString(principalOpt.get().getName());
             log.info("POST /auth/password/change - Changing password for user: {}", userId);
 
-            Optional<UserEntity> userOpt = userService.findById(userId);
+            Optional<UserEntity> userOpt = userRetryService.findById(userId);
 
             if (userOpt.isEmpty()) {
                 log.warn("POST /auth/password/change - User not found: {}", userId);
                 return HttpResponse.badRequest(error("User not found"));
             }
 
-            UserEntity user = authService.changePassword(request, userOpt.get());
+            UserEntity user = authRetryService.changePassword(request, userOpt.get());
             if (user == null) {
                 log.warn("POST /auth/password/change - Failed to change password for user: {}", userId);
                 return HttpResponse.badRequest(error("Failed to change password"));
@@ -270,7 +268,7 @@ public class AuthController {
         try {
             log.info("POST /auth/password/reset-request - Password reset request for email: {}", request.getEmail());
 
-            authService.requestPasswordReset(request);
+            authRetryService.requestPasswordReset(request);
 
             log.info("POST /auth/password/reset-request - Password reset code sent successfully to email: {}", request.getEmail());
             return HttpResponse.ok(new MessageResponse("Password reset code sent to email"));
@@ -293,9 +291,9 @@ public class AuthController {
         try {
             log.info("POST /auth/password/reset - Resetting password");
 
-            UserEntity user = authService.resetPassword(request);
+            UserEntity user = authRetryService.resetPassword(request);
             String accessToken = jwtTokenService.generateToken(user);
-            String rawRefreshToken = issueRefreshToken(user.getId());
+            String rawRefreshToken = authRetryService.issueRefreshToken(user.getId());
 
             log.info("POST /auth/password/reset - Password reset successfully, userId={}", user.getId());
             return HttpResponse.ok(success(
@@ -322,17 +320,6 @@ public class AuthController {
         return new AuthSuccessResponse(accessToken, refreshToken, user);
     }
 
-    private String issueRefreshToken(UUID userId) {
-        refreshTokenRepository.updateRevokedByUserId(userId, true);
-        String rawRefreshToken = jwtTokenService.generateRefreshToken();
-        RefreshToken refreshTokenEntity = new RefreshToken();
-        refreshTokenEntity.setUserId(userId);
-        refreshTokenEntity.setTokenHash(jwtTokenService.hashToken(rawRefreshToken));
-        refreshTokenEntity.setExpiresAt(OffsetDateTime.now().plusDays(30));
-        refreshTokenRepository.save(refreshTokenEntity);
-        return rawRefreshToken;
-    }
-
     /**
      * POST /auth/refresh
      * Exchange a refresh token for a new token pair (token rotation)
@@ -344,15 +331,13 @@ public class AuthController {
             return HttpResponse.badRequest(error("Refresh token is required"));
         }
 
-        String tokenHash = jwtTokenService.hashToken(request.getRefreshToken());
-        Optional<RefreshToken> stored = refreshTokenRepository.findByTokenHashAndRevokedFalse(tokenHash);
-
-        if (stored.isEmpty() || stored.get().getExpiresAt().isBefore(OffsetDateTime.now())) {
+        Optional<RefreshToken> stored = authRetryService.findValidRefreshToken(request.getRefreshToken());
+        if (stored.isEmpty()) {
             return HttpResponse.unauthorized();
         }
 
         RefreshToken existing = stored.get();
-        Optional<UserEntity> userOpt = userService.findById(existing.getUserId());
+        Optional<UserEntity> userOpt = userRetryService.findById(existing.getUserId());
         if (userOpt.isEmpty()) {
             return HttpResponse.unauthorized();
         }
@@ -364,11 +349,10 @@ public class AuthController {
         }
 
         // Rotate — revoke old token, issue new pair
-        existing.setRevoked(true);
-        refreshTokenRepository.update(existing);
+        authRetryService.revokeRefreshToken(existing);
 
         String newAccessToken = jwtTokenService.generateToken(user);
-        String newRawRefreshToken = issueRefreshToken(user.getId());
+        String newRawRefreshToken = authRetryService.issueRefreshToken(user.getId());
 
         log.info("POST /auth/refresh - Refresh token rotated for userId={}", user.getId());
 
@@ -388,7 +372,7 @@ public class AuthController {
         }
 
         UUID userId = UUID.fromString(principalOpt.get().getName());
-        refreshTokenRepository.updateRevokedByUserId(userId, true);
+        authRetryService.revokeRefreshTokensForUser(userId);
 
         log.info("POST /auth/logout - Refresh tokens revoked for userId={}", userId);
         return HttpResponse.ok(new MessageResponse("Logged out successfully"));

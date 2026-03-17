@@ -1,6 +1,6 @@
 package com.anonymous.wall.util;
 
-import com.anonymous.wall.service.SchoolDomainService;
+import com.anonymous.wall.service.base.SchoolDomainService;
 import io.micronaut.context.event.ApplicationEventListener;
 import io.micronaut.context.event.StartupEvent;
 import jakarta.inject.Inject;

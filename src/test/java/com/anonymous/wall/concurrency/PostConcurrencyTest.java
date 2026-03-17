@@ -9,8 +9,8 @@ import com.anonymous.wall.repository.PostRepository;
 import com.anonymous.wall.repository.CommentRepository;
 import com.anonymous.wall.repository.PostLikeRepository;
 import com.anonymous.wall.repository.UserRepository;
-import com.anonymous.wall.service.PostsService;
-import com.anonymous.wall.service.CommentsService;
+import com.anonymous.wall.service.base.PostsService;
+import com.anonymous.wall.service.base.CommentsService;
 import io.micronaut.test.extensions.junit5.annotation.MicronautTest;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.AfterEach;
@@ -107,7 +107,7 @@ public class PostConcurrencyTest {
             Thread.sleep(1000);
 
             // Verify at least some comments were saved and count is reasonable
-            Post refreshedPost = postRepository.findById(testPost.getId()).orElseThrow();
+            Post refreshedPost = postsService.findById(testPost.getId()).orElseThrow();
             long actualCommentCount = commentRepository.findByParentTypeAndParentIdAndHiddenFalse("POST", testPost.getId()).size();
 
             assertTrue(actualCommentCount > 0, "At least some comments should be saved");
@@ -144,7 +144,7 @@ public class PostConcurrencyTest {
 
         Thread.sleep(1000);
 
-        Post refreshedPost = postRepository.findById(testPost.getId()).orElseThrow();
+        Post refreshedPost = postsService.findById(testPost.getId()).orElseThrow();
         long actualLikeCount = postLikeRepository.countByPostId(testPost.getId());
 
         // Most important: count in post matches actual likes
@@ -182,7 +182,7 @@ public class PostConcurrencyTest {
 
         Thread.sleep(1000);
 
-        Post refreshedPost = postRepository.findById(testPost.getId()).orElseThrow();
+        Post refreshedPost = postsService.findById(testPost.getId()).orElseThrow();
         long actualCommentCount = commentRepository.findByParentTypeAndParentIdAndHiddenFalse("POST", testPost.getId()).size();
         long actualLikeCount = postLikeRepository.countByPostId(testPost.getId());
 
@@ -226,7 +226,7 @@ public class PostConcurrencyTest {
 
             Thread.sleep(1000);
 
-            Post refreshedPost = postRepository.findById(testPost.getId()).orElseThrow();
+            Post refreshedPost = postsService.findById(testPost.getId()).orElseThrow();
             long actualCommentCount = commentRepository.findByParentTypeAndParentIdAndHiddenFalse("POST", testPost.getId()).size();
 
             // Verify counts are consistent (not zero, and match actual)

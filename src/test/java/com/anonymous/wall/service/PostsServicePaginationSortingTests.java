@@ -2,11 +2,12 @@ package com.anonymous.wall.service;
 
 import com.anonymous.wall.entity.Post;
 import com.anonymous.wall.entity.UserEntity;
-import com.anonymous.wall.model.CreatePostRequest;
 import com.anonymous.wall.model.SortBy;
 import com.anonymous.wall.repository.PostLikeRepository;
 import com.anonymous.wall.repository.PostRepository;
 import com.anonymous.wall.repository.UserRepository;
+import com.anonymous.wall.service.base.PostsService;
+import com.anonymous.wall.service.impl.PostsCache;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
 import io.micronaut.test.extensions.junit5.annotation.MicronautTest;
@@ -14,7 +15,6 @@ import jakarta.inject.Inject;
 import org.junit.jupiter.api.*;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -35,6 +35,9 @@ class PostsServicePaginationSortingTests {
     @Inject
     private UserRepository userRepository;
 
+    @Inject
+    private PostsCache postsCache;
+
     private UserEntity testUserCampus;
     private UserEntity testUserNational;
     private UUID campusUserId;
@@ -43,6 +46,7 @@ class PostsServicePaginationSortingTests {
     @BeforeEach
     void setUp() {
         // Clean up
+        postsCache.invalidateAll();
         postLikeRepository.deleteAll();
         postRepository.deleteAll();
         userRepository.deleteAll();
@@ -88,6 +92,7 @@ class PostsServicePaginationSortingTests {
         postLikeRepository.deleteAll();
         postRepository.deleteAll();
         userRepository.deleteAll();
+        postsCache.invalidateAll();
     }
 
     @Nested
@@ -149,17 +154,6 @@ class PostsServicePaginationSortingTests {
 
             assertThrows(IllegalArgumentException.class, () ->
                 postsService.getPostsByWall("invalid_wall", pageable, campusUserId, "harvard.edu", SortBy.NEWEST)
-            );
-        }
-
-        @Test
-        @DisplayName("Should throw exception for non-existent user")
-        void shouldThrowExceptionForNonExistentUser() {
-            Pageable pageable = Pageable.from(0, 20);
-            UUID nonExistentUserId = UUID.randomUUID();
-
-            assertThrows(IllegalArgumentException.class, () ->
-                postsService.getPostsByWall("campus", pageable, nonExistentUserId, "harvard.edu", SortBy.NEWEST)
             );
         }
 

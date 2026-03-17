@@ -31,25 +31,28 @@ public class JwtTokenService {
     private static final int REFRESH_TOKEN_BYTES = 32;
 
     @Value("${micronaut.security.token.jwt.generator.access-token.expiration:900}")
-    private Integer accessTokenExpiration;
+    private int accessTokenExpiration;
 
     @Inject
     private JwtTokenGenerator tokenGenerator;
+
+    private void validateUserForTokenGeneration(UserEntity user) {
+        if (user == null || user.getId() == null) {
+            throw new IllegalArgumentException("User and user ID cannot be null");
+        }
+        if (user.isBlocked()) {
+            log.warn("Token generation denied for blocked user: userId={}, email={}", user.getId(), user.getEmail());
+            throw new IllegalArgumentException("Access denied. Your account has been blocked.");
+        }
+    }
 
     /**
      * Generate JWT token for a user
      * Token expires in 15 minutes
      */
     public String generateToken(UserEntity user) {
-        if (user == null || user.getId() == null) {
-            throw new IllegalArgumentException("User and user ID cannot be null");
-        }
 
-        // Prevent token generation for blocked users
-        if (user.isBlocked()) {
-            log.warn("Token generation denied for blocked user: userId={}, email={}", user.getId(), user.getEmail());
-            throw new IllegalArgumentException("Access denied. Your account has been blocked.");
-        }
+        validateUserForTokenGeneration(user);
 
         try {
             Map<String, Object> claims = new HashMap<>();
@@ -66,7 +69,7 @@ public class JwtTokenService {
             List<String> roles = Collections.singletonList(user.getRole());
 
             // Convert 15 minutes to seconds (900 seconds)
-            Integer expirationSeconds = accessTokenExpiration;
+            int expirationSeconds = accessTokenExpiration;
 
             Optional<String> token = tokenGenerator.generateToken(
                 Authentication.build(user.getId().toString(), roles, claims),
@@ -90,15 +93,8 @@ public class JwtTokenService {
      * Token expires in 15 minutes
      */
     public String generateToken(UserEntity user, Map<String, Object> customClaims) {
-        if (user == null || user.getId() == null) {
-            throw new IllegalArgumentException("User and user ID cannot be null");
-        }
 
-        // Prevent token generation for blocked users
-        if (user.isBlocked()) {
-            log.warn("Token generation denied for blocked user: userId={}, email={}", user.getId(), user.getEmail());
-            throw new IllegalArgumentException("Access denied. Your account has been blocked.");
-        }
+        validateUserForTokenGeneration(user);
 
         try {
             Map<String, Object> claims = new HashMap<>();
@@ -120,7 +116,7 @@ public class JwtTokenService {
             List<String> roles = Collections.singletonList(user.getRole());
 
             // Convert 15 minutes to seconds (900 seconds)
-            Integer expirationSeconds = 900;
+            int expirationSeconds = accessTokenExpiration;
 
             Optional<String> token = tokenGenerator.generateToken(
                 Authentication.build(user.getId().toString(), roles, claims),
@@ -143,9 +139,11 @@ public class JwtTokenService {
      * Generate a cryptographically random refresh token.
      * Returns the raw token — store only the hash.
      */
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+
     public String generateRefreshToken() {
         byte[] bytes = new byte[REFRESH_TOKEN_BYTES];
-        new SecureRandom().nextBytes(bytes);
+        SECURE_RANDOM.nextBytes(bytes);
         return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
     }
 

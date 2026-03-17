@@ -21,13 +21,13 @@ public interface ChatMessageRepository extends CrudRepository<ChatMessage, UUID>
 
     /**
      * Find all messages in a conversation by conversation ID.
-     * Results are ordered by created_at ascending (oldest first).
+     * Results are ordered by created_at descending (newest first).
      *
      * @param conversationId The conversation ID
      * @param pageable Pagination parameters
      * @return Page of messages
      */
-    Page<ChatMessage> findByConversationIdOrderByCreatedAtAsc(UUID conversationId, Pageable pageable);
+    Page<ChatMessage> findByConversationIdOrderByCreatedAtDesc(UUID conversationId, Pageable pageable);
 
     /**
      * Count unread messages in a conversation for a specific receiver.

@@ -2,20 +2,14 @@ package com.anonymous.wall.controller;
 
 import com.anonymous.wall.entity.Comment;
 import com.anonymous.wall.entity.MarketplaceItem;
-import com.anonymous.wall.entity.UserEntity;
 import com.anonymous.wall.model.*;
-import com.anonymous.wall.service.CommentsService;
-import com.anonymous.wall.service.MarketplaceService;
-import com.anonymous.wall.service.UserService;
+import com.anonymous.wall.service.retry.CommentsRetryService;
+import com.anonymous.wall.service.retry.MarketplaceRetryService;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpResponse;
-import io.micronaut.http.MediaType;
 import io.micronaut.http.annotation.*;
-import io.micronaut.http.multipart.CompletedFileUpload;
-import io.micronaut.http.multipart.CompletedPart;
-import io.micronaut.http.server.multipart.MultipartBody;
 import io.micronaut.scheduling.TaskExecutors;
 import io.micronaut.scheduling.annotation.ExecuteOn;
 import io.micronaut.security.annotation.Secured;
@@ -23,12 +17,8 @@ import io.micronaut.security.rules.SecurityRule;
 import jakarta.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import reactor.core.publisher.Flux;
 
-import java.math.BigDecimal;
-import java.nio.charset.StandardCharsets;
 import java.security.Principal;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -37,18 +27,16 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Controller("/api/v1/marketplace")
+@ExecuteOn(TaskExecutors.BLOCKING)
 public class MarketplaceController {
 
     private static final Logger log = LoggerFactory.getLogger(MarketplaceController.class);
 
     @Inject
-    private MarketplaceService marketplaceService;
+    private MarketplaceRetryService marketplaceRetryService;
 
     @Inject
-    private CommentsService commentsService;
-
-    @Inject
-    private UserService userService;
+    private CommentsRetryService commentsRetryService;
 
     private UUID getUserIdFromRequest(HttpRequest<?> request) {
         Optional<Principal> principalOpt = request.getUserPrincipal();
@@ -77,87 +65,23 @@ public class MarketplaceController {
         return null;
     }
 
-    @Post(consumes = MediaType.MULTIPART_FORM_DATA)
+    @Post
     @Secured(SecurityRule.IS_AUTHENTICATED)
-    @ExecuteOn(TaskExecutors.BLOCKING)
     public HttpResponse<Object> createItem(
-            @Body MultipartBody body,
+            @Body CreateItemRequest request,
             HttpRequest<?> httpRequest) {
         try {
             UUID userId = getUserIdFromRequest(httpRequest);
             log.info("POST /marketplace - Creating new item, user={}", userId);
 
-            List<CompletedPart> parts = Flux.from(body).collectList().block();
-
-            String title = null;
-            String description = null;
-            String priceStr = null;
-            String category = null;
-            String condition = null;
-            String wall = null;
-            List<CompletedFileUpload> images = new ArrayList<>();
-
-            for (CompletedPart part : parts) {
-                if (part instanceof CompletedFileUpload file) {
-                    if ("images".equals(file.getName()) && file.getSize() > 0) {
-                        images.add(file);
-                    }
-                } else {
-                    String value = new String(part.getBytes(), StandardCharsets.UTF_8);
-                    switch (part.getName()) {
-                        case "title"       -> title = value;
-                        case "description" -> description = value;
-                        case "price"       -> priceStr = value;
-                        case "category"    -> category = value;
-                        case "condition"   -> condition = value;
-                        case "wall"        -> wall = value;
-                    }
-                }
-            }
-
-            log.info("POST /marketplace - user={}, title={}, imageCount={}", userId, title, images.size());
-
-            if (title == null || title.isBlank()) {
+            if (request.getTitle() == null || request.getTitle().isBlank()) {
                 return HttpResponse.badRequest(error("Title is required"));
             }
-            if (priceStr == null || priceStr.isBlank()) {
+            if (request.getPrice() == null) {
                 return HttpResponse.badRequest(error("Price is required"));
             }
 
-            Float price;
-            try {
-                price = Float.parseFloat(priceStr);
-            } catch (NumberFormatException e) {
-                return HttpResponse.badRequest(error("Price must be a valid number"));
-            }
-
-            CreateItemRequest request = new CreateItemRequest(title, price);
-            if (description != null && !description.isBlank()) {
-                request.setDescription(description);
-            }
-            if (category != null && !category.isBlank()) {
-                try {
-                    request.setCategory(CreateItemRequestCategory.fromValue(category));
-                } catch (IllegalArgumentException e) {
-                    return HttpResponse.badRequest(error("Invalid category. Must be one of: textbooks, electronics, furniture, clothing, stationery, sports, transport, food, services, housing, tickets, other"));
-                }
-            }
-            if (condition != null && !condition.isBlank()) {
-                try {
-                    request.setCondition(CreateItemRequestCondition.fromValue(condition));
-                } catch (IllegalArgumentException e) {
-                    return HttpResponse.badRequest(error("Invalid condition. Must be one of: new, like-new, good, fair"));
-                }
-            }
-            if (wall != null && !wall.isBlank()) {
-                try {
-                    request.setWall(CreatePostRequestWall.fromValue(wall.toLowerCase()));
-                } catch (IllegalArgumentException e) {
-                    return HttpResponse.badRequest(error("Wall must be 'campus' or 'national'"));
-                }
-            }
-
-            MarketplaceItem item = marketplaceService.createItem(request, images, userId);
+            MarketplaceItem item = marketplaceRetryService.createItem(request, userId);
             ItemDTO dto = mapItemToDTO(item);
             log.info("POST /marketplace - Item created successfully, itemId={}", dto.getId());
             return HttpResponse.created(dto);
@@ -200,7 +124,7 @@ public class MarketplaceController {
             }
 
             Pageable pageable = Pageable.from(page - 1, limit);
-            Page<MarketplaceItem> items = marketplaceService.getItemsByWall(wall, pageable, userId, schoolDomain, sortBy, categoryValue);
+            Page<MarketplaceItem> items = marketplaceRetryService.getItemsByWall(wall, pageable, userId, schoolDomain, sortBy, categoryValue);
 
             List<ItemDTO> dtos = items.getContent().stream()
                     .map(this::mapItemToDTO)
@@ -230,7 +154,7 @@ public class MarketplaceController {
             UUID userId = getUserIdFromRequest(httpRequest);
             UUID itemUUID = UUID.fromString(itemId);
             log.info("GET /marketplace/{} - Getting item, user={}", itemId, userId);
-            MarketplaceItem item = marketplaceService.getItem(itemUUID, userId);
+            MarketplaceItem item = marketplaceRetryService.getItem(itemUUID, userId);
             ItemDTO dto = mapItemToDTO(item);
             log.info("GET /marketplace/{} - Item retrieved successfully", itemId);
             return HttpResponse.ok(dto);
@@ -259,7 +183,7 @@ public class MarketplaceController {
             UUID userId = getUserIdFromRequest(httpRequest);
             UUID itemUUID = UUID.fromString(itemId);
             log.info("PUT /marketplace/{} - Updating item, user={}", itemId, userId);
-            MarketplaceItem item = marketplaceService.updateItem(itemUUID, request, userId);
+            MarketplaceItem item = marketplaceRetryService.updateItem(itemUUID, request, userId);
             ItemDTO dto = mapItemToDTO(item);
             log.info("PUT /marketplace/{} - Item updated successfully", itemId);
             return HttpResponse.ok(dto);
@@ -286,7 +210,7 @@ public class MarketplaceController {
         try {
             UUID userId = getUserIdFromRequest(httpRequest);
             log.info("PATCH /marketplace/{}/hide - Hiding item, user={}", itemId, userId);
-            marketplaceService.hideItem(itemId, userId);
+            marketplaceRetryService.hideItem(itemId, userId);
             Map<String, String> response = new HashMap<>();
             response.put("message", "Item hidden successfully");
             log.info("PATCH /marketplace/{}/hide - Item hidden successfully", itemId);
@@ -314,7 +238,7 @@ public class MarketplaceController {
         try {
             UUID userId = getUserIdFromRequest(httpRequest);
             log.info("PATCH /marketplace/{}/unhide - Unhiding item, user={}", itemId, userId);
-            marketplaceService.unhideItem(itemId, userId);
+            marketplaceRetryService.unhideItem(itemId, userId);
             Map<String, String> response = new HashMap<>();
             response.put("message", "Item unhidden successfully");
             log.info("PATCH /marketplace/{}/unhide - Item unhidden successfully", itemId);
@@ -345,7 +269,7 @@ public class MarketplaceController {
         try {
             UUID userId = getUserIdFromRequest(httpRequest);
             log.info("POST /marketplace/{}/comments - Adding comment, user={}", itemId, userId);
-            Comment comment = commentsService.addComment(CommentParentType.MARKETPLACE, itemId, request, userId);
+            Comment comment = commentsRetryService.addComment(CommentParentType.MARKETPLACE, itemId, request, userId);
             CommentDTO dto = mapCommentToDTO(comment);
             log.info("POST /marketplace/{}/comments - Comment added successfully, commentId={}", itemId, dto.getId());
             return HttpResponse.created(dto);
@@ -379,11 +303,11 @@ public class MarketplaceController {
             if (page < 1) page = 1;
             if (limit < 1 || limit > 100) limit = 20;
 
-            marketplaceService.getItem(itemId, userId);
+            marketplaceRetryService.getItem(itemId, userId);
 
             Pageable pageable = Pageable.from(page - 1, limit);
             SortBy sortBy = SortBy.parse(sort);
-            Page<Comment> commentPage = commentsService.getCommentsWithPagination(CommentParentType.MARKETPLACE, itemId, pageable, sortBy, userId);
+            Page<Comment> commentPage = commentsRetryService.getCommentsWithPagination(CommentParentType.MARKETPLACE, itemId, pageable, sortBy, userId);
 
             List<CommentDTO> dtos = commentPage.getContent().stream()
                     .map(this::mapCommentToDTO)
@@ -425,7 +349,7 @@ public class MarketplaceController {
         try {
             UUID userId = getUserIdFromRequest(httpRequest);
             log.info("PATCH /marketplace/{}/comments/{}/hide - Hiding comment, user={}", itemId, commentId, userId);
-            commentsService.hideComment(CommentParentType.MARKETPLACE, itemId, commentId, userId);
+            commentsRetryService.hideComment(CommentParentType.MARKETPLACE, itemId, commentId, userId);
             Map<String, String> response = new HashMap<>();
             response.put("message", "Comment hidden successfully");
             return HttpResponse.ok(response);
@@ -453,7 +377,7 @@ public class MarketplaceController {
         try {
             UUID userId = getUserIdFromRequest(httpRequest);
             log.info("PATCH /marketplace/{}/comments/{}/unhide - Unhiding comment, user={}", itemId, commentId, userId);
-            commentsService.unhideComment(CommentParentType.MARKETPLACE, itemId, commentId, userId);
+            commentsRetryService.unhideComment(CommentParentType.MARKETPLACE, itemId, commentId, userId);
             Map<String, String> response = new HashMap<>();
             response.put("message", "Comment unhidden successfully");
             return HttpResponse.ok(response);
@@ -509,13 +433,7 @@ public class MarketplaceController {
         ItemDTOAuthor author = new ItemDTOAuthor();
         author.setId(item.getUserId().toString());
 
-        Optional<UserEntity> userOpt = userService.findById(item.getUserId());
-        if (userOpt.isPresent()) {
-            UserEntity user = userOpt.get();
-            author.setProfileName(user.getProfileName());
-        } else {
-            author.setProfileName("Anonymous");
-        }
+        author.setProfileName(item.getProfileName());
 
         author.setIsAnonymous(false);
         dto.setAuthor(author);

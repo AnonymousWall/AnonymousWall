@@ -340,33 +340,36 @@ paths:
       requestBody:
         required: true
         content:
-          multipart/form-data:
+          application/json:
             schema:
-              type: object
-              required: [title, content]
-              properties:
-                title:
-                  type: string
-                  minLength: 1
-                  maxLength: 255
-                  description: Post title
-                content:
-                  type: string
-                  minLength: 1
-                  maxLength: 5000
-                  description: Post content text
-                wall:
-                  type: string
-                  enum: [campus, national]
-                  default: campus
-                  description: Which wall to post to
-                images:
-                  type: array
-                  items:
-                    type: string
-                    format: binary
-                  maxItems: 5
-                  description: Optional image files (JPEG, PNG, or WEBP, max 5MB each, up to 5 images)
+              $ref: "#/components/schemas/CreatePostRequest"
+#          multipart/form-data:
+#            schema:
+#              type: object
+#              required: [title, content]
+#              properties:
+#                title:
+#                  type: string
+#                  minLength: 1
+#                  maxLength: 255
+#                  description: Post title
+#                content:
+#                  type: string
+#                  minLength: 1
+#                  maxLength: 5000
+#                  description: Post content text
+#                wall:
+#                  type: string
+#                  enum: [campus, national]
+#                  default: campus
+#                  description: Which wall to post to
+#                images:
+#                  type: array
+#                  items:
+#                    type: string
+#                    format: binary
+#                  maxItems: 5
+#                  description: Optional image files (JPEG, PNG, or WEBP, max 5MB each, up to 5 images)
       responses:
         "201":
           description: Post created successfully
@@ -1216,39 +1219,42 @@ paths:
       requestBody:
         required: true
         content:
-          multipart/form-data:
+          application/json:
             schema:
-              type: object
-              required: [title, price]
-              properties:
-                title:
-                  type: string
-                  description: Item title
-                description:
-                  type: string
-                  description: Item description
-                price:
-                  type: string
-                  description: Item price
-                category:
-                  type: string
-                  enum: [textbooks, electronics, furniture, clothing, stationery, sports, transport, food, services, housing, tickets, other]
-                  description: Item category
-                condition:
-                  type: string
-                  enum: [new, like-new, good, fair]
-                  description: Condition of the item
-                wall:
-                  type: string
-                  enum: [campus, national]
-                  default: campus
-                  description: Which wall to post to
-                images:
-                  type: array
-                  items:
-                    type: string
-                    format: binary
-                  description: Optional image files (JPEG, PNG, or WEBP, max 5MB each, up to 5 images)
+              $ref: "#/components/schemas/CreateItemRequest"
+#          multipart/form-data:
+#            schema:
+#              type: object
+#              required: [title, price]
+#              properties:
+#                title:
+#                  type: string
+#                  description: Item title
+#                description:
+#                  type: string
+#                  description: Item description
+#                price:
+#                  type: string
+#                  description: Item price
+#                category:
+#                  type: string
+#                  enum: [textbooks, electronics, furniture, clothing, stationery, sports, transport, food, services, housing, tickets, other]
+#                  description: Item category
+#                condition:
+#                  type: string
+#                  enum: [new, like-new, good, fair]
+#                  description: Condition of the item
+#                wall:
+#                  type: string
+#                  enum: [campus, national]
+#                  default: campus
+#                  description: Which wall to post to
+#                images:
+#                  type: array
+#                  items:
+#                    type: string
+#                    format: binary
+#                  description: Optional image files (JPEG, PNG, or WEBP, max 5MB each, up to 5 images)
       responses:
         "201":
           description: Item created successfully
@@ -1975,42 +1981,42 @@ paths:
 
   # =================== Chat ===================
 
-  /chat/images:
-    post:
-      tags: [chat]
-      summary: Upload a chat image
-      description: Upload an image to use in a chat message. Returns the image URL immediately.
-      operationId: uploadChatImage
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          multipart/form-data:
-            schema:
-              type: object
-              required:
-                - image
-              properties:
-                image:
-                  type: string
-                  format: binary
-                  description: Image file (JPEG, PNG, or WEBP, max 5MB)
-      responses:
-        "201":
-          description: Image uploaded successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  url:
-                    type: string
-                    description: URL of the uploaded image
-        "400":
-          description: Invalid image (wrong format, too large, etc.)
-        "401":
-          description: Unauthorized - authentication required
+#  /chat/images:
+#    post:
+#      tags: [chat]
+#      summary: Upload a chat image
+#      description: Upload an image to use in a chat message. Returns the image URL immediately.
+#      operationId: uploadChatImage
+#      security:
+#        - bearerAuth: []
+#      requestBody:
+#        required: true
+#        content:
+#          multipart/form-data:
+#            schema:
+#              type: object
+#              required:
+#                - image
+#              properties:
+#                image:
+#                  type: string
+#                  format: binary
+#                  description: Image file (JPEG, PNG, or WEBP, max 5MB)
+#      responses:
+#        "201":
+#          description: Image uploaded successfully
+#          content:
+#            application/json:
+#              schema:
+#                type: object
+#                properties:
+#                  url:
+#                    type: string
+#                    description: URL of the uploaded image
+#        "400":
+#          description: Invalid image (wrong format, too large, etc.)
+#        "401":
+#          description: Unauthorized - authentication required
 
   /chat/conversations:
     get:
@@ -4004,6 +4010,36 @@ paths:
         "404":
           description: Object not found
 
+  /media/presign:
+    post:
+      tags: [ media ]
+      summary: Get a presigned upload URL
+      description: >
+        Returns a pre-authenticated OCI Object Storage URL that the client uses
+        to PUT the file directly. The server is not involved in the upload.
+        Supported folders: posts, marketplace, chat.
+        After uploading, pass the returned objectName to the relevant create endpoint.
+      operationId: getPresignedUploadUrl
+      security:
+        - bearerAuth: [ ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PresignRequest"
+      responses:
+        "200":
+          description: Presigned URL generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PresignResponse"
+        "400":
+          description: Invalid folder or filename
+        "401":
+          description: Unauthorized - authentication required
+
 components:
   schemas:
 
@@ -4180,6 +4216,12 @@ components:
           minItems: 2
           maxItems: 4
           description: Poll options (required when postType=poll, 2-4 items)
+        imageObjectNames:
+          type: array
+          items:
+            type: string
+          maxItems: 5
+          description: Object names returned by POST /media/presign (up to 5)
 
     PostDTO:
       type: object
@@ -4439,6 +4481,12 @@ components:
           enum: [campus, national]
           default: campus
           description: Which wall to post to
+        imageObjectNames:
+          type: array
+          items:
+            type: string
+          maxItems: 5
+          description: Object names returned by POST /media/presign (up to 5)
 
     UpdateItemRequest:
       type: object
@@ -4462,6 +4510,35 @@ components:
           type: string
           enum: [new, like-new, good, fair]
           description: Condition of the item
+
+    PresignRequest:
+      type: object
+      required: [filename, folder]
+      properties:
+        filename:
+          type: string
+          description: Original filename including extension, e.g. "photo.jpg"
+          example: "photo.jpg"
+        folder:
+          type: string
+          enum: [posts, marketplace, chat]
+          description: Destination folder in OCI Object Storage
+
+    PresignResponse:
+      type: object
+      properties:
+        uploadUrl:
+          type: string
+          description: >
+            Pre-authenticated OCI URL. Client should PUT the file directly to
+            this URL with the correct Content-Type header. URL expires in 15 minutes.
+          example: "https://objectstorage.ca-toronto-1.oraclecloud.com/p/.../o/posts/uuid.jpg"
+        objectName:
+          type: string
+          description: >
+            Stable object identifier to pass to create endpoints via imageObjectNames.
+            Also used to retrieve the object via GET /media/{objectName}.
+          example: "posts/550e8400-e29b-41d4-a716-446655440000.jpg"
 
     ItemDTO:
       type: object
@@ -4866,10 +4943,12 @@ components:
         content:
           type: string
           maxLength: 5000
-          description: Message content (optional if imageUrl is provided)
-        imageUrl:
+          description: Message content (optional if imageObjectName is provided)
+        imageObjectName:
           type: string
-          description: URL of the attached image (optional if content is provided)
+          description: >
+            Object name returned by POST /media/presign (optional if content is provided).
+            Replaces the old imageUrl field — the client resolves display via GET /media/{objectName}.
 
     ConversationDTO:
       type: object

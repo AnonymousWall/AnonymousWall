@@ -7,6 +7,7 @@ import com.anonymous.wall.repository.CommentRepository;
 import com.anonymous.wall.repository.PostLikeRepository;
 import com.anonymous.wall.repository.PostRepository;
 import com.anonymous.wall.repository.UserRepository;
+import com.anonymous.wall.service.base.PostsService;
 import io.micronaut.test.extensions.junit5.annotation.MicronautTest;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.*;
@@ -83,7 +84,7 @@ class PostsServiceImplCreatePostTest {
             CreatePostRequest request = new CreatePostRequest("Campus Post", "Great campus post!");
 
             // Act
-            Post result = postsService.createPost(request, null, testUserHarvard.getId());
+            Post result = postsService.createPost(request, testUserHarvard.getId());
 
             // Assert
             assertNotNull(result);
@@ -101,7 +102,7 @@ class PostsServiceImplCreatePostTest {
             CreatePostRequest request = new CreatePostRequest("Title", "A");
 
             // Act
-            Post result = postsService.createPost(request, null, testUserHarvard.getId());
+            Post result = postsService.createPost(request, testUserHarvard.getId());
 
             // Assert
             assertEquals(1, result.getContent().length());
@@ -115,7 +116,7 @@ class PostsServiceImplCreatePostTest {
             CreatePostRequest request = new CreatePostRequest("Max Content Title", maxContent);
 
             // Act
-            Post result = postsService.createPost(request, null, testUserHarvard.getId());
+            Post result = postsService.createPost(request, testUserHarvard.getId());
 
             // Assert
             assertEquals(5000, result.getContent().length());
@@ -129,7 +130,7 @@ class PostsServiceImplCreatePostTest {
             CreatePostRequest request = new CreatePostRequest("Special Post", content);
 
             // Act
-            Post result = postsService.createPost(request, null, testUserHarvard.getId());
+            Post result = postsService.createPost(request, testUserHarvard.getId());
 
             // Assert
             assertEquals(content, result.getContent());
@@ -143,7 +144,7 @@ class PostsServiceImplCreatePostTest {
             CreatePostRequest request = new CreatePostRequest("Multi-line Post", content);
 
             // Act
-            Post result = postsService.createPost(request, null, testUserHarvard.getId());
+            Post result = postsService.createPost(request, testUserHarvard.getId());
 
             // Assert
             assertEquals(content, result.getContent());
@@ -157,8 +158,8 @@ class PostsServiceImplCreatePostTest {
             CreatePostRequest request2 = new CreatePostRequest("Second Title", "Second post");
 
             // Act
-            Post result1 = postsService.createPost(request1, null, testUserHarvard.getId());
-            Post result2 = postsService.createPost(request2, null, testUserHarvard.getId());
+            Post result1 = postsService.createPost(request1, testUserHarvard.getId());
+            Post result2 = postsService.createPost(request2, testUserHarvard.getId());
 
             // Assert
             assertNotEquals(result1.getId(), result2.getId());
@@ -173,7 +174,7 @@ class PostsServiceImplCreatePostTest {
             CreatePostRequest request = new CreatePostRequest("User Test", "User test");
 
             // Act
-            Post result = postsService.createPost(request, null, testUserHarvard.getId());
+            Post result = postsService.createPost(request, testUserHarvard.getId());
 
             // Assert
             assertEquals(testUserHarvard.getId(), result.getUserId());
@@ -187,8 +188,8 @@ class PostsServiceImplCreatePostTest {
             CreatePostRequest request2 = new CreatePostRequest("MIT Post", "MIT post");
 
             // Act
-            Post result1 = postsService.createPost(request1, null, testUserHarvard.getId());
-            Post result2 = postsService.createPost(request2, null, testUserMIT.getId());
+            Post result1 = postsService.createPost(request1, testUserHarvard.getId());
+            Post result2 = postsService.createPost(request2, testUserMIT.getId());
 
             // Assert
             assertEquals("harvard.edu", result1.getSchoolDomain());
@@ -209,7 +210,7 @@ class PostsServiceImplCreatePostTest {
             // Act & Assert
             IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
-                () -> postsService.createPost(request, null, testUserHarvard.getId())
+                () -> postsService.createPost(request, testUserHarvard.getId())
             );
             assertTrue(exception.getMessage().contains("cannot be empty"));
         }
@@ -223,7 +224,7 @@ class PostsServiceImplCreatePostTest {
             // Act & Assert
             IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
-                () -> postsService.createPost(request, null, testUserHarvard.getId())
+                () -> postsService.createPost(request, testUserHarvard.getId())
             );
             assertTrue(exception.getMessage().contains("cannot be empty"));
         }
@@ -238,7 +239,7 @@ class PostsServiceImplCreatePostTest {
             // Act & Assert
             IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
-                () -> postsService.createPost(request, null, testUserHarvard.getId())
+                () -> postsService.createPost(request, testUserHarvard.getId())
             );
             assertTrue(exception.getMessage().contains("exceeds maximum length"));
         }
@@ -253,7 +254,7 @@ class PostsServiceImplCreatePostTest {
             // Act & Assert
             IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
-                () -> postsService.createPost(request, null, nonexistentUserId)
+                () -> postsService.createPost(request, nonexistentUserId)
             );
             assertTrue(exception.getMessage().contains("User not found"));
         }
@@ -275,7 +276,7 @@ class PostsServiceImplCreatePostTest {
             // Act & Assert
             IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
-                () -> postsService.createPost(request, null, userId)
+                () -> postsService.createPost(request, userId)
             );
             assertTrue(exception.getMessage().contains("Cannot post to campus wall"));
         }
@@ -292,7 +293,7 @@ class PostsServiceImplCreatePostTest {
             CreatePostRequest request = new CreatePostRequest("Campus Title", "Campus content");
 
             // Act
-            Post result = postsService.createPost(request, null, testUserHarvard.getId());
+            Post result = postsService.createPost(request, testUserHarvard.getId());
 
             // Assert
             assertEquals("harvard.edu", result.getSchoolDomain());
@@ -305,7 +306,7 @@ class PostsServiceImplCreatePostTest {
             CreatePostRequest request = new CreatePostRequest("Stats Title", "Stats test");
 
             // Act
-            Post result = postsService.createPost(request, null, testUserHarvard.getId());
+            Post result = postsService.createPost(request, testUserHarvard.getId());
 
             // Assert
             assertEquals(0, result.getLikeCount());
@@ -320,7 +321,7 @@ class PostsServiceImplCreatePostTest {
             CreatePostRequest request = new CreatePostRequest("Timestamp Title", "Timestamp test");
 
             // Act
-            Post result = postsService.createPost(request, null, testUserHarvard.getId());
+            Post result = postsService.createPost(request, testUserHarvard.getId());
 
             // Assert
             assertNotNull(result.getCreatedAt());
@@ -335,8 +336,8 @@ class PostsServiceImplCreatePostTest {
             CreatePostRequest mitRequest = new CreatePostRequest("MIT Title", "MIT campus");
 
             // Act
-            Post harvardPost = postsService.createPost(harvardRequest, null, testUserHarvard.getId());
-            Post mitPost = postsService.createPost(mitRequest, null, testUserMIT.getId());
+            Post harvardPost = postsService.createPost(harvardRequest, testUserHarvard.getId());
+            Post mitPost = postsService.createPost(mitRequest, testUserMIT.getId());
 
             // Assert
             assertEquals("harvard.edu", harvardPost.getSchoolDomain());
@@ -356,7 +357,7 @@ class PostsServiceImplCreatePostTest {
             CreatePostRequest request = new CreatePostRequest("Database Title", "Database test");
 
             // Act
-            Post result = postsService.createPost(request, null, testUserHarvard.getId());
+            Post result = postsService.createPost(request, testUserHarvard.getId());
 
             // Assert
             Optional<Post> retrieved = postRepository.findById(result.getId());
@@ -374,8 +375,8 @@ class PostsServiceImplCreatePostTest {
             CreatePostRequest request2 = new CreatePostRequest("Post 2 Title", "Post 2");
 
             // Act
-            Post result1 = postsService.createPost(request1, null, testUserHarvard.getId());
-            Post result2 = postsService.createPost(request2, null, testUserHarvard.getId());
+            Post result1 = postsService.createPost(request1, testUserHarvard.getId());
+            Post result2 = postsService.createPost(request2, testUserHarvard.getId());
 
             // Assert
             Optional<Post> saved1 = postRepository.findById(result1.getId());
@@ -393,7 +394,7 @@ class PostsServiceImplCreatePostTest {
             CreatePostRequest request = new CreatePostRequest("Content Test Title", content);
 
             // Act
-            Post result = postsService.createPost(request, null, testUserHarvard.getId());
+            Post result = postsService.createPost(request, testUserHarvard.getId());
 
             // Assert
             Optional<Post> saved = postRepository.findById(result.getId());
@@ -413,7 +414,7 @@ class PostsServiceImplCreatePostTest {
             CreatePostRequest request = new CreatePostRequest("My Post Title", "Post content");
 
             // Act
-            Post result = postsService.createPost(request, null, testUserHarvard.getId());
+            Post result = postsService.createPost(request, testUserHarvard.getId());
 
             // Assert
             assertNotNull(result);
@@ -428,7 +429,7 @@ class PostsServiceImplCreatePostTest {
             CreatePostRequest request = new CreatePostRequest("A", "Content here");
 
             // Act
-            Post result = postsService.createPost(request, null, testUserHarvard.getId());
+            Post result = postsService.createPost(request, testUserHarvard.getId());
 
             // Assert
             assertEquals("A", result.getTitle());
@@ -443,7 +444,7 @@ class PostsServiceImplCreatePostTest {
             CreatePostRequest request = new CreatePostRequest(maxTitle, "Content");
 
             // Act
-            Post result = postsService.createPost(request, null, testUserHarvard.getId());
+            Post result = postsService.createPost(request, testUserHarvard.getId());
 
             // Assert
             assertEquals(255, result.getTitle().length());
@@ -458,7 +459,7 @@ class PostsServiceImplCreatePostTest {
             CreatePostRequest request = new CreatePostRequest(title, "Content");
 
             // Act
-            Post result = postsService.createPost(request, null, testUserHarvard.getId());
+            Post result = postsService.createPost(request, testUserHarvard.getId());
 
             // Assert
             assertEquals(title, result.getTitle());
@@ -472,7 +473,7 @@ class PostsServiceImplCreatePostTest {
             CreatePostRequest request = new CreatePostRequest(title, "Content");
 
             // Act
-            Post result = postsService.createPost(request, null, testUserHarvard.getId());
+            Post result = postsService.createPost(request, testUserHarvard.getId());
 
             // Assert
             assertEquals(title, result.getTitle());
@@ -487,7 +488,7 @@ class PostsServiceImplCreatePostTest {
             // Act & Assert
             IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
-                () -> postsService.createPost(request, null, testUserHarvard.getId())
+                () -> postsService.createPost(request, testUserHarvard.getId())
             );
             assertTrue(exception.getMessage().contains("title cannot be empty"));
         }
@@ -501,7 +502,7 @@ class PostsServiceImplCreatePostTest {
             // Act & Assert
             IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
-                () -> postsService.createPost(request, null, testUserHarvard.getId())
+                () -> postsService.createPost(request, testUserHarvard.getId())
             );
             assertTrue(exception.getMessage().contains("title cannot be empty"));
         }
@@ -515,7 +516,7 @@ class PostsServiceImplCreatePostTest {
             // Act & Assert
             IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
-                () -> postsService.createPost(request, null, testUserHarvard.getId())
+                () -> postsService.createPost(request, testUserHarvard.getId())
             );
             assertTrue(exception.getMessage().contains("title cannot be empty"));
         }
@@ -530,7 +531,7 @@ class PostsServiceImplCreatePostTest {
             // Act & Assert
             IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
-                () -> postsService.createPost(request, null, testUserHarvard.getId())
+                () -> postsService.createPost(request, testUserHarvard.getId())
             );
             assertTrue(exception.getMessage().contains("exceeds maximum length of 255 characters"));
         }
@@ -543,7 +544,7 @@ class PostsServiceImplCreatePostTest {
             CreatePostRequest request = new CreatePostRequest(title, "Content");
 
             // Act
-            Post result = postsService.createPost(request, null, testUserHarvard.getId());
+            Post result = postsService.createPost(request, testUserHarvard.getId());
 
             // Assert
             Optional<Post> saved = postRepository.findById(result.getId());
@@ -559,8 +560,8 @@ class PostsServiceImplCreatePostTest {
             CreatePostRequest request2 = new CreatePostRequest("Title 2", "Content 2");
 
             // Act
-            Post result1 = postsService.createPost(request1, null, testUserHarvard.getId());
-            Post result2 = postsService.createPost(request2, null, testUserHarvard.getId());
+            Post result1 = postsService.createPost(request1, testUserHarvard.getId());
+            Post result2 = postsService.createPost(request2, testUserHarvard.getId());
 
             // Assert
             Optional<Post> saved1 = postRepository.findById(result1.getId());
@@ -581,7 +582,7 @@ class PostsServiceImplCreatePostTest {
             CreatePostRequest request = new CreatePostRequest(title, content);
 
             // Act
-            Post result = postsService.createPost(request, null, testUserHarvard.getId());
+            Post result = postsService.createPost(request, testUserHarvard.getId());
 
             // Assert
             assertEquals(title, result.getTitle());
@@ -597,8 +598,8 @@ class PostsServiceImplCreatePostTest {
             CreatePostRequest request2 = new CreatePostRequest("Same Title", "Content 2");
 
             // Act
-            Post result1 = postsService.createPost(request1, null, testUserHarvard.getId());
-            Post result2 = postsService.createPost(request2, null, testUserMIT.getId());
+            Post result1 = postsService.createPost(request1, testUserHarvard.getId());
+            Post result2 = postsService.createPost(request2, testUserMIT.getId());
 
             // Assert
             assertEquals(result1.getTitle(), result2.getTitle());
@@ -615,7 +616,7 @@ class PostsServiceImplCreatePostTest {
             CreatePostRequest request = new CreatePostRequest(longTitle.substring(0, 255), "Content");
 
             // Act
-            Post result = postsService.createPost(request, null, testUserHarvard.getId());
+            Post result = postsService.createPost(request, testUserHarvard.getId());
 
             // Assert
             assertEquals(255, result.getTitle().length());

@@ -37,4 +37,6 @@ public interface PostLikeRepository extends CrudRepository<PostLike, UUID> {
      * Delete all likes for a post (useful for post deletion)
      */
     long deleteByPostId(UUID postId);
+
+    List<PostLike> findByUserId(UUID userId);
 }

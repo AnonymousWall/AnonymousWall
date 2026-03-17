@@ -2,14 +2,14 @@ package com.anonymous.wall.controller;
 
 import com.anonymous.wall.entity.ChatMessage;
 import com.anonymous.wall.model.ChatMessageDTO;
-import com.anonymous.wall.service.ChatService;
+import com.anonymous.wall.service.retry.ChatRetryService;
 import com.anonymous.wall.service.RedisPubSubService;
-import io.micronaut.core.annotation.Nullable;
+import io.micronaut.scheduling.TaskExecutors;
+import io.micronaut.scheduling.annotation.ExecuteOn;
 import io.micronaut.security.annotation.Secured;
 import io.micronaut.security.authentication.Authentication;
 import io.micronaut.security.rules.SecurityRule;
 import io.micronaut.serde.ObjectMapper;
-import io.micronaut.websocket.WebSocketBroadcaster;
 import io.micronaut.websocket.WebSocketSession;
 import io.micronaut.websocket.annotation.*;
 import jakarta.inject.Inject;
@@ -34,10 +34,7 @@ public class ChatWebSocketHandler {
     private static final Logger log = LoggerFactory.getLogger(ChatWebSocketHandler.class);
 
     @Inject
-    private ChatService chatService;
-
-    @Inject
-    private WebSocketBroadcaster broadcaster;
+    private ChatRetryService chatRetryService;
 
     @Inject
     private ObjectMapper objectMapper;
@@ -53,6 +50,7 @@ public class ChatWebSocketHandler {
      * Only authenticated users can connect.
      */
     @OnOpen
+    @ExecuteOn(TaskExecutors.BLOCKING)
     public void onOpen(WebSocketSession session) {
         try {
             UUID userId = getUserIdFromSession(session);
@@ -81,15 +79,15 @@ public class ChatWebSocketHandler {
             response.put("userId", userId.toString());
             response.put("timestamp", System.currentTimeMillis());
             
-            session.sendSync(serializeToJson(response));
+            session.sendAsync(serializeToJson(response));
             
             // Notify about unread messages count
-            long unreadCount = chatService.countTotalUnreadMessages(userId);
+            long unreadCount = chatRetryService.countTotalUnreadMessages(userId);
             if (unreadCount > 0) {
                 Map<String, Object> unreadNotification = new HashMap<>();
                 unreadNotification.put("type", "unreadCount");
                 unreadNotification.put("count", unreadCount);
-                session.sendSync(serializeToJson(unreadNotification));
+                session.sendAsync(serializeToJson(unreadNotification));
             }
         } catch (Exception e) {
             log.error("Error handling WebSocket connection", e);
@@ -107,6 +105,7 @@ public class ChatWebSocketHandler {
      * }
      */
     @OnMessage
+    @ExecuteOn(TaskExecutors.BLOCKING)
     public void onMessage(String message, WebSocketSession session) {
         try {
             UUID senderId = getUserIdFromSession(session);
@@ -137,8 +136,8 @@ public class ChatWebSocketHandler {
 
                 UUID receiverId = UUID.fromString(receiverIdStr);
 
-                // Save message via service
-                ChatMessage chatMessage = chatService.sendMessage(senderId, receiverId, content, imageUrl);
+                // Save message via service (retry wrapper)
+                ChatMessage chatMessage = chatRetryService.sendMessage(senderId, receiverId, content, imageUrl);
 
                 // Convert to DTO
                 ChatMessageDTO messageDTO = convertToDTO(chatMessage);
@@ -155,6 +154,12 @@ public class ChatWebSocketHandler {
 
                 // Send to receiver if online
                 broadcastToUser(receiverId, responseJson);
+
+                long receiverUnreadCount = chatRetryService.countTotalUnreadMessages(receiverId);
+                Map<String, Object> unreadUpdate = new HashMap<>();
+                unreadUpdate.put("type", "unreadCount");
+                unreadUpdate.put("count", receiverUnreadCount);
+                broadcastToUser(receiverId, serializeToJson(unreadUpdate));
 
                 log.info("WebSocket message delivered from {} to {}", senderId, receiverId);
 
@@ -196,7 +201,7 @@ public class ChatWebSocketHandler {
                 UUID messageId = UUID.fromString(messageIdStr);
 
                 // mark as read and get message
-                ChatMessage message = chatService.markMessageAsRead(messageId, readerId);
+                ChatMessage message = chatRetryService.markMessageAsRead(messageId, readerId);
 
                 // 1. send read receipt to reader (confirmation)
                 Map<String, Object> readerReceipt = new HashMap<>();
@@ -222,7 +227,7 @@ public class ChatWebSocketHandler {
                 }
 
                 // 3. ✅ NEW: Send updated unread count to reader
-                long unreadCount = chatService.countTotalUnreadMessages(readerId);
+                long unreadCount = chatRetryService.countTotalUnreadMessages(readerId);
                 Map<String, Object> unreadUpdate = new HashMap<>();
                 unreadUpdate.put("type", "unreadCount");
                 unreadUpdate.put("count", unreadCount);
@@ -241,18 +246,23 @@ public class ChatWebSocketHandler {
      * Handle WebSocket connection close.
      */
     @OnClose
+    @ExecuteOn(TaskExecutors.BLOCKING)
     public void onClose(WebSocketSession session) {
         try {
             UUID userId = getUserIdFromSession(session);
-            
-            // Remove session from user's session set
-            Set<WebSocketSession> sessions = userSessions.get(userId);
-            if (sessions != null) {
+
+            boolean[] shouldUnsubscribe = {false};
+            userSessions.compute(userId, (k, sessions) -> {
+                if (sessions == null) return null;
                 sessions.remove(session);
                 if (sessions.isEmpty()) {
-                    userSessions.remove(userId);
-                    redisPubSubService.unsubscribe(userId);
+                    shouldUnsubscribe[0] = true;
+                    return null;
                 }
+                return sessions;
+            });
+            if (shouldUnsubscribe[0]) {
+                redisPubSubService.unsubscribe(userId);
             }
             
             log.info("WebSocket connection closed for user: {}, session: {}", userId, session.getId());
@@ -265,6 +275,7 @@ public class ChatWebSocketHandler {
      * Handle WebSocket errors.
      */
     @OnError
+    @ExecuteOn(TaskExecutors.BLOCKING)
     public void onError(WebSocketSession session, Throwable throwable) {
         try {
             UUID userId = getUserIdFromSession(session);
@@ -325,6 +336,9 @@ public class ChatWebSocketHandler {
             for (WebSocketSession session : sessions) {
                 if (session.isOpen()) {
                     session.sendAsync(message);
+                }
+                else {
+                    sessions.remove(session);  // prune stale sessions proactively
                 }
             }
             log.debug("Delivered Redis message to user {} ({} local sessions)", userId, sessions.size());

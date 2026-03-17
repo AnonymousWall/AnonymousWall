@@ -1,11 +1,12 @@
 package com.anonymous.wall.controller;
 
-import com.anonymous.wall.entity.PollVote;
-import com.anonymous.wall.service.PollService;
-import com.anonymous.wall.service.PollServiceImpl;
+import com.anonymous.wall.service.impl.PollServiceImpl;
+import com.anonymous.wall.service.retry.PollRetryService;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.annotation.*;
+import io.micronaut.scheduling.TaskExecutors;
+import io.micronaut.scheduling.annotation.ExecuteOn;
 import io.micronaut.security.annotation.Secured;
 import io.micronaut.security.rules.SecurityRule;
 import jakarta.inject.Inject;
@@ -19,12 +20,13 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Controller("/api/v1/posts")
+@ExecuteOn(TaskExecutors.BLOCKING)
 public class PollController {
 
     private static final Logger log = LoggerFactory.getLogger(PollController.class);
 
     @Inject
-    private PollService pollService;
+    private PollRetryService pollRetryService;
 
     private UUID getUserIdFromRequest(HttpRequest<?> request) {
         Optional<Principal> principalOpt = request.getUserPrincipal();
@@ -65,10 +67,10 @@ public class PollController {
                 return HttpResponse.badRequest(error("Invalid optionId format"));
             }
 
-            pollService.vote(postId, optionId, userId);
+            pollRetryService.vote(postId, optionId, userId);
 
             // Return full poll data with results visible (user just voted)
-            Map<String, Object> pollData = pollService.getPollData(postId, userId, false);
+            Map<String, Object> pollData = pollRetryService.getPollData(postId, userId, false);
 
             Map<String, Object> result = new HashMap<>();
             result.put("poll", pollData);
@@ -106,7 +108,7 @@ public class PollController {
             UUID userId = getUserIdFromRequest(httpRequest);
             log.info("GET /posts/{}/poll - Getting poll data, user={}, viewResults={}", postId, userId, viewResults);
 
-            Map<String, Object> pollData = pollService.getPollData(postId, userId, viewResults);
+            Map<String, Object> pollData = pollRetryService.getPollData(postId, userId, viewResults);
 
             log.info("GET /posts/{}/poll - Poll data retrieved successfully", postId);
             return HttpResponse.ok(pollData);

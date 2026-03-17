@@ -7,6 +7,7 @@ import com.anonymous.wall.repository.PostLikeRepository;
 import com.anonymous.wall.repository.PostRepository;
 import com.anonymous.wall.repository.UserRepository;
 import com.anonymous.wall.service.JwtTokenService;
+import com.anonymous.wall.service.impl.PostsCache;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.HttpStatus;
@@ -43,6 +44,9 @@ class PostsPaginationSortingTests {
     @Inject
     private JwtTokenService jwtTokenService;
 
+    @Inject
+    private PostsCache postsCache;
+
     private UserEntity testUser;
     private String jwtToken;
     private List<Post> testPosts;
@@ -50,6 +54,7 @@ class PostsPaginationSortingTests {
     @BeforeEach
     void setUp() {
         // Clean up
+        postsCache.invalidateAll();
         postLikeRepository.deleteAll();
         postRepository.deleteAll();
         userRepository.deleteAll();
@@ -81,6 +86,7 @@ class PostsPaginationSortingTests {
         postLikeRepository.deleteAll();
         postRepository.deleteAll();
         userRepository.deleteAll();
+        postsCache.invalidateAll();
     }
 
     @Nested

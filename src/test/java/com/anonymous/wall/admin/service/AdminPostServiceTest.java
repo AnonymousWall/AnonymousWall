@@ -4,7 +4,7 @@ import com.anonymous.wall.entity.PollOption;
 import com.anonymous.wall.entity.Post;
 import com.anonymous.wall.model.SortBy;
 import com.anonymous.wall.repository.PostRepository;
-import com.anonymous.wall.service.PollService;
+import com.anonymous.wall.service.base.PollService;
 import io.micronaut.data.model.Page;
 import io.micronaut.data.model.Pageable;
 import org.junit.jupiter.api.BeforeEach;
