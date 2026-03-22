@@ -58,7 +58,7 @@ public class NotificationController {
             HttpRequest<?> request) {
         try {
             UUID userId = getUserIdFromRequest(request);
-            log.info("GET /notifications - user={}, page={}, size={}", userId, page, size);
+            log.debug("GET /notifications - user={}, page={}, size={}", userId, page, size);
 
             Pageable pageable = Pageable.from(page - 1, size);
             Page<NotificationEntity> notificationsPage = notificationRetryService.getNotifications(userId, pageable);
@@ -87,7 +87,7 @@ public class NotificationController {
     public HttpResponse<Object> getUnreadCount(HttpRequest<?> request) {
         try {
             UUID userId = getUserIdFromRequest(request);
-            log.info("GET /notifications/unread-count - user={}", userId);
+            log.debug("GET /notifications/unread-count - user={}", userId);
 
             long count = notificationRetryService.getUnreadCount(userId);
 

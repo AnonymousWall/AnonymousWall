@@ -148,12 +148,12 @@ public class PostsController {
     public HttpResponse<Object> getPostById(@PathVariable UUID postId, HttpRequest<?> httpRequest) {
         try {
             UUID userId = getUserIdFromRequest(httpRequest);
-            log.info("GET /posts/{} - Getting post, user={}", postId, userId);
+            log.debug("GET /posts/{} - Getting post, user={}", postId, userId);
 
             Post post = postsRetryService.getPost(postId, userId);
             PostDTO dto = mapPostToDTO(post, userId);
 
-            log.info("GET /posts/{} - Post retrieved successfully", postId);
+            log.debug("GET /posts/{} - Post retrieved successfully", postId);
             return HttpResponse.ok(dto);
         } catch (IllegalArgumentException e) {
             log.warn("GET /posts/{} - Bad request: {}", postId, e.getMessage());
@@ -187,7 +187,7 @@ public class PostsController {
         try {
             UUID userId = getUserIdFromRequest(httpRequest);
             String schoolDomain = getSchoolDomainFromRequest(httpRequest);
-            log.info("GET /posts - Listing posts, user={}, wall={}, page={}, limit={}, sort={}, schoolDomain={}", userId, wall, page, limit, sort, schoolDomain);
+            log.debug("GET /posts - Listing posts, user={}, wall={}, page={}, limit={}, sort={}, schoolDomain={}", userId, wall, page, limit, sort, schoolDomain);
 
             if (page < 1) page = 1;
             if (limit < 1 || limit > 100) limit = 20;
@@ -207,7 +207,7 @@ public class PostsController {
             response.put("data", dtos);
             response.put("pagination", createPaginationInfo(posts));
 
-            log.info("GET /posts - Successfully retrieved {} posts", dtos.size());
+            log.debug("GET /posts - Successfully retrieved {} posts", dtos.size());
             return HttpResponse.ok(response);
         } catch (IllegalArgumentException e) {
             log.warn("GET /posts - Bad request: {}", e.getMessage());
@@ -268,7 +268,7 @@ public class PostsController {
             HttpRequest<?> httpRequest) {
         try {
             UUID userId = getUserIdFromRequest(httpRequest);
-            log.info("GET /posts/{}/comments - Getting comments, user={}, page={}, limit={}, sort={}", postId, userId, page, limit, sort);
+            log.debug("GET /posts/{}/comments - Getting comments, user={}, page={}, limit={}, sort={}", postId, userId, page, limit, sort);
 
             // Validate pagination parameters
             if (page < 1) page = 1;
@@ -295,7 +295,7 @@ public class PostsController {
             response.put("data", dtos);
             response.put("pagination", pagination);
 
-            log.info("GET /posts/{}/comments - Successfully retrieved {} comments", postId, dtos.size());
+            log.debug("GET /posts/{}/comments - Successfully retrieved {} comments", postId, dtos.size());
             return HttpResponse.ok(response);
         } catch (IllegalArgumentException e) {
             log.warn("GET /posts/{}/comments - Bad request: {}", postId, e.getMessage());

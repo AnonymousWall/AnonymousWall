@@ -100,7 +100,7 @@ public class MediaController {
                     .bucketName(bucketName)
                     .objectName(objectName)
                     .build();
-            log.info("Fetching media object: {}", objectName);
+            log.debug("Fetching media object: {}", objectName);
             GetObjectResponse response = objectStorageClientProvider.getClient().getObject(request);
 
             String contentType = response.getContentType() != null

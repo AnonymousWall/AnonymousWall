@@ -29,3 +29,6 @@ redis-data/
 
 # Deployment artifacts
 anonymouswall-deploy.tar.gz
+wallet_prod/
+walletTest/
+Wallet_ANONWALLDB.zip

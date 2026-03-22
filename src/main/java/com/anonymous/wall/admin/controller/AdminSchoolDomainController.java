@@ -7,6 +7,8 @@ import com.anonymous.wall.model.SchoolDomainDTO;
 import com.anonymous.wall.service.base.SchoolDomainService;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.annotation.*;
+import io.micronaut.scheduling.TaskExecutors;
+import io.micronaut.scheduling.annotation.ExecuteOn;
 import io.micronaut.security.annotation.Secured;
 import jakarta.inject.Inject;
 import org.slf4j.Logger;
@@ -20,6 +22,7 @@ import java.util.UUID;
 /**
  * Admin controller for school domain management
  */
+@ExecuteOn(TaskExecutors.BLOCKING)
 @Controller("/api/v1/admin/school-domains")
 public class AdminSchoolDomainController {
     

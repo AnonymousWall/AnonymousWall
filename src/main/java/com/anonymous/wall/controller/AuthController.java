@@ -4,10 +4,12 @@ import com.anonymous.wall.entity.RefreshToken;
 import com.anonymous.wall.entity.UserEntity;
 import com.anonymous.wall.mapper.UserMapper;
 import com.anonymous.wall.model.*;
+import com.anonymous.wall.security.RateLimitService;
 import com.anonymous.wall.service.retry.AuthRetryService;
 import com.anonymous.wall.service.JwtTokenService;
 import com.anonymous.wall.service.retry.UserRetryService;
 import io.micronaut.http.HttpResponse;
+import io.micronaut.http.HttpStatus;
 import io.micronaut.http.annotation.Body;
 import io.micronaut.http.annotation.Controller;
 import io.micronaut.http.annotation.Post;
@@ -20,6 +22,7 @@ import jakarta.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Duration;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -28,6 +31,33 @@ import java.util.UUID;
 public class AuthController {
 
     private static final Logger log = LoggerFactory.getLogger(AuthController.class);
+
+    // -------- Rate-limit constants (Layer 2 — per-email / per-IP fine-grained) --------
+
+    private static final int    SEND_CODE_MAX_PER_EMAIL = 4;
+    private static final int    SEND_CODE_MAX_PER_IP    = 10;
+    private static final Duration SEND_CODE_WINDOW      = Duration.ofMinutes(15);
+
+    private static final int    REGISTER_MAX_PER_IP     = 5;
+    private static final Duration REGISTER_WINDOW       = Duration.ofMinutes(60);
+
+    private static final int    LOGIN_EMAIL_MAX         = 10;
+    private static final Duration LOGIN_EMAIL_WINDOW    = Duration.ofMinutes(15);
+
+    private static final int    LOGIN_PW_MAX_PER_EMAIL  = 8;
+    private static final int    LOGIN_PW_MAX_PER_IP     = 20;
+    private static final Duration LOGIN_PW_WINDOW       = Duration.ofMinutes(15);
+
+    private static final int    RESET_REQ_MAX           = 3;
+    private static final Duration RESET_REQ_WINDOW      = Duration.ofMinutes(15);
+
+    private static final int    RESET_MAX               = 5;
+    private static final Duration RESET_WINDOW          = Duration.ofMinutes(15);
+
+    private static final int    REFRESH_MAX_PER_IP      = 30;
+    private static final Duration REFRESH_WINDOW        = Duration.ofMinutes(15);
+
+    // -------- Dependencies --------
 
     @Inject
     private AuthRetryService authRetryService;
@@ -41,15 +71,21 @@ public class AuthController {
     @Inject
     private JwtTokenService jwtTokenService;
 
+    @Inject
+    private RateLimitService rateLimitService;
+
+    // ==================== Endpoints ====================
+
     /**
      * POST /auth/email/send-code
      * Send verification code to email
      */
     @Post("/email/send-code")
     @Secured(SecurityRule.IS_ANONYMOUS)
-    public HttpResponse<Object> sendEmailCode(@Body SendEmailCodeRequest request) {
+    public HttpResponse<Object> sendEmailCode(@Body SendEmailCodeRequest request,
+                                              io.micronaut.http.HttpRequest<?> httpRequest) {
         try {
-            log.info("POST /auth/email/send-code - Sending verification code, email={}, purpose={}", request.getEmail(), request.getPurpose());
+            log.debug("POST /auth/email/send-code - Sending verification code, email={}, purpose={}", request.getEmail(), request.getPurpose());
 
             // Validate email
             if (request.getEmail() == null || request.getEmail().trim().isEmpty()) {
@@ -57,16 +93,27 @@ public class AuthController {
                 return HttpResponse.badRequest(error("Invalid email"));
             }
 
+            // --- Rate limit: per-email ---
+            String email = request.getEmail().toLowerCase().trim();
+            HttpResponse<Object> limited = checkRateLimit(
+                    "send-code:email:" + email, SEND_CODE_MAX_PER_EMAIL, SEND_CODE_WINDOW);
+            if (limited != null) return limited;
+
+            // --- Rate limit: per-IP ---
+            limited = checkRateLimit(
+                    "send-code:ip:" + getClientIp(httpRequest), SEND_CODE_MAX_PER_IP, SEND_CODE_WINDOW);
+            if (limited != null) return limited;
+
             // Check email exists for login/reset
             Optional<UserEntity> userOpt = userRetryService.findByEmail(request.getEmail());
 
             if (request.getPurpose() == SendEmailCodeRequestPurpose.REGISTER) {
                 if (userOpt.isPresent()) {
                     log.warn("POST /auth/email/send-code - Email already registered: {}", request.getEmail());
-                    return HttpResponse.status(io.micronaut.http.HttpStatus.CONFLICT);
+                    return HttpResponse.status(HttpStatus.CONFLICT);
                 }
             } else if (request.getPurpose() == SendEmailCodeRequestPurpose.LOGIN ||
-                       request.getPurpose() == SendEmailCodeRequestPurpose.RESET_PASSWORD) {
+                    request.getPurpose() == SendEmailCodeRequestPurpose.RESET_PASSWORD) {
                 if (userOpt.isEmpty()) {
                     log.warn("POST /auth/email/send-code - Email not found: {}", request.getEmail());
                     return HttpResponse.badRequest(error("Email not found"));
@@ -74,7 +121,7 @@ public class AuthController {
             }
 
             authRetryService.sendEmailCode(request);
-            log.info("POST /auth/email/send-code - Verification code sent successfully to email: {}", request.getEmail());
+            log.debug("POST /auth/email/send-code - Verification code sent successfully to email: {}", request.getEmail());
             return HttpResponse.ok(new MessageResponse("Verification code sent to email"));
         } catch (Exception e) {
             log.error("POST /auth/email/send-code - Error sending email code", e);
@@ -88,9 +135,15 @@ public class AuthController {
      */
     @Post("/register/email")
     @Secured(SecurityRule.IS_ANONYMOUS)
-    public HttpResponse<Object> registerWithEmail(@Body RegisterEmailRequest request) {
+    public HttpResponse<Object> registerWithEmail(@Body RegisterEmailRequest request,
+                                                  io.micronaut.http.HttpRequest<?> httpRequest) {
         try {
-            log.info("POST /auth/register/email - Registering new user with email: {}", request.getEmail());
+            log.debug("POST /auth/register/email - Registering new user with email: {}", request.getEmail());
+
+            // --- Rate limit: per-IP ---
+            HttpResponse<Object> limited = checkRateLimit(
+                    "register:ip:" + getClientIp(httpRequest), REGISTER_MAX_PER_IP, REGISTER_WINDOW);
+            if (limited != null) return limited;
 
             UserEntity user = authRetryService.registerWithEmail(request);
             String accessToken = jwtTokenService.generateToken(user);
@@ -98,14 +151,14 @@ public class AuthController {
 
             log.info("POST /auth/register/email - User registered successfully, userId={}", user.getId());
             return HttpResponse.created(success(
-                userMapper.toDTO(user),
-                accessToken,
-                rawRefreshToken
+                    userMapper.toDTO(user),
+                    accessToken,
+                    rawRefreshToken
             ));
         } catch (IllegalArgumentException e) {
             log.warn("POST /auth/register/email - Registration failed: {}", e.getMessage());
             if (e.getMessage().contains("already registered")) {
-                return HttpResponse.status(io.micronaut.http.HttpStatus.CONFLICT);
+                return HttpResponse.status(HttpStatus.CONFLICT);
             }
             return HttpResponse.badRequest(error(e.getMessage()));
         } catch (Exception e) {
@@ -120,9 +173,18 @@ public class AuthController {
      */
     @Post("/login/email")
     @Secured(SecurityRule.IS_ANONYMOUS)
-    public HttpResponse<Object> loginWithEmail(@Body LoginEmailRequest request) {
+    public HttpResponse<Object> loginWithEmail(@Body LoginEmailRequest request,
+                                               io.micronaut.http.HttpRequest<?> httpRequest) {
         try {
-            log.info("POST /auth/login/email - Login attempt with email: {}", request.getEmail());
+            log.debug("POST /auth/login/email - Login attempt with email: {}", request.getEmail());
+
+            // --- Rate limit: per-email ---
+            if (request.getEmail() != null) {
+                HttpResponse<Object> limited = checkRateLimit(
+                        "login-email:email:" + request.getEmail().toLowerCase().trim(),
+                        LOGIN_EMAIL_MAX, LOGIN_EMAIL_WINDOW);
+                if (limited != null) return limited;
+            }
 
             UserEntity user = authRetryService.loginWithEmail(request);
             String accessToken = jwtTokenService.generateToken(user);
@@ -130,9 +192,9 @@ public class AuthController {
 
             log.info("POST /auth/login/email - User logged in successfully, userId={}", user.getId());
             return HttpResponse.ok(success(
-                userMapper.toDTO(user),
-                accessToken,
-                rawRefreshToken
+                    userMapper.toDTO(user),
+                    accessToken,
+                    rawRefreshToken
             ));
         } catch (IllegalArgumentException e) {
             log.warn("POST /auth/login/email - Login failed: {}", e.getMessage());
@@ -149,9 +211,23 @@ public class AuthController {
      */
     @Post("/login/password")
     @Secured(SecurityRule.IS_ANONYMOUS)
-    public HttpResponse<Object> loginWithPassword(@Body PasswordLoginRequest request) {
+    public HttpResponse<Object> loginWithPassword(@Body PasswordLoginRequest request,
+                                                  io.micronaut.http.HttpRequest<?> httpRequest) {
         try {
-            log.info("POST /auth/login/password - Login attempt with email: {}", request.getEmail());
+            log.debug("POST /auth/login/password - Login attempt with email: {}", request.getEmail());
+
+            // --- Rate limit: per-email (brute-force single account) ---
+            if (request.getEmail() != null) {
+                HttpResponse<Object> limited = checkRateLimit(
+                        "login-pw:email:" + request.getEmail().toLowerCase().trim(),
+                        LOGIN_PW_MAX_PER_EMAIL, LOGIN_PW_WINDOW);
+                if (limited != null) return limited;
+            }
+
+            // --- Rate limit: per-IP (credential stuffing across accounts) ---
+            HttpResponse<Object> limited = checkRateLimit(
+                    "login-pw:ip:" + getClientIp(httpRequest), LOGIN_PW_MAX_PER_IP, LOGIN_PW_WINDOW);
+            if (limited != null) return limited;
 
             UserEntity user = authRetryService.loginWithPassword(request);
             String accessToken = jwtTokenService.generateToken(user);
@@ -159,9 +235,9 @@ public class AuthController {
 
             log.info("POST /auth/login/password - User logged in successfully, userId={}", user.getId());
             return HttpResponse.ok(success(
-                userMapper.toDTO(user),
-                accessToken,
-                rawRefreshToken
+                    userMapper.toDTO(user),
+                    accessToken,
+                    rawRefreshToken
             ));
         } catch (IllegalArgumentException e) {
             log.warn("POST /auth/login/password - Login failed: {}", e.getMessage());
@@ -179,7 +255,7 @@ public class AuthController {
     @Post("/password/set")
     @Secured(SecurityRule.IS_AUTHENTICATED)
     public HttpResponse<Object> setPassword(@Body SetPasswordRequest request,
-                                           io.micronaut.http.HttpRequest<?> httpRequest) {
+                                            io.micronaut.http.HttpRequest<?> httpRequest) {
         try {
             // Extract user ID from JWT Principal (secure source of truth)
             Optional<java.security.Principal> principalOpt = httpRequest.getUserPrincipal();
@@ -222,7 +298,7 @@ public class AuthController {
     @Post("/password/change")
     @Secured(SecurityRule.IS_AUTHENTICATED)
     public HttpResponse<Object> changePassword(@Body ChangePasswordRequest request,
-                                              io.micronaut.http.HttpRequest<?> httpRequest) {
+                                               io.micronaut.http.HttpRequest<?> httpRequest) {
         try {
             // Extract user ID from JWT Principal (secure source of truth)
             Optional<java.security.Principal> principalOpt = httpRequest.getUserPrincipal();
@@ -264,13 +340,22 @@ public class AuthController {
      */
     @Post("/password/reset-request")
     @Secured(SecurityRule.IS_ANONYMOUS)
-    public HttpResponse<Object> resetPasswordRequest(@Body PasswordResetRequestRequest request) {
+    public HttpResponse<Object> resetPasswordRequest(@Body PasswordResetRequestRequest request,
+                                                     io.micronaut.http.HttpRequest<?> httpRequest) {
         try {
-            log.info("POST /auth/password/reset-request - Password reset request for email: {}", request.getEmail());
+            log.debug("POST /auth/password/reset-request - Password reset request for email: {}", request.getEmail());
+
+            // --- Rate limit: per-email ---
+            if (request.getEmail() != null) {
+                HttpResponse<Object> limited = checkRateLimit(
+                        "reset-req:email:" + request.getEmail().toLowerCase().trim(),
+                        RESET_REQ_MAX, RESET_REQ_WINDOW);
+                if (limited != null) return limited;
+            }
 
             authRetryService.requestPasswordReset(request);
 
-            log.info("POST /auth/password/reset-request - Password reset code sent successfully to email: {}", request.getEmail());
+            log.debug("POST /auth/password/reset-request - Password reset code sent successfully to email: {}", request.getEmail());
             return HttpResponse.ok(new MessageResponse("Password reset code sent to email"));
         } catch (IllegalArgumentException e) {
             log.warn("POST /auth/password/reset-request - Invalid request: {}", e.getMessage());
@@ -287,9 +372,18 @@ public class AuthController {
      */
     @Post("/password/reset")
     @Secured(SecurityRule.IS_ANONYMOUS)
-    public HttpResponse<Object> resetPassword(@Body ResetPasswordRequest request) {
+    public HttpResponse<Object> resetPassword(@Body ResetPasswordRequest request,
+                                              io.micronaut.http.HttpRequest<?> httpRequest) {
         try {
             log.info("POST /auth/password/reset - Resetting password");
+
+            // --- Rate limit: per-email ---
+            if (request.getEmail() != null) {
+                HttpResponse<Object> limited = checkRateLimit(
+                        "reset:email:" + request.getEmail().toLowerCase().trim(),
+                        RESET_MAX, RESET_WINDOW);
+                if (limited != null) return limited;
+            }
 
             UserEntity user = authRetryService.resetPassword(request);
             String accessToken = jwtTokenService.generateToken(user);
@@ -297,9 +391,9 @@ public class AuthController {
 
             log.info("POST /auth/password/reset - Password reset successfully, userId={}", user.getId());
             return HttpResponse.ok(success(
-                userMapper.toDTO(user),
-                accessToken,
-                rawRefreshToken
+                    userMapper.toDTO(user),
+                    accessToken,
+                    rawRefreshToken
             ));
         } catch (IllegalArgumentException e) {
             log.warn("POST /auth/password/reset - Invalid request: {}", e.getMessage());
@@ -310,26 +404,22 @@ public class AuthController {
         }
     }
 
-    // -------- Helper Methods --------
-
-    private ErrorResponse error(String message) {
-        return new ErrorResponse(message);
-    }
-
-    private AuthSuccessResponse success(UserDTO user, String accessToken, String refreshToken) {
-        return new AuthSuccessResponse(accessToken, refreshToken, user);
-    }
-
     /**
      * POST /auth/refresh
      * Exchange a refresh token for a new token pair (token rotation)
      */
     @Post("/refresh")
     @Secured(SecurityRule.IS_ANONYMOUS)
-    public HttpResponse<?> refresh(@Body RefreshRequest request) {
+    public HttpResponse<?> refresh(@Body RefreshRequest request,
+                                   io.micronaut.http.HttpRequest<?> httpRequest) {
         if (request.getRefreshToken() == null || request.getRefreshToken().isBlank()) {
             return HttpResponse.badRequest(error("Refresh token is required"));
         }
+
+        // --- Rate limit: per-IP ---
+        HttpResponse<Object> limited = checkRateLimit(
+                "refresh:ip:" + getClientIp(httpRequest), REFRESH_MAX_PER_IP, REFRESH_WINDOW);
+        if (limited != null) return limited;
 
         Optional<RefreshToken> stored = authRetryService.findValidRefreshToken(request.getRefreshToken());
         if (stored.isEmpty()) {
@@ -344,7 +434,7 @@ public class AuthController {
 
         UserEntity user = userOpt.get();
         if (user.isBlocked()) {
-            return HttpResponse.status(io.micronaut.http.HttpStatus.FORBIDDEN)
+            return HttpResponse.status(HttpStatus.FORBIDDEN)
                     .body(error("Access denied. Your account has been blocked."));
         }
 
@@ -378,7 +468,47 @@ public class AuthController {
         return HttpResponse.ok(new MessageResponse("Logged out successfully"));
     }
 
-    // -------- Response DTOs --------
+    // ==================== Helper Methods ====================
+
+    private ErrorResponse error(String message) {
+        return new ErrorResponse(message);
+    }
+
+    private AuthSuccessResponse success(UserDTO user, String accessToken, String refreshToken) {
+        return new AuthSuccessResponse(accessToken, refreshToken, user);
+    }
+
+    /**
+     * Run a rate-limit check and return a 429 response if blocked, or {@code null} if allowed.
+     */
+    private HttpResponse<Object> checkRateLimit(String key, int max, Duration window) {
+        RateLimitService.RateLimitResult result = rateLimitService.checkRateLimit(key, max, window);
+        if (result.isLimited()) {
+            log.warn("Rate limit triggered: key={}, retryAfter={}s", key, result.getRetryAfterSeconds());
+            return HttpResponse.status(HttpStatus.TOO_MANY_REQUESTS)
+                    .header("Retry-After", String.valueOf(result.getRetryAfterSeconds()))
+                    .body(error("Too many requests. Please try again in "
+                            + result.getRetryAfterSeconds() + " seconds."));
+        }
+        return null; // not limited
+    }
+
+    /**
+     * Extract the real client IP, respecting reverse-proxy headers.
+     */
+    private String getClientIp(io.micronaut.http.HttpRequest<?> request) {
+        String xff = request.getHeaders().get("X-Forwarded-For");
+        if (xff != null && !xff.isBlank()) {
+            return xff.split(",")[0].trim();
+        }
+        String xri = request.getHeaders().get("X-Real-IP");
+        if (xri != null && !xri.isBlank()) {
+            return xri.trim();
+        }
+        return request.getRemoteAddress().getAddress().getHostAddress();
+    }
+
+    // ==================== Response DTOs ====================
 
     @Serdeable
     public static class ErrorResponse {

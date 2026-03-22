@@ -67,7 +67,7 @@ public class AuthServiceImpl implements AuthService {
 
         // Send email (fake for local testing)
         emailUtil.sendVerificationCodeEmail(request.getEmail(), code, purpose);
-        log.info("Verification code sent to email: {}, purpose: {}", request.getEmail(), purpose);
+        log.debug("Verification code sent to email: {}, purpose: {}", request.getEmail(), purpose);
     }
 
     /**
@@ -122,7 +122,7 @@ public class AuthServiceImpl implements AuthService {
         emailCodeService.deleteByEmail(request.getEmail());
         log.debug("Verification code cleaned up for email: {}", request.getEmail());
 
-        log.info("User registered successfully: email={}, userId={}", request.getEmail(), savedUser.getId());
+        log.debug("User registered successfully: email={}, userId={}", request.getEmail(), savedUser.getId());
         return savedUser;
     }
 
@@ -156,6 +156,12 @@ public class AuthServiceImpl implements AuthService {
         UserEntity user;
 
         if (userOpt.isEmpty()) {
+            // Validate school email before auto-creating — same check as registerWithEmail()
+            if (!EmailValidator.isValidSchoolEmail(request.getEmail())) {
+                log.warn("Email login auto-create blocked - invalid school email: {}", request.getEmail());
+                throw new IllegalArgumentException("Only school/educational email addresses are allowed");
+            }
+
             // Auto-create user if not exists
             log.debug("User not found, auto-creating account for email: {}", request.getEmail());
             user = new UserEntity();
@@ -181,7 +187,7 @@ public class AuthServiceImpl implements AuthService {
         emailCodeService.deleteByEmail(request.getEmail());
         log.debug("Verification code cleaned up for email: {}", request.getEmail());
 
-        log.info("User logged in with email code successfully: email={}, userId={}", request.getEmail(), user.getId());
+        log.debug("User logged in with email code successfully: email={}, userId={}", request.getEmail(), user.getId());
         return user;
     }
 
@@ -218,7 +224,7 @@ public class AuthServiceImpl implements AuthService {
             throw new IllegalArgumentException("Invalid email or password");
         }
 
-        log.info("User logged in with password successfully: email={}, userId={}", request.getEmail(), user.getId());
+        log.debug("User logged in with password successfully: email={}, userId={}", request.getEmail(), user.getId());
         return user;
     }
 
@@ -240,7 +246,7 @@ public class AuthServiceImpl implements AuthService {
         currentUser.setPasswordSet(true);
 
         UserEntity updated = userService.update(currentUser);
-        log.info("Password set successfully for user: email={}, userId={}", currentUser.getEmail(), currentUser.getId());
+        log.debug("Password set successfully for user: email={}, userId={}", currentUser.getEmail(), currentUser.getId());
         return updated;
     }
 
@@ -271,7 +277,7 @@ public class AuthServiceImpl implements AuthService {
         currentUser.setPasswordHash(hashedPassword);
 
         UserEntity updated = userService.update(currentUser);
-        log.info("Password changed successfully for user: email={}, userId={}", currentUser.getEmail(), currentUser.getId());
+        log.debug("Password changed successfully for user: email={}, userId={}", currentUser.getEmail(), currentUser.getId());
         return updated;
     }
 
@@ -312,7 +318,7 @@ public class AuthServiceImpl implements AuthService {
         log.debug("Password reset code saved in database for email: {}", request.getEmail());
 
         emailUtil.sendVerificationCodeEmail(request.getEmail(), code, "reset_password");
-        log.info("Password reset code sent to email: {}", request.getEmail());
+        log.debug("Password reset code sent to email: {}", request.getEmail());
 
         return user;
     }
@@ -369,7 +375,7 @@ public class AuthServiceImpl implements AuthService {
         emailCodeService.deleteByEmail(request.getEmail());
         log.debug("Reset code cleaned up for email: {}", request.getEmail());
 
-        log.info("Password reset successfully for user: email={}, userId={}", request.getEmail(), updated.getId());
+        log.debug("Password reset successfully for user: email={}, userId={}", request.getEmail(), updated.getId());
         return updated;
     }
 

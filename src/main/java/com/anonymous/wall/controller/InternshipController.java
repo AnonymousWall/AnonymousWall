@@ -96,7 +96,7 @@ public class InternshipController {
         try {
             UUID userId = getUserIdFromRequest(httpRequest);
             String schoolDomain = getSchoolDomainFromRequest(httpRequest);
-            log.info("GET /internships - Listing internships, user={}, wall={}, page={}, limit={}, sortBy={}", 
+            log.debug("GET /internships - Listing internships, user={}, wall={}, page={}, limit={}, sortBy={}",
                     userId, wall, page, limit, sortBy);
 
             if (page < 1) page = 1;
@@ -113,7 +113,7 @@ public class InternshipController {
             response.put("data", dtos);
             response.put("pagination", createPaginationInfo(internships));
 
-            log.info("GET /internships - Successfully retrieved {} internships", dtos.size());
+            log.debug("GET /internships - Successfully retrieved {} internships", dtos.size());
             return HttpResponse.ok(response);
         } catch (IllegalArgumentException e) {
             log.warn("GET /internships - Bad request: {}", e.getMessage());
@@ -132,10 +132,10 @@ public class InternshipController {
         try {
             UUID userId = getUserIdFromRequest(httpRequest);
             UUID internshipUUID = UUID.fromString(internshipId);
-            log.info("GET /internships/{} - Getting internship, user={}", internshipId, userId);
+            log.debug("GET /internships/{} - Getting internship, user={}", internshipId, userId);
             Internship internship = internshipRetryService.getInternship(internshipUUID, userId);
             InternshipDTO dto = mapInternshipToDTO(internship);
-            log.info("GET /internships/{} - Internship retrieved successfully", internshipId);
+            log.debug("GET /internships/{} - Internship retrieved successfully", internshipId);
             return HttpResponse.ok(dto);
         } catch (IllegalArgumentException e) {
             log.warn("GET /internships/{} - Bad request: {}", internshipId, e.getMessage());
