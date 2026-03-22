@@ -13,6 +13,7 @@ import jakarta.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.OffsetDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -73,6 +74,7 @@ public class UserServiceImpl implements UserService {
         }
         
         user.setProfileName(newProfileName);
+        user.setUpdatedAt(OffsetDateTime.now());
         UserEntity updated = userRepository.update(user);
         
         log.info("Profile name updated for user: {}, oldName={}, newName={}", 
@@ -94,6 +96,7 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public UserEntity update(UserEntity user) {
         log.debug("Updating user: {}", user.getId());
+        user.setUpdatedAt(OffsetDateTime.now());
         return userRepository.update(user);
     }
 

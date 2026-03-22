@@ -92,7 +92,7 @@ public class UserController {
             HttpRequest<?> httpRequest) {
         try {
             UUID userId = getUserIdFromRequest(httpRequest);
-            log.info("GET /users/me/comments - Getting user's own comments, user={}, page={}, limit={}, sort={}", 
+            log.debug("GET /users/me/comments - Getting user's own comments, user={}, page={}, limit={}, sort={}",
                 userId, page, limit, sort);
 
             // Validate pagination parameters
@@ -117,7 +117,7 @@ public class UserController {
             response.put("data", dtos);
             response.put("pagination", pagination);
 
-            log.info("GET /users/me/comments - Successfully retrieved {} comments", dtos.size());
+            log.debug("GET /users/me/comments - Successfully retrieved {} comments", dtos.size());
             return HttpResponse.ok(response);
         } catch (IllegalArgumentException e) {
             log.warn("GET /users/me/comments - Bad request: {}", e.getMessage());
@@ -144,7 +144,7 @@ public class UserController {
             HttpRequest<?> httpRequest) {
         try {
             UUID userId = getUserIdFromRequest(httpRequest);
-            log.info("GET /users/me/posts - Getting user's own posts, user={}, page={}, limit={}, sort={}", 
+            log.debug("GET /users/me/posts - Getting user's own posts, user={}, page={}, limit={}, sort={}",
                 userId, page, limit, sort);
 
             // Validate pagination parameters
@@ -169,7 +169,7 @@ public class UserController {
             response.put("data", dtos);
             response.put("pagination", pagination);
 
-            log.info("GET /users/me/posts - Successfully retrieved {} posts", dtos.size());
+            log.debug("GET /users/me/posts - Successfully retrieved {} posts", dtos.size());
             return HttpResponse.ok(response);
         } catch (IllegalArgumentException e) {
             log.warn("GET /users/me/posts - Bad request: {}", e.getMessage());
@@ -196,7 +196,7 @@ public class UserController {
             HttpRequest<?> httpRequest) {
         try {
             UUID userId = getUserIdFromRequest(httpRequest);
-            log.info("GET /users/me/internships - Getting user's own internships, user={}, page={}, limit={}, sort={}",
+            log.debug("GET /users/me/internships - Getting user's own internships, user={}, page={}, limit={}, sort={}",
                 userId, page, limit, sort);
 
             if (page < 1) page = 1;
@@ -219,7 +219,7 @@ public class UserController {
             response.put("data", dtos);
             response.put("pagination", pagination);
 
-            log.info("GET /users/me/internships - Successfully retrieved {} internships", dtos.size());
+            log.debug("GET /users/me/internships - Successfully retrieved {} internships", dtos.size());
             return HttpResponse.ok(response);
         } catch (IllegalArgumentException e) {
             log.warn("GET /users/me/internships - Bad request: {}", e.getMessage());
@@ -246,7 +246,7 @@ public class UserController {
             HttpRequest<?> httpRequest) {
         try {
             UUID userId = getUserIdFromRequest(httpRequest);
-            log.info("GET /users/me/marketplaces - Getting user's own marketplace items, user={}, page={}, limit={}, sort={}",
+            log.debug("GET /users/me/marketplaces - Getting user's own marketplace items, user={}, page={}, limit={}, sort={}",
                 userId, page, limit, sort);
 
             if (page < 1) page = 1;
@@ -269,7 +269,7 @@ public class UserController {
             response.put("data", dtos);
             response.put("pagination", pagination);
 
-            log.info("GET /users/me/marketplaces - Successfully retrieved {} marketplace items", dtos.size());
+            log.debug("GET /users/me/marketplaces - Successfully retrieved {} marketplace items", dtos.size());
             return HttpResponse.ok(response);
         } catch (IllegalArgumentException e) {
             log.warn("GET /users/me/marketplaces - Bad request: {}", e.getMessage());

@@ -41,7 +41,7 @@ public class JwtTokenService {
             throw new IllegalArgumentException("User and user ID cannot be null");
         }
         if (user.isBlocked()) {
-            log.warn("Token generation denied for blocked user: userId={}, email={}", user.getId(), user.getEmail());
+            log.debug("Token generation denied for blocked user: userId={}, email={}", user.getId(), user.getEmail());
             throw new IllegalArgumentException("Access denied. Your account has been blocked.");
         }
     }
@@ -77,7 +77,7 @@ public class JwtTokenService {
             );
 
             if (token.isPresent()) {
-                log.info("JWT token generated for user: {}", user.getEmail());
+                log.debug("JWT token generated for user: {}", user.getEmail());
                 return token.get();
             } else {
                 throw new RuntimeException("Failed to generate JWT token");
@@ -124,7 +124,7 @@ public class JwtTokenService {
             );
 
             if (token.isPresent()) {
-                log.info("JWT token generated for user: {}", user.getEmail());
+                log.debug("JWT token generated for user: {}", user.getEmail());
                 return token.get();
             } else {
                 throw new RuntimeException("Failed to generate JWT token");

@@ -34,6 +34,9 @@ public class UserEntity {
     @MappedProperty("created_at")
     private OffsetDateTime createdAt = OffsetDateTime.now();
 
+    @MappedProperty("updated_at")
+    private OffsetDateTime updatedAt = OffsetDateTime.now();
+
     @MappedProperty("report_count")
     private int reportCount = 0;
 
@@ -68,6 +71,9 @@ public class UserEntity {
 
     public OffsetDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(OffsetDateTime createdAt) { this.createdAt = createdAt; }
+
+    public OffsetDateTime getUpdatedAt() { return updatedAt; }
+    public void setUpdatedAt(OffsetDateTime updatedAt) { this.updatedAt = updatedAt; }
 
     public int getReportCount() { return reportCount; }
     public void setReportCount(int reportCount) { this.reportCount = reportCount; }

@@ -26,6 +26,8 @@ import io.micronaut.data.model.Pageable;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.annotation.*;
+import io.micronaut.scheduling.TaskExecutors;
+import io.micronaut.scheduling.annotation.ExecuteOn;
 import io.micronaut.security.annotation.Secured;
 import jakarta.inject.Inject;
 import org.slf4j.Logger;
@@ -41,6 +43,7 @@ import java.util.stream.Collectors;
 /**
  * Admin controller for user management
  */
+@ExecuteOn(TaskExecutors.BLOCKING)
 @Controller("/api/v1/admin/users")
 public class AdminUserController {
     

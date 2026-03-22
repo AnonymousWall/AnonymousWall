@@ -15,15 +15,15 @@
             <AppenderRef ref="Console"/>
         </Logger>
 
-        <Logger name="io.micronaut.cache" level="debug" additivity="false">
+        <Logger name="io.micronaut.cache" level="${env:CACHE_LOG_LEVEL:-debug}" additivity="false">
             <AppenderRef ref="Console"/>
         </Logger>
 
-        <Logger name="io.micronaut.cache.interceptor" level="debug" additivity="false">
+        <Logger name="io.micronaut.cache.interceptor" level="${env:CACHE_LOG_LEVEL:-debug}" additivity="false">
             <AppenderRef ref="Console"/>
         </Logger>
 
-        <Logger name="com.anonymous.wall" level="debug" additivity="false">
+        <Logger name="com.anonymous.wall" level="${env:APP_LOG_LEVEL:-debug}" additivity="false">
             <AppenderRef ref="Console"/>
         </Logger>
 

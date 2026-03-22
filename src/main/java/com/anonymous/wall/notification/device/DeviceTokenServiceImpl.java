@@ -31,11 +31,13 @@ public class DeviceTokenServiceImpl implements DeviceTokenService {
             dt.setActive(true);
             dt.setUpdatedAt(OffsetDateTime.now());
             deviceTokenRepository.update(dt);
-            log.info("Device token reassigned: token={}, newUserId={}", deviceToken, userId);
+            log.info("Device token registered: token=...{}, userId={}",
+                    deviceToken.substring(Math.max(0, deviceToken.length() - 8)), userId);
         } else {
             DeviceToken dt = new DeviceToken(userId, deviceToken, platform);
             deviceTokenRepository.save(dt);
-            log.info("Device token registered: token={}, userId={}", deviceToken, userId);
+            log.info("Device token registered: token=...{}, userId={}",
+                    deviceToken.substring(Math.max(0, deviceToken.length() - 8)), userId);
         }
     }
 
